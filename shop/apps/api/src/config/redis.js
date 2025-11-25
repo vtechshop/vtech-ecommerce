@@ -60,10 +60,9 @@ const connectRedis = async () => {
     return redisClient;
   } catch (error) {
     logger.error('Redis initialization error:', error);
-    if (process.env.NODE_ENV === 'production') {
-      throw error;
-    }
-    logger.warn('Continuing without Redis in development mode');
+    // Make Redis optional - app can run without it (with degraded caching)
+    logger.warn('Continuing without Redis - caching disabled');
+    redisClient = null;
     return null;
   }
 };
