@@ -10,6 +10,8 @@ export default defineConfig({
       // ✅ Alias @ -> src/assets (matches your codebase)
       '@': path.resolve(__dirname, './src/assets'),
     },
+    // Fix for useSyncExternalStore error - ensure single React instance
+    dedupe: ['react', 'react-dom', 'react-redux', '@reduxjs/toolkit'],
   },
   server: {
     host: '0.0.0.0',
