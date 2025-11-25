@@ -1,0 +1,15 @@
+{
+  "title": "Test Product",
+  "description": "This is a test product for Cypress E2E testing",
+  "price": 99.99,
+  "compareAt": 149.99,
+  "stock": 100,
+  "sku": "TEST-001",
+  "brand": "Test Brand",
+  "images": [
+    "https://via.placeholder.com/500"
+  ],
+  "tags": ["test", "electronics"],
+  "published": true,
+  "featured": false
+}

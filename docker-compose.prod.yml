@@ -1,0 +1,48 @@
+# FILE: docker-compose.prod.yml
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+
+  api:
+    build:
+      context: .
+      dockerfile: configs/docker/Dockerfile.api
+    restart: always
+    env_file:
+      - .env.production
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  web:
+    build:
+      context: .
+      dockerfile: configs/docker/Dockerfile.web
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - api
+    networks:
+      - app-network
+    volumes:
+      - ./configs/nginx/ssl:/etc/nginx/ssl:ro
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

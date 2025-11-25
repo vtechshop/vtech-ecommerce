@@ -1,0 +1,119 @@
+// FILE: apps/api/src/middleware/auth.js
+const { verifyAccessToken } = require('../utils/jwt');
+
+function authenticate(req, res, next) {
+  try {
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'No access token' },
+      });
+    }
+
+    const decoded = verifyAccessToken(token);
+    // SECURITY FIX: Include role in req.user for authorization checks
+    req.user = {
+      _id: decoded.userId,
+      role: decoded.role
+    };
+    next();
+  } catch (err) {
+    return res.status(401).json({
+      success: false,
+      error: { code: 'UNAUTHORIZED', message: 'Invalid or expired token' },
+    });
+  }
+}
+
+function authorize(roles = []) {
+  return (req, res, next) => {
+    // Allow access if no roles specified
+    if (!roles.length) return next();
+
+    // SECURITY FIX: Properly enforce role-based access control
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+      });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'FORBIDDEN', message: 'Insufficient permissions' },
+      });
+    }
+
+    return next();
+  };
+}
+
+// Middleware to require email verification
+function requireVerifiedEmail(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+    });
+  }
+
+  // Fetch user from database to check email verification status
+  const User = require('../models/User');
+  User.findById(req.user._id)
+    .then(user => {
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'USER_NOT_FOUND', message: 'User not found' },
+        });
+      }
+
+      if (!user.emailVerified) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'EMAIL_NOT_VERIFIED',
+            message: 'Please verify your email address to access this feature',
+          },
+        });
+      }
+
+      next();
+    })
+    .catch(next);
+}
+
+// Optional authentication - attach user if token exists, but don't require it
+function optionalAuth(req, res, next) {
+  try {
+    const auth = req.headers.authorization || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+
+    if (token) {
+      try {
+        const decoded = verifyAccessToken(token);
+        req.user = {
+          _id: decoded.userId,
+          role: decoded.role
+        };
+      } catch (err) {
+        // Token is invalid but that's okay for optional auth
+        req.user = null;
+      }
+    } else {
+      req.user = null;
+    }
+
+    next();
+  } catch (err) {
+    // Error in processing, but allow request to continue
+    req.user = null;
+    next();
+  }
+}
+
+module.exports = { authenticate, authorize, requireVerifiedEmail, optionalAuth };

@@ -1,0 +1,891 @@
+// FILE: apps/api/src/controllers/vendorController.js
+const Vendor = require('../models/Vendor');
+const Product = require('../models/Product');
+const Order = require('../models/Order');
+const Commission = require('../models/Commission');
+const { slugify, generateSKU, getPaginationMeta } = require('../utils/helpers');
+const logger = require('../config/logger');
+
+// ---------- CONTROLLERS ----------
+async function getVendorBySlug(req, res, next) {
+  try {
+    const { slug } = req.params;
+    // allow any status (helps with seeded “pending” vendors)
+    const vendor = await Vendor.findOne({ slug }).populate('userId', 'name email');
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor not found' },
+      });
+    }
+    res.json({ success: true, data: vendor });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function onboard(req, res, next) {
+  try {
+    const { storeName, description, kyc, bank } = req.body;
+
+    logger.info(`Vendor onboarding attempt for user: ${req.user._id}`);
+    logger.info(`Onboarding data: ${JSON.stringify({ storeName, kyc, bank: bank ? 'provided' : 'not provided' })}`);
+
+    const existing = await Vendor.findOne({ userId: req.user._id });
+    if (existing) {
+      logger.warn(`User ${req.user._id} already has vendor profile`);
+      return res.status(400).json({
+        success: false,
+        error: { code: 'ALREADY_VENDOR', message: 'User already has a vendor profile' },
+      });
+    }
+
+    const vendor = await Vendor.create({
+      userId: req.user._id,
+      storeName,
+      slug: slugify(storeName),
+      description,
+      kyc: { ...(kyc || {}), status: 'pending' },
+      bank,
+      status: 'pending',
+    });
+
+    logger.info(`Vendor created successfully: ${vendor._id} - ${vendor.storeName}`);
+
+    const User = require('../models/User');
+    await User.findByIdAndUpdate(req.user._id, { role: 'vendor' });
+
+    logger.info(`User role updated to vendor for: ${req.user._id}`);
+    logger.info(`Vendor onboarded: ${vendor.storeName}`);
+    res.status(201).json({ success: true, data: vendor });
+  } catch (error) {
+    logger.error(`Vendor onboarding failed for user ${req.user._id}:`, error);
+    logger.error(`Error details: ${error.message}`);
+    if (error.name === 'ValidationError') {
+      logger.error(`Validation errors: ${JSON.stringify(error.errors)}`);
+    }
+    next(error);
+  }
+}
+
+async function getDashboardStats(req, res, next) {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    const [totalProducts, activeProducts, totalOrders, pendingOrders, totalCommissions] =
+      await Promise.all([
+        Product.countDocuments({ vendorId: vendor._id }),
+        Product.countDocuments({ vendorId: vendor._id, published: true }),
+        Order.countDocuments({ 'items.vendorId': vendor._id }),
+        Order.countDocuments({ 'items.vendorId': vendor._id, status: { $in: ['placed', 'paid'] } }),
+        Commission.aggregate([
+          { $match: { subjectId: vendor._id, type: 'vendor', status: 'approved' } },
+          { $group: { _id: null, total: { $sum: '$amount' } } },
+        ]),
+      ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalProducts,
+        activeProducts,
+        totalOrders,
+        pendingOrders,
+        totalEarnings: totalCommissions[0]?.total || 0,
+        totalSales: vendor.totalSales,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getVendorProducts(req, res, next) {
+  try {
+    const { page = 1, limit = 20, search, published } = req.query;
+
+    // SECURITY: Explicit vendor verification with null check
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    const query = { vendorId: vendor._id };
+    if (search) query.$text = { $search: String(search) };
+    if (published !== undefined) query.published = published === 'true';
+
+    // SECURITY: Enforce maximum limit to prevent DoS
+    const safeLimit = Math.min(parseInt(limit) || 20, 100); // Max 100 items
+    const safePage = Math.max(parseInt(page) || 1, 1); // Min page 1
+    const skip = (safePage - 1) * safeLimit;
+
+    const [products, total] = await Promise.all([
+      Product.find(query).sort({ createdAt: -1 }).skip(skip).limit(safeLimit).lean(),
+      Product.countDocuments(query),
+    ]);
+
+    res.json({ success: true, data: products, meta: getPaginationMeta(total, safePage, safeLimit) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function createProduct(req, res, next) {
+  try {
+    // SECURITY: Explicit vendor verification
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    // Generate unique slug
+    let slug = slugify(req.body.title);
+    let slugExists = await Product.findOne({ slug });
+    let counter = 1;
+
+    while (slugExists) {
+      slug = `${slugify(req.body.title)}-${counter}`;
+      slugExists = await Product.findOne({ slug });
+      counter++;
+    }
+
+    // Generate unique SKU if provided SKU already exists
+    let sku = req.body.sku || generateSKU();
+    if (req.body.sku) {
+      let skuExists = await Product.findOne({ sku });
+      let skuCounter = 1;
+
+      while (skuExists) {
+        sku = `${req.body.sku}-${skuCounter}`;
+        skuExists = await Product.findOne({ sku });
+        skuCounter++;
+      }
+    }
+
+    const product = await Product.create({
+      ...req.body,
+      vendorId: vendor._id,
+      slug: slug,
+      sku: sku,
+    });
+
+    vendor.totalProducts += 1;
+    await vendor.save();
+
+    logger.info(`Product created: ${product.title}`);
+    res.status(201).json({ success: true, data: product });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+async function updateProduct(req, res, next) {
+  try {
+    const { id } = req.params;
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    const product = await Product.findOne({ _id: id, vendorId: vendor._id });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Product not found' },
+      });
+    }
+
+    // SECURITY: Use whitelist approach instead of Object.assign to prevent mass assignment
+    const allowedFields = [
+      'title', 'description', 'price', 'compareAt', 'cost', 'stock',
+      'sku', 'barcode', 'brand', 'images', 'categoryIds', 'tags',
+      'variants', 'specifications', 'shippingInfo', 'published',
+      'featured', 'taxable', 'taxRate', 'seo', 'hasWarranty', 'warranty', 'structuredData', 'youtubeLink'
+    ];
+
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        product[field] = req.body[field];
+      }
+    });
+
+    if (req.body.title) product.slug = slugify(req.body.title);
+
+    await product.save();
+    res.json({ success: true, data: product });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteProduct(req, res, next) {
+  try {
+    const { id } = req.params;
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    const product = await Product.findOneAndDelete({ _id: id, vendorId: vendor._id });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Product not found' },
+      });
+    }
+
+    vendor.totalProducts = Math.max(0, vendor.totalProducts - 1);
+    await vendor.save();
+
+    logger.info(`Product deleted: ${product.title}`);
+    res.json({ success: true, data: { message: 'Product deleted successfully' } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function importProducts(req, res, next) {
+  try {
+    const { products } = req.body;
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    const imported = [];
+    const errors = [];
+
+    for (const productData of products || []) {
+      try {
+        const product = await Product.create({
+          ...productData,
+          vendorId: vendor._id,
+          slug: slugify(productData.title),
+          sku: productData.sku || generateSKU(),
+        });
+        imported.push(product);
+      } catch (e) {
+        errors.push({ title: productData.title, error: e.message });
+      }
+    }
+
+    vendor.totalProducts += imported.length;
+    await vendor.save();
+
+    logger.info(`Bulk import: ${imported.length} products created, ${errors.length} errors`);
+    res.json({ success: true, data: { imported: imported.length, errors } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getInventory(req, res, next) {
+  try {
+    const { page = 1, limit = 50, lowStock } = req.query;
+
+    // SECURITY: Explicit vendor verification
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    const query = { vendorId: vendor._id };
+    if (lowStock === 'true') query.$expr = { $lte: ['$stock', '$lowStockThreshold'] };
+
+    // SECURITY: Enforce maximum limit
+    const safeLimit = Math.min(parseInt(limit) || 50, 100);
+    const safePage = Math.max(parseInt(page) || 1, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [products, total] = await Promise.all([
+      Product.find(query)
+        .select('title sku stock lowStockThreshold variants')
+        .sort({ stock: 1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+      Product.countDocuments(query),
+    ]);
+
+    res.json({ success: true, data: products, meta: getPaginationMeta(total, safePage, safeLimit) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateInventory(req, res, next) {
+  try {
+    const { productId } = req.params;
+    const { stock, variants } = req.body;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    const product = await Product.findOne({ _id: productId, vendorId: vendor._id });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Product not found' },
+      });
+    }
+
+    if (stock !== undefined) product.stock = stock;
+
+    if (variants && Array.isArray(variants)) {
+      variants.forEach(v => {
+        const variant = product.variants.id(v.variantId);
+        if (variant) variant.stock = v.stock;
+      });
+    }
+
+    await product.save();
+    res.json({ success: true, data: product });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getVendorOrders(req, res, next) {
+  try {
+    const { page = 1, limit = 20, status } = req.query;
+
+    // SECURITY: Explicit vendor verification
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    const query = { 'items.vendorId': vendor._id };
+    if (status) query.status = status;
+
+    // SECURITY: Enforce maximum limit
+    const safeLimit = Math.min(parseInt(limit) || 20, 100);
+    const safePage = Math.max(parseInt(page) || 1, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [orders, total] = await Promise.all([
+      Order.find(query).sort({ createdAt: -1 }).skip(skip).limit(safeLimit).lean(),
+      Order.countDocuments(query),
+    ]);
+
+    const filteredOrders = orders.map(order => ({
+      ...order,
+      items: order.items.filter(i => String(i.vendorId) === String(vendor._id)),
+    }));
+
+    res.json({ success: true, data: filteredOrders, meta: getPaginationMeta(total, safePage, safeLimit) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getSettlements(req, res, next) {
+  try {
+    const { page = 1, limit = 20, status } = req.query;
+
+    // SECURITY: Explicit vendor verification
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    const query = { subjectId: vendor._id, type: 'vendor' };
+    if (status) query.status = status;
+
+    // SECURITY: Enforce maximum limit
+    const safeLimit = Math.min(parseInt(limit) || 20, 100);
+    const safePage = Math.max(parseInt(page) || 1, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const [commissions, total] = await Promise.all([
+      Commission.find(query)
+        .populate('orderId', 'orderId totals createdAt')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+      Commission.countDocuments(query),
+    ]);
+
+    res.json({ success: true, data: commissions, meta: getPaginationMeta(total, safePage, safeLimit) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ---------- KYC METHODS ----------
+async function getKYC(req, res, next) {
+  try {
+    let vendor = await Vendor.findOne({ userId: req.user._id });
+
+    // Auto-create vendor profile if user has vendor role but no profile
+    if (!vendor && req.user.role === 'vendor') {
+      logger.warn(`Auto-creating vendor profile for user ${req.user._id} (${req.user.email})`);
+
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      vendor = await Vendor.create({
+        userId: req.user._id,
+        storeName: `${user.name}'s Store`,
+        slug: slugify(`${user.name}'s Store`),
+        description: 'My online store',
+        kyc: {
+          businessName: user.name,
+          businessType: 'sole_proprietorship',
+          status: 'pending'
+        },
+        bank: {},
+        status: 'pending',
+      });
+
+      logger.info(`Auto-created vendor profile: ${vendor._id} for user ${req.user._id}`);
+    }
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        kyc: vendor.kyc,
+        status: vendor.status,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateKYC(req, res, next) {
+  try {
+    const { businessName, businessType, businessAddress, taxId, phoneNumber } = req.body;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    // Update KYC fields
+    if (businessName !== undefined) vendor.kyc.businessName = businessName;
+    if (businessType !== undefined) vendor.kyc.businessType = businessType;
+    if (businessAddress !== undefined) vendor.kyc.businessAddress = businessAddress;
+    if (taxId !== undefined) vendor.kyc.taxId = taxId;
+    if (phoneNumber !== undefined) vendor.kyc.phoneNumber = phoneNumber;
+
+    // If KYC was rejected and user is updating, reset to pending
+    if (vendor.kyc.status === 'rejected') {
+      vendor.kyc.status = 'pending';
+      vendor.kyc.rejectionReason = undefined;
+    }
+
+    await vendor.save();
+
+    logger.info(`KYC updated for vendor: ${vendor.storeName}`);
+
+    res.json({
+      success: true,
+      data: {
+        kyc: vendor.kyc,
+        message: 'KYC information updated successfully',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function uploadKYCDocument(req, res, next) {
+  try {
+    const { type, url, filename } = req.body;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    // Validate document type
+    const validTypes = ['business_license', 'tax_certificate', 'id_proof', 'other'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_TYPE', message: 'Invalid document type' },
+      });
+    }
+
+    // Add document to KYC documents array
+    if (!vendor.kyc.documents) {
+      vendor.kyc.documents = [];
+    }
+
+    vendor.kyc.documents.push({
+      type,
+      url,
+      filename,
+      uploadedAt: new Date(),
+    });
+
+    // If KYC was rejected and user is uploading new documents, reset to pending
+    if (vendor.kyc.status === 'rejected') {
+      vendor.kyc.status = 'pending';
+      vendor.kyc.rejectionReason = undefined;
+    }
+
+    await vendor.save();
+
+    logger.info(`KYC document uploaded for vendor: ${vendor.storeName}`);
+
+    res.json({
+      success: true,
+      data: {
+        document: vendor.kyc.documents[vendor.kyc.documents.length - 1],
+        message: 'Document uploaded successfully',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteKYCDocument(req, res, next) {
+  try {
+    const { documentId } = req.params;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    // Find and remove document
+    const documentIndex = vendor.kyc.documents?.findIndex(
+      doc => doc._id.toString() === documentId
+    );
+
+    if (documentIndex === -1 || documentIndex === undefined) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Document not found' },
+      });
+    }
+
+    vendor.kyc.documents.splice(documentIndex, 1);
+    await vendor.save();
+
+    logger.info(`KYC document deleted for vendor: ${vendor.storeName}`);
+
+    res.json({
+      success: true,
+      data: { message: 'Document deleted successfully' },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ---------- SETTINGS ENDPOINTS ----------
+
+// Get vendor settings
+async function getSettings(req, res, next) {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user._id })
+      .select('+bank.accountNumber +bank.routingNumber'); // Include sensitive fields for owner
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    res.json({ success: true, data: vendor });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Update store profile (name, description, logo)
+async function updateProfile(req, res, next) {
+  try {
+    const { storeName, description, logo } = req.body;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    // Update fields
+    if (storeName) {
+      vendor.storeName = storeName;
+      vendor.slug = slugify(storeName);
+    }
+    if (description !== undefined) vendor.description = description;
+    if (logo !== undefined) vendor.logo = logo;
+
+    await vendor.save();
+
+    logger.info(`Vendor profile updated: ${vendor.storeName}`);
+
+    res.json({
+      success: true,
+      data: vendor,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Update bank details
+async function updateBank(req, res, next) {
+  try {
+    const { accountHolderName, bankName, accountNumber, ifscCode, swiftCode } = req.body;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    // Update bank details
+    vendor.bank = vendor.bank || {};
+    if (accountHolderName !== undefined) vendor.bank.accountHolderName = accountHolderName;
+    if (bankName !== undefined) vendor.bank.bankName = bankName;
+    if (accountNumber !== undefined) {
+      vendor.bank.accountNumber = accountNumber;
+      // Store last 4 digits for display
+      vendor.bank.lastFourDigits = accountNumber.slice(-4);
+    }
+    if (ifscCode !== undefined) vendor.bank.ifscCode = ifscCode.toUpperCase();
+    if (swiftCode !== undefined) vendor.bank.swiftCode = swiftCode.toUpperCase();
+
+    await vendor.save();
+
+    logger.info(`Bank details updated for vendor: ${vendor.storeName}`);
+
+    res.json({
+      success: true,
+      data: { message: 'Bank details updated successfully' },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Update policies (return, shipping)
+async function updatePolicies(req, res, next) {
+  try {
+    const { returnPolicy, shippingPolicy } = req.body;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    // Update policies
+    if (returnPolicy !== undefined) vendor.returnPolicy = returnPolicy;
+    if (shippingPolicy !== undefined) vendor.shippingPolicy = shippingPolicy;
+
+    await vendor.save();
+
+    logger.info(`Policies updated for vendor: ${vendor.storeName}`);
+
+    res.json({
+      success: true,
+      data: vendor,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Update payout preferences
+async function updatePayout(req, res, next) {
+  try {
+    const { defaultCommissionPercentage } = req.body;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+      });
+    }
+
+    // Commission percentage can only be changed by admin
+    // This endpoint is here for future use but currently disabled
+    // if (defaultCommissionPercentage !== undefined) {
+    //   vendor.defaultCommissionPercentage = defaultCommissionPercentage;
+    // }
+
+    await vendor.save();
+
+    logger.info(`Payout preferences updated for vendor: ${vendor.storeName}`);
+
+    res.json({
+      success: true,
+      data: vendor,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Update order status
+async function updateOrderStatus(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const Order = require('../models/Order');
+
+    // Find order
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        },
+      });
+    }
+
+    // Verify vendor owns this order (check if any order items belong to this vendor)
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Vendor profile not found',
+        },
+      });
+    }
+
+    const hasVendorItems = order.items.some(
+      item => String(item.vendorId) === String(vendor._id)
+    );
+
+    if (!hasVendorItems && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'You are not authorized to update this order',
+        },
+      });
+    }
+
+    // Validate status
+    const validStatuses = ['placed', 'paid', 'packed', 'shipped', 'delivered', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_STATUS',
+          message: 'Invalid order status',
+        },
+      });
+    }
+
+    // Update status
+    order.status = status;
+
+    // For COD orders, mark payment as received when delivered
+    if (status === 'delivered' && order.payment.method === 'cod' && order.payment.status === 'cod') {
+      order.payment.status = 'paid';
+      order.events.push({
+        status: 'payment_received',
+        description: 'Cash on Delivery payment received',
+        timestamp: new Date(),
+      });
+    }
+
+    // Add event to order timeline
+    order.events.push({
+      status,
+      description: `Order status updated to ${status}`,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+
+    res.json({
+      success: true,
+      data: order,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// ---------- EXPORTS ----------
+module.exports = {
+  getVendorBySlug,
+  onboard,
+  getDashboardStats,
+  getVendorProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  importProducts,
+  getInventory,
+  updateInventory,
+  getVendorOrders,
+  updateOrderStatus,
+  getSettlements,
+  getKYC,
+  updateKYC,
+  uploadKYCDocument,
+  deleteKYCDocument,
+  // Settings
+  getSettings,
+  updateProfile,
+  updateBank,
+  updatePolicies,
+  updatePayout,
+};

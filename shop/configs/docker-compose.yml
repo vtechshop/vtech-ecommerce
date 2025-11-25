@@ -1,0 +1,90 @@
+# FILE: configs/docker-compose.yml
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: shop_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: shop
+    networks:
+      - shop_network
+
+  api:
+    build:
+      context: ..
+      dockerfile: configs/Dockerfile.api
+    container_name: shop_api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ../.env
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+      MONGO_URI: mongodb://mongo:27017/shop
+    depends_on:
+      - mongo
+    volumes:
+      - ../apps/api/src:/app/src
+      - api_node_modules:/app/node_modules
+      - uploads:/app/uploads
+    networks:
+      - shop_network
+    command: npm run dev
+
+  web:
+    build:
+      context: ..
+      dockerfile: configs/Dockerfile.web
+    container_name: shop_web
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    env_file:
+      - ../.env
+    environment:
+      VITE_API_URL: http://localhost:8080
+    depends_on:
+      - api
+    volumes:
+      - ../apps/web/src:/app/src
+      - ../apps/web/public:/app/public
+      - web_node_modules:/app/node_modules
+    networks:
+      - shop_network
+    command: npm run dev
+
+  nginx:
+    image: nginx:alpine
+    container_name: shop_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - web
+    networks:
+      - shop_network
+
+volumes:
+  mongo_data:
+    driver: local
+  api_node_modules:
+    driver: local
+  web_node_modules:
+    driver: local
+  uploads:
+    driver: local
+
+networks:
+  shop_network:
+    driver: bridge

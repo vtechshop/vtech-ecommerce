@@ -1,0 +1,22 @@
+{
+  "admin": {
+    "email": "admin@example.com",
+    "password": "Admin@123",
+    "role": "admin"
+  },
+  "vendor": {
+    "email": "vendor@example.com",
+    "password": "Vendor@123",
+    "role": "vendor"
+  },
+  "customer": {
+    "email": "customer@example.com",
+    "password": "Customer@123",
+    "role": "customer"
+  },
+  "affiliate": {
+    "email": "affiliate@example.com",
+    "password": "Affiliate@123",
+    "role": "affiliate"
+  }
+}

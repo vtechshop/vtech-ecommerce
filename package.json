@@ -1,0 +1,27 @@
+{
+  "name": "shop-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-vendor e-commerce platform",
+  "scripts": {
+    "dev:api": "cd apps/api && npm run dev",
+    "dev:web": "cd apps/web && npm run dev",
+    "build:web": "cd apps/web && npm run build",
+    "seed": "cd apps/api && npm run seed",
+    "test": "cd apps/api && npm test"
+  },
+  "keywords": [
+    "ecommerce",
+    "marketplace",
+    "multi-vendor"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "mongoose": "^8.19.1",
+    "morgan": "^1.10.1"
+  }
+}
