@@ -21,7 +21,7 @@
     "test:playwright:report": "playwright show-report"
   },
   "dependencies": {
-    "@reduxjs/toolkit": "^2.9.0",
+    "@reduxjs/toolkit": "^1.9.7",
     "@stripe/react-stripe-js": "^5.3.0",
     "@stripe/stripe-js": "^8.2.0",
     "@tanstack/react-query": "^5.90.3",
@@ -36,7 +36,7 @@
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.6.0",
     "react-player": "^3.3.3",
-    "react-redux": "^9.2.0",
+    "react-redux": "^8.1.3",
     "react-router-dom": "^6.30.1",
     "recharts": "^2.15.4",
     "web-vitals": "^5.1.0"
