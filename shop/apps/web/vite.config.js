@@ -52,41 +52,11 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        // Improved code splitting strategy
+        // Put ALL vendor dependencies in ONE chunk to avoid React instance issues
         manualChunks: (id) => {
-          // Core React libraries + Redux + Query (must be together to share React instance)
-          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') ||
-              id.includes('@reduxjs/toolkit') || id.includes('react-redux') ||
-              id.includes('@tanstack/react-query') || id.includes('react-hot-toast')) {
-            return 'vendor-react';
-          }
-          // Charts (heavy library)
-          if (id.includes('recharts')) {
-            return 'vendor-charts';
-          }
-          // Stripe
-          if (id.includes('@stripe')) {
-            return 'vendor-stripe';
-          }
-          // UI libraries
-          if (id.includes('lucide-react')) {
-            return 'vendor-icons';
-          }
-          // Other node_modules
           if (id.includes('node_modules')) {
-            return 'vendor-other';
+            return 'vendor';
           }
-        },
-        // Optimize asset file names
-        assetFileNames: (assetInfo) => {
-          const info = assetInfo.name.split('.');
-          let extType = info[info.length - 1];
-          if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(assetInfo.name)) {
-            extType = 'images';
-          } else if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
-            extType = 'fonts';
-          }
-          return `assets/${extType}/[name]-[hash][extname]`;
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
