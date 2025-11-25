@@ -1,18 +1,12 @@
 // FILE: apps/api/src/utils/jwt.js
 const jwt = require('jsonwebtoken');
+const env = require('../config/env');
 
-// SECURITY: Validate that JWT secrets are properly configured
-if (!process.env.ACCESS_TOKEN_SECRET || process.env.ACCESS_TOKEN_SECRET.length < 32) {
-  throw new Error('ACCESS_TOKEN_SECRET must be set and at least 32 characters long');
-}
-if (!process.env.REFRESH_TOKEN_SECRET || process.env.REFRESH_TOKEN_SECRET.length < 32) {
-  throw new Error('REFRESH_TOKEN_SECRET must be set and at least 32 characters long');
-}
-
-const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET;
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
-const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '15m';
-const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d'; // 1 month
+// Use centralized config which validates secrets
+const ACCESS_TOKEN_SECRET = env.JWT_ACCESS_SECRET;
+const REFRESH_TOKEN_SECRET = env.JWT_REFRESH_SECRET;
+const ACCESS_TOKEN_EXPIRES_IN = env.JWT_ACCESS_TTL;
+const REFRESH_TOKEN_EXPIRES_IN = env.JWT_REFRESH_TTL;
 
 // SECURITY: Whitelist of allowed roles
 const ALLOWED_ROLES = ['guest', 'customer', 'vendor', 'affiliate', 'support', 'admin'];

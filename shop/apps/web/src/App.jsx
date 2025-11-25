@@ -43,8 +43,6 @@ const VendorStore = lazy(() => import('./assets/pages/VendorStore'));
 const Blog = lazy(() => import('./assets/pages/Blog'));
 const BlogPostDetail = lazy(() => import('./assets/pages/BlogPost'));
 const Page = lazy(() => import('./assets/pages/cms/Page'));
-const TestLogin = lazy(() => import('./assets/pages/TestLogin'));
-const TestUpload = lazy(() => import('./assets/pages/TestUpload'));
 
 // Lazy load info pages
 const TrackOrder = lazy(() => import('./assets/pages/info/TrackOrder'));
@@ -232,8 +230,6 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/test-login" element={<TestLogin />} />
-          <Route path="/test-upload" element={<TestUpload />} />
 
           {/* Checkout (can be guest or logged in) */}
           <Route path="/checkout" element={<Checkout />} />

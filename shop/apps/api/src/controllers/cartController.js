@@ -1,5 +1,6 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const Coupon = require('../models/Coupon');
 
 // Helper function to get or create guest ID
 const getOrCreateGuestId = (req, res) => {
@@ -303,7 +304,6 @@ exports.applyCoupon = async (req, res, next) => {
       });
     }
 
-    const Coupon = require('../models/Coupon');
     const coupon = await Coupon.findOne({ code: code.toUpperCase(), isActive: true });
 
     if (!coupon) {
@@ -329,7 +329,6 @@ exports.applyCoupon = async (req, res, next) => {
     }
 
     // Check usage limit and increment atomically to prevent race condition
-    const Coupon = require('../models/Coupon');
     const updatedCoupon = await Coupon.findOneAndUpdate(
       {
         code: code.toUpperCase(),
@@ -361,7 +360,7 @@ exports.applyCoupon = async (req, res, next) => {
         success: false,
         error: { code: 'COUPON_EXHAUSTED', message: 'Coupon usage limit reached' },
       });
-    }
+    }*/
 
     // Check min order value
     if (coupon.minOrderValue && cart.totals.subtotal < coupon.minOrderValue) {
