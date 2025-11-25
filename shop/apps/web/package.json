@@ -9,6 +9,10 @@
     "preview": "vite preview --port 5173",
     "lint": "eslint ."
   },
+  "overrides": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
   "dependencies": {
     "@reduxjs/toolkit": "^1.9.7",
     "@stripe/react-stripe-js": "^2.4.0",

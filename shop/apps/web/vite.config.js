@@ -9,9 +9,15 @@ export default defineConfig({
     alias: {
       // ✅ Alias @ -> src/assets (matches your codebase)
       '@': path.resolve(__dirname, './src/assets'),
+      // Force single React instance
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
     },
     // Fix for useSyncExternalStore error - ensure single React instance
-    dedupe: ['react', 'react-dom', 'react-redux', '@reduxjs/toolkit'],
+    dedupe: ['react', 'react-dom', 'react-redux', '@reduxjs/toolkit', '@tanstack/react-query'],
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-redux', '@reduxjs/toolkit', '@tanstack/react-query'],
   },
   server: {
     host: '0.0.0.0',
@@ -44,14 +50,11 @@ export default defineConfig({
       output: {
         // Improved code splitting strategy
         manualChunks: (id) => {
-          // Core React libraries + Redux (must be together to share React instance)
+          // Core React libraries + Redux + Query (must be together to share React instance)
           if (id.includes('react') || id.includes('react-dom') || id.includes('react-router') ||
-              id.includes('@reduxjs/toolkit') || id.includes('react-redux')) {
+              id.includes('@reduxjs/toolkit') || id.includes('react-redux') ||
+              id.includes('@tanstack/react-query') || id.includes('react-hot-toast')) {
             return 'vendor-react';
-          }
-          // Data fetching
-          if (id.includes('@tanstack/react-query')) {
-            return 'vendor-query';
           }
           // Charts (heavy library)
           if (id.includes('recharts')) {
