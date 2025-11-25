@@ -37,6 +37,7 @@ app.use(helmet({
 const allowedOrigins = [
   'http://localhost:5173',                    // Local development
   'http://localhost:3000',                    // Alternative local port
+  'https://vtech-ecommerce.vercel.app',       // Vercel production
   'https://loquacious-sfogliatella-745014.netlify.app',  // Netlify production
 ];
 
