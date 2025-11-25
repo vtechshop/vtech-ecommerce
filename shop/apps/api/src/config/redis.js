@@ -1,67 +1,47 @@
-const Redis = require('ioredis');
 const logger = require('./logger');
 
 let redisClient = null;
 
 const connectRedis = async () => {
+  // Skip Redis if not configured or explicitly disabled
+  if (!process.env.REDIS_HOST || !process.env.REDIS_PASSWORD) {
+    logger.info('Redis not configured - running without caching');
+    return null;
+  }
+
   try {
+    const Redis = require('ioredis');
     const config = {
-      host: process.env.REDIS_HOST || 'localhost',
+      host: process.env.REDIS_HOST,
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      password: process.env.REDIS_PASSWORD,
       db: parseInt(process.env.REDIS_DB || '0', 10),
       maxRetriesPerRequest: 3,
       retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
+        if (times > 3) return null; // Stop retrying after 3 attempts
+        return Math.min(times * 100, 2000);
       },
-      reconnectOnError: (err) => {
-        const targetError = 'READONLY';
-        if (err.message.includes(targetError)) {
-          return true;
-        }
-        return false;
-      },
+      lazyConnect: true,
     };
 
-    if (process.env.REDIS_PASSWORD) {
-      config.password = process.env.REDIS_PASSWORD;
-    }
-
-    // Enable TLS for Upstash Redis (production cloud Redis)
-    const isUpstashRedis = process.env.REDIS_HOST && process.env.REDIS_HOST.includes('upstash.io');
-    if (isUpstashRedis) {
-      config.tls = {
-        rejectUnauthorized: false, // Upstash uses valid certificates
-      };
-      logger.info('🔒 TLS enabled for Upstash Redis');
+    // Enable TLS for Upstash Redis
+    if (process.env.REDIS_HOST.includes('upstash.io')) {
+      config.tls = { rejectUnauthorized: false };
     }
 
     redisClient = new Redis(config);
 
-    redisClient.on('connect', () => {
-      logger.info('Redis connected successfully');
-    });
+    redisClient.on('connect', () => logger.info('Redis connected'));
+    redisClient.on('error', () => {}); // Suppress error logs
+    redisClient.on('ready', () => logger.info('Redis ready'));
 
-    redisClient.on('error', (err) => {
-      logger.error('Redis connection error:', err);
-    });
-
-    redisClient.on('ready', () => {
-      logger.info('Redis is ready to accept commands');
-    });
-
-    redisClient.on('reconnecting', () => {
-      logger.warn('Redis reconnecting...');
-    });
-
+    await redisClient.connect();
     await redisClient.ping();
     logger.info('Redis ping successful');
 
     return redisClient;
   } catch (error) {
-    logger.error('Redis initialization error:', error);
-    // Make Redis optional - app can run without it (with degraded caching)
-    logger.warn('Continuing without Redis - caching disabled');
+    logger.warn('Redis unavailable - running without caching');
     redisClient = null;
     return null;
   }
