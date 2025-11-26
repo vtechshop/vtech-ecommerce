@@ -94,9 +94,7 @@ const ProductGrid = React.memo(({
           <CustomSelect
             value={sortBy}
             onChange={useCallback((value) => {
-              // This would typically call a parent callback
-              // For now, we'll just log it
-              console.log('Sort changed to:', value);
+              // Sort functionality handled by parent component via onSortChange prop
             }, [])}
             options={[
               { value: 'newest', label: 'Newest' },

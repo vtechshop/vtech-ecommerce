@@ -169,9 +169,7 @@ const Product = () => {
   const { data: product, isLoading, error: productError, refetch } = useQuery({
     queryKey: ['product', slug],
     queryFn: async () => {
-      console.log('[Product] Fetching product with slug:', slug);
       const response = await api.get(`/catalog/products/${slug}`);
-      console.log('[Product] API response:', response.data);
       return response.data.data;
     },
     retry: 2,

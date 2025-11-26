@@ -34,8 +34,6 @@ const useSponsorAds = (placement, options = {}) => {
       setLoading(true);
       setError(null);
 
-      console.log(`[useSponsorAds] Fetching ads for placement: ${placement}`);
-
       const response = await api.get('/ads/sponsored', {
         params: {
           placement,
@@ -47,29 +45,19 @@ const useSponsorAds = (placement, options = {}) => {
       if (response.data.success && response.data.data?.ads?.length > 0) {
         const fetchedAds = response.data.data.ads;
         setAds(fetchedAds);
-        console.log(`[useSponsorAds] Loaded ${fetchedAds.length} ad(s) for ${placement}`);
 
-        // Track impressions for all ads
+        // Track impressions for all ads (silently)
         if (trackImpression) {
           fetchedAds.forEach(ad => {
             if (ad._id) {
-              api.post(`/ads/${ad._id}/impression`, {
-                placement
-              }).catch(err =>
-                console.warn(`[useSponsorAds] Failed to track impression for ad ${ad._id}:`, err.message)
-              );
+              api.post(`/ads/${ad._id}/impression`, { placement }).catch(() => {});
             }
           });
         }
       } else {
-        console.log(`[useSponsorAds] No ads available for ${placement}`);
         setAds([]);
       }
     } catch (err) {
-      console.error(`[useSponsorAds] Failed to fetch ads for ${placement}:`, {
-        message: err.message,
-        status: err.response?.status
-      });
       setError(err);
       setAds([]);
     } finally {

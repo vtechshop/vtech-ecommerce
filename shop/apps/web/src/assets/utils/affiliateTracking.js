@@ -20,8 +20,6 @@ export const captureAffiliateFromURL = (searchParams) => {
     // Store affiliate code in cookie for 30 days
     const maxAge = 30 * 24 * 60 * 60; // 30 days in seconds
     document.cookie = `affiliate=${affiliateCode}; max-age=${maxAge}; path=/; SameSite=Lax`;
-
-    console.log(`[Affiliate Tracking] Captured affiliate code: ${affiliateCode}`);
     return affiliateCode;
   }
 
@@ -51,5 +49,4 @@ export const getAffiliateCode = () => {
  */
 export const clearAffiliateCode = () => {
   document.cookie = 'affiliate=; max-age=0; path=/';
-  console.log('[Affiliate Tracking] Cleared affiliate code');
 };

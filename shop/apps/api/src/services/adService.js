@@ -56,13 +56,17 @@ class AdService {
     const allCreatives = creativesArrays.flat();
 
     // Run auction: rank by bid × quality score
-    const rankedCreatives = allCreatives.map((creative) => {
-      const campaign = eligibleCampaigns.find(
-        (c) => c._id.toString() === creative.campaignId.toString()
-      );
-      const score = campaign.bid * creative.qualityScore;
-      return { ...creative, campaign, auctionScore: score };
-    });
+    const rankedCreatives = allCreatives
+      .map((creative) => {
+        const campaign = eligibleCampaigns.find(
+          (c) => c._id.toString() === creative.campaignId.toString()
+        );
+        // Skip if campaign not found (shouldn't happen but be safe)
+        if (!campaign) return null;
+        const score = campaign.bid * creative.qualityScore;
+        return { ...creative, campaign, auctionScore: score };
+      })
+      .filter(Boolean); // Remove nulls
 
     rankedCreatives.sort((a, b) => b.auctionScore - a.auctionScore);
 
@@ -78,9 +82,9 @@ class AdService {
 
     // Check daily budget
     const today = new Date().toISOString().split('T')[0];
-    const dailySpendDate = campaign.dailySpend.date?.toISOString().split('T')[0];
+    const dailySpendDate = campaign.dailySpend?.date?.toISOString().split('T')[0];
 
-    if (dailySpendDate === today && campaign.dailySpend.amount >= campaign.dailyBudget) {
+    if (dailySpendDate === today && (campaign.dailySpend?.amount || 0) >= campaign.dailyBudget) {
       return false;
     }
 

@@ -12,6 +12,7 @@ import AdBanner from '@/components/common/AdBanner';
 import { formatCurrency } from '@/utils/format';
 import { trackBeginCheckout } from '@/utils/analytics';
 import { COUNTRIES, DEFAULT_COUNTRY, getStatesForCountry } from '@/utils/locationData';
+import { useToast } from '@/components/common/ToastContainer';
 
 const CARD_ELEMENT_OPTIONS = {
   style: {
@@ -31,6 +32,7 @@ const CARD_ELEMENT_OPTIONS = {
 const Checkout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const toast = useToast();
   const { items, totals } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
 
@@ -115,7 +117,7 @@ const Checkout = () => {
       const errorMessage = error.response?.data?.error?.message || 'Failed to create order';
 
       // Show error to user
-      alert(`Order failed: ${errorMessage}`);
+      toast.error(`Order failed: ${errorMessage}`);
 
       // If user is not authenticated, redirect to login
       if (error.response?.status === 401) {
