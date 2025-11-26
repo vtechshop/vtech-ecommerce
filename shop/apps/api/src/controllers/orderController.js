@@ -332,38 +332,72 @@ exports.createOrder = async (req, res, next) => {
 
       logger.info(`Vendor order created: ${vendorOrder.orderId} for vendor ${vendorIdStr}`);
 
-        // ===== DEDUCT STOCK FOR THIS VENDOR'S ITEMS =====
+        // ===== DEDUCT STOCK FOR THIS VENDOR'S ITEMS (ATOMIC) =====
         for (const item of vendorItems) {
-          const product = await Product.findById(item.productId).session(session);
-
-          // Critical: Check if product still exists
-          if (!product) {
-            throw new Error(`Product ${item.productId} not found during order processing`);
-          }
+          let updateResult;
 
           if (item.variantId) {
-            const variant = product.variants.id(item.variantId);
-            // Critical: Check if variant still exists
-            if (!variant) {
-              throw new Error(`Variant ${item.variantId} not found for product ${item.productId}`);
-            }
-            variant.stock -= item.qty;
+            // Atomic update for variant stock - ensures no overselling
+            updateResult = await Product.findOneAndUpdate(
+              {
+                _id: item.productId,
+                'variants._id': item.variantId,
+                'variants.stock': { $gte: item.qty } // Only update if enough stock
+              },
+              {
+                $inc: {
+                  'variants.$.stock': -item.qty,
+                  soldCount: item.qty
+                }
+              },
+              { session, new: true }
+            );
           } else {
-            product.stock -= item.qty;
+            // Atomic update for main product stock - ensures no overselling
+            updateResult = await Product.findOneAndUpdate(
+              {
+                _id: item.productId,
+                stock: { $gte: item.qty } // Only update if enough stock
+              },
+              {
+                $inc: {
+                  stock: -item.qty,
+                  soldCount: item.qty
+                }
+              },
+              { session, new: true }
+            );
           }
-          product.soldCount += item.qty;
-          await product.save({ session });
+
+          // If update failed, stock was insufficient (race condition prevented)
+          if (!updateResult) {
+            throw new Error(`Insufficient stock for product ${item.name}. Please refresh and try again.`);
+          }
         }
 
-      // ===== CREATE COMMISSIONS FOR THIS VENDOR ORDER =====
+      // ===== CREATE COMMISSIONS FOR THIS VENDOR ORDER (BATCH OPTIMIZED) =====
+      const Vendor = require('../models/Vendor');
+
+      // Batch fetch vendor and products to avoid N+1 queries
+      const productIds = vendorItems.map(item => item.productId);
+      const [vendor, products] = await Promise.all([
+        Vendor.findById(vendorIdStr),
+        Product.find({ _id: { $in: productIds } }).populate('categoryIds')
+      ]);
+
+      if (!vendor) continue;
+
+      // Create a map for quick product lookup
+      const productMap = new Map(products.map(p => [p._id.toString(), p]));
+
+      // Collect all commissions to create in batch
+      const commissionsToCreate = [];
+
       for (const item of vendorItems) {
-        const Vendor = require('../models/Vendor');
-        const vendor = await Vendor.findById(item.vendorId);
-        const product = await Product.findById(item.productId).populate('categoryIds');
+        const product = productMap.get(item.productId.toString());
+        if (!product) continue;
 
-        if (!vendor || !product) continue;
-
-        // Commission calculation logic (same as before)
+        // Commission calculation logic
         let commissionPercentage = null;
 
         if (product.vendorCommissionPercentage !== undefined && product.vendorCommissionPercentage !== null) {
@@ -396,19 +430,24 @@ exports.createOrder = async (req, res, next) => {
           commissionPercentage = vendor.defaultCommissionPercentage || 15;
         }
 
-          const commissionAmount = (item.priceSnapshot * item.qty * commissionPercentage) / 100;
+        const commissionAmount = (item.priceSnapshot * item.qty * commissionPercentage) / 100;
 
-          await Commission.create([{
-            type: 'vendor',
-            subjectId: item.vendorId,
-            subjectModel: 'Vendor',
-            orderId: vendorOrder._id, // Link to vendor order, not parent
-            orderItemId: item._id,
-            amount: commissionAmount,
-            percentage: commissionPercentage,
-            status: 'pending',
-          }], { session });
-        }
+        commissionsToCreate.push({
+          type: 'vendor',
+          subjectId: item.vendorId,
+          subjectModel: 'Vendor',
+          orderId: vendorOrder._id,
+          orderItemId: item._id,
+          amount: commissionAmount,
+          percentage: commissionPercentage,
+          status: 'pending',
+        });
+      }
+
+      // Batch create all commissions for this vendor
+      if (commissionsToCreate.length > 0) {
+        await Commission.create(commissionsToCreate, { session });
+      }
       }
 
     // ===== AFFILIATE TRACKING (track once for entire purchase) =====

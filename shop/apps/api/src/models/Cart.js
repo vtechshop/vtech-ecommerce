@@ -85,4 +85,10 @@ cartSchema.methods.calculateTotals = function() {
   return this.totals;
 };
 
+// Auto-calculate totals before saving
+cartSchema.pre('save', function(next) {
+  this.calculateTotals();
+  next();
+});
+
 module.exports = mongoose.model('Cart', cartSchema);

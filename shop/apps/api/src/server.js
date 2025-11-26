@@ -6,21 +6,18 @@ dotenv.config();
 
 const { connectDB } = require('./config/db');
 const { connectRedis, disconnectRedis } = require('./config/redis');
+const logger = require('./config/logger');
 const app = require('./app');
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION! Shutting down...');
-  console.error(err.name, err.message);
-  console.error(err.stack);
+  logger.error('UNCAUGHT EXCEPTION! Shutting down...', { name: err.name, message: err.message, stack: err.stack });
   process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('UNHANDLED REJECTION! Shutting down...');
-  console.error(err.name, err.message);
-  console.error(err.stack);
+  logger.error('UNHANDLED REJECTION! Shutting down...', { name: err.name, message: err.message, stack: err.stack });
   process.exit(1);
 });
 
@@ -33,11 +30,11 @@ process.on('unhandledRejection', (err) => {
     await connectRedis();
 
     const PORT = Number(process.env.PORT) || 3000;
-    const server = app.listen(PORT, () => console.log(`🚀 API listening on http://localhost:${PORT}`));
+    const server = app.listen(PORT, () => logger.info(`API listening on port ${PORT}`));
 
     // Graceful shutdown
     process.on('SIGTERM', async () => {
-      console.log('SIGTERM received, shutting down gracefully');
+      logger.info('SIGTERM received, shutting down gracefully');
       server.close(async () => {
         await disconnectRedis();
         process.exit(0);
@@ -45,18 +42,14 @@ process.on('unhandledRejection', (err) => {
     });
 
     process.on('SIGINT', async () => {
-      console.log('SIGINT received, shutting down gracefully');
+      logger.info('SIGINT received, shutting down gracefully');
       server.close(async () => {
         await disconnectRedis();
         process.exit(0);
       });
     });
   } catch (err) {
-    console.error('❌ Startup error:', err.message);
+    logger.error('Startup error', { message: err.message, stack: err.stack });
     process.exit(1);
   }
 })();
-// Restart trigger
-
-
-// restart

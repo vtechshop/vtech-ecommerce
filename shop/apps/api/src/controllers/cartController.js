@@ -114,8 +114,7 @@ exports.addItem = async (req, res, next) => {
     );
 
     if (updatedCart) {
-      // Item existed and was updated
-      updatedCart.calculateTotals();
+      // Item existed and was updated - save triggers pre-save hook for totals
       await updatedCart.save();
       await updatedCart.populate('items.productId');
       cart = updatedCart;
@@ -139,7 +138,7 @@ exports.addItem = async (req, res, next) => {
         { new: true, upsert: true }
       );
 
-      cart.calculateTotals();
+      // Save triggers pre-save hook for totals calculation
       await cart.save();
       await cart.populate('items.productId');
     }
@@ -227,8 +226,7 @@ exports.updateItem = async (req, res, next) => {
     }
 
     item.qty = quantity;
-    cart.calculateTotals();
-    await cart.save();
+    await cart.save(); // Pre-save hook calculates totals
     await cart.populate('items.productId');
 
     res.json({
@@ -262,8 +260,7 @@ exports.removeItem = async (req, res, next) => {
     }
 
     cart.items.pull(itemId);
-    cart.calculateTotals();
-    await cart.save();
+    await cart.save(); // Pre-save hook calculates totals
     await cart.populate('items.productId');
 
     res.json({
@@ -394,8 +391,7 @@ exports.applyCoupon = async (req, res, next) => {
       discount,
       type: coupon.type,
     });
-    cart.calculateTotals();
-    await cart.save();
+    await cart.save(); // Pre-save hook calculates totals
 
     // Usage count already incremented atomically above - no need to save again
 
@@ -427,8 +423,7 @@ exports.removeCoupon = async (req, res, next) => {
     }
 
     cart.coupons = cart.coupons.filter(c => c.code !== code.toUpperCase());
-    cart.calculateTotals();
-    await cart.save();
+    await cart.save(); // Pre-save hook calculates totals
     await cart.populate('items.productId');
 
     res.json({
