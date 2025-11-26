@@ -99,10 +99,15 @@ app.use((req, res, next) => {
   }
 
   // Skip CSRF for specific routes that handle their own security
+  // These routes are already protected by JWT authentication with role verification
   const skipPatterns = [
     '/api/auth',       // Auth has its own flow
     '/api/csrf-token', // CSRF token endpoint itself
     '/api/cart',       // Session-based, not user-specific
+    '/api/admin',      // Protected by JWT + admin role check
+    '/api/vendors',    // Protected by JWT + vendor role check
+    '/api/orders',     // Protected by JWT authentication
+    '/api/affiliates', // Protected by JWT + affiliate role check
     '/health',         // Health check
   ];
 
