@@ -37,14 +37,20 @@ const Category = () => {
   // Ads (still points to backend if available)
   useEffect(() => {
     if (!category) return;
+
+    // Create abort controller for cleanup
+    const abortController = new AbortController();
+    let isMounted = true;
+
     const fetchAds = async () => {
       try {
         const response = await api.post('/ads/auction', {
           placement: 'category_page',
           categories: [category.slug],
           limit: 4,
-        });
-        if (response.data.data?.ads) {
+        }, { signal: abortController.signal });
+
+        if (isMounted && response.data.data?.ads) {
           setSponsoredAds(response.data.data.ads);
           response.data.data.ads.forEach((ad) => {
             api.post('/ads/events', {
@@ -56,10 +62,19 @@ const Category = () => {
           });
         }
       } catch (err) {
-        console.error('Failed to fetch ads:', err);
+        // Ignore abort errors, only log other errors in development
+        if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+          // Silent fail in production
+        }
       }
     };
     fetchAds();
+
+    // Cleanup function to prevent memory leaks
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, [category, page]);
 
   // SEO

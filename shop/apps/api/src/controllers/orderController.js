@@ -8,6 +8,7 @@ const AdEvent = require('../models/AdEvent');
 const { generateOrderId } = require('../utils/helpers');
 const { getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
+const env = require('../config/env');
 const paymentService = require('../services/paymentService');
 const warrantyService = require('../services/warrantyService');
 const notificationService = require('../services/notificationService');
@@ -104,9 +105,10 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Validate email format for guest checkout
+    // Validate email format for guest checkout (stricter regex)
     if (isGuest && guestEmail) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      // More comprehensive email regex - requires at least 2 chars in TLD
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(guestEmail)) {
         return res.status(400).json({
           success: false,
@@ -129,9 +131,9 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Security: Validate quantity limits per item
-    const MAX_QTY_PER_ITEM = 100;
-    const MAX_ITEMS_PER_ORDER = 50;
+    // Security: Validate quantity limits per item (from config)
+    const MAX_QTY_PER_ITEM = env.MAX_QTY_PER_ITEM;
+    const MAX_ITEMS_PER_ORDER = env.MAX_ITEMS_PER_ORDER;
 
     if (items.length > MAX_ITEMS_PER_ORDER) {
       return res.status(400).json({
@@ -244,8 +246,8 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    const tax = subtotal * 0.1; // 10% tax
-    const shipping = 5.99; // Mock shipping
+    const tax = subtotal * env.DEFAULT_TAX_RATE; // Configurable tax rate
+    const shipping = env.DEFAULT_SHIPPING_COST; // Configurable shipping cost
     const discount = 0;
     const total = subtotal + tax + shipping - discount;
 

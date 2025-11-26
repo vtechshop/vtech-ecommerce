@@ -55,6 +55,12 @@ module.exports = {
   
   AD_CLICK_SESSION_TTL_MIN: parseInt(process.env.AD_CLICK_SESSION_TTL_MIN) || 30,
   AD_BUDGET_MIN: parseFloat(process.env.AD_BUDGET_MIN) || 100,
-  
+
   AFFILIATE_WINDOW_DAYS: parseInt(process.env.AFFILIATE_WINDOW_DAYS) || 30,
+
+  // Order settings (configurable)
+  DEFAULT_TAX_RATE: parseFloat(process.env.DEFAULT_TAX_RATE) || 0.10, // 10% default
+  DEFAULT_SHIPPING_COST: parseFloat(process.env.DEFAULT_SHIPPING_COST) || 5.99,
+  MAX_QTY_PER_ITEM: parseInt(process.env.MAX_QTY_PER_ITEM) || 100,
+  MAX_ITEMS_PER_ORDER: parseInt(process.env.MAX_ITEMS_PER_ORDER) || 50,
 };
