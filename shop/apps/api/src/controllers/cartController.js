@@ -6,16 +6,21 @@ const Coupon = require('../models/Coupon');
 const getOrCreateGuestId = (req, res) => {
   let guestId = req.cookies.guestId || req.sessionID;
 
+  const isProduction = process.env.NODE_ENV === 'production';
+
   if (!guestId) {
     // Generate a new guest ID using timestamp + random string
     guestId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    // Set cookie for 30 days
-    res.cookie('guestId', guestId, {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: 'lax',
-    });
   }
+
+  // Always set/refresh the cookie to ensure it persists
+  // In production with cross-origin, need sameSite: 'none' and secure: true
+  res.cookie('guestId', guestId, {
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    httpOnly: true,
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction, // Required for sameSite: 'none'
+  });
 
   return guestId;
 };

@@ -125,10 +125,6 @@ const cartSlice = createSlice({
       state.loading = false;
       state.items = action.payload.items ?? [];
       state.totals = { ...emptyCart.totals, ...(action.payload.totals || {}) };
-      console.log('[CartSlice] State updated:', {
-        itemCount: state.items.length,
-        items: state.items.map(i => ({ productId: i.productId?._id || i.productId, qty: i.qty }))
-      });
     };
     const rejected = (state, action) => {
       state.loading = false;
