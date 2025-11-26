@@ -1,18 +1,28 @@
 // FILE: apps/web/src/components/layout/DashboardLayout.jsx
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import useAuth from '@/hooks/useAuth';
 import useNotifications from '@/hooks/useNotifications';
 import NotificationBadge from '@/components/common/NotificationBadge';
 import Header from './Header';
 import { useToast } from '@/components/common/ToastContainer';
+import { refreshUser } from '@/store/slices/authSlice';
 
 const DashboardLayout = () => {
   const location = useLocation();
+  const dispatch = useDispatch();
   const { user, isVendor, isAffiliate, isSupport, isAdmin } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { counts } = useNotifications();
   const toast = useToast();
+
+  // Refresh user data on mount to get latest profile (e.g., KYC status updates)
+  useEffect(() => {
+    if (isVendor || isAffiliate) {
+      dispatch(refreshUser());
+    }
+  }, [dispatch, isVendor, isAffiliate]);
 
   const getNavItems = () => {
     if (isAdmin) {

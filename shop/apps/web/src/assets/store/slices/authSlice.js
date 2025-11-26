@@ -87,6 +87,19 @@ export const logout = createAsyncThunk(
   }
 );
 
+// Refresh user profile data (useful after KYC approval, profile updates, etc.)
+export const refreshUser = createAsyncThunk(
+  'auth/refreshUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get('/auth/me');
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.error?.message || 'Failed to refresh user data');
+    }
+  }
+);
+
 const slice = createSlice({
   name: 'auth',
   initialState,
@@ -147,7 +160,14 @@ const slice = createSlice({
        s.accessToken = null;
        s.isAuthenticated = false;
        s.error = null;
-     });
+     })
+
+     .addCase(refreshUser.pending, (s) => { s.loading = true; })
+     .addCase(refreshUser.fulfilled, (s, a) => {
+       s.loading = false;
+       s.user = a.payload;
+     })
+     .addCase(refreshUser.rejected, (s) => { s.loading = false; });
   },
 });
 
