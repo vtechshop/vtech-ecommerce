@@ -25,18 +25,25 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// CSRF Protection - Disabled
-// JWT token authentication provides sufficient CSRF protection
-// when tokens are sent via Authorization headers
+// CSRF Protection (Production Only)
 let csrfToken = null;
 
 /**
- * Initialize CSRF protection - Currently disabled
- * JWT authentication provides CSRF protection via Authorization headers
+ * Initialize CSRF protection by fetching token from server
+ * Only active in production mode
  */
 export const initCsrfProtection = async () => {
-  // CSRF disabled - JWT provides protection
-  return;
+  // Only enable CSRF in production
+  if (import.meta.env.MODE !== 'production') {
+    return;
+  }
+
+  try {
+    const response = await api.get('/csrf-token');
+    csrfToken = response.data.data.csrfToken;
+  } catch (error) {
+    // Silently fail - CSRF token will be fetched on retry if needed
+  }
 };
 
 // Attach access token from cookie to every request
@@ -44,7 +51,15 @@ api.interceptors.request.use((config) => {
   const token = Cookies.get('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
-  // CSRF disabled - JWT authentication provides protection
+  // Add CSRF token to non-GET requests in production
+  if (import.meta.env.MODE === 'production') {
+    const method = config.method?.toUpperCase();
+    if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+      if (csrfToken) {
+        config.headers['X-CSRF-Token'] = csrfToken;
+      }
+    }
+  }
 
   // Let axios set the correct Content-Type for FormData automatically
   if (config.data instanceof FormData) {
@@ -64,7 +79,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // CSRF handling removed - JWT authentication provides protection
+    // Handle CSRF token errors (403 with CSRF error code)
+    if (error.response?.status === 403 &&
+        error.response?.data?.error?.code === 'CSRF_VALIDATION_FAILED' &&
+        import.meta.env.MODE === 'production' &&
+        !originalRequest._csrfRetry) {
+      originalRequest._csrfRetry = true;
+      await initCsrfProtection();
+      // Retry the request with new token
+      return api.request(originalRequest);
+    }
 
     // Don't try to refresh on login/register/refresh endpoints
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
