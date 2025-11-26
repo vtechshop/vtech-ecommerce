@@ -91,13 +91,16 @@ exports.addItem = async (req, res, next) => {
       cart = new Cart(query);
     }
 
+    // Normalize variantId to prevent null vs undefined mismatch
+    const normalizedVariantId = variantId === undefined ? null : variantId;
+
     // Use atomic operations to prevent race conditions
     // Try to increment existing item first
     const updatedCart = await Cart.findOneAndUpdate(
       {
         ...query,
         'items.productId': productId,
-        'items.variantId': variantId || null,
+        'items.variantId': normalizedVariantId,
       },
       {
         $inc: { 'items.$.qty': quantity },
@@ -120,7 +123,7 @@ exports.addItem = async (req, res, next) => {
             items: {
               productId: productId,
               qty: quantity,
-              variantId: variantId || null,
+              variantId: normalizedVariantId,
               priceSnapshot: product.price,
               name: product.title,
               image: product.images?.[0] || null,

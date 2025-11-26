@@ -81,7 +81,19 @@ function getCsrfToken(req, res) {
     });
   } catch (error) {
     logger.error('Failed to generate CSRF token:', error);
-    // Return a dummy token for development
+
+    // In production, return error - don't expose dummy tokens
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: 'CSRF_GENERATION_FAILED',
+          message: 'Failed to generate security token. Please try again.',
+        },
+      });
+    }
+
+    // Only return dummy token in development
     res.json({
       success: true,
       data: { csrfToken: 'development-csrf-token' },

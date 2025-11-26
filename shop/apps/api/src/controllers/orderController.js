@@ -180,6 +180,18 @@ exports.createOrder = async (req, res, next) => {
       }
 
       const variant = item.variantId ? product.variants.id(item.variantId) : null;
+
+      // Validate variant exists if variantId was provided
+      if (item.variantId && !variant) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'VARIANT_NOT_FOUND',
+            message: `Variant ${item.variantId} not found for product ${product.title}`,
+          },
+        });
+      }
+
       const stock = variant ? variant.stock : product.stock;
 
       if (stock < item.qty) {
@@ -321,8 +333,18 @@ exports.createOrder = async (req, res, next) => {
         // ===== DEDUCT STOCK FOR THIS VENDOR'S ITEMS =====
         for (const item of vendorItems) {
           const product = await Product.findById(item.productId).session(session);
+
+          // Critical: Check if product still exists
+          if (!product) {
+            throw new Error(`Product ${item.productId} not found during order processing`);
+          }
+
           if (item.variantId) {
             const variant = product.variants.id(item.variantId);
+            // Critical: Check if variant still exists
+            if (!variant) {
+              throw new Error(`Variant ${item.variantId} not found for product ${item.productId}`);
+            }
             variant.stock -= item.qty;
           } else {
             product.stock -= item.qty;

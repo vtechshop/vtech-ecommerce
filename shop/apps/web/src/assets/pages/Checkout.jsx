@@ -133,11 +133,59 @@ const Checkout = () => {
     navigate('/login?redirect=/checkout');
   };
 
+  // Validation errors state
+  const [addressErrors, setAddressErrors] = useState({});
+
+  const validateAddress = () => {
+    const errors = {};
+
+    if (!newAddress.fullName?.trim()) {
+      errors.fullName = 'Full name is required';
+    }
+
+    if (!newAddress.phone?.trim()) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[0-9+\-\s()]{10,15}$/.test(newAddress.phone.trim())) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    if (checkoutMode === 'guest') {
+      if (!newAddress.email?.trim()) {
+        errors.email = 'Email is required for guest checkout';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(newAddress.email.trim())) {
+        errors.email = 'Please enter a valid email address';
+      }
+    }
+
+    if (!newAddress.addressLine1?.trim()) {
+      errors.addressLine1 = 'Address is required';
+    }
+
+    if (!newAddress.city?.trim()) {
+      errors.city = 'City is required';
+    }
+
+    if (!newAddress.state?.trim()) {
+      errors.state = 'State is required';
+    }
+
+    if (!newAddress.zipCode?.trim()) {
+      errors.zipCode = 'ZIP/Postal code is required';
+    } else if (!/^[0-9A-Za-z\s-]{4,10}$/.test(newAddress.zipCode.trim())) {
+      errors.zipCode = 'Please enter a valid ZIP/Postal code';
+    }
+
+    return errors;
+  };
+
   const handleAddressSubmit = (e) => {
     e.preventDefault();
 
-    // For guest checkout, validate email
-    if (checkoutMode === 'guest' && !newAddress.email) {
+    // Validate all fields
+    const errors = validateAddress();
+    setAddressErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
       return;
     }
 

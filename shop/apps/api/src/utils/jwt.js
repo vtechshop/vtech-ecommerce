@@ -28,11 +28,25 @@ function generateRefreshToken(userId, role) {
 }
 
 function verifyAccessToken(token) {
-  return jwt.verify(token, ACCESS_TOKEN_SECRET);
+  const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
+
+  // Validate role in decoded token to prevent tampering
+  if (!decoded.role || !ALLOWED_ROLES.includes(decoded.role)) {
+    throw new Error('Invalid role in token');
+  }
+
+  return decoded;
 }
 
 function verifyRefreshToken(token) {
-  return jwt.verify(token, REFRESH_TOKEN_SECRET);
+  const decoded = jwt.verify(token, REFRESH_TOKEN_SECRET);
+
+  // Validate role in decoded token to prevent tampering
+  if (!decoded.role || !ALLOWED_ROLES.includes(decoded.role)) {
+    throw new Error('Invalid role in token');
+  }
+
+  return decoded;
 }
 
 module.exports = {
