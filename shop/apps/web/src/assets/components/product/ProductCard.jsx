@@ -26,19 +26,16 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('[ProductCard] Adding to cart:', { productId: product._id, title: product.title });
     try {
-      const result = await dispatch(addToCart({
+      await dispatch(addToCart({
         productId: product._id,
         quantity: 1
       })).unwrap();
-      console.log('[ProductCard] Add to cart success:', result);
       toast.success('Added to cart!');
     } catch (error) {
-      console.error('[ProductCard] Add to cart error:', error);
       toast.error(error?.message || 'Failed to add to cart');
     }
-  }, [dispatch, product._id, product.title, toast]);
+  }, [dispatch, product._id, toast]);
 
   // Memoize rating rendering
   const ratingStars = React.useMemo(() => {
@@ -59,7 +56,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
   return (
     <div
-      className="group bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-2xl hover:border-primary-500 hover:-translate-y-3 hover:scale-102 transition-all duration-400 relative product-card transform"
+      className="group bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-2xl hover:border-primary-500 hover:-translate-y-3 hover:scale-102 transition-all duration-400 relative product-card transform h-full flex flex-col"
       data-testid="product-card"
       data-cy="product-card"
     >
@@ -67,8 +64,8 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         to={`/product/${product.slug}`}
         onClick={handleClick}
       >
-        {/* Image */}
-        <div className="relative aspect-[4/3] bg-gray-50">
+        {/* Image - Fixed height */}
+        <div className="relative aspect-[4/3] bg-gray-50 flex-shrink-0">
           {product.images && product.images.length > 0 ? (
             <img
               src={product.images[0]}
@@ -110,45 +107,50 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         </div>
       </Link>
 
-      {/* Content */}
+      {/* Content - Flex grow to fill space */}
       <Link
         to={`/product/${product.slug}`}
         onClick={handleClick}
-        className="block p-4"
+        className="p-4 flex-grow flex flex-col"
       >
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-gray-600 transition-colors">
+        {/* Title - Fixed height with line clamp */}
+        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-gray-600 transition-colors min-h-[2.5rem]">
           {product.title}
         </h3>
 
-        {/* Rating */}
-        {ratingStars && (
-          <div className="flex items-center gap-1 mb-2">
-            <div className="flex">
-              {ratingStars}
+        {/* Rating - Fixed height slot */}
+        <div className="h-6 mb-2">
+          {ratingStars && (
+            <div className="flex items-center gap-1">
+              <div className="flex">
+                {ratingStars}
+              </div>
+              <span className="text-xs text-gray-700">({product.reviewCount || 0})</span>
             </div>
-            <span className="text-xs text-gray-700">({product.reviewCount || 0})</span>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Tags */}
-        {product.tags && product.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2">
-            {product.tags.slice(0, 3).map((tag, index) => (
-              <span
-                key={index}
-                className="inline-block px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded"
-              >
-                #{tag}
-              </span>
-            ))}
-            {product.tags.length > 3 && (
-              <span className="text-xs text-gray-500">+{product.tags.length - 3}</span>
-            )}
-          </div>
-        )}
+        {/* Tags - Fixed height slot */}
+        <div className="h-6 mb-2">
+          {product.tags && product.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 overflow-hidden">
+              {product.tags.slice(0, 2).map((tag, index) => (
+                <span
+                  key={index}
+                  className="inline-block px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded truncate max-w-[100px]"
+                >
+                  #{tag}
+                </span>
+              ))}
+              {product.tags.length > 2 && (
+                <span className="text-xs text-gray-500">+{product.tags.length - 2}</span>
+              )}
+            </div>
+          )}
+        </div>
 
-        {/* Price */}
-        <div className="flex items-baseline gap-2">
+        {/* Price - Push to bottom */}
+        <div className="flex items-baseline gap-2 mt-auto">
           <span className="text-xl font-bold text-blue-600">
             {formatCurrency(product.price)}
           </span>
@@ -160,8 +162,8 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         </div>
       </Link>
 
-      {/* Add to Cart Button */}
-      <div className="px-4 pb-4">
+      {/* Add to Cart Button - Fixed at bottom */}
+      <div className="px-4 pb-4 mt-auto">
         <button
           onClick={handleAddToCart}
           disabled={product.stock <= 0}
