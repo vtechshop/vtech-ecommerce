@@ -53,7 +53,7 @@ function authorize(roles = []) {
 }
 
 // Middleware to require email verification
-function requireVerifiedEmail(req, res, next) {
+async function requireVerifiedEmail(req, res, next) {
   if (!req.user) {
     return res.status(401).json({
       success: false,
@@ -61,30 +61,32 @@ function requireVerifiedEmail(req, res, next) {
     });
   }
 
-  // Fetch user from database to check email verification status
-  const User = require('../models/User');
-  User.findById(req.user._id)
-    .then(user => {
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          error: { code: 'USER_NOT_FOUND', message: 'User not found' },
-        });
-      }
+  try {
+    // Fetch user from database to check email verification status
+    const User = require('../models/User');
+    const user = await User.findById(req.user._id);
 
-      if (!user.emailVerified) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: 'EMAIL_NOT_VERIFIED',
-            message: 'Please verify your email address to access this feature',
-          },
-        });
-      }
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'USER_NOT_FOUND', message: 'User not found' },
+      });
+    }
 
-      next();
-    })
-    .catch(next);
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'EMAIL_NOT_VERIFIED',
+          message: 'Please verify your email address to access this feature',
+        },
+      });
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
 }
 
 // Optional authentication - attach user if token exists, but don't require it

@@ -76,7 +76,6 @@ export const reorderItems = async (order, dispatch, addToCart) => {
       message: generateResultMessage(results),
     };
   } catch (error) {
-    console.error('Reorder error:', error);
     return {
       success: false,
       error: error.message || 'Failed to reorder items',

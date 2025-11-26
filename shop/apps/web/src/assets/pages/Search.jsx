@@ -75,12 +75,6 @@ const Search = () => {
       setAdsLoading(true);
       setAdsError(null);
 
-      console.log('[Sponsored Ads] Fetching ads for:', {
-        placement: 'search_grid',
-        keywords: [query],
-        timestamp: new Date().toISOString(),
-      });
-
       try {
         const response = await api.post('/ads/auction', {
           placement: 'search_grid',
@@ -89,15 +83,8 @@ const Search = () => {
           _ts: Date.now(), // Cache busting parameter
         });
 
-        console.log('[Sponsored Ads] API Response:', {
-          success: response.data.success,
-          adsCount: response.data.data?.ads?.length || 0,
-          hasData: !!response.data.data,
-        });
-
         if (response.data.data?.ads && response.data.data.ads.length > 0) {
           setSponsoredAds(response.data.data.ads);
-          console.log(`[Sponsored Ads] Loaded ${response.data.data.ads.length} ads successfully`);
 
           // Track impressions
           response.data.data.ads.forEach((ad) => {
@@ -106,19 +93,12 @@ const Search = () => {
               creativeId: ad.creativeId,
               event: 'impression',
               url: window.location.href,
-            }).catch(err => console.warn('[Sponsored Ads] Failed to track impression:', err.message));
+            }).catch(() => {}); // Silent fail for impression tracking
           });
         } else {
-          console.warn('[Sponsored Ads] No ads returned from API');
           setSponsoredAds([]);
         }
       } catch (error) {
-        console.error('[Sponsored Ads] Failed to fetch ads:', {
-          message: error.message,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-        });
         setAdsError(error.message);
         setSponsoredAds([]); // Clear ads on error
       } finally {

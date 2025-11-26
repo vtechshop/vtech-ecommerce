@@ -148,8 +148,8 @@ const AdPlacement = ({ placement, className = '', fallback = null }) => {
 const trackAdClick = async (adId, placement) => {
   try {
     await api.post(`/ads/${adId}/click`, { placement });
-  } catch (error) {
-    console.error('Failed to track ad click:', error);
+  } catch {
+    // Silent fail for analytics tracking
   }
 };
 
@@ -157,8 +157,8 @@ const trackAdClick = async (adId, placement) => {
 export const trackAdImpression = async (adId, placement) => {
   try {
     await api.post(`/ads/${adId}/impression`, { placement });
-  } catch (error) {
-    console.error('Failed to track ad impression:', error);
+  } catch {
+    // Silent fail for analytics tracking
   }
 };
 

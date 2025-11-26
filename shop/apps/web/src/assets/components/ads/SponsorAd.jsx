@@ -19,7 +19,7 @@ const SponsorAd = ({ ad, variant = 'banner', onAdClick }) => {
     if (ad._id || ad.campaignId) {
       api.post(`/ads/${ad._id || ad.campaignId}/click`, {
         placement: ad.position || 'unknown'
-      }).catch(err => console.warn('[SponsorAd] Failed to track click:', err.message));
+      }).catch(() => {}); // Silent fail for click tracking
     }
 
     // Call optional callback

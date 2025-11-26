@@ -45,7 +45,7 @@ const BlogPost = () => {
         });
         return response.data.data?.ads || [];
       } catch (error) {
-        console.error('Failed to fetch sponsor ads:', error);
+        // Silent fail for sponsor ads
         return [];
       }
     },
@@ -645,7 +645,7 @@ const BlogPost = () => {
                           rel="noopener noreferrer"
                           onClick={() => {
                             // Track click
-                            api.post(`/ads/${ad._id}/click`).catch(err => console.error('Failed to track click:', err));
+                            api.post(`/ads/${ad._id}/click`).catch(() => {});
                           }}
                           className={`block w-full px-4 py-2 bg-gradient-to-r ${color.btnFrom} ${color.btnTo} text-white rounded-lg hover:opacity-90 transition-all font-medium text-center`}
                         >
