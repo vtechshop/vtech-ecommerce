@@ -43,6 +43,7 @@ const VendorStore = lazy(() => import('./assets/pages/VendorStore'));
 const Blog = lazy(() => import('./assets/pages/Blog'));
 const BlogPostDetail = lazy(() => import('./assets/pages/BlogPost'));
 const Page = lazy(() => import('./assets/pages/cms/Page'));
+const NotFound = lazy(() => import('./assets/pages/NotFound'));
 
 // Lazy load info pages
 const TrackOrder = lazy(() => import('./assets/pages/info/TrackOrder'));
@@ -342,8 +343,8 @@ function App() {
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
-          {/* 404 */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* 404 - Page Not Found */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
 
         <CookieBanner />

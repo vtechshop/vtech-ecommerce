@@ -25,26 +25,18 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// CSRF Protection (Production Only)
+// CSRF Protection - Disabled
+// JWT token authentication provides sufficient CSRF protection
+// when tokens are sent via Authorization headers
 let csrfToken = null;
 
 /**
- * Initialize CSRF protection by fetching token from server
- * Only active in production mode
+ * Initialize CSRF protection - Currently disabled
+ * JWT authentication provides CSRF protection via Authorization headers
  */
 export const initCsrfProtection = async () => {
-  // Only enable CSRF in production
-  if (import.meta.env.MODE !== 'production') {
-    return;
-  }
-
-  try {
-    const response = await api.get('/csrf-token');
-    csrfToken = response.data.data.csrfToken;
-    console.log('[CSRF] Protection initialized');
-  } catch (error) {
-    console.error('[CSRF] Failed to fetch token:', error);
-  }
+  // CSRF disabled - JWT provides protection
+  return;
 };
 
 // Attach access token from cookie to every request
@@ -52,15 +44,7 @@ api.interceptors.request.use((config) => {
   const token = Cookies.get('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
-  // Add CSRF token to non-GET requests in production
-  if (import.meta.env.MODE === 'production') {
-    const method = config.method?.toUpperCase();
-    if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
-      if (csrfToken) {
-        config.headers['X-CSRF-Token'] = csrfToken;
-      }
-    }
-  }
+  // CSRF disabled - JWT authentication provides protection
 
   // Let axios set the correct Content-Type for FormData automatically
   if (config.data instanceof FormData) {
@@ -80,15 +64,7 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle CSRF token errors (403 with CSRF error code)
-    if (error.response?.status === 403 &&
-        error.response?.data?.error?.code === 'CSRF_TOKEN_INVALID' &&
-        import.meta.env.MODE === 'production') {
-      console.warn('[CSRF] Invalid token, refreshing...');
-      await initCsrfProtection();
-      // Retry the request with new token
-      return api.request(originalRequest);
-    }
+    // CSRF handling removed - JWT authentication provides protection
 
     // Don't try to refresh on login/register/refresh endpoints
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||

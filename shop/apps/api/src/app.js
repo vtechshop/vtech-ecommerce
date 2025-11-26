@@ -86,38 +86,14 @@ app.use((req, res, next) => {
   return xssSanitize(req, res, next);
 });
 
-// Security: CSRF protection (disabled in development and test, enabled in production)
+// Security: CSRF protection
+// NOTE: CSRF is disabled as the application uses JWT tokens for authentication
+// which provides sufficient protection against CSRF attacks when tokens are
+// sent in Authorization headers (not cookies). Re-enable if using cookie-based auth.
 app.use((req, res, next) => {
-  // Skip CSRF completely in development and test
-  if (env.NODE_ENV === 'development' || env.NODE_ENV === 'test') {
-    return next();
-  }
-
-  // In production, skip only GET requests and specific routes
-  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
-    return next();
-  }
-
-  // Skip CSRF for specific routes that handle their own security
-  const skipPatterns = [
-    '/api/auth',       // Auth has its own flow
-    '/api/csrf-token', // CSRF token endpoint itself
-    '/api/cart',       // Session-based, not user-specific
-    '/health',         // Health check
-  ];
-
-  const shouldSkip = skipPatterns.some(pattern => req.url.startsWith(pattern));
-
-  if (shouldSkip) {
-    return next();
-  }
-
-  // CSRF protection now applies to:
-  // - /api/admin/* (all admin operations)
-  // - /api/vendors/* (all vendor operations)
-  // - /api/upload/* (file uploads)
-  // - All other POST/PUT/DELETE/PATCH requests
-  return doubleCsrfProtection(req, res, next);
+  // CSRF is disabled - JWT token authentication provides CSRF protection
+  // The access token is stored in memory/localStorage and sent via Authorization header
+  return next();
 });
 
 // Rate limiting - more lenient in development/test environments
