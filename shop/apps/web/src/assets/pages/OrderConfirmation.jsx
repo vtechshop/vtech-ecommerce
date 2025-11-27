@@ -27,7 +27,7 @@ const OrderConfirmation = () => {
         items: order.items,
       });
 
-      // Track ad conversions
+      // Track ad conversions (fire and forget with error handling)
       order.items.forEach(item => {
         if (item.adCampaignId) {
           api.post('/ads/events', {
@@ -36,6 +36,8 @@ const OrderConfirmation = () => {
             event: 'conversion',
             orderId: order._id,
             url: window.location.href,
+          }).catch(() => {
+            // Silent fail for ad tracking - don't disrupt user experience
           });
         }
       });

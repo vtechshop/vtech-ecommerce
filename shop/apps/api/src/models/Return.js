@@ -16,14 +16,23 @@ const returnSchema = new mongoose.Schema({
     productId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
+      required: true,
     },
-    qty: Number,
-    reason: String,
+    qty: {
+      type: Number,
+      required: true,
+      min: 1,
+    },
+    reason: {
+      type: String,
+      required: true,
+    },
     images: [String],
   }],
   rma: {
     type: String,
     unique: true,
+    required: true,
   },
   status: {
     type: String,

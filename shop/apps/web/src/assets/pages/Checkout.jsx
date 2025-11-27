@@ -174,9 +174,8 @@ const Checkout = () => {
       try {
         await api.post('/user/addresses', newAddress);
         toast.success('Address saved to your account');
-      } catch (err) {
-        // Don't block checkout if address save fails
-        console.error('Failed to save address:', err);
+      } catch {
+        // Don't block checkout if address save fails - silent failure is acceptable here
       }
     }
 
@@ -191,7 +190,7 @@ const Checkout = () => {
 
   const handleShippingSubmit = () => {
     if (!shippingMethod) {
-      // Don't show alert, just return
+      toast.error('Please select a shipping method');
       return;
     }
     setStep(3);
@@ -199,6 +198,19 @@ const Checkout = () => {
 
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate required fields before submitting
+    if (!selectedAddress) {
+      toast.error('Please select or enter a shipping address');
+      setStep(1);
+      return;
+    }
+
+    if (!shippingMethod) {
+      toast.error('Please select a shipping method');
+      setStep(2);
+      return;
+    }
 
     const orderData = {
       items: items.map(item => ({
