@@ -146,7 +146,7 @@ app.use((req, res, next) => {
 // Rate limiting - more lenient in development/test environments
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: env.NODE_ENV === 'production' ? 100 : (env.NODE_ENV === 'test' ? 100000 : 10000), // 100 in production, very high in dev/test
+  max: env.NODE_ENV === 'production' ? 1000 : (env.NODE_ENV === 'test' ? 100000 : 10000), // 1000 in production, very high in dev/test
   message: 'Too many requests from this IP, please try again later.',
   skip: (req) => {
     // Skip rate limiting for auth routes in development/test to allow Cypress tests
