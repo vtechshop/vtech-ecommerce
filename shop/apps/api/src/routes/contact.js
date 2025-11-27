@@ -1,10 +1,24 @@
 // FILE: apps/api/src/routes/contact.js
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const ContactSubmission = require('../models/ContactSubmission');
 
+// Rate limiting for contact form - prevent spam
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5, // 5 submissions per hour per IP
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many contact submissions. Please try again later.',
+    },
+  },
+});
+
 // POST /contact/submit - Public endpoint for contact form submissions
-router.post('/submit', async (req, res, next) => {
+router.post('/submit', contactLimiter, async (req, res, next) => {
   try {
     const { name, email, subject, message } = req.body;
 

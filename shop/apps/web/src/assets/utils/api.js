@@ -117,8 +117,12 @@ api.interceptors.response.use(
         const response = await api.post('/auth/refresh');
         const { accessToken } = response.data.data;
 
-        // Store new access token (15 minutes)
-        Cookies.set('accessToken', accessToken, { expires: 1/96 });
+        // Store new access token (15 minutes) with proper settings for mobile
+        Cookies.set('accessToken', accessToken, {
+          expires: 1/96,
+          sameSite: 'Lax',
+          secure: window.location.protocol === 'https:',
+        });
 
         // Update authorization header
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;

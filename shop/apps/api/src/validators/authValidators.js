@@ -1,6 +1,10 @@
 // FILE: validators/authValidators.js
 const Joi = require('joi');
 
+// SECURITY: Strong password pattern - requires uppercase, lowercase, digit, and special character
+const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+=\-[\]{}|;:'"<>,.\/\\])[A-Za-z\d@$!%*?&#^()_+=\-[\]{}|;:'"<>,.\/\\]{8,}$/;
+const passwordComplexityMessage = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+
 const registerSchema = Joi.object({
   name: Joi.string().min(2).max(100).required().messages({
     'string.empty': 'Name is required',
@@ -11,11 +15,17 @@ const registerSchema = Joi.object({
     'string.empty': 'Email is required',
     'string.email': 'Please provide a valid email address',
   }),
-  password: Joi.string().min(8).max(100).required().messages({
-    'string.empty': 'Password is required',
-    'string.min': 'Password must be at least 8 characters',
-    'string.max': 'Password cannot exceed 100 characters',
-  }),
+  password: Joi.string()
+    .min(8)
+    .max(100)
+    .pattern(strongPasswordPattern)
+    .required()
+    .messages({
+      'string.empty': 'Password is required',
+      'string.min': 'Password must be at least 8 characters',
+      'string.max': 'Password cannot exceed 100 characters',
+      'string.pattern.base': passwordComplexityMessage,
+    }),
   role: Joi.string().valid('customer', 'vendor', 'affiliate').default('customer'),
 });
 
@@ -40,11 +50,17 @@ const resetPasswordSchema = Joi.object({
   token: Joi.string().required().messages({
     'string.empty': 'Reset token is required',
   }),
-  newPassword: Joi.string().min(8).max(100).required().messages({
-    'string.empty': 'New password is required',
-    'string.min': 'Password must be at least 8 characters',
-    'string.max': 'Password cannot exceed 100 characters',
-  }),
+  newPassword: Joi.string()
+    .min(8)
+    .max(100)
+    .pattern(strongPasswordPattern)
+    .required()
+    .messages({
+      'string.empty': 'New password is required',
+      'string.min': 'Password must be at least 8 characters',
+      'string.max': 'Password cannot exceed 100 characters',
+      'string.pattern.base': passwordComplexityMessage,
+    }),
 });
 
 module.exports = {

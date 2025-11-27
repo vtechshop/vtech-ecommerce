@@ -65,14 +65,24 @@ const connectDB = async () => {
   }
 };
 
-// Handle connection events
+// Handle connection events - never crash on connection errors
 mongoose.connection.on('error', (err) => {
   logger.error('❌ MongoDB connection error:', err.message);
+  // Reset connection flag to allow reconnection attempts
+  isConnecting = false;
+  // Don't crash - mongoose will auto-reconnect
 });
 
 mongoose.connection.on('disconnected', () => {
   logger.warn('⚠️ MongoDB disconnected. Auto-reconnect will attempt...');
-  // Don't call connectDB here as mongoose will auto-reconnect
+  // Reset connection flag to allow reconnection
+  isConnecting = false;
+});
+
+// Handle connection timeout
+mongoose.connection.on('timeout', () => {
+  logger.warn('⚠️ MongoDB connection timeout');
+  isConnecting = false;
 });
 
 mongoose.connection.on('reconnected', () => {
@@ -88,16 +98,6 @@ mongoose.connection.on('connected', () => {
   logger.info('✅ MongoDB connected event triggered');
 });
 
-// Handle process termination
-process.on('SIGINT', async () => {
-  try {
-    await mongoose.connection.close();
-    logger.info('🛑 MongoDB connection closed through app termination');
-    process.exit(0);
-  } catch (err) {
-    logger.error('❌ Error closing MongoDB connection:', err);
-    process.exit(1);
-  }
-});
+// Note: SIGINT handling is done in server.js to coordinate all shutdowns
 
 module.exports = { connectDB };

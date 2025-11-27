@@ -14,21 +14,6 @@ import { trackBeginCheckout } from '@/utils/analytics';
 import { COUNTRIES, DEFAULT_COUNTRY, getStatesForCountry } from '@/utils/locationData';
 import { useToast } from '@/components/common/ToastContainer';
 
-const CARD_ELEMENT_OPTIONS = {
-  style: {
-    base: {
-      fontSize: '16px',
-      color: '#424770',
-      '::placeholder': {
-        color: '#aab7c4',
-      },
-    },
-    invalid: {
-      color: '#9e2146',
-    },
-  },
-};
-
 const Checkout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -36,14 +21,11 @@ const Checkout = () => {
   const { items, totals } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
 
-  const [checkoutMode, setCheckoutMode] = useState(user ? 'logged-in' : null); // null, 'guest', 'logged-in'
-  const [guestEmail, setGuestEmail] = useState('');
-  const [step, setStep] = useState(user ? 1 : 0); // 0: Choose mode, 1: Address, 2: Shipping, 3: Payment
+  const [step, setStep] = useState(1); // 1: Address, 2: Shipping, 3: Payment
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [newAddress, setNewAddress] = useState({
     fullName: '',
     phone: '',
-    email: '', // For guest checkout
     addressLine1: '',
     addressLine2: '',
     city: '',
@@ -52,28 +34,30 @@ const Checkout = () => {
     country: DEFAULT_COUNTRY, // 'IN' for India
   });
   const [shippingMethod, setShippingMethod] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('card');
-  const [cardDetails, setCardDetails] = useState({
-    number: '',
-    expiry: '',
-    cvv: '',
-    name: '',
-  });
+  const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [saveAddress, setSaveAddress] = useState(true); // Save address to account by default
+  const [orderPlaced, setOrderPlaced] = useState(false); // Flag to prevent redirect after order success
 
   useEffect(() => {
+    // Don't redirect if order was just placed (cart will be empty but that's expected)
+    if (orderPlaced) {
+      return;
+    }
+
+    // Require login to checkout
+    if (!user) {
+      toast.info('Please login to continue with checkout');
+      navigate('/login?redirect=/checkout');
+      return;
+    }
+
     if (items.length === 0) {
       navigate('/cart');
       return;
     }
 
-    // If logged in, skip mode selection
-    if (user && checkoutMode === null) {
-      setCheckoutMode('logged-in');
-      setStep(1);
-    }
-
     trackBeginCheckout({ items, totals });
-  }, [items, totals, user, navigate, checkoutMode]);
+  }, [items, totals, user, navigate, toast, orderPlaced]);
 
   // Dynamically get states based on selected country
   const availableStates = useMemo(() => {
@@ -110,8 +94,20 @@ const Checkout = () => {
       return response.data.data;
     },
     onSuccess: (data) => {
-      dispatch(clearCart());
-      navigate(`/order-confirmation/${data._id}`);
+      // Set flag FIRST to prevent useEffect from redirecting to /cart when cart is cleared
+      setOrderPlaced(true);
+
+      // Handle multi-vendor order response structure
+      // The API returns { vendorOrders: [...], orderIds: [...] }
+      const orderId = data.vendorOrders?.[0]?._id || data.orderIds?.[0] || data._id;
+
+      // Navigate first, then clear cart
+      navigate(`/order-confirmation/${orderId}`, { replace: true });
+
+      // Clear cart after navigation is initiated
+      setTimeout(() => {
+        dispatch(clearCart());
+      }, 100);
     },
     onError: (error) => {
       const errorMessage = error.response?.data?.error?.message || 'Failed to create order';
@@ -126,18 +122,6 @@ const Checkout = () => {
     },
   });
 
-  const handleGuestCheckout = () => {
-    setCheckoutMode('guest');
-    setStep(1);
-  };
-
-  const handleLoginCheckout = () => {
-    navigate('/login?redirect=/checkout');
-  };
-
-  // Validation errors state
-  const [addressErrors, setAddressErrors] = useState({});
-
   const validateAddress = () => {
     const errors = {};
 
@@ -149,14 +133,6 @@ const Checkout = () => {
       errors.phone = 'Phone number is required';
     } else if (!/^[0-9+\-\s()]{10,15}$/.test(newAddress.phone.trim())) {
       errors.phone = 'Please enter a valid phone number';
-    }
-
-    if (checkoutMode === 'guest') {
-      if (!newAddress.email?.trim()) {
-        errors.email = 'Email is required for guest checkout';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(newAddress.email.trim())) {
-        errors.email = 'Please enter a valid email address';
-      }
     }
 
     if (!newAddress.addressLine1?.trim()) {
@@ -180,15 +156,28 @@ const Checkout = () => {
     return errors;
   };
 
-  const handleAddressSubmit = (e) => {
+  const handleAddressSubmit = async (e) => {
     e.preventDefault();
 
     // Validate all fields
     const errors = validateAddress();
-    setAddressErrors(errors);
 
     if (Object.keys(errors).length > 0) {
+      // Show first validation error
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError);
       return;
+    }
+
+    // Save address to user account if checkbox is checked
+    if (saveAddress && user) {
+      try {
+        await api.post('/user/addresses', newAddress);
+        toast.success('Address saved to your account');
+      } catch (err) {
+        // Don't block checkout if address save fails
+        console.error('Failed to save address:', err);
+      }
     }
 
     setSelectedAddress(newAddress);
@@ -221,14 +210,23 @@ const Checkout = () => {
       shippingMethod: shippingMethod.id,
       paymentMethod,
       paymentDetails: {},
-      ...(checkoutMode === 'guest' && { guestEmail: newAddress.email }),
     };
 
     createOrderMutation.mutate(orderData);
   };
 
-  if (items.length === 0) {
+  // Don't render anything if cart is empty (unless order was just placed - navigation will handle it)
+  if (items.length === 0 && !orderPlaced) {
     return null;
+  }
+
+  // Show loading state while navigating to order confirmation
+  if (orderPlaced) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return (
@@ -246,53 +244,6 @@ const Checkout = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Checkout Steps */}
           <div className="lg:col-span-2">
-            {/* Step 0: Choose Checkout Mode (Guest only) */}
-            {step === 0 && !user && (
-              <div className="bg-white rounded-lg border p-6">
-              <h2 className="text-lg font-bold mb-4 text-center">How would you like to checkout?</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Guest Checkout */}
-                <button
-                  onClick={handleGuestCheckout}
-                  className="p-5 border-2 border-gray-300 rounded-lg hover:border-primary-600 hover:bg-primary-50 transition-colors group"
-                >
-                  <div className="text-center">
-                    <div className="w-14 h-14 mx-auto mb-3 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center">
-                      <svg className="w-7 h-7 text-gray-700 group-hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-base font-bold mb-1 group-hover:text-gray-600">Guest Checkout</h3>
-                    <p className="text-gray-700 text-xs">Checkout quickly without an account</p>
-                  </div>
-                </button>
-
-                {/* Login/Register */}
-                <button
-                  onClick={handleLoginCheckout}
-                  className="p-5 border-2 border-gray-300 rounded-lg hover:border-primary-600 hover:bg-primary-50 transition-colors group"
-                >
-                  <div className="text-center">
-                    <div className="w-14 h-14 mx-auto mb-3 bg-gray-100 group-hover:bg-primary-100 rounded-full flex items-center justify-center">
-                      <svg className="w-7 h-7 text-gray-700 group-hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-base font-bold mb-1 group-hover:text-gray-600">Login / Register</h3>
-                    <p className="text-gray-700 text-xs">Save your info for faster checkout</p>
-                  </div>
-                </button>
-              </div>
-
-              <div className="mt-4 text-center">
-                <p className="text-xs text-gray-500">
-                  Guest checkout is fast and secure. You'll receive order updates via email.
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* Progress Steps */}
           {step > 0 && (
             <div className="mb-6">
@@ -365,20 +316,6 @@ const Checkout = () => {
               {/* New Address Form */}
               <form onSubmit={handleAddressSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Email field for guest checkout */}
-                  {checkoutMode === 'guest' && (
-                    <Input
-                      label="Email Address"
-                      name="email"
-                      type="email"
-                      required
-                      fullWidth
-                      className="md:col-span-2"
-                      value={newAddress.email}
-                      onChange={(e) => setNewAddress({ ...newAddress, email: e.target.value })}
-                      placeholder="We'll send your order confirmation here"
-                    />
-                  )}
                   <Input
                     label="Full Name"
                     name="fullName"
@@ -468,6 +405,20 @@ const Checkout = () => {
                     </select>
                   </div>
                 </div>
+
+                {/* Save Address Checkbox */}
+                <div className="mt-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={saveAddress}
+                      onChange={(e) => setSaveAddress(e.target.checked)}
+                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-700">Save this address for future orders</span>
+                  </label>
+                </div>
+
                 <Button type="submit" variant="primary" size="lg" className="mt-6">
                   Continue to Shipping
                 </Button>
@@ -535,88 +486,90 @@ const Checkout = () => {
                 {/* Payment Method Selection */}
                 <div className="mb-6">
                   <div className="space-y-3">
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('card')}
-                      className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
-                        paymentMethod === 'card'
-                          ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                        <span className="font-semibold">Credit/Debit Card</span>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('upi')}
-                      className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
-                        paymentMethod === 'upi'
-                          ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        <span className="font-semibold">UPI</span>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('netbanking')}
-                      className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
-                        paymentMethod === 'netbanking'
-                          ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                        </svg>
-                        <span className="font-semibold">Net Banking</span>
-                      </div>
-                    </button>
-
+                    {/* Cash on Delivery - Available */}
                     <button
                       type="button"
                       onClick={() => setPaymentMethod('cod')}
                       className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
                         paymentMethod === 'cod'
                           ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200'
+                          : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
-                        <div>
+                        <div className="flex-1">
                           <span className="font-semibold">Cash on Delivery</span>
                           <p className="text-xs text-gray-700 mt-1">Pay when you receive your order</p>
                         </div>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">Available</span>
+                      </div>
+                    </button>
+
+                    {/* Credit/Debit Card - Coming Soon */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod('card');
+                        toast.info('Credit/Debit Card payment is not available yet. Coming Soon!');
+                      }}
+                      className="w-full text-left p-4 border-2 rounded-lg transition-colors border-gray-200 bg-gray-50 opacity-75 cursor-not-allowed"
+                    >
+                      <div className="flex items-center gap-3">
+                        <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        <span className="font-semibold text-gray-500">Credit/Debit Card</span>
+                        <span className="ml-auto text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Coming Soon</span>
+                      </div>
+                    </button>
+
+                    {/* UPI - Coming Soon */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod('upi');
+                        toast.info('UPI payment is not available yet. Coming Soon!');
+                      }}
+                      className="w-full text-left p-4 border-2 rounded-lg transition-colors border-gray-200 bg-gray-50 opacity-75 cursor-not-allowed"
+                    >
+                      <div className="flex items-center gap-3">
+                        <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <span className="font-semibold text-gray-500">UPI</span>
+                        <span className="ml-auto text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Coming Soon</span>
+                      </div>
+                    </button>
+
+                    {/* Net Banking - Coming Soon */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaymentMethod('netbanking');
+                        toast.info('Net Banking payment is not available yet. Coming Soon!');
+                      }}
+                      className="w-full text-left p-4 border-2 rounded-lg transition-colors border-gray-200 bg-gray-50 opacity-75 cursor-not-allowed"
+                    >
+                      <div className="flex items-center gap-3">
+                        <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                        </svg>
+                        <span className="font-semibold text-gray-500">Net Banking</span>
+                        <span className="ml-auto text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Coming Soon</span>
                       </div>
                     </button>
                   </div>
                 </div>
 
-                {/* Card Details (if card selected) */}
-                {paymentMethod === 'card' && (
-                  <div className="space-y-4 mb-6">
+                {/* Warning if non-COD payment selected */}
+                {paymentMethod !== 'cod' && (
+                  <div className="mb-6">
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <p className="text-sm text-yellow-800">
-                        <strong>Online card payments coming soon!</strong> Please use <strong>Cash on Delivery</strong> for now.
-                      </p>
-                      <p className="text-xs text-yellow-700 mt-2">
-                        To enable card payments, add your Stripe publishable key to the .env file.
+                        <strong>This payment method is not available yet.</strong> Please select <strong>Cash on Delivery</strong> to complete your order.
                       </p>
                     </div>
                   </div>
@@ -631,8 +584,9 @@ const Checkout = () => {
                     variant="primary"
                     fullWidth
                     loading={createOrderMutation.isPending}
+                    disabled={paymentMethod !== 'cod'}
                   >
-                    Place Order
+                    {paymentMethod === 'cod' ? 'Place Order' : 'Select COD to Continue'}
                   </Button>
                 </div>
               </form>

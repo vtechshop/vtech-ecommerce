@@ -18,7 +18,7 @@ const webhookEventSchema = new mongoose.Schema({
   processedAt: {
     type: Date,
     default: Date.now,
-    index: true,
+    // Note: index created by TTL index below
   },
   orderId: String,
   payload: mongoose.Schema.Types.Mixed, // Store full webhook payload for debugging

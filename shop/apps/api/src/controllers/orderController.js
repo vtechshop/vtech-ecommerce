@@ -91,8 +91,8 @@ exports.createOrder = async (req, res, next) => {
   try {
     const { items, shipTo, shippingMethod, paymentMethod, paymentDetails, guestEmail } = req.body;
 
-    // Check if this is guest checkout
-    const isGuest = !req.user && guestEmail;
+    // Check if this is guest checkout (ensure boolean, not truthy value)
+    const isGuest = !req.user && !!guestEmail;
 
     // Validate guest email if guest checkout
     if (isGuest && !guestEmail) {
@@ -276,13 +276,39 @@ exports.createOrder = async (req, res, next) => {
 
     logger.info(`Order split into ${Object.keys(vendorGroups).length} vendor orders`);
 
-    // ===== SECURITY: USE MONGODB TRANSACTION FOR ATOMICITY =====
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    // ===== MONGODB TRANSACTION SUPPORT =====
+    // Transactions require replica set. Check if available, otherwise proceed without transaction.
+    let session = null;
+    let useTransaction = false;
+
+    // Check if replica set is available by checking the topology
+    const isReplicaSet = mongoose.connection.readyState === 1 &&
+      mongoose.connection.client?.topology?.description?.type === 'ReplicaSetWithPrimary';
+
+    if (isReplicaSet) {
+      try {
+        session = await mongoose.startSession();
+        session.startTransaction();
+        useTransaction = true;
+        logger.info('MongoDB transaction started (replica set detected)');
+      } catch (sessionError) {
+        logger.warn('Failed to start transaction:', sessionError.message);
+        if (session) {
+          session.endSession();
+        }
+        session = null;
+        useTransaction = false;
+      }
+    } else {
+      logger.info('MongoDB standalone mode - proceeding without transaction');
+    }
 
     // Variables to store vendor orders (accessible outside transaction block)
     let vendorOrders = [];
     let vendorOrderIds = [];
+
+    // Helper for optional session parameter
+    const sessionOpt = useTransaction ? { session } : {};
 
     try {
       // ===== NEW: CREATE SEPARATE ORDER FOR EACH VENDOR =====
@@ -325,7 +351,7 @@ exports.createOrder = async (req, res, next) => {
             amount: vendorTotal, // Vendor-specific amount
           },
           isVendorOrder: true, // Mark as vendor order
-        }], { session }))[0];
+        }], sessionOpt))[0];
 
       vendorOrders.push(vendorOrder);
       vendorOrderIds.push(vendorOrder.orderId);
@@ -350,7 +376,7 @@ exports.createOrder = async (req, res, next) => {
                   soldCount: item.qty
                 }
               },
-              { session, new: true }
+              { ...sessionOpt, new: true }
             );
           } else {
             // Atomic update for main product stock - ensures no overselling
@@ -365,7 +391,7 @@ exports.createOrder = async (req, res, next) => {
                   soldCount: item.qty
                 }
               },
-              { session, new: true }
+              { ...sessionOpt, new: true }
             );
           }
 
@@ -446,7 +472,7 @@ exports.createOrder = async (req, res, next) => {
 
       // Batch create all commissions for this vendor
       if (commissionsToCreate.length > 0) {
-        await Commission.create(commissionsToCreate, { session });
+        await Commission.create(commissionsToCreate, sessionOpt);
       }
       }
 
@@ -507,29 +533,36 @@ exports.createOrder = async (req, res, next) => {
           amount: totalAffiliateCommission,
           percentage: affiliate.commissionPercentage,
           status: 'pending',
-        }], { session });
+        }], sessionOpt);
 
         affiliate.totalConversions += 1;
         affiliate.pendingEarnings += totalAffiliateCommission;
-        await affiliate.save({ session });
+        await affiliate.save(sessionOpt);
       }
     }
 
     // Clear cart (only for authenticated users)
     if (req.user) {
-      await Cart.deleteOne({ userId: req.user._id }).session(session);
+      if (useTransaction) {
+        await Cart.deleteOne({ userId: req.user._id }).session(session);
+      } else {
+        await Cart.deleteOne({ userId: req.user._id });
+      }
     }
 
-    // ===== COMMIT TRANSACTION =====
-    await session.commitTransaction();
-    session.endSession();
-
-    logger.info('Order creation transaction committed successfully');
+    // ===== COMMIT TRANSACTION (if using transactions) =====
+    if (useTransaction && session) {
+      await session.commitTransaction();
+      session.endSession();
+      logger.info('Order creation transaction committed successfully');
+    }
   } catch (transactionError) {
-    // ===== ABORT TRANSACTION ON ERROR =====
-    await session.abortTransaction();
-    session.endSession();
-    logger.error('Order creation transaction failed, rolled back:', transactionError);
+    // ===== ABORT TRANSACTION ON ERROR (if using transactions) =====
+    if (useTransaction && session) {
+      await session.abortTransaction();
+      session.endSession();
+    }
+    logger.error('Order creation failed:', transactionError);
     throw transactionError; // Re-throw to be handled by outer catch
   }
 

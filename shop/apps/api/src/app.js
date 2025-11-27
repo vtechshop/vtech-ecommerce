@@ -31,6 +31,22 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: cspDirectives,
   },
+  // HSTS - Force HTTPS in production (1 year)
+  hsts: env.NODE_ENV === 'production' ? {
+    maxAge: 31536000, // 1 year in seconds
+    includeSubDomains: true,
+    preload: true,
+  } : false,
+  // Prevent clickjacking attacks
+  frameguard: { action: 'deny' },
+  // Prevent MIME type sniffing
+  noSniff: true,
+  // XSS filter for older browsers
+  xssFilter: true,
+  // Don't expose server info
+  hidePoweredBy: true,
+  // Referrer policy
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
 // CORS configuration - Allow multiple origins for development and production
@@ -108,6 +124,7 @@ app.use((req, res, next) => {
     '/api/vendors',    // Protected by JWT + vendor role check
     '/api/orders',     // Protected by JWT authentication
     '/api/affiliates', // Protected by JWT + affiliate role check
+    '/api/contact',    // Public contact form - rate limited separately
     '/health',         // Health check
   ];
 
@@ -176,6 +193,46 @@ app.get('/api/health', (req, res) => {
 
   const statusCode = health.services.database === 'connected' ? 200 : 503;
   res.status(statusCode).json(health);
+});
+
+// Security audit endpoint (for checking security headers) - public for testing tools
+app.get('/api/security-check', (_req, res) => {
+  const securityFeatures = {
+    timestamp: new Date().toISOString(),
+    environment: env.NODE_ENV,
+    headers: {
+      hsts: env.NODE_ENV === 'production' ? 'enabled (1 year)' : 'disabled (development)',
+      csp: 'enabled',
+      xFrameOptions: 'DENY',
+      xContentTypeOptions: 'nosniff',
+      xssFilter: 'enabled',
+      referrerPolicy: 'strict-origin-when-cross-origin',
+    },
+    authentication: {
+      passwordHashing: 'bcrypt (12 rounds)',
+      refreshTokenHashing: 'SHA-256 with timing-safe comparison',
+      jwtAccessTokenTTL: '15 minutes',
+      jwtRefreshTokenTTL: '7 days',
+      accountLockout: '5 failed attempts, 15 min lockout',
+    },
+    rateLimiting: {
+      general: '100 req/15min (production)',
+      auth: '5 req/15min',
+      passwordReset: '3 req/15min',
+      emailVerification: '5 req/hour',
+    },
+    inputValidation: {
+      xssSanitization: 'enabled',
+      noSqlInjectionProtection: 'enabled',
+      passwordComplexity: 'uppercase, lowercase, digit, special char required',
+    },
+    csrf: env.NODE_ENV === 'production' ? 'enabled (double submit cookie)' : 'disabled (development)',
+  };
+
+  res.json({
+    success: true,
+    data: securityFeatures,
+  });
 });
 
 // CSRF token endpoint with rate limiting

@@ -2,7 +2,7 @@
 const crypto = require('crypto');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
-const { hashPassword, comparePassword } = require('../utils/hash');
+const { hashPassword, comparePassword, hashRefreshToken, compareRefreshToken } = require('../utils/hash');
 const {
   generateAccessToken,
   generateRefreshToken,
@@ -88,13 +88,17 @@ exports.register = async (req, res, next) => {
     const accessToken = generateAccessToken(user._id, user.role);
     const refreshToken = generateRefreshToken(user._id, user.role);
 
-    user.refreshToken = refreshToken;
+    // SECURITY: Store hashed refresh token in database
+    user.refreshToken = hashRefreshToken(refreshToken);
     await user.save();
 
+    // Cookie settings for cross-origin mobile support
+    // Send plain token to client (will be hashed when comparing)
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin in production
       maxAge: 30 * 24 * 60 * 60 * 1000, // 1 month
     });
 
@@ -299,15 +303,19 @@ exports.login = async (req, res, next) => {
     const accessToken = generateAccessToken(user._id, user.role);
     const refreshToken = generateRefreshToken(user._id, user.role);
 
-    user.refreshToken = refreshToken;
+    // SECURITY: Store hashed refresh token in database
+    user.refreshToken = hashRefreshToken(refreshToken);
     user.lastLogin = new Date();
     user.loginCount = (user.loginCount || 0) + 1;
     await user.save();
 
+    // Cookie settings for cross-origin mobile support
+    // Send plain token to client (will be hashed when comparing)
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin in production
       maxAge: 30 * 24 * 60 * 60 * 1000, // 1 month
     });
 
@@ -352,7 +360,18 @@ exports.refresh = async (req, res, next) => {
 
     const decoded = verifyRefreshToken(refreshToken);
     const user = await User.findById(decoded.userId).select('+refreshToken');
-    if (!user || user.refreshToken !== refreshToken) {
+
+    // SECURITY: Compare hashed refresh tokens using timing-safe comparison
+    let tokenValid = false;
+    if (user && user.refreshToken) {
+      try {
+        tokenValid = compareRefreshToken(refreshToken, user.refreshToken);
+      } catch {
+        tokenValid = false;
+      }
+    }
+
+    if (!user || !tokenValid) {
       return res.status(401).json({
         success: false,
         error: { code: 'INVALID_REFRESH_TOKEN', message: 'Invalid refresh token' },

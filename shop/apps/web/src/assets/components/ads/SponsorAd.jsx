@@ -77,19 +77,24 @@ const SponsorAd = ({ ad, variant = 'banner', onAdClick }) => {
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 sm:p-6 border border-blue-200 hover:shadow-lg transition-shadow">
           <SponsoredLabel placement="banner" />
 
+          {/* Make image clickable */}
           {(ad.bannerImage || ad.bannerAsset?.imageUrl) && (
-            <img
-              src={ad.bannerImage || ad.bannerAsset?.imageUrl}
-              alt={ad.name || ad.headline || 'Sponsored'}
-              className="w-full h-32 sm:h-40 object-cover rounded-lg mb-4"
-              loading="lazy"
-            />
+            <Link to={targetUrl} onClick={handleClick} className="block">
+              <img
+                src={ad.bannerImage || ad.bannerAsset?.imageUrl}
+                alt={ad.name || ad.headline || 'Sponsored'}
+                className="w-full h-32 sm:h-40 object-cover rounded-lg mb-4 hover:opacity-90 transition-opacity cursor-pointer"
+                loading="lazy"
+              />
+            </Link>
           )}
 
           <div className="text-center mt-8">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">
-              {ad.name || ad.headline || 'Sponsored'}
-            </h3>
+            <Link to={targetUrl} onClick={handleClick} className="hover:text-primary-600 transition-colors">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">
+                {ad.name || ad.headline || 'Sponsored'}
+              </h3>
+            </Link>
             {ad.description && (
               <p className="text-xs sm:text-sm text-gray-700 mb-4 line-clamp-3">{ad.description}</p>
             )}

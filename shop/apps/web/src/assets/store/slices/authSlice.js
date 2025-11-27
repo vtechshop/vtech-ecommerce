@@ -22,7 +22,11 @@ export const initializeAuth = createAsyncThunk(
         try {
           const refreshRes = await api.post('/auth/refresh');
           const newAccessToken = refreshRes.data.data.accessToken;
-          Cookies.set('accessToken', newAccessToken, { expires: 1/96 });
+          Cookies.set('accessToken', newAccessToken, {
+            expires: 1/96,
+            sameSite: 'Lax',
+            secure: window.location.protocol === 'https:',
+          });
 
           // Now get user data with the new token
           const res = await api.get('/auth/me');
@@ -51,8 +55,12 @@ export const login = createAsyncThunk(
     try {
       const res = await api.post('/auth/login', credentials);
       const { accessToken, user } = res.data.data;
-      // store token in cookie (15 minutes)
-      Cookies.set('accessToken', accessToken, { expires: 1/96 });
+      // store token in cookie (15 minutes) with proper settings for mobile
+      Cookies.set('accessToken', accessToken, {
+        expires: 1/96,
+        sameSite: 'Lax',
+        secure: window.location.protocol === 'https:',
+      });
       return { user, accessToken };
     } catch (err) {
       return rejectWithValue(err.response?.data?.error?.message || 'Login failed');
@@ -66,7 +74,11 @@ export const register = createAsyncThunk(
     try {
       const res = await api.post('/auth/register', payload);
       const { accessToken, user } = res.data.data;
-      Cookies.set('accessToken', accessToken, { expires: 1/96 });
+      Cookies.set('accessToken', accessToken, {
+        expires: 1/96,
+        sameSite: 'Lax',
+        secure: window.location.protocol === 'https:',
+      });
       return { user, accessToken };
     } catch (err) {
       return rejectWithValue(err.response?.data?.error?.message || 'Registration failed');

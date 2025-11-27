@@ -54,7 +54,7 @@ const returnSchema = new mongoose.Schema({
 // Indexes
 returnSchema.index({ orderId: 1 });
 returnSchema.index({ userId: 1 });
-returnSchema.index({ rma: 1 });
+// Note: rma index is created by unique: true in schema
 returnSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Return', returnSchema);

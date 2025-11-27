@@ -23,8 +23,8 @@ router.post('/refresh', auth.refresh);
 router.post('/forgot-password', passwordResetLimiter, validate(forgotPasswordSchema), auth.forgotPassword);
 router.post('/reset-password', passwordResetLimiter, validate(resetPasswordSchema), auth.resetPassword);
 
-// Email verification - rate limited to prevent spam
-router.post('/verify-email', auth.verifyEmail);
+// Email verification - rate limited to prevent spam/enumeration attacks
+router.post('/verify-email', emailVerificationLimiter, auth.verifyEmail);
 router.post('/resend-verification', authenticate, emailVerificationLimiter, auth.resendVerification);
 
 router.get('/me', authenticate, auth.me);
