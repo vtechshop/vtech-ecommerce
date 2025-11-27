@@ -25,16 +25,16 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: apps/api/package-lock.json
+        cache-dependency-path: shop/apps/api/package-lock.json
     
     - name: Install API dependencies
       run: |
-        cd apps/api
+        cd shop/apps/api
         npm ci
     
     - name: Run API tests
       run: |
-        cd apps/api
+        cd shop/apps/api
         npm test
       env:
         MONGO_URI: mongodb://localhost:27017/shop-test
@@ -43,12 +43,12 @@ jobs:
     
     - name: Install Web dependencies
       run: |
-        cd apps/web
+        cd shop/apps/web
         npm ci
     
     - name: Build Web
       run: |
-        cd apps/web
+        cd shop/apps/web
         npm run build
 
   build-and-push:
