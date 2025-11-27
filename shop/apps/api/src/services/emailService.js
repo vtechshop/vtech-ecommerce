@@ -1,39 +1,18 @@
 // FILE: apps/api/src/services/emailService.js
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const env = require('../config/env');
 const logger = require('../config/logger');
 
 class EmailService {
   constructor() {
-    this.transporter = null;
+    this.resend = null;
     this.initialize();
   }
 
   initialize() {
-    // Only initialize if SMTP credentials are provided
-    if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
-      this.transporter = nodemailer.createTransport({
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        secure: env.SMTP_PORT === 465,
-        auth: {
-          user: env.SMTP_USER,
-          pass: env.SMTP_PASS,
-        },
-      });
-
-      // Verify connection only in production
-      if (env.NODE_ENV === 'production') {
-        this.transporter.verify((error) => {
-          if (error) {
-            logger.error('Email transporter verification failed:', error);
-          } else {
-            logger.info('Email service ready');
-          }
-        });
-      } else {
-        logger.info('Email service configured (verification skipped in development)');
-      }
+    if (env.RESEND_API_KEY) {
+      this.resend = new Resend(env.RESEND_API_KEY);
+      logger.info('Email service ready (Resend)');
     } else {
       logger.info('Email service not configured - emails will be logged only');
     }
@@ -42,7 +21,7 @@ class EmailService {
   async sendVerificationEmail(user, token) {
     const verificationUrl = `${env.CLIENT_URL}/verify-email?token=${token}`;
 
-    const mailOptions = {
+    const emailData = {
       from: env.MAIL_FROM,
       to: user.email,
       subject: 'Verify Your Email Address',
@@ -84,13 +63,13 @@ class EmailService {
       `,
     };
 
-    return this.send(mailOptions);
+    return this.send(emailData);
   }
 
   async sendPasswordResetEmail(user, token) {
     const resetUrl = `${env.CLIENT_URL}/reset-password?token=${token}`;
 
-    const mailOptions = {
+    const emailData = {
       from: env.MAIL_FROM,
       to: user.email,
       subject: 'Password Reset Request',
@@ -122,7 +101,7 @@ class EmailService {
               <p style="word-break: break-all; color: #666;">${resetUrl}</p>
               <p><strong>This link will expire in 1 hour.</strong></p>
               <div class="warning">
-                <strong>⚠️ Security Notice:</strong> If you didn't request this password reset, please ignore this email and ensure your account is secure.
+                <strong>Security Notice:</strong> If you didn't request this password reset, please ignore this email and ensure your account is secure.
               </div>
             </div>
           </div>
@@ -131,11 +110,11 @@ class EmailService {
       `,
     };
 
-    return this.send(mailOptions);
+    return this.send(emailData);
   }
 
   async sendAccountLockedEmail(user, lockDuration) {
-    const mailOptions = {
+    const emailData = {
       from: env.MAIL_FROM,
       to: user.email,
       subject: 'Account Temporarily Locked - Security Alert',
@@ -154,7 +133,7 @@ class EmailService {
         <body>
           <div class="container">
             <div class="header">
-              <h1>🔒 Security Alert</h1>
+              <h1>Security Alert</h1>
             </div>
             <div class="content">
               <p>Hi ${user.name},</p>
@@ -176,37 +155,43 @@ class EmailService {
       `,
     };
 
-    return this.send(mailOptions);
+    return this.send(emailData);
   }
 
-  async send(mailOptions) {
-    if (!this.transporter) {
-      // In development without SMTP, just log the email
-      logger.info('Email would be sent (SMTP not configured):', {
-        to: mailOptions.to,
-        subject: mailOptions.subject,
+  async send(emailData) {
+    if (!this.resend) {
+      // In development without Resend API key, just log the email
+      logger.info('Email would be sent (Resend not configured):', {
+        to: emailData.to,
+        subject: emailData.subject,
       });
 
       // Extract verification/reset URL from HTML for development
-      const urlMatch = mailOptions.html.match(/href="([^"]+)"/);
+      const urlMatch = emailData.html.match(/href="([^"]+)"/);
       if (urlMatch) {
         logger.info('Action URL:', urlMatch[1]);
       }
 
       return {
         success: true,
-        message: 'Email simulated (SMTP not configured)',
+        message: 'Email simulated (Resend not configured)',
         actionUrl: urlMatch ? urlMatch[1] : null
       };
     }
 
     try {
-      const info = await this.transporter.sendMail(mailOptions);
+      const { data, error } = await this.resend.emails.send(emailData);
+
+      if (error) {
+        logger.error('Email sending failed:', error);
+        throw new Error('Failed to send email');
+      }
+
       logger.info('Email sent successfully:', {
-        to: mailOptions.to,
-        messageId: info.messageId,
+        to: emailData.to,
+        id: data.id,
       });
-      return { success: true, messageId: info.messageId };
+      return { success: true, id: data.id };
     } catch (error) {
       logger.error('Email sending failed:', error);
       throw new Error('Failed to send email');

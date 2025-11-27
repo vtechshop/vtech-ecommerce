@@ -38,11 +38,11 @@
     "mongoose": "^8.19.1",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
-    "nodemailer": "^7.0.10",
     "pino": "^10.1.0",
     "pino-pretty": "^10.3.0",
     "rate-limit-redis": "^4.2.2",
     "razorpay": "^2.9.6",
+    "resend": "^6.5.2",
     "stripe": "^19.2.0",
     "uuid": "^9.0.1"
   },

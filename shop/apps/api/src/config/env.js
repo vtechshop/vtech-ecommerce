@@ -28,10 +28,7 @@ module.exports = {
   JWT_ACCESS_TTL: process.env.JWT_ACCESS_TTL || process.env.ACCESS_TOKEN_EXPIRES_IN || '15m',
   JWT_REFRESH_TTL: process.env.JWT_REFRESH_TTL || process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
   
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: parseInt(process.env.SMTP_PORT) || 587,
-  SMTP_USER: process.env.SMTP_USER,
-  SMTP_PASS: process.env.SMTP_PASS,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
   MAIL_FROM: process.env.MAIL_FROM || 'VTech Shop <noreply@vtechshop.com>',
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'support@vtechshop.com',
   SUPPORT_PHONE: process.env.SUPPORT_PHONE || '+1-800-VTECH-00',
