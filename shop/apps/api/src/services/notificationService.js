@@ -1,47 +1,39 @@
 // FILE: apps/api/src/services/notificationService.js
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const env = require('../config/env');
 const logger = require('../config/logger');
 
 class NotificationService {
   constructor() {
-    this.transporter = null;
-    this.smtpConfigured = false;
+    this.resend = null;
+    this.isConfigured = false;
     this.initialize();
   }
 
   initialize() {
-    if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
+    if (env.RESEND_API_KEY) {
       try {
-        this.transporter = nodemailer.createTransport({
-          host: env.SMTP_HOST,
-          port: env.SMTP_PORT,
-          secure: env.SMTP_PORT === 465,
-          auth: {
-            user: env.SMTP_USER,
-            pass: env.SMTP_PASS,
-          },
-        });
-        this.smtpConfigured = true;
-        logger.info('Notification service configured with SMTP');
+        this.resend = new Resend(env.RESEND_API_KEY);
+        this.isConfigured = true;
+        logger.info('Notification service configured with Resend');
       } catch (error) {
         logger.error('Failed to configure notification service:', error);
-        this.smtpConfigured = false;
+        this.isConfigured = false;
       }
     } else {
-      logger.warn('Notification service not configured - SMTP credentials missing. Emails will be logged only.');
-      this.smtpConfigured = false;
+      logger.warn('Notification service not configured - Resend API key missing. Emails will be logged only.');
+      this.isConfigured = false;
     }
   }
 
   async sendEmail(to, subject, html, text) {
-    if (!this.smtpConfigured || !this.transporter) {
-      logger.warn('Cannot send email - SMTP not configured:', { to, subject });
-      return { success: false, reason: 'SMTP_NOT_CONFIGURED', messageId: null };
+    if (!this.isConfigured || !this.resend) {
+      logger.warn('Cannot send email - Resend not configured:', { to, subject });
+      return { success: false, reason: 'RESEND_NOT_CONFIGURED', messageId: null };
     }
 
     try {
-      const info = await this.transporter.sendMail({
+      const { data, error } = await this.resend.emails.send({
         from: env.MAIL_FROM,
         to,
         subject,
@@ -49,8 +41,13 @@ class NotificationService {
         text,
       });
 
-      logger.info(`Email sent successfully: ${info.messageId} to ${to}`);
-      return { success: true, messageId: info.messageId };
+      if (error) {
+        logger.error('Email send failed:', error);
+        return { success: false, error: error.message, messageId: null };
+      }
+
+      logger.info(`Email sent successfully: ${data.id} to ${to}`);
+      return { success: true, messageId: data.id };
     } catch (error) {
       logger.error('Email send failed:', error);
       return { success: false, error: error.message, messageId: null };
@@ -91,7 +88,7 @@ class NotificationService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🎉 Order Confirmed!</h1>
+            <h1>Order Confirmed!</h1>
           </div>
           <div class="content">
             <p>Hi ${user.name},</p>
@@ -219,14 +216,14 @@ class NotificationService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🎉 Orders Confirmed!</h1>
+            <h1>Orders Confirmed!</h1>
           </div>
           <div class="content">
             <p>Hi ${user.name},</p>
             <p>Thank you for your order! Your purchase has been split into <strong>${vendorOrders.length} separate orders</strong> by vendor for faster processing and shipping.</p>
 
             <div class="info-box">
-              <strong>ℹ️ Why multiple orders?</strong><br>
+              <strong>Why multiple orders?</strong><br>
               Your items are from different vendors, so each vendor will ship their products separately. This ensures faster delivery and better tracking!
             </div>
 
@@ -336,7 +333,7 @@ class NotificationService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🛍️ New Order Received!</h1>
+            <h1>New Order Received!</h1>
           </div>
           <div class="content">
             <p>Hi ${vendor.name},</p>
@@ -372,7 +369,7 @@ class NotificationService {
             </div>
 
             <div class="alert">
-              <strong>⏰ Action Required:</strong> Please prepare the products for shipment and update the order status in your vendor dashboard.
+              <strong>Action Required:</strong> Please prepare the products for shipment and update the order status in your vendor dashboard.
             </div>
 
             <p style="text-align: center;">
@@ -425,7 +422,7 @@ class NotificationService {
       <body>
         <div class="container">
           <div class="header">
-            <h1>📊 New Order Placed</h1>
+            <h1>New Order Placed</h1>
           </div>
           <div class="content">
             <p>Hi Admin,</p>
