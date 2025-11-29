@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
 import { useEffect, useState } from 'react';
+import { normalizeImageUrl } from '@/utils/placeholders';
 
 /**
  * AdPlacement Component
@@ -87,7 +88,7 @@ const AdPlacement = ({ placement, className = '', fallback = null }) => {
           onClick={() => trackAdClick(ad._id, placement)}
         >
           <img
-            src={ad.imageUrl}
+            src={normalizeImageUrl(ad.imageUrl)}
             alt={ad.title || 'Advertisement'}
             className="w-full h-auto rounded-lg shadow-sm hover:shadow-md transition-shadow"
             loading="lazy"
@@ -128,7 +129,7 @@ const AdPlacement = ({ placement, className = '', fallback = null }) => {
           onClick={() => trackAdClick(ad._id, placement)}
         >
           <img
-            src={ad.product.images?.[0]}
+            src={normalizeImageUrl(ad.product.images?.[0])}
             alt={ad.product.title}
             className="w-full h-48 object-cover rounded-lg mb-3"
             loading="lazy"

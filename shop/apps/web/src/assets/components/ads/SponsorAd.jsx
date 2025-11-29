@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '@/utils/api';
 import SponsoredLabel from './SponsoredLabel';
+import { normalizeImageUrl } from '@/utils/placeholders';
 
 /**
  * Reusable Sponsor Ad Component
@@ -31,16 +32,19 @@ const SponsorAd = ({ ad, variant = 'banner', onAdClick }) => {
   // Determine target URL
   const targetUrl = ad.targetUrl || (ad.productSlug ? `/product/${ad.productSlug}` : '#');
 
+  // Get normalized image URL
+  const imageUrl = normalizeImageUrl(ad.bannerImage || ad.bannerAsset?.imageUrl);
+
   // Banner variant (large horizontal ad)
   if (variant === 'banner') {
     return (
       <div className="relative rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
         <Link to={targetUrl} onClick={handleClick} className="block">
-          {(ad.bannerImage || ad.bannerAsset?.imageUrl) ? (
+          {imageUrl && !imageUrl.startsWith('data:') ? (
             <div className="relative">
               <SponsoredLabel placement="banner" />
               <img
-                src={ad.bannerImage || ad.bannerAsset?.imageUrl}
+                src={imageUrl}
                 alt={ad.name || ad.headline || 'Sponsored Advertisement'}
                 className="w-full h-48 sm:h-64 md:h-80 object-cover"
                 loading="lazy"
@@ -78,10 +82,10 @@ const SponsorAd = ({ ad, variant = 'banner', onAdClick }) => {
           <SponsoredLabel placement="banner" />
 
           {/* Make image clickable */}
-          {(ad.bannerImage || ad.bannerAsset?.imageUrl) && (
+          {imageUrl && !imageUrl.startsWith('data:') && (
             <Link to={targetUrl} onClick={handleClick} className="block">
               <img
-                src={ad.bannerImage || ad.bannerAsset?.imageUrl}
+                src={imageUrl}
                 alt={ad.name || ad.headline || 'Sponsored'}
                 className="w-full h-32 sm:h-40 object-cover rounded-lg mb-4 hover:opacity-90 transition-opacity cursor-pointer"
                 loading="lazy"
@@ -121,9 +125,9 @@ const SponsorAd = ({ ad, variant = 'banner', onAdClick }) => {
       >
         <div className="relative">
           <SponsoredLabel placement="banner" />
-          {(ad.bannerImage || ad.bannerAsset?.imageUrl) ? (
+          {imageUrl && !imageUrl.startsWith('data:') ? (
             <img
-              src={ad.bannerImage || ad.bannerAsset?.imageUrl}
+              src={imageUrl}
               alt={ad.name || ad.headline || 'Sponsored'}
               className="w-full h-40 object-cover"
               loading="lazy"

@@ -20,3 +20,43 @@ export const handleImageError = (e, placeholder = PLACEHOLDER_IMAGE) => {
   e.target.onerror = null; // Prevent infinite loop
   e.target.src = placeholder;
 };
+
+/**
+ * Normalize image URL to fix mixed content issues
+ * Converts localhost URLs to production API URL and ensures HTTPS
+ * @param {string} url - The image URL to normalize
+ * @returns {string} - Normalized image URL
+ */
+export const normalizeImageUrl = (url) => {
+  if (!url) return PLACEHOLDER_IMAGE;
+
+  // If it's already a data URL or blob, return as-is
+  if (url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+
+  // Get the API base URL from environment
+  const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+  // Remove '/api' suffix to get the server base URL
+  const serverBaseUrl = apiBaseUrl.replace(/\/api$/, '');
+
+  // Replace localhost URLs with production URL
+  let normalizedUrl = url
+    .replace(/^https?:\/\/localhost:\d+/, serverBaseUrl)
+    .replace(/^http:\/\/127\.0\.0\.1:\d+/, serverBaseUrl);
+
+  // If URL starts with /uploads, prepend the server base URL
+  if (normalizedUrl.startsWith('/uploads')) {
+    normalizedUrl = serverBaseUrl + normalizedUrl;
+  }
+
+  // In production, upgrade HTTP to HTTPS (except for localhost)
+  if (import.meta.env.MODE === 'production' &&
+      normalizedUrl.startsWith('http://') &&
+      !normalizedUrl.includes('localhost') &&
+      !normalizedUrl.includes('127.0.0.1')) {
+    normalizedUrl = normalizedUrl.replace('http://', 'https://');
+  }
+
+  return normalizedUrl;
+};
