@@ -20,7 +20,7 @@ const AffiliateDashboard = () => {
   const [copiedLink, setCopiedLink] = useState(null);
   const toast = useToast();
 
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, error: statsError } = useQuery({
     queryKey: ['affiliate-stats'],
     queryFn: async () => {
       const response = await api.get('/affiliates/dashboard/stats');
@@ -28,9 +28,10 @@ const AffiliateDashboard = () => {
     },
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
+    retry: false,
   });
 
-  const { data: linksData } = useQuery({
+  const { data: linksData, error: linksError } = useQuery({
     queryKey: ['affiliate-links'],
     queryFn: async () => {
       const response = await api.get('/affiliates/links');
@@ -38,6 +39,7 @@ const AffiliateDashboard = () => {
     },
     staleTime: 10 * 60 * 1000,
     cacheTime: 15 * 60 * 1000,
+    retry: false,
   });
 
   const handleCopyLink = (url, linkId) => {
@@ -60,6 +62,43 @@ const AffiliateDashboard = () => {
         <div className="text-center">
           <Spinner size="lg" />
           <p className="text-gray-700 mt-4">Loading your affiliate dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle case where affiliate profile not found or pending
+  if (statsError || linksError) {
+    const is404 = statsError?.response?.status === 404 || linksError?.response?.status === 404;
+
+    return (
+      <div className="min-h-[600px] flex items-center justify-center">
+        <div className="max-w-md text-center bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+          <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Award className="w-8 h-8 text-yellow-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            {is404 ? 'Affiliate Profile Pending' : 'Something went wrong'}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            {is404
+              ? 'Your affiliate account is being set up or is pending approval. Please complete your KYC verification and wait for admin approval.'
+              : 'We encountered an error loading your dashboard. Please try again later.'}
+          </p>
+          <div className="space-y-3">
+            <Link
+              to="/affiliate-dashboard/kyc"
+              className="block w-full bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Complete KYC Verification
+            </Link>
+            <Link
+              to="/affiliate-dashboard/support"
+              className="block w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+            >
+              Contact Support
+            </Link>
+          </div>
         </div>
       </div>
     );

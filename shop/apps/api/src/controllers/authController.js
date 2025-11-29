@@ -75,6 +75,54 @@ exports.register = async (req, res, next) => {
       emailVerified: false,
     });
 
+    // Auto-create affiliate profile if registering as affiliate
+    if (userRole === 'affiliate') {
+      try {
+        const Affiliate = require('../models/Affiliate');
+        const { generateAffiliateCode } = require('../utils/helpers');
+
+        const affiliate = await Affiliate.create({
+          userId: user._id,
+          code: generateAffiliateCode(name || email),
+          status: 'pending', // Requires admin approval
+        });
+
+        // Link affiliate profile to user
+        user.affiliateProfile = affiliate._id;
+        await user.save();
+
+        logger.info(`Affiliate profile auto-created: ${affiliate.code}`);
+      } catch (affiliateError) {
+        logger.error('Failed to auto-create affiliate profile:', affiliateError);
+        // Continue with registration even if affiliate creation fails
+      }
+    }
+
+    // Auto-create vendor profile if registering as vendor
+    if (userRole === 'vendor') {
+      try {
+        const Vendor = require('../models/Vendor');
+        const slugify = require('slugify');
+
+        const baseSlug = slugify(name || email.split('@')[0], { lower: true, strict: true });
+        const vendor = await Vendor.create({
+          userId: user._id,
+          storeName: name || 'My Store',
+          slug: `${baseSlug}-${Date.now()}`,
+          status: 'pending', // Requires admin approval
+        });
+
+        // Link vendor profile to user
+        user.vendorProfile = vendor._id;
+        await user.save();
+
+        logger.info(`Vendor profile auto-created: ${vendor.slug}`);
+      } catch (vendorError) {
+        logger.error('Failed to auto-create vendor profile:', vendorError);
+        // Continue with registration even if vendor creation fails
+      }
+    }
+
     // Send verification email
     try {
       await emailService.sendVerificationEmail(user, verificationToken);
