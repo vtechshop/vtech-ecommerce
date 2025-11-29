@@ -134,6 +134,7 @@ app.use((req, res, next) => {
     '/api/affiliates', // Protected by JWT + affiliate role check
     '/api/contact',    // Public contact form - rate limited separately
     '/api/checkout',   // Checkout flow - needs to work for guests
+    '/api/ads',        // Ad tracking (impressions/clicks) - public analytics
     '/health',         // Health check
   ];
 
