@@ -1,6 +1,6 @@
 // FILE: apps/web/src/components/layout/DashboardLayout.jsx
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import useAuth from '@/hooks/useAuth';
 import useNotifications from '@/hooks/useNotifications';
@@ -16,10 +16,12 @@ const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { counts } = useNotifications();
   const toast = useToast();
+  const hasRefreshedRef = useRef(false);
 
-  // Refresh user data on mount to get latest profile (e.g., KYC status updates)
+  // Refresh user data on mount ONCE to get latest profile (e.g., KYC status updates)
   useEffect(() => {
-    if (isVendor || isAffiliate) {
+    if ((isVendor || isAffiliate) && !hasRefreshedRef.current) {
+      hasRefreshedRef.current = true;
       dispatch(refreshUser());
     }
   }, [dispatch, isVendor, isAffiliate]);
