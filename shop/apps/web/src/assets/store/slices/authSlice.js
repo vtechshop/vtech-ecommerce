@@ -81,7 +81,12 @@ export const register = createAsyncThunk(
       });
       return { user, accessToken };
     } catch (err) {
-      return rejectWithValue(err.response?.data?.error?.message || 'Registration failed');
+      const error = err.response?.data?.error;
+      // Include validation details if available
+      if (error?.details && error.details.length > 0) {
+        return rejectWithValue(error.details[0].message);
+      }
+      return rejectWithValue(error?.message || 'Registration failed');
     }
   }
 );

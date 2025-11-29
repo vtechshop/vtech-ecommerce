@@ -49,9 +49,10 @@ const Register = () => {
       return;
     }
 
-    // Validate password length
-    if (formData.password.length < 8) {
-      alert('Password must be at least 8 characters long');
+    // Validate password complexity
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+=\-[\]{}|;:'"<>,.\/\\])[A-Za-z\d@$!%*?&#^()_+=\-[\]{}|;:'"<>,.\/\\]{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      alert('Password must be at least 8 characters and contain: uppercase, lowercase, number, and special character (@$!%*?& etc.)');
       return;
     }
 
@@ -99,7 +100,14 @@ const Register = () => {
           <form onSubmit={handleSubmit} className="space-y-6" data-testid="register-form">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                {error}
+                <p className="font-medium">{typeof error === 'string' ? error : 'Registration failed'}</p>
+                {error?.details && (
+                  <ul className="mt-2 text-sm list-disc list-inside">
+                    {error.details.map((detail, index) => (
+                      <li key={index}>{detail.message}</li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
 
@@ -156,7 +164,7 @@ const Register = () => {
               required
               autoComplete="new-password"
               minLength={8}
-              helperText="Must be at least 8 characters"
+              helperText="Must be at least 8 characters with uppercase, lowercase, number, and special character"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               data-testid="register-password"
