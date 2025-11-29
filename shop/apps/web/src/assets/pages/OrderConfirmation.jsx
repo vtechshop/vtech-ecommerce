@@ -6,6 +6,7 @@ import api from '@/utils/api';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import { trackPurchase } from '@/utils/analytics';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
@@ -129,9 +130,10 @@ const OrderConfirmation = () => {
             {order.items.map((item, index) => (
               <div key={index} className="flex gap-3 pb-4 border-b last:border-b-0">
                 <img
-                  src={item.image || '/placeholder.png'}
+                  src={item.image || PLACEHOLDER_IMAGE_SM}
                   alt={item.name}
                   className="w-20 h-20 object-cover rounded"
+                  onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
                 />
                 <div className="flex-1">
                   <p className="font-semibold">{item.name}</p>

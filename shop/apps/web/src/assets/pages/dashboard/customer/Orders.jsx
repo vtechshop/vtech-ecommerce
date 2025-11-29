@@ -12,6 +12,7 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
 const Orders = () => {
   const navigate = useNavigate();
@@ -165,9 +166,10 @@ const Orders = () => {
                   {(order.items || []).slice(0, 2).map((item, index) => (
                     <div key={index} className="flex gap-3">
                       <img
-                        src={item.image || '/placeholder.png'}
+                        src={item.image || PLACEHOLDER_IMAGE_SM}
                         alt={item.name}
                         className="w-16 h-16 object-cover rounded"
+                        onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
                       />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{item.name}</p>

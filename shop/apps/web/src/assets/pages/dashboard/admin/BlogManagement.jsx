@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { formatDate } from '@/utils/format';
 import toast from 'react-hot-toast';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
 const BlogManagement = () => {
   const [page, setPage] = useState(1);
@@ -319,9 +320,10 @@ const BlogManagement = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={blog.featuredImage || 'https://via.placeholder.com/60'}
+                          src={blog.featuredImage || PLACEHOLDER_IMAGE_SM}
                           alt={blog.title}
                           className="w-16 h-16 object-cover rounded"
+                          onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
                         />
                         <div>
                           <div className="font-medium text-gray-900 line-clamp-1">

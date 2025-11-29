@@ -6,6 +6,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import OrderTimeline from '@/components/tracking/OrderTimeline';
 import { formatCurrency, formatDateTime } from '@/utils/format';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
 const TrackOrder = () => {
   const [orderId, setOrderId] = useState('');
@@ -126,9 +127,10 @@ const TrackOrder = () => {
                   {(order.items || []).map((item, index) => (
                     <div key={index} className="flex gap-4">
                       <img
-                        src={item.image || '/placeholder.png'}
+                        src={item.image || PLACEHOLDER_IMAGE_SM}
                         alt={item.name}
                         className="w-20 h-20 object-cover rounded"
+                        onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
                       />
                       <div className="flex-1">
                         <p className="font-semibold">{item.name}</p>

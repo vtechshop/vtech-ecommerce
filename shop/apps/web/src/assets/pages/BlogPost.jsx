@@ -13,6 +13,7 @@ import {
 import { formatDate } from '@/utils/format';
 import useAuth from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
+import { PLACEHOLDER_IMAGE_MD, handleImageError } from '@/utils/placeholders';
 
 const BlogPost = () => {
   const { slug } = useParams();
@@ -706,9 +707,10 @@ const BlogPost = () => {
                         className="flex gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors"
                       >
                         <img
-                          src={product.images?.[0] || 'https://via.placeholder.com/100'}
+                          src={product.images?.[0] || PLACEHOLDER_IMAGE_MD}
                           alt={product.title}
                           className="w-20 h-20 object-cover rounded"
+                          onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_MD)}
                         />
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900 line-clamp-2 text-sm">

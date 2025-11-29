@@ -8,6 +8,7 @@ import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
 import AdBanner from '@/components/common/AdBanner';
 import { formatCurrency } from '@/utils/format';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -86,9 +87,10 @@ const Cart = () => {
                   <Link to={`/product/${item.productSlug}`} className="flex-shrink-0">
                     <div className="w-20 h-20 bg-gray-50 rounded overflow-hidden border">
                       <img
-                        src={item.image || '/placeholder.png'}
+                        src={item.image || PLACEHOLDER_IMAGE_SM}
                         alt={item.name}
                         className="w-full h-full object-cover"
+                        onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
                       />
                     </div>
                   </Link>

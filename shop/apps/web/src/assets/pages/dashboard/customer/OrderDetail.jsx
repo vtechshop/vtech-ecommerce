@@ -9,6 +9,7 @@ import { formatCurrency, formatDate } from '@/utils/format';
 import { useToast } from '@/components/common/ToastContainer';
 import CancelOrderModal from '@/components/common/CancelOrderModal';
 import TrackingTimeline from '@/components/common/TrackingTimeline';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
 const OrderDetail = () => {
   const { id } = useParams();
@@ -132,9 +133,10 @@ const OrderDetail = () => {
               {(order.items || []).map((item, index) => (
                 <div key={index} className="flex gap-3 pb-4 border-b last:border-b-0">
                   <img
-                    src={item.image || '/placeholder.png'}
+                    src={item.image || PLACEHOLDER_IMAGE_SM}
                     alt={item.name}
                     className="w-20 h-20 object-cover rounded"
+                    onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
                   />
                   <div className="flex-1">
                     <h3 className="font-semibold mb-1">{item.name}</h3>

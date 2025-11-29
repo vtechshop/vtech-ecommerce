@@ -13,6 +13,7 @@ import { formatCurrency } from '@/utils/format';
 import { trackBeginCheckout } from '@/utils/analytics';
 import { COUNTRIES, DEFAULT_COUNTRY, getStatesForCountry } from '@/utils/locationData';
 import { useToast } from '@/components/common/ToastContainer';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -616,9 +617,10 @@ const Checkout = () => {
               {items.map((item) => (
                 <div key={item._id} className="flex gap-3">
                   <img
-                    src={item.image || '/placeholder.png'}
+                    src={item.image || PLACEHOLDER_IMAGE_SM}
                     alt={item.name}
                     className="w-16 h-16 object-cover rounded"
+                    onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.name}</p>

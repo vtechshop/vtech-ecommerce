@@ -7,9 +7,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import { Copy, Check, Download, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
-
-// Placeholder SVG as data URL to avoid 404 errors
-const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" fill="%23f3f4f6"/%3E%3Cpath d="M19 17a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm-2 14l5-6 3 3 7-9 6 8v4H17v-0z" fill="%239ca3af"/%3E%3C/svg%3E';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
 const AllProductLinks = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -363,13 +361,10 @@ const AllProductLinks = () => {
                       {/* Product Image */}
                       <td className="px-4 py-3">
                         <img
-                          src={product.images?.[0] || PLACEHOLDER_IMAGE}
+                          src={product.images?.[0] || PLACEHOLDER_IMAGE_SM}
                           alt={product.title}
                           className="w-12 h-12 object-cover rounded border border-gray-200"
-                          onError={(e) => {
-                            e.target.onerror = null; // Prevent infinite loop
-                            e.target.src = PLACEHOLDER_IMAGE;
-                          }}
+                          onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
                         />
                       </td>
 

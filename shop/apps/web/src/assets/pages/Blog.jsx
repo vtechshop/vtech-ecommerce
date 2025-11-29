@@ -9,6 +9,7 @@ import CustomSelect from '@/components/common/CustomSelect';
 import AdBanner from '@/components/common/AdBanner';
 import { Clock, Eye, Heart, Calendar, Video, FileText, Search } from 'lucide-react';
 import { formatDate } from '@/utils/format';
+import { PLACEHOLDER_BLOG, handleImageError } from '@/utils/placeholders';
 
 const Blog = () => {
   const [page, setPage] = useState(1);
@@ -268,9 +269,10 @@ const BlogCard = ({ blog }) => {
       {/* Featured Image */}
       <div className="relative h-56 overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300">
         <img
-          src={blog.featuredImage || 'https://via.placeholder.com/400x300/e2e8f0/64748b?text=Blog+Post'}
+          src={blog.featuredImage || PLACEHOLDER_BLOG}
           alt={blog.title}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+          onError={(e) => handleImageError(e, PLACEHOLDER_BLOG)}
         />
 
         {/* Overlay Gradient */}
