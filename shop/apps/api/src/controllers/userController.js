@@ -316,6 +316,50 @@ exports.getStats = async (req, res, next) => {
   }
 };
 
+// Update email preferences
+exports.updateEmailPreferences = async (req, res, next) => {
+  try {
+    const { orderUpdates, promotions, newsletter } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        emailPreferences: {
+          orderUpdates: orderUpdates !== undefined ? orderUpdates : true,
+          promotions: promotions !== undefined ? promotions : true,
+          newsletter: newsletter !== undefined ? newsletter : true,
+        },
+      },
+      { new: true, runValidators: true }
+    ).select('emailPreferences');
+
+    res.json({
+      success: true,
+      data: user.emailPreferences,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get email preferences
+exports.getEmailPreferences = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).select('emailPreferences');
+
+    res.json({
+      success: true,
+      data: user.emailPreferences || {
+        orderUpdates: true,
+        promotions: true,
+        newsletter: true,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Delete account
 exports.deleteAccount = async (req, res, next) => {
   try {

@@ -20,7 +20,7 @@ const AffiliateDashboard = () => {
   const [copiedLink, setCopiedLink] = useState(null);
   const toast = useToast();
 
-  const { data: stats, isLoading, error: statsError } = useQuery({
+  const { data: stats, isLoading: statsLoading, isFetching: statsFetching, error: statsError } = useQuery({
     queryKey: ['affiliate-stats'],
     queryFn: async () => {
       const response = await api.get('/affiliates/dashboard/stats');
@@ -31,7 +31,7 @@ const AffiliateDashboard = () => {
     retry: false,
   });
 
-  const { data: linksData, error: linksError } = useQuery({
+  const { data: linksData, isLoading: linksLoading, error: linksError } = useQuery({
     queryKey: ['affiliate-links'],
     queryFn: async () => {
       const response = await api.get('/affiliates/links');
@@ -56,49 +56,45 @@ const AffiliateDashboard = () => {
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
-  if (isLoading) {
+  // Only show blocking error for non-404 errors (404 should auto-create profile)
+  if (statsError || linksError) {
+    const is404 = statsError?.response?.status === 404 || linksError?.response?.status === 404;
+
+    // For non-404 errors, show error page
+    if (!is404) {
+      return (
+        <div className="min-h-[600px] flex items-center justify-center">
+          <div className="max-w-md text-center bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+            <div className="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Award className="w-8 h-8 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h2>
+            <p className="text-gray-600 mb-6">
+              We encountered an error loading your dashboard. Please try again later.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  // Check KYC status for showing banner (not blocking)
+  const kycStatus = stats?.kycStatus || 'pending';
+  const needsKYC = kycStatus !== 'approved';
+
+  // Show loading only if no errors and still loading
+  if (statsLoading || linksLoading) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
         <div className="text-center">
           <Spinner size="lg" />
           <p className="text-gray-700 mt-4">Loading your affiliate dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle case where affiliate profile not found or pending
-  if (statsError || linksError) {
-    const is404 = statsError?.response?.status === 404 || linksError?.response?.status === 404;
-
-    return (
-      <div className="min-h-[600px] flex items-center justify-center">
-        <div className="max-w-md text-center bg-white rounded-xl shadow-lg p-8 border border-gray-200">
-          <div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Award className="w-8 h-8 text-yellow-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            {is404 ? 'Affiliate Profile Pending' : 'Something went wrong'}
-          </h2>
-          <p className="text-gray-600 mb-6">
-            {is404
-              ? 'Your affiliate account is being set up or is pending approval. Please complete your KYC verification and wait for admin approval.'
-              : 'We encountered an error loading your dashboard. Please try again later.'}
-          </p>
-          <div className="space-y-3">
-            <Link
-              to="/affiliate-dashboard/kyc"
-              className="block w-full bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
-            >
-              Complete KYC Verification
-            </Link>
-            <Link
-              to="/affiliate-dashboard/support"
-              className="block w-full bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-            >
-              Contact Support
-            </Link>
-          </div>
         </div>
       </div>
     );
@@ -128,6 +124,33 @@ const AffiliateDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* KYC Banner - Show if KYC not approved */}
+      {needsKYC && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-amber-100 p-2 rounded-lg">
+              <Award className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-800">
+                {kycStatus === 'pending' ? 'Complete KYC to Withdraw Earnings' : 'KYC Verification Required'}
+              </p>
+              <p className="text-sm text-amber-700">
+                {kycStatus === 'rejected'
+                  ? 'Your KYC was rejected. Please update your documents to withdraw earnings.'
+                  : 'You can use all affiliate features. Complete KYC verification to withdraw your earnings.'}
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/affiliate-dashboard/kyc"
+            className="bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-amber-700 transition-colors text-sm"
+          >
+            {kycStatus === 'rejected' ? 'Update KYC' : 'Complete KYC'}
+          </Link>
+        </div>
+      )}
+
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 sm:p-8 text-white">
         <div className="flex items-center justify-between flex-wrap gap-4">

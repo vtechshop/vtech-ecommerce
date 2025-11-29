@@ -8,7 +8,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 router.get(
   '/counts',
   authenticate,
-  authorize('admin', 'vendor'),
+  authorize(['admin', 'vendor']),
   notificationController.getNotificationCounts
 );
 
@@ -16,7 +16,7 @@ router.get(
 router.post(
   '/mark-read',
   authenticate,
-  authorize('admin', 'vendor'),
+  authorize(['admin', 'vendor']),
   notificationController.markNotificationsRead
 );
 

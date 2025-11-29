@@ -11,7 +11,7 @@ const shippingController = require('../controllers/shippingController');
 router.post(
   '/orders/:orderId/carrier',
   authenticate,
-  authorize('vendor', 'admin'),
+  authorize(['vendor', 'admin']),
   [
     body('carrier').notEmpty().withMessage('Carrier is required'),
     body('awb').notEmpty().withMessage('AWB is required'),
@@ -24,7 +24,7 @@ router.post(
 router.post(
   '/orders/:orderId/packed',
   authenticate,
-  authorize('vendor', 'admin'),
+  authorize(['vendor', 'admin']),
   shippingController.markAsPacked
 );
 
@@ -32,7 +32,7 @@ router.post(
 router.post(
   '/orders/:orderId/shipped',
   authenticate,
-  authorize('vendor', 'admin'),
+  authorize(['vendor', 'admin']),
   shippingController.markAsShipped
 );
 
@@ -40,7 +40,7 @@ router.post(
 router.get(
   '/orders/:orderId/label',
   authenticate,
-  authorize('vendor', 'admin'),
+  authorize(['vendor', 'admin']),
   shippingController.generateLabel
 );
 
@@ -57,7 +57,7 @@ router.get('/tracking', optionalAuth, shippingController.getTrackingInfo);
 router.post(
   '/orders/:orderId/sync',
   authenticate,
-  authorize('vendor', 'admin'),
+  authorize(['vendor', 'admin']),
   shippingController.syncTrackingData
 );
 
@@ -77,7 +77,7 @@ router.post(
 router.post(
   '/schedule-pickup',
   authenticate,
-  authorize('vendor', 'admin'),
+  authorize(['vendor', 'admin']),
   shippingController.schedulePickup
 );
 
@@ -85,7 +85,7 @@ router.post(
 router.post(
   '/create-shipment',
   authenticate,
-  authorize('vendor', 'admin'),
+  authorize(['vendor', 'admin']),
   shippingController.createShipment
 );
 

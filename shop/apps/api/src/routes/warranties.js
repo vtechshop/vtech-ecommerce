@@ -5,7 +5,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 // Generate warranty (typically called after order completion)
 // POST /api/warranties/generate
-router.post('/generate', authenticate, authorize('admin', 'vendor'), async (req, res, next) => {
+router.post('/generate', authenticate, authorize(['admin', 'vendor']), async (req, res, next) => {
   try {
     const warrantyData = await warrantyService.generateWarranty(req.body);
 
@@ -54,7 +54,7 @@ router.get('/:warrantyId', authenticate, async (req, res, next) => {
 
 // Get all warranties (admin only)
 // GET /api/warranties/admin/all
-router.get('/admin/all', authenticate, authorize('admin'), async (req, res, next) => {
+router.get('/admin/all', authenticate, authorize(['admin']), async (req, res, next) => {
   try {
     const filters = {
       status: req.query.status,
@@ -78,7 +78,7 @@ router.get('/admin/all', authenticate, authorize('admin'), async (req, res, next
 
 // Check and send notifications (admin only, typically called by cron job)
 // POST /api/warranties/admin/check-notifications
-router.post('/admin/check-notifications', authenticate, authorize('admin'), async (req, res, next) => {
+router.post('/admin/check-notifications', authenticate, authorize(['admin']), async (req, res, next) => {
   try {
     const notifications = await warrantyService.checkAndSendNotifications();
 
@@ -94,7 +94,7 @@ router.post('/admin/check-notifications', authenticate, authorize('admin'), asyn
 
 // Get warranty statistics (admin only)
 // GET /api/warranties/admin/stats
-router.get('/admin/stats', authenticate, authorize('admin'), async (req, res, next) => {
+router.get('/admin/stats', authenticate, authorize(['admin']), async (req, res, next) => {
   try {
     const Warranty = require('../models/Warranty');
 

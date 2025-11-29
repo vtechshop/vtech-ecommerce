@@ -79,6 +79,13 @@ const userSchema = new mongoose.Schema(
     referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     referralRewardPending: { type: Number, default: 0 }, // In paise
     referralRewardEarned: { type: Number, default: 0 }, // In paise
+
+    // Email preferences
+    emailPreferences: {
+      orderUpdates: { type: Boolean, default: true },
+      promotions: { type: Boolean, default: true },
+      newsletter: { type: Boolean, default: true },
+    },
   },
   {
     timestamps: true,

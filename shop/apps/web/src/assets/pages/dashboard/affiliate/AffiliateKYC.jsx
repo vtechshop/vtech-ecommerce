@@ -21,7 +21,7 @@ const AffiliateKYC = () => {
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
   // Fetch KYC data
-  const { data: kycData, isLoading } = useQuery({
+  const { data: kycData, isLoading, error } = useQuery({
     queryKey: ['affiliate-kyc'],
     queryFn: async () => {
       const response = await api.get('/affiliates/kyc');
@@ -42,6 +42,7 @@ const AffiliateKYC = () => {
         });
       }
     },
+    retry: false,
   });
 
   // Update KYC mutation
@@ -166,10 +167,49 @@ const AffiliateKYC = () => {
     );
   };
 
+  // Show loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Show error only for non-404 errors
+  if (error && error?.response?.status !== 404) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <Shield className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Unable to load KYC</h2>
+          <p className="text-gray-600 mb-4">Something went wrong. Please try again later.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-block bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // For 404 errors, show setup message and retry button
+  if (error && error?.response?.status === 404) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <Shield className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Setting up your affiliate profile...</h2>
+          <p className="text-gray-600 mb-4">Your profile is being created. Please refresh the page.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-block bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700"
+          >
+            Refresh Page
+          </button>
+        </div>
       </div>
     );
   }

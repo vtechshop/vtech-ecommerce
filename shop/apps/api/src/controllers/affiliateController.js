@@ -57,7 +57,21 @@ exports.apply = async (req, res, next) => {
 // Get dashboard stats
 exports.getDashboardStats = async (req, res, next) => {
   try {
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -72,12 +86,16 @@ exports.getDashboardStats = async (req, res, next) => {
     const stats = {
       totalClicks: affiliate.totalClicks,
       totalConversions: affiliate.totalConversions,
-      conversionRate: affiliate.totalClicks > 0 
-        ? ((affiliate.totalConversions / affiliate.totalClicks) * 100).toFixed(2) 
+      conversionRate: affiliate.totalClicks > 0
+        ? ((affiliate.totalConversions / affiliate.totalClicks) * 100).toFixed(2)
         : 0,
       totalEarnings: affiliate.totalEarnings,
       pendingEarnings: affiliate.pendingEarnings,
       paidEarnings: affiliate.paidEarnings,
+      // Include status info for frontend
+      status: affiliate.status,
+      kycStatus: affiliate.kyc?.status || 'pending',
+      code: affiliate.code,
     };
 
     res.json({
@@ -92,7 +110,21 @@ exports.getDashboardStats = async (req, res, next) => {
 // Get affiliate links
 exports.getLinks = async (req, res, next) => {
   try {
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -172,7 +204,21 @@ exports.getCommissions = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, status } = req.query;
 
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -217,7 +263,21 @@ exports.getPayouts = async (req, res, next) => {
   try {
     const { page = 1, limit = 20 } = req.query;
 
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -261,7 +321,21 @@ exports.getPayouts = async (req, res, next) => {
 // KYC Methods
 exports.getKYC = async (req, res, next) => {
   try {
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -299,7 +373,21 @@ exports.updateKYC = async (req, res, next) => {
       idNumber,
     } = req.body;
 
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -348,7 +436,21 @@ exports.uploadKYCDocument = async (req, res, next) => {
   try {
     const { type, url, filename } = req.body;
 
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -410,7 +512,21 @@ exports.deleteKYCDocument = async (req, res, next) => {
   try {
     const { documentId } = req.params;
 
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -455,7 +571,21 @@ exports.deleteKYCDocument = async (req, res, next) => {
 exports.generateProductLink = async (req, res, next) => {
   try {
     const { productId, customCommissionRate } = req.body;
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -482,7 +612,21 @@ exports.generateProductLink = async (req, res, next) => {
 // Get all product links for the affiliate
 exports.getProductLinks = async (req, res, next) => {
   try {
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({
@@ -506,7 +650,21 @@ exports.getProductLinks = async (req, res, next) => {
 exports.deleteAffiliateLink = async (req, res, next) => {
   try {
     const { linkId } = req.params;
-    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    let affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    // Auto-create affiliate profile if user is an affiliate but profile doesn't exist
+    if (!affiliate && req.user.role === 'affiliate') {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+
+      affiliate = await Affiliate.create({
+        userId: req.user._id,
+        code: generateAffiliateCode(user?.name || user?.email || 'affiliate'),
+        status: 'active',
+      });
+
+      logger.info(`Auto-created affiliate profile for user ${req.user._id}: ${affiliate.code}`);
+    }
 
     if (!affiliate) {
       return res.status(404).json({

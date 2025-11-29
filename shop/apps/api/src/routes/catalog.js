@@ -154,6 +154,23 @@ router.get('/products/:productId/similar', async (req, res, next) => {
   }
 });
 
+// GET /catalog/products/:productId/related - Alias for similar products (frontend compatibility)
+router.get('/products/:productId/related', async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    const { limit = 8 } = req.query;
+
+    const relatedProducts = await recommendationService.getSimilarProducts(
+      productId,
+      parseInt(limit)
+    );
+
+    res.json({ success: true, data: relatedProducts });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /catalog/products/:productId/bought-together - Frequently bought together
 router.get('/products/:productId/bought-together', async (req, res, next) => {
   try {

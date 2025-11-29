@@ -42,4 +42,8 @@ router.post('/wishlist/toggle/:productId', userController.toggleWishlist);
 router.post('/wishlist/:productId', userController.addToWishlist);
 router.delete('/wishlist/:productId', userController.removeFromWishlist);
 
+// Email preferences
+router.get('/email-preferences', userController.getEmailPreferences);
+router.put('/email-preferences', userController.updateEmailPreferences);
+
 module.exports = router;

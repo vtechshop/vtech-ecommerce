@@ -1,11 +1,15 @@
 // FILE: apps/web/src/pages/dashboard/affiliate/AllProductLinks.jsx
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import { Copy, Check, Download, Eye, EyeOff } from 'lucide-react';
+import { Copy, Check, Download, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
+
+// Placeholder SVG as data URL to avoid 404 errors
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" fill="%23f3f4f6"/%3E%3Cpath d="M19 17a3 3 0 1 1 6 0 3 3 0 0 1-6 0zm-2 14l5-6 3 3 7-9 6 8v4H17v-0z" fill="%239ca3af"/%3E%3C/svg%3E';
 
 const AllProductLinks = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,12 +19,13 @@ const AllProductLinks = () => {
   const toast = useToast();
 
   // Fetch affiliate info
-  const { data: affiliateData } = useQuery({
+  const { data: affiliateData, error: affiliateError } = useQuery({
     queryKey: ['affiliate-links'],
     queryFn: async () => {
       const response = await api.get('/affiliates/links');
       return response.data.data;
     },
+    retry: false,
   });
 
   // Fetch all products
@@ -136,12 +141,51 @@ const AllProductLinks = () => {
     toast.success('CSV downloaded successfully!');
   };
 
+  // Show loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
           <p className="text-gray-700">Loading products...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error only for non-404 errors
+  if (affiliateError && affiliateError?.response?.status !== 404) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Unable to load affiliate data</h2>
+          <p className="text-gray-600 mb-4">Something went wrong. Please try again later.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-block bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // For 404 errors on affiliate data, show setup message
+  if (affiliateError && affiliateError?.response?.status === 404) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Setting up your affiliate profile...</h2>
+          <p className="text-gray-600 mb-4">Your profile is being created. Please refresh the page.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-block bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700"
+          >
+            Refresh Page
+          </button>
         </div>
       </div>
     );
@@ -319,11 +363,12 @@ const AllProductLinks = () => {
                       {/* Product Image */}
                       <td className="px-4 py-3">
                         <img
-                          src={product.images?.[0] || '/placeholder.png'}
+                          src={product.images?.[0] || PLACEHOLDER_IMAGE}
                           alt={product.title}
                           className="w-12 h-12 object-cover rounded border border-gray-200"
                           onError={(e) => {
-                            e.target.src = '/placeholder.png';
+                            e.target.onerror = null; // Prevent infinite loop
+                            e.target.src = PLACEHOLDER_IMAGE;
                           }}
                         />
                       </td>

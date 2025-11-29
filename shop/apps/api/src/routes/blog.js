@@ -17,14 +17,14 @@ router.post('/:slug/comments', authenticate, blogController.addComment);
 router.post('/comments/:commentId/like', authenticate, blogController.likeComment);
 
 // Admin routes
-router.get('/admin/all', authenticate, authorize('admin'), blogController.adminGetBlogs);
-router.get('/admin/stats', authenticate, authorize('admin'), blogController.getBlogStats);
-router.get('/admin/:id', authenticate, authorize('admin'), blogController.adminGetBlog);
+router.get('/admin/all', authenticate, authorize(['admin']), blogController.adminGetBlogs);
+router.get('/admin/stats', authenticate, authorize(['admin']), blogController.getBlogStats);
+router.get('/admin/:id', authenticate, authorize(['admin']), blogController.adminGetBlog);
 
 router.post(
   '/admin',
   authenticate,
-  authorize('admin'),
+  authorize(['admin']),
   uploadMultipleMiddleware(['featuredImage', 'images']),
   blogController.createBlog
 );
@@ -32,15 +32,15 @@ router.post(
 router.put(
   '/admin/:id',
   authenticate,
-  authorize('admin'),
+  authorize(['admin']),
   uploadMultipleMiddleware(['featuredImage', 'images']),
   blogController.updateBlog
 );
 
-router.delete('/admin/:id', authenticate, authorize('admin'), blogController.deleteBlog);
+router.delete('/admin/:id', authenticate, authorize(['admin']), blogController.deleteBlog);
 
 // Comment moderation
-router.put('/admin/comments/:commentId/moderate', authenticate, authorize('admin'), blogController.moderateComment);
-router.delete('/admin/comments/:commentId', authenticate, authorize('admin'), blogController.deleteComment);
+router.put('/admin/comments/:commentId/moderate', authenticate, authorize(['admin']), blogController.moderateComment);
+router.delete('/admin/comments/:commentId', authenticate, authorize(['admin']), blogController.deleteComment);
 
 module.exports = router;
