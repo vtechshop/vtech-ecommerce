@@ -67,6 +67,14 @@ app.use(cors({
     // Allow requests with no origin (mobile apps, curl, Postman, etc.)
     if (!origin) return callback(null, true);
 
+    // In development, allow local network IPs (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    if (env.NODE_ENV === 'development' || env.NODE_ENV === 'test') {
+      const localNetworkPattern = /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/;
+      if (localNetworkPattern.test(origin)) {
+        return callback(null, true);
+      }
+    }
+
     if (allowedOrigins.indexOf(origin) === -1) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
