@@ -129,21 +129,21 @@ class NotificationService {
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Shipping Address</h3>
-              <p style="margin: 5px 0;"><strong>${order.shipTo.fullName}</strong></p>
-              <p style="margin: 5px 0;">${order.shipTo.address}</p>
-              <p style="margin: 5px 0;">${order.shipTo.city}, ${order.shipTo.state} ${order.shipTo.zip}</p>
-              <p style="margin: 5px 0;">Phone: ${order.shipTo.phone}</p>
+              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName || 'N/A'}</strong></p>
+              <p style="margin: 5px 0;">${order.shipTo?.address || 'N/A'}</p>
+              <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zip || ''}</p>
+              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone || 'N/A'}</p>
             </div>
 
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
-              <strong>Payment Method:</strong> ${order.payment.method === 'cod' ? 'Cash on Delivery (COD)' : order.payment.method.toUpperCase()}
+              <strong>Payment Method:</strong> ${order.payment?.method === 'cod' ? 'Cash on Delivery (COD)' : (order.payment?.method || 'N/A').toUpperCase()}
             </div>
 
             <p style="text-align: center;">
               <a href="${env.CLIENT_URL}/orders/${order.orderId}" class="button">Track Your Order</a>
             </p>
 
-            <p style="margin-top: 30px;">Need help? Contact our support team at <a href="mailto:${env.SUPPORT_EMAIL}">${env.SUPPORT_EMAIL}</a> or call ${env.SUPPORT_PHONE}.</p>
+            <p style="margin-top: 30px;">Need help? Contact our support team at <a href="mailto:${env.SUPPORT_EMAIL || 'support@vtechshop.com'}">${env.SUPPORT_EMAIL || 'support@vtechshop.com'}</a> or call ${env.SUPPORT_PHONE || 'N/A'}.</p>
 
             <p><em>- Vtech Team</em></p>
           </div>
@@ -159,6 +159,12 @@ class NotificationService {
   }
 
   async sendMultiVendorOrderConfirmation(user, vendorOrders, totalAmount) {
+    // Guard against empty vendorOrders
+    if (!vendorOrders || vendorOrders.length === 0) {
+      logger.warn('sendMultiVendorOrderConfirmation called with empty vendorOrders');
+      return { success: false, reason: 'NO_ORDERS' };
+    }
+
     // Build summary of all orders
     const ordersSummaryHtml = vendorOrders.map((order, index) => `
       <div style="background: white; border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 15px 0;">
@@ -250,14 +256,14 @@ class NotificationService {
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Shipping Address</h3>
-              <p style="margin: 5px 0;"><strong>${vendorOrders[0].shipTo.fullName}</strong></p>
-              <p style="margin: 5px 0;">${vendorOrders[0].shipTo.address}</p>
-              <p style="margin: 5px 0;">${vendorOrders[0].shipTo.city}, ${vendorOrders[0].shipTo.state} ${vendorOrders[0].shipTo.zip}</p>
-              <p style="margin: 5px 0;">Phone: ${vendorOrders[0].shipTo.phone}</p>
+              <p style="margin: 5px 0;"><strong>${vendorOrders[0]?.shipTo?.fullName || 'N/A'}</strong></p>
+              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.address || 'N/A'}</p>
+              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.city || ''}, ${vendorOrders[0]?.shipTo?.state || ''} ${vendorOrders[0]?.shipTo?.zip || ''}</p>
+              <p style="margin: 5px 0;">Phone: ${vendorOrders[0]?.shipTo?.phone || 'N/A'}</p>
             </div>
 
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
-              <strong>Payment Method:</strong> ${vendorOrders[0].payment.method === 'cod' ? 'Cash on Delivery (COD)' : vendorOrders[0].payment.method.toUpperCase()}
+              <strong>Payment Method:</strong> ${vendorOrders[0]?.payment?.method === 'cod' ? 'Cash on Delivery (COD)' : (vendorOrders[0]?.payment?.method || 'N/A').toUpperCase()}
             </div>
 
             <p style="text-align: center;">
@@ -362,10 +368,10 @@ class NotificationService {
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Delivery Address</h3>
-              <p style="margin: 5px 0;"><strong>${order.shipTo.fullName}</strong></p>
-              <p style="margin: 5px 0;">${order.shipTo.address}</p>
-              <p style="margin: 5px 0;">${order.shipTo.city}, ${order.shipTo.state} ${order.shipTo.zip}</p>
-              <p style="margin: 5px 0;">Phone: ${order.shipTo.phone}</p>
+              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName || 'N/A'}</strong></p>
+              <p style="margin: 5px 0;">${order.shipTo?.address || 'N/A'}</p>
+              <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zip || ''}</p>
+              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone || 'N/A'}</p>
             </div>
 
             <div class="alert">
@@ -432,9 +438,9 @@ class NotificationService {
 
             <div class="stats">
               <p style="margin: 5px 0;"><strong>Vendor:</strong> ${vendor?.name || 'N/A'}</p>
-              <p style="margin: 5px 0;"><strong>Customer:</strong> ${order.shipTo.fullName} ${order.isGuest ? '(Guest)' : ''}</p>
+              <p style="margin: 5px 0;"><strong>Customer:</strong> ${order.shipTo?.fullName || 'N/A'} ${order.isGuest ? '(Guest)' : ''}</p>
               <p style="margin: 5px 0;"><strong>Email:</strong> ${order.guestEmail || 'Registered User'}</p>
-              <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${order.payment.method === 'cod' ? 'Cash on Delivery' : order.payment.method.toUpperCase()}</p>
+              <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${order.payment?.method === 'cod' ? 'Cash on Delivery' : (order.payment?.method || 'N/A').toUpperCase()}</p>
               <p style="margin: 5px 0;"><strong>Vendor Products Total:</strong> ₹${totalAmount.toFixed(2)}</p>
             </div>
 
@@ -459,10 +465,10 @@ class NotificationService {
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Shipping Address</h3>
-              <p style="margin: 5px 0;"><strong>${order.shipTo.fullName}</strong></p>
-              <p style="margin: 5px 0;">${order.shipTo.address}</p>
-              <p style="margin: 5px 0;">${order.shipTo.city}, ${order.shipTo.state} ${order.shipTo.zip}</p>
-              <p style="margin: 5px 0;">Phone: ${order.shipTo.phone}</p>
+              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName || 'N/A'}</strong></p>
+              <p style="margin: 5px 0;">${order.shipTo?.address || 'N/A'}</p>
+              <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zip || ''}</p>
+              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone || 'N/A'}</p>
             </div>
 
             <p style="text-align: center;">

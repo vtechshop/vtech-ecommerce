@@ -621,7 +621,15 @@ exports.createOrder = async (req, res, next) => {
     for (const vendorOrder of vendorOrders) {
       try {
         // Get vendor from first item (all items in vendorOrder are from same vendor)
-        const vendorId = vendorOrder.items[0].vendorId;
+        if (!vendorOrder.items || vendorOrder.items.length === 0) {
+          logger.warn(`Skipping notification for order ${vendorOrder.orderId}: no items`);
+          continue;
+        }
+        const vendorId = vendorOrder.items[0]?.vendorId;
+        if (!vendorId) {
+          logger.warn(`Skipping notification for order ${vendorOrder.orderId}: no vendorId`);
+          continue;
+        }
         const vendor = await User.findById(vendorId);
 
         // Send to vendor
