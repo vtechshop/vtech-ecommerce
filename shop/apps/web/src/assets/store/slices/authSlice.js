@@ -9,15 +9,22 @@ const initialState = {
   isAuthenticated: false,
   loading: false,
   error: null,
+  initialized: false, // Tracks if we've completed the initial auth check
 };
 
 export const initializeAuth = createAsyncThunk(
   'auth/initialize',
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
+    // Prevent multiple initialization attempts
+    const state = getState();
+    if (state.auth.initialized) {
+      return state.auth.user ? { user: state.auth.user, accessToken: state.auth.accessToken } : null;
+    }
+
     try {
       const accessToken = Cookies.get('accessToken');
 
-      // If no access token, try to refresh using the refresh token
+      // If no access token, try to refresh using the refresh token (stored as httpOnly cookie)
       if (!accessToken) {
         try {
           const refreshRes = await api.post('/auth/refresh');
@@ -33,6 +40,7 @@ export const initializeAuth = createAsyncThunk(
           return { user: res.data.data, accessToken: newAccessToken };
         } catch (refreshErr) {
           // No valid refresh token either, user needs to login
+          // Don't throw an error, just return null (not authenticated)
           return null;
         }
       }
@@ -41,8 +49,7 @@ export const initializeAuth = createAsyncThunk(
       const res = await api.get('/auth/me'); // Authorization header comes from api interceptor
       return { user: res.data.data, accessToken };
     } catch (err) {
-      // If /auth/me fails, the interceptor will try to refresh automatically
-      // If that also fails, we return null (not an error, just not authenticated)
+      // If /auth/me fails, clear the token and return null (not authenticated)
       Cookies.remove('accessToken');
       return null;
     }
@@ -131,6 +138,7 @@ const slice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.isAuthenticated = false;
+      state.initialized = false;
       Cookies.remove('accessToken');
     },
     updateUserProfile: (state, action) => {
@@ -146,13 +154,14 @@ const slice = createSlice({
     b.addCase(initializeAuth.pending, (s) => { s.loading = false; s.error = null; })
      .addCase(initializeAuth.fulfilled, (s, a) => {
        s.loading = false;
+       s.initialized = true;
        if (a.payload) {
          s.user = a.payload.user;
          s.accessToken = a.payload.accessToken;
          s.isAuthenticated = true;
        }
      })
-     .addCase(initializeAuth.rejected, (s, a) => { s.loading = false; s.error = null; s.isAuthenticated = false; })
+     .addCase(initializeAuth.rejected, (s, a) => { s.loading = false; s.error = null; s.isAuthenticated = false; s.initialized = true; })
 
      .addCase(login.pending, (s) => { s.loading = true; s.error = null; })
      .addCase(login.fulfilled, (s, a) => {
@@ -177,6 +186,7 @@ const slice = createSlice({
        s.accessToken = null;
        s.isAuthenticated = false;
        s.error = null;
+       s.initialized = false; // Allow re-initialization after logout
      })
 
      .addCase(refreshUser.pending, (s) => { s.loading = true; })

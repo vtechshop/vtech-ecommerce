@@ -90,10 +90,11 @@ api.interceptors.response.use(
       return api.request(originalRequest);
     }
 
-    // Don't try to refresh on login/register/refresh endpoints
+    // Don't try to refresh on login/register/refresh/me endpoints
     const isAuthEndpoint = originalRequest.url?.includes('/auth/login') ||
                           originalRequest.url?.includes('/auth/register') ||
-                          originalRequest.url?.includes('/auth/refresh');
+                          originalRequest.url?.includes('/auth/refresh') ||
+                          originalRequest.url?.includes('/auth/me');
 
     // If error is 401 and we haven't tried to refresh yet, and it's not an auth endpoint
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
@@ -137,10 +138,9 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         Cookies.remove('accessToken');
 
-        // Redirect to login if we're not already there
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
-        }
+        // Don't redirect here - let the authSlice handle the redirect
+        // Redirecting here causes infinite loops as it reloads the page
+        // and triggers initializeAuth again
 
         return Promise.reject(refreshError);
       } finally {
