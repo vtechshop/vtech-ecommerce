@@ -130,6 +130,7 @@ const Tickets = () => {
   };
 
   const getStatusBadge = (status) => {
+    if (!status) return null;
     const styles = {
       open: 'bg-blue-100 text-blue-800',
       in_progress: 'bg-yellow-100 text-yellow-800',
@@ -137,13 +138,14 @@ const Tickets = () => {
       closed: 'bg-gray-100 text-gray-900',
     };
     return (
-      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${styles[status]}`}>
+      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${styles[status] || 'bg-gray-100 text-gray-900'}`}>
         {status.replace('_', ' ').toUpperCase()}
       </span>
     );
   };
 
   const getPriorityBadge = (priority) => {
+    if (!priority) return null;
     const styles = {
       low: 'bg-gray-100 text-gray-900',
       medium: 'bg-blue-100 text-blue-800',
@@ -151,7 +153,7 @@ const Tickets = () => {
       urgent: 'bg-red-100 text-red-800',
     };
     return (
-      <span className={`px-2 py-1 text-xs font-semibold rounded ${styles[priority]}`}>
+      <span className={`px-2 py-1 text-xs font-semibold rounded ${styles[priority] || 'bg-gray-100 text-gray-900'}`}>
         {priority.toUpperCase()}
       </span>
     );

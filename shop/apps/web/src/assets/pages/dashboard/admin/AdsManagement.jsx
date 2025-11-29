@@ -38,7 +38,7 @@ const AdsManagement = () => {
     queryKey: ['admin-ads', statusFilter],
     queryFn: async () => {
       const params = statusFilter ? `?status=${statusFilter}` : '';
-      const response = await api.get(`/ads/campaigns${params}`);
+      const response = await api.get(`/admin/ads/campaigns${params}`);
       return response.data;
     },
   });
@@ -56,10 +56,10 @@ const AdsManagement = () => {
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (selectedAd) {
-        const response = await api.put(`/ads/campaigns/${selectedAd._id}`, data);
+        const response = await api.put(`/admin/ads/campaigns/${selectedAd._id}`, data);
         return response.data;
       } else {
-        const response = await api.post('/ads/campaigns', data);
+        const response = await api.post('/admin/ads/campaigns', data);
         return response.data;
       }
     },
@@ -77,7 +77,7 @@ const AdsManagement = () => {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      const response = await api.delete(`/ads/campaigns/${id}`);
+      const response = await api.delete(`/admin/ads/campaigns/${id}`);
       return response.data;
     },
     onSuccess: () => {
@@ -92,7 +92,7 @@ const AdsManagement = () => {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }) => {
-      const response = await api.put(`/ads/campaigns/${id}`, { status });
+      const response = await api.put(`/admin/ads/campaigns/${id}/status`, { status });
       return response.data;
     },
     onSuccess: () => {

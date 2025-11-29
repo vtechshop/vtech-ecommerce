@@ -1,28 +1,38 @@
 // FILE: apps/web/src/pages/dashboard/support/SupportDashboard.jsx
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
-import Spinner from '@/components/common/Spinner';
 import { formatDate } from '@/utils/format';
+import { useToast } from '@/components/common/ToastContainer';
 
 const SupportDashboard = () => {
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [orderResult, setOrderResult] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState(null);
 
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!search.trim()) return;
 
     setIsSearching(true);
+    setSearchError(null);
     try {
-      const response = await api.get(`/admin/orders?search=${search}`);
-      setOrderResult(response.data.data[0] || null);
+      const response = await api.get(`/admin/orders?search=${encodeURIComponent(search.trim())}`);
+      const orders = response.data?.data || [];
+      if (orders.length > 0) {
+        setOrderResult(orders[0]);
+      } else {
+        setOrderResult(null);
+        setSearchError('No orders found matching your search.');
+      }
     } catch (error) {
-      alert('Order not found');
+      const errorMessage = error.response?.data?.error?.message || 'Failed to search orders';
+      setSearchError(errorMessage);
       setOrderResult(null);
+      toast.error(errorMessage);
     } finally {
       setIsSearching(false);
     }
@@ -47,12 +57,18 @@ const SupportDashboard = () => {
           </Button>
         </form>
 
+        {searchError && (
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-amber-800">{searchError}</p>
+          </div>
+        )}
+
         {orderResult && (
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-semibold mb-2">Order: {orderResult.orderId}</h3>
-            <p className="text-sm text-gray-700">Status: {orderResult.status}</p>
-            <p className="text-sm text-gray-700">Customer: {orderResult.userId?.email}</p>
-            <p className="text-sm text-gray-700">Date: {formatDate(orderResult.createdAt)}</p>
+            <h3 className="font-semibold mb-2">Order: {orderResult.orderId || 'N/A'}</h3>
+            <p className="text-sm text-gray-700">Status: {orderResult.status || 'Unknown'}</p>
+            <p className="text-sm text-gray-700">Customer: {orderResult.userId?.email || orderResult.guestEmail || 'N/A'}</p>
+            <p className="text-sm text-gray-700">Date: {orderResult.createdAt ? formatDate(orderResult.createdAt) : 'N/A'}</p>
           </div>
         )}
       </div>
