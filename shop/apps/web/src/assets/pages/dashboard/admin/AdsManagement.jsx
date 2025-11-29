@@ -64,7 +64,7 @@ const AdsManagement = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-ads']);
+      queryClient.invalidateQueries({ queryKey: ['admin-ads'] });
       toast.success(selectedAd ? 'Ad campaign updated successfully' : 'Ad campaign created successfully');
       setModalOpen(false);
       resetForm();
@@ -81,7 +81,7 @@ const AdsManagement = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-ads']);
+      queryClient.invalidateQueries({ queryKey: ['admin-ads'] });
       toast.success('Ad campaign deleted successfully');
     },
     onError: (error) => {
@@ -96,7 +96,7 @@ const AdsManagement = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-ads']);
+      queryClient.invalidateQueries({ queryKey: ['admin-ads'] });
       toast.success('Status updated successfully');
     },
     onError: (error) => {

@@ -30,7 +30,7 @@ const KYCReview = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-pending-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['admin-pending-kyc'] });
       toast.success('Vendor KYC approved successfully');
       setViewModalOpen(false);
       setSelectedKYC(null);
@@ -47,7 +47,7 @@ const KYCReview = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-pending-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['admin-pending-kyc'] });
       toast.success('Vendor KYC rejected');
       setRejectModalOpen(false);
       setViewModalOpen(false);
@@ -66,7 +66,7 @@ const KYCReview = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-pending-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['admin-pending-kyc'] });
       toast.success('Affiliate KYC approved successfully');
       setViewModalOpen(false);
       setSelectedKYC(null);
@@ -83,7 +83,7 @@ const KYCReview = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-pending-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['admin-pending-kyc'] });
       toast.success('Affiliate KYC rejected');
       setRejectModalOpen(false);
       setViewModalOpen(false);

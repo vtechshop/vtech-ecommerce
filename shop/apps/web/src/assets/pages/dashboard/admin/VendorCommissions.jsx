@@ -52,8 +52,8 @@ const VendorCommissions = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-vendor-commissions']);
-      queryClient.invalidateQueries(['vendor-commission-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
       toast.success('Commission approved!');
     },
     onError: (error) => {
@@ -68,8 +68,8 @@ const VendorCommissions = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-vendor-commissions']);
-      queryClient.invalidateQueries(['vendor-commission-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
       toast.success('Commission marked as paid!');
     },
     onError: (error) => {
@@ -84,8 +84,8 @@ const VendorCommissions = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-vendor-commissions']);
-      queryClient.invalidateQueries(['vendor-commission-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
       toast.success('Commission rejected');
     },
     onError: (error) => {
@@ -102,8 +102,8 @@ const VendorCommissions = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries(['admin-vendor-commissions']);
-      queryClient.invalidateQueries(['vendor-commission-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
       toast.success(`${data.data.count} commissions approved!`);
     },
     onError: (error) => {

@@ -33,7 +33,7 @@ const Ads = () => {
       await api.put(`/ads/campaigns/${id}`, { status: 'paused' });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['ad-campaigns']);
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
     },
   });
 
@@ -42,7 +42,7 @@ const Ads = () => {
       await api.put(`/ads/campaigns/${id}`, { status: 'active' });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['ad-campaigns']);
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
     },
   });
 

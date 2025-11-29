@@ -24,7 +24,7 @@ const Settings = () => {
       await api.put(`/admin/settings/${key}`, { value, type, category, description });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-settings']);
+      queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
       alert('Setting updated successfully');
     },
   });
@@ -99,7 +99,7 @@ const Settings = () => {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">System Settings</h1>
         <Button
-          onClick={() => queryClient.invalidateQueries(['admin-settings'])}
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-settings'] })}
           variant="outline"
           className="flex items-center gap-2"
         >

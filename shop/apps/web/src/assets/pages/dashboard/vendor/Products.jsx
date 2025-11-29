@@ -63,7 +63,7 @@ const Products = () => {
       await api.delete(`/vendors/products/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['vendor-products']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-products'] });
       setToastMessage('Product deleted successfully');
       setToastType('success');
       setShowToast(true);
@@ -258,7 +258,7 @@ const Products = () => {
             setEditingProduct(null);
           }}
           onSave={() => {
-            queryClient.invalidateQueries(['vendor-products']);
+            queryClient.invalidateQueries({ queryKey: ['vendor-products'] });
             setIsModalOpen(false);
             setEditingProduct(null);
           }}

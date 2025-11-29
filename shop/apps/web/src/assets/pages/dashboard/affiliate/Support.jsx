@@ -47,7 +47,7 @@ const Support = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['affiliate-tickets']);
+      queryClient.invalidateQueries({ queryKey: ['affiliate-tickets'] });
       setShowCreateModal(false);
       setFormData({ subject: '', description: '', category: 'other', priority: 'medium' });
       toast.success('Ticket created successfully!');
@@ -64,8 +64,8 @@ const Support = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['ticket', selectedTicket]);
-      queryClient.invalidateQueries(['affiliate-tickets']);
+      queryClient.invalidateQueries({ queryKey: ['ticket', selectedTicket] });
+      queryClient.invalidateQueries({ queryKey: ['affiliate-tickets'] });
       setNewMessage('');
       toast.success('Message sent successfully!');
     },

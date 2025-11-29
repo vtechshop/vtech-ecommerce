@@ -54,8 +54,8 @@ const BecomeVendor = () => {
         dispatch(setUser(meResponse.data.data));
 
         // Invalidate notification counts so admin sees new vendor
-        queryClient.invalidateQueries(['notification-counts']);
-        queryClient.invalidateQueries(['admin-vendors']);
+        queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
 
         toast.success('Vendor application submitted successfully! Please wait for admin approval.');
       } catch (error) {
@@ -293,7 +293,7 @@ const BecomeVendor = () => {
             <Button
               type="submit"
               variant="primary"
-              loading={onboardMutation.isLoading}
+              loading={onboardMutation.isPending}
               disabled={(user?.role === 'affiliate' || user?.role === 'support') && !confirmRoleSwitch}
             >
               Submit Application

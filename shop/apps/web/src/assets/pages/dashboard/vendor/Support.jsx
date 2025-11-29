@@ -49,7 +49,7 @@ const Support = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['vendor-tickets']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-tickets'] });
       setShowCreateModal(false);
       setFormData({ subject: '', description: '', category: 'other', priority: 'medium' });
       setAttachments([]);
@@ -67,8 +67,8 @@ const Support = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['ticket', selectedTicket]);
-      queryClient.invalidateQueries(['vendor-tickets']);
+      queryClient.invalidateQueries({ queryKey: ['ticket', selectedTicket] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-tickets'] });
       setNewMessage('');
       toast.success('Message sent successfully!');
     },

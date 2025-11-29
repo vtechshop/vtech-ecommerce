@@ -24,7 +24,7 @@ const Inventory = () => {
       await api.put(`/vendors/inventory/${productId}`, { stock });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['inventory']);
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       alert('Stock updated successfully');
     },
   });

@@ -7,6 +7,7 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
 const VendorOrders = () => {
   // Restore page and filter from sessionStorage on component mount
@@ -120,14 +121,19 @@ const VendorOrders = () => {
                 </div>
 
                 <div className="space-y-2 mb-4">
-                  {order.items.map((item, index) => (
+                  {(order.items || []).map((item, index) => (
                     <div key={index} className="flex items-center gap-3">
-                      <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded" />
+                      <img
+                        src={item.image || PLACEHOLDER_IMAGE_SM}
+                        alt={item.name || 'Product'}
+                        className="w-12 h-12 object-cover rounded"
+                        onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
+                      />
                       <div className="flex-1">
                         <p className="font-medium text-sm">{item.name}</p>
                         <p className="text-xs text-gray-700">Qty: {item.qty}</p>
                       </div>
-                      <p className="font-semibold">{formatCurrency(item.priceSnapshot * item.qty)}</p>
+                      <p className="font-semibold">{formatCurrency((item.priceSnapshot || 0) * (item.qty || 0))}</p>
                     </div>
                   ))}
                 </div>
@@ -135,7 +141,7 @@ const VendorOrders = () => {
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div>
                     <p className="text-sm text-gray-700">Total Amount</p>
-                    <p className="text-xl font-bold">{formatCurrency(order.totals.total)}</p>
+                    <p className="text-xl font-bold">{formatCurrency(order.totals?.total || 0)}</p>
                   </div>
                   <Link to={`/vendor-dashboard/orders/${order._id}`}>
                     <button className="btn btn-primary">View Details</button>

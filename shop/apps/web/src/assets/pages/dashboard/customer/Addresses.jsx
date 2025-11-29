@@ -38,7 +38,7 @@ const Addresses = () => {
       return response.data.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['addresses']);
+      queryClient.invalidateQueries({ queryKey: ['addresses'] });
       setIsModalOpen(false);
       resetForm();
     },
@@ -54,7 +54,7 @@ const Addresses = () => {
       return response.data.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['addresses']);
+      queryClient.invalidateQueries({ queryKey: ['addresses'] });
       setIsModalOpen(false);
       resetForm();
     },
@@ -69,7 +69,7 @@ const Addresses = () => {
       await api.delete(`/user/addresses/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['addresses']);
+      queryClient.invalidateQueries({ queryKey: ['addresses'] });
     },
     onError: (error) => {
       console.error('Failed to delete address:', error);

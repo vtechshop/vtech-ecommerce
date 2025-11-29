@@ -38,7 +38,7 @@ const Affiliate = () => {
       await api.put(`/admin/affiliates/${id}/approve`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-affiliates']);
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
       setViewingAffiliate(null);
       alert('Affiliate approved successfully');
     },
@@ -49,7 +49,7 @@ const Affiliate = () => {
       await api.put(`/admin/affiliates/${id}/reject`, { reason });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-affiliates']);
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
       setViewingAffiliate(null);
       alert('Affiliate rejected');
     },
@@ -60,7 +60,7 @@ const Affiliate = () => {
       await api.put(`/admin/affiliates/${id}/suspend`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-affiliates']);
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
       setViewingAffiliate(null);
       alert('Affiliate suspended');
     },

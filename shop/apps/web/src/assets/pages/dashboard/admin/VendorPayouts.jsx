@@ -53,8 +53,8 @@ const VendorPayouts = () => {
         );
       }
 
-      queryClient.invalidateQueries(['admin', 'payouts', 'pending']);
-      queryClient.invalidateQueries(['admin', 'commissions']);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'payouts', 'pending'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'commissions'] });
       setShowPayoutModal(false);
       setSelectedVendor(null);
     },
@@ -71,7 +71,7 @@ const VendorPayouts = () => {
     },
     onSuccess: (data) => {
       toast.success(`Batch payout processed: ${data.data.vendor}`);
-      queryClient.invalidateQueries(['admin', 'payouts', 'pending']);
+      queryClient.invalidateQueries({ queryKey: ['admin', 'payouts', 'pending'] });
       setSelectedVendor(null);
     },
     onError: (error) => {

@@ -39,7 +39,7 @@ const Vendors = () => {
       await api.put(`/admin/vendors/${id}/approve`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-vendors']);
+      queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
       toast.success('Vendor approved successfully');
     },
     onError: (error) => {
@@ -52,7 +52,7 @@ const Vendors = () => {
       await api.put(`/admin/vendors/${id}/reject`, { reason });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-vendors']);
+      queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
       toast.success('Vendor rejected');
     },
     onError: (error) => {
@@ -65,7 +65,7 @@ const Vendors = () => {
       await api.put(`/admin/vendors/${id}/suspend`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-vendors']);
+      queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
       toast.success('Vendor suspended successfully');
     },
     onError: (error) => {
@@ -81,7 +81,7 @@ const Vendors = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries(['admin-vendors']);
+      queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
 
       // Update the viewing vendor with new data
       if (data.data && viewingVendor) {
@@ -177,7 +177,7 @@ const Vendors = () => {
         </div>
         <Button
           variant="outline"
-          onClick={() => queryClient.invalidateQueries(['admin-vendors'])}
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-vendors'] })}
           className="flex items-center gap-2"
         >
           <RefreshCw className="w-4 h-4" />
@@ -272,7 +272,7 @@ const Vendors = () => {
             onClick={() => {
               setSearchTerm('');
               setStatusFilter('');
-              queryClient.invalidateQueries(['admin-vendors']);
+              queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
             }}
             className="flex items-center gap-2 mx-auto"
           >

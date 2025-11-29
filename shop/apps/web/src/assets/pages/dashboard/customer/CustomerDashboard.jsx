@@ -118,7 +118,7 @@ const CustomerDashboard = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right font-semibold">
-                      {formatCurrency(order.totals.total)}
+                      {formatCurrency(order.totals?.total || 0)}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <Link

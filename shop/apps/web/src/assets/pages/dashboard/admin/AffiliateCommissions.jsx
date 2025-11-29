@@ -52,8 +52,8 @@ const AffiliateCommissions = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-affiliate-commissions']);
-      queryClient.invalidateQueries(['affiliate-commission-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['affiliate-commission-stats'] });
       toast.success('Commission marked as paid!');
     },
     onError: (error) => {
@@ -70,8 +70,8 @@ const AffiliateCommissions = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries(['admin-affiliate-commissions']);
-      queryClient.invalidateQueries(['affiliate-commission-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['affiliate-commission-stats'] });
       toast.success(`${data.data.count} commissions marked as paid!`);
     },
     onError: (error) => {

@@ -52,7 +52,7 @@ const AffiliateKYC = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['affiliate-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['affiliate-kyc'] });
       toast.success('KYC information updated successfully');
     },
     onError: (error) => {
@@ -67,7 +67,7 @@ const AffiliateKYC = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['affiliate-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['affiliate-kyc'] });
       toast.success('Document uploaded successfully');
       setUploadingDoc(false);
     },
@@ -84,7 +84,7 @@ const AffiliateKYC = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['affiliate-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['affiliate-kyc'] });
       toast.success('Document deleted successfully');
     },
     onError: (error) => {

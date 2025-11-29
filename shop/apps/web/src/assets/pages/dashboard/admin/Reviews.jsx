@@ -43,7 +43,7 @@ const Reviews = () => {
       await api.put(`/admin/reviews/${id}/status`, { status, rejectionReason });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-reviews']);
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
       toast.success('Review status updated successfully!');
     },
     onError: (error) => {
@@ -57,7 +57,7 @@ const Reviews = () => {
       await api.delete(`/admin/reviews/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-reviews']);
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
       toast.success('Review deleted successfully!');
     },
     onError: (error) => {
@@ -71,7 +71,7 @@ const Reviews = () => {
       await api.put(`/admin/reviews/${id}/respond`, { text });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-reviews']);
+      queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
       toast.success('Response added successfully!');
       setRespondingTo(null);
       setResponseText('');

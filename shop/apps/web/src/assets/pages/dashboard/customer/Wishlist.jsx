@@ -25,7 +25,7 @@ const Wishlist = () => {
       await api.delete(`/user/wishlist/${productId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['wishlist']);
+      queryClient.invalidateQueries({ queryKey: ['wishlist'] });
     },
   });
 

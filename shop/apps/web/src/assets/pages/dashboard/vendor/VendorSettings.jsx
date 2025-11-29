@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Settings, Store, CreditCard, FileText, DollarSign, Shield, Save, Upload } from 'lucide-react';
 import api from '../../../utils/api';
@@ -50,7 +50,7 @@ const VendorSettings = () => {
   });
 
   // Update state when data is loaded
-  useState(() => {
+  useEffect(() => {
     if (vendorData) {
       setProfileData({
         storeName: vendorData.storeName || '',
@@ -82,7 +82,7 @@ const VendorSettings = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['vendor-settings']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-settings'] });
       toast.success('Store profile updated successfully');
     },
     onError: (error) => {
@@ -97,7 +97,7 @@ const VendorSettings = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['vendor-settings']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-settings'] });
       toast.success('Bank details updated successfully');
     },
     onError: (error) => {
@@ -112,7 +112,7 @@ const VendorSettings = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['vendor-settings']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-settings'] });
       toast.success('Policies updated successfully');
     },
     onError: (error) => {
@@ -127,7 +127,7 @@ const VendorSettings = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['vendor-settings']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-settings'] });
       toast.success('Payout preferences updated successfully');
     },
     onError: (error) => {

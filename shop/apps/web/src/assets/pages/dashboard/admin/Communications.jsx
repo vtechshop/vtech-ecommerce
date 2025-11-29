@@ -52,7 +52,7 @@ const Communications = () => {
       await api.delete(`/communications/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-communications']);
+      queryClient.invalidateQueries({ queryKey: ['admin-communications'] });
       alert('Message deleted successfully');
     },
   });

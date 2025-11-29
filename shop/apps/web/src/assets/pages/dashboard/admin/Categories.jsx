@@ -26,7 +26,7 @@ const Categories = () => {
       await api.post('/admin/categories', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-categories']);
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       setShowModal(false);
       toast.success('Category created successfully!');
     },
@@ -40,7 +40,7 @@ const Categories = () => {
       await api.put(`/admin/categories/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-categories']);
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       setShowModal(false);
       toast.success('Category updated successfully!');
     },
@@ -54,7 +54,7 @@ const Categories = () => {
       await api.delete(`/admin/categories/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-categories']);
+      queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       toast.success('Category deleted successfully!');
     },
     onError: (error) => {

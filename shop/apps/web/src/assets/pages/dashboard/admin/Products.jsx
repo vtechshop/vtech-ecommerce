@@ -37,7 +37,7 @@ const Products = () => {
       await api.put(`/admin/products/${id}/approve`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-products']);
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       alert('Product approved successfully');
     },
   });
@@ -47,7 +47,7 @@ const Products = () => {
       await api.put(`/admin/products/${id}/reject`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-products']);
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       alert('Product rejected');
     },
   });
@@ -57,7 +57,7 @@ const Products = () => {
       await api.delete(`/admin/products/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-products']);
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       alert('Product deleted successfully');
     },
   });
@@ -291,7 +291,7 @@ const Products = () => {
             setViewingProduct(null);
           }}
           onSave={() => {
-            queryClient.invalidateQueries(['admin-products']);
+            queryClient.invalidateQueries({ queryKey: ['admin-products'] });
             setShowModal(false);
             setEditingProduct(null);
             setViewingProduct(null);

@@ -65,7 +65,7 @@ const CMSManagement = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries([activeTab === 'posts' ? 'admin-posts' : 'admin-pages']);
+      queryClient.invalidateQueries({ queryKey: [activeTab === 'posts' ? 'admin-posts' : 'admin-pages'] });
       toast.success(`${activeTab === 'posts' ? 'Post' : 'Page'} ${selected ? 'updated' : 'created'} successfully`);
       setModalOpen(false);
       resetForm();
@@ -84,7 +84,7 @@ const CMSManagement = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries([activeTab === 'posts' ? 'admin-posts' : 'admin-pages']);
+      queryClient.invalidateQueries({ queryKey: [activeTab === 'posts' ? 'admin-posts' : 'admin-pages'] });
       toast.success(`${activeTab === 'posts' ? 'Post' : 'Page'} deleted successfully`);
     },
     onError: (error) => {

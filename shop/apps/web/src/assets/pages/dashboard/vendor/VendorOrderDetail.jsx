@@ -51,8 +51,8 @@ const VendorOrderDetail = () => {
     },
     onSuccess: () => {
       toast.success('Tracking number added successfully');
-      queryClient.invalidateQueries(['vendor-order', id]);
-      queryClient.invalidateQueries(['tracking', order?.orderId]);
+      queryClient.invalidateQueries({ queryKey: ['vendor-order', id] });
+      queryClient.invalidateQueries({ queryKey: ['tracking', order?.orderId] });
       setAwbNumber('');
     },
     onError: (error) => {
@@ -69,7 +69,7 @@ const VendorOrderDetail = () => {
       toast.success('Order status updated successfully');
       // Update the cache with the new data
       queryClient.setQueryData(['vendor-order', id], data.data);
-      queryClient.invalidateQueries(['vendor-orders']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-orders'] });
       setNewStatus('');
     },
     onError: (error) => {

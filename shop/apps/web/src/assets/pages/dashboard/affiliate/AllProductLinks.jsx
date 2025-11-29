@@ -46,7 +46,7 @@ const AllProductLinks = () => {
     const vendorIds = new Set();
 
     products.forEach(product => {
-      if (product.vendorId && !vendorIds.has(product.vendorId._id)) {
+      if (product.vendorId?._id && !vendorIds.has(product.vendorId._id)) {
         vendorIds.add(product.vendorId._id);
         uniqueVendors.push(product.vendorId);
       }

@@ -280,7 +280,7 @@ const BecomeAffiliate = () => {
             <Button
               type="submit"
               variant="primary"
-              loading={applyMutation.isLoading}
+              loading={applyMutation.isPending}
               disabled={(user?.role === 'vendor' || user?.role === 'support') && !confirmRoleSwitch}
             >
               Submit Application

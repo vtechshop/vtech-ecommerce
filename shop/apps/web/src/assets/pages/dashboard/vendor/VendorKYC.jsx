@@ -62,7 +62,7 @@ const VendorKYC = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['vendor-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-kyc'] });
       toast.success('KYC information updated successfully');
     },
     onError: (error) => {
@@ -77,7 +77,7 @@ const VendorKYC = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['vendor-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-kyc'] });
       toast.success('Document uploaded successfully');
       setUploadingDoc(false);
     },
@@ -94,7 +94,7 @@ const VendorKYC = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['vendor-kyc']);
+      queryClient.invalidateQueries({ queryKey: ['vendor-kyc'] });
       toast.success('Document deleted successfully');
     },
     onError: (error) => {

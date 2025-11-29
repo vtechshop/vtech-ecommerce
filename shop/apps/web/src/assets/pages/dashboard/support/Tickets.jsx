@@ -57,8 +57,8 @@ const Tickets = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['ticket', selectedTicket]);
-      queryClient.invalidateQueries(['admin-tickets']);
+      queryClient.invalidateQueries({ queryKey: ['ticket', selectedTicket] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       setNewMessage('');
       toast.success('Reply sent successfully!');
     },
@@ -74,9 +74,9 @@ const Tickets = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['ticket', selectedTicket]);
-      queryClient.invalidateQueries(['admin-tickets']);
-      queryClient.invalidateQueries(['ticket-stats']);
+      queryClient.invalidateQueries({ queryKey: ['ticket', selectedTicket] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['ticket-stats'] });
       toast.success('Status updated successfully!');
     },
     onError: (error) => {
@@ -91,8 +91,8 @@ const Tickets = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['ticket', selectedTicket]);
-      queryClient.invalidateQueries(['admin-tickets']);
+      queryClient.invalidateQueries({ queryKey: ['ticket', selectedTicket] });
+      queryClient.invalidateQueries({ queryKey: ['admin-tickets'] });
       toast.success('Priority updated successfully!');
     },
     onError: (error) => {

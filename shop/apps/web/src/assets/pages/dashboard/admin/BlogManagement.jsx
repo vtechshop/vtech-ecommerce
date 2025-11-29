@@ -75,8 +75,8 @@ const BlogManagement = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-blogs']);
-      queryClient.invalidateQueries(['blog-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      queryClient.invalidateQueries({ queryKey: ['blog-stats'] });
       toast.success(`Blog post ${editingBlog ? 'updated' : 'created'} successfully`);
       setShowCreateModal(false);
       setEditingBlog(null);
@@ -94,8 +94,8 @@ const BlogManagement = () => {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-blogs']);
-      queryClient.invalidateQueries(['blog-stats']);
+      queryClient.invalidateQueries({ queryKey: ['admin-blogs'] });
+      queryClient.invalidateQueries({ queryKey: ['blog-stats'] });
       toast.success('Blog deleted successfully');
     },
     onError: (error) => {

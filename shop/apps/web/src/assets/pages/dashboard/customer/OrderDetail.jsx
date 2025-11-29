@@ -48,8 +48,8 @@ const OrderDetail = () => {
     onSuccess: () => {
       toast.success('Order cancelled successfully');
       setShowCancelModal(false);
-      queryClient.invalidateQueries(['order', id]);
-      queryClient.invalidateQueries(['orders']);
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to cancel order');

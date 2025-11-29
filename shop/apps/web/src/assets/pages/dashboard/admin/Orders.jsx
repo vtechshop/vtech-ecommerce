@@ -37,7 +37,7 @@ const Orders = () => {
       await api.put(`/admin/orders/${id}/status`, { status, description });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-orders']);
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
       alert('Order status updated successfully');
     },
   });

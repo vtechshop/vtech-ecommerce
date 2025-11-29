@@ -324,7 +324,7 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
       await api.put(`/admin/crm/tickets/${ticket._id}/status`, { status });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['crm-tickets']);
+      queryClient.invalidateQueries({ queryKey: ['crm-tickets'] });
       alert('Ticket status updated');
     },
   });
@@ -334,7 +334,7 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
       await api.post(`/admin/crm/tickets/${ticket._id}/reply`, { message });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['crm-tickets']);
+      queryClient.invalidateQueries({ queryKey: ['crm-tickets'] });
       setReply('');
       alert('Reply sent successfully');
     },

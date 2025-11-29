@@ -37,7 +37,7 @@ const Users = () => {
       await api.put(`/admin/users/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-users']);
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       alert('User updated successfully');
     },
   });
@@ -47,7 +47,7 @@ const Users = () => {
       await api.delete(`/admin/users/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-users']);
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       alert('User deleted successfully');
     },
   });
@@ -271,7 +271,7 @@ const Users = () => {
           user={resettingPasswordFor}
           onClose={() => setResettingPasswordFor(null)}
           onSuccess={() => {
-            queryClient.invalidateQueries(['admin-users']);
+            queryClient.invalidateQueries({ queryKey: ['admin-users'] });
             setResettingPasswordFor(null);
           }}
         />

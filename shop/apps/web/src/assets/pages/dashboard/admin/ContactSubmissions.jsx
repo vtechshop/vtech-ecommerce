@@ -47,7 +47,7 @@ const ContactSubmissions = () => {
       await api.put(`/admin/contact-submissions/${id}/status`, { status });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-contact-submissions']);
+      queryClient.invalidateQueries({ queryKey: ['admin-contact-submissions'] });
     },
   });
 
@@ -57,7 +57,7 @@ const ContactSubmissions = () => {
       await api.put(`/admin/contact-submissions/${id}/notes`, { adminNotes });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-contact-submissions']);
+      queryClient.invalidateQueries({ queryKey: ['admin-contact-submissions'] });
       setUpdatingNotes(null);
       setAdminNotes('');
     },
@@ -69,7 +69,7 @@ const ContactSubmissions = () => {
       await api.delete(`/admin/contact-submissions/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['admin-contact-submissions']);
+      queryClient.invalidateQueries({ queryKey: ['admin-contact-submissions'] });
       toast.success('Submission deleted successfully!');
     },
     onError: (error) => {
