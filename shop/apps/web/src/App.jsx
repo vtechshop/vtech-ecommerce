@@ -71,6 +71,40 @@ const Settings = lazy(() => import('./assets/pages/dashboard/customer/Settings')
 const BecomeVendor = lazy(() => import('./assets/pages/dashboard/customer/BecomeVendor'));
 const BecomeAffiliate = lazy(() => import('./assets/pages/dashboard/customer/BecomeAffiliate'));
 
+// Protected route wrapper - MUST be outside App component to prevent remounting on every render
+const ProtectedRoute = ({ user, children, allowedRoles = [], requireVendorApproval = false }) => {
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Check if user role is allowed
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    // Redirect to appropriate dashboard based on user role
+    const roleDashboardMap = {
+      admin: '/admin-dashboard',
+      vendor: '/vendor-dashboard',
+      affiliate: '/affiliate-dashboard',
+      support: '/support-dashboard',
+      customer: '/dashboard',
+    };
+    const userDashboard = roleDashboardMap[user.role] || '/dashboard';
+    return <Navigate to={userDashboard} replace />;
+  }
+
+  // Special check for vendors - require KYC approval (admin can bypass)
+  if (requireVendorApproval && user.role === 'vendor') {
+    // Check if vendor's KYC is approved
+    const isKYCApproved = user.vendorProfile?.kyc?.status === 'approved';
+
+    // Redirect to KYC page if vendor not approved
+    if (!isKYCApproved) {
+      return <Navigate to="/vendor-dashboard/kyc" replace />;
+    }
+  }
+
+  return children;
+};
+
 const VendorDashboard = lazy(() => import('./assets/pages/dashboard/vendor/VendorDashboard'));
 const VendorProducts = lazy(() => import('./assets/pages/dashboard/vendor/Products'));
 const Inventory = lazy(() => import('./assets/pages/dashboard/vendor/Inventory'));
@@ -158,40 +192,6 @@ function App() {
     previousUserRef.current = user;
   }, [user, queryClient]);
 
-  // Protected route wrapper
-  const ProtectedRoute = ({ children, allowedRoles = [], requireVendorApproval = false }) => {
-    if (!user) {
-      return <Navigate to="/login" replace />;
-    }
-
-    // Check if user role is allowed
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-      // Redirect to appropriate dashboard based on user role
-      const roleDashboardMap = {
-        admin: '/admin-dashboard',
-        vendor: '/vendor-dashboard',
-        affiliate: '/affiliate-dashboard',
-        support: '/support-dashboard',
-        customer: '/dashboard',
-      };
-      const userDashboard = roleDashboardMap[user.role] || '/dashboard';
-      return <Navigate to={userDashboard} replace />;
-    }
-
-    // Special check for vendors - require KYC approval (admin can bypass)
-    if (requireVendorApproval && user.role === 'vendor') {
-      // Check if vendor's KYC is approved
-      const isKYCApproved = user.vendorProfile?.kyc?.status === 'approved';
-
-      // Redirect to KYC page if vendor not approved
-      if (!isKYCApproved) {
-        return <Navigate to="/vendor-dashboard/kyc" replace />;
-      }
-    }
-
-    return children;
-  };
-
   return (
     <ToastProvider>
       <Suspense fallback={<Loading message="Loading page..." />}>
@@ -240,7 +240,7 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute allowedRoles={['customer', 'vendor', 'affiliate', 'support', 'admin']}>
+              <ProtectedRoute user={user} allowedRoles={['customer', 'vendor', 'affiliate', 'support', 'admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -259,7 +259,7 @@ function App() {
           <Route
             path="/vendor-dashboard"
             element={
-              <ProtectedRoute allowedRoles={['vendor', 'admin']}>
+              <ProtectedRoute user={user} allowedRoles={['vendor', 'admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -269,21 +269,21 @@ function App() {
             <Route path="support" element={<VendorSupport />} />
 
             {/* Protected vendor routes - require KYC approval */}
-            <Route index element={<ProtectedRoute requireVendorApproval><VendorDashboard /></ProtectedRoute>} />
-            <Route path="products" element={<ProtectedRoute requireVendorApproval><VendorProducts /></ProtectedRoute>} />
-            <Route path="inventory" element={<ProtectedRoute requireVendorApproval><Inventory /></ProtectedRoute>} />
-            <Route path="orders" element={<ProtectedRoute requireVendorApproval><VendorOrders /></ProtectedRoute>} />
-            <Route path="orders/:id" element={<ProtectedRoute requireVendorApproval><VendorOrderDetail /></ProtectedRoute>} />
-            <Route path="settlements" element={<ProtectedRoute requireVendorApproval><Settlements /></ProtectedRoute>} />
-            <Route path="ads" element={<ProtectedRoute requireVendorApproval><VendorAds /></ProtectedRoute>} />
-            <Route path="settings" element={<ProtectedRoute requireVendorApproval><VendorSettings /></ProtectedRoute>} />
+            <Route index element={<ProtectedRoute user={user} requireVendorApproval><VendorDashboard /></ProtectedRoute>} />
+            <Route path="products" element={<ProtectedRoute user={user} requireVendorApproval><VendorProducts /></ProtectedRoute>} />
+            <Route path="inventory" element={<ProtectedRoute user={user} requireVendorApproval><Inventory /></ProtectedRoute>} />
+            <Route path="orders" element={<ProtectedRoute user={user} requireVendorApproval><VendorOrders /></ProtectedRoute>} />
+            <Route path="orders/:id" element={<ProtectedRoute user={user} requireVendorApproval><VendorOrderDetail /></ProtectedRoute>} />
+            <Route path="settlements" element={<ProtectedRoute user={user} requireVendorApproval><Settlements /></ProtectedRoute>} />
+            <Route path="ads" element={<ProtectedRoute user={user} requireVendorApproval><VendorAds /></ProtectedRoute>} />
+            <Route path="settings" element={<ProtectedRoute user={user} requireVendorApproval><VendorSettings /></ProtectedRoute>} />
           </Route>
 
           {/* Affiliate dashboard */}
           <Route
             path="/affiliate-dashboard"
             element={
-              <ProtectedRoute allowedRoles={['affiliate', 'admin']}>
+              <ProtectedRoute user={user} allowedRoles={['affiliate', 'admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -300,7 +300,7 @@ function App() {
           <Route
             path="/support-dashboard"
             element={
-              <ProtectedRoute allowedRoles={['support', 'admin']}>
+              <ProtectedRoute user={user} allowedRoles={['support', 'admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -313,7 +313,7 @@ function App() {
           <Route
             path="/admin-dashboard"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute user={user} allowedRoles={['admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
