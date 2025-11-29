@@ -27,6 +27,7 @@ const processQueue = (error, token = null) => {
 
 // CSRF Protection (Production Only)
 let csrfToken = null;
+let csrfTokenPromise = null;
 
 /**
  * Initialize CSRF protection by fetching token from server
@@ -35,19 +36,55 @@ let csrfToken = null;
 export const initCsrfProtection = async () => {
   // Only enable CSRF in production
   if (import.meta.env.MODE !== 'production') {
-    return;
+    return null;
   }
 
-  try {
-    const response = await api.get('/csrf-token');
-    csrfToken = response.data.data.csrfToken;
-  } catch (error) {
-    // Silently fail - CSRF token will be fetched on retry if needed
+  // If already fetching, return the existing promise
+  if (csrfTokenPromise) {
+    return csrfTokenPromise;
   }
+
+  csrfTokenPromise = (async () => {
+    try {
+      // Use axios directly to avoid interceptor loops
+      const response = await axios.get(`${baseURL}/csrf-token`, {
+        withCredentials: true,
+        timeout: 10000,
+      });
+      csrfToken = response.data.data.csrfToken;
+      return csrfToken;
+    } catch (error) {
+      console.warn('Failed to fetch CSRF token:', error.message);
+      csrfToken = null;
+      return null;
+    } finally {
+      // Reset promise after a delay to allow retry
+      setTimeout(() => {
+        csrfTokenPromise = null;
+      }, 5000);
+    }
+  })();
+
+  return csrfTokenPromise;
+};
+
+/**
+ * Get CSRF token, fetching if necessary
+ */
+const getCsrfToken = async () => {
+  if (import.meta.env.MODE !== 'production') {
+    return null;
+  }
+
+  if (csrfToken) {
+    return csrfToken;
+  }
+
+  return initCsrfProtection();
 };
 
 // Attach access token from cookie to every request
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   const token = Cookies.get('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
@@ -55,8 +92,13 @@ api.interceptors.request.use((config) => {
   if (import.meta.env.MODE === 'production') {
     const method = config.method?.toUpperCase();
     if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
-      if (csrfToken) {
-        config.headers['X-CSRF-Token'] = csrfToken;
+      // Ensure we have a CSRF token before making state-changing requests
+      // Skip for csrf-token endpoint to avoid circular dependency
+      if (!config.url?.includes('/csrf-token')) {
+        const currentToken = csrfToken || await getCsrfToken();
+        if (currentToken) {
+          config.headers['X-CSRF-Token'] = currentToken;
+        }
       }
     }
   }
@@ -85,7 +127,13 @@ api.interceptors.response.use(
         import.meta.env.MODE === 'production' &&
         !originalRequest._csrfRetry) {
       originalRequest._csrfRetry = true;
-      await initCsrfProtection();
+      // Clear the old token and fetch a new one
+      csrfToken = null;
+      csrfTokenPromise = null;
+      const newToken = await initCsrfProtection();
+      if (newToken) {
+        originalRequest.headers['X-CSRF-Token'] = newToken;
+      }
       // Retry the request with new token
       return api.request(originalRequest);
     }
