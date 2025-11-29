@@ -84,14 +84,14 @@ exports.register = async (req, res, next) => {
         const affiliate = await Affiliate.create({
           userId: user._id,
           code: generateAffiliateCode(name || email),
-          status: 'pending', // Requires admin approval
+          status: 'active', // Auto-approved - affiliates can start immediately
         });
 
         // Link affiliate profile to user
         user.affiliateProfile = affiliate._id;
         await user.save();
 
-        logger.info(`Affiliate profile auto-created: ${affiliate.code}`);
+        logger.info(`Affiliate profile auto-created and activated: ${affiliate.code}`);
       } catch (affiliateError) {
         logger.error('Failed to auto-create affiliate profile:', affiliateError);
         // Continue with registration even if affiliate creation fails
