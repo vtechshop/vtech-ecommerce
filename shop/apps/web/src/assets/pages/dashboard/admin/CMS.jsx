@@ -76,11 +76,11 @@ const CMS = () => {
         <h1 className="text-3xl font-bold">Content Management</h1>
 
         {activeTab === 'posts' ? (
-          <Link to="/dashboard/admin/posts/new">
+          <Link to="/admin-dashboard/blog">
             <Button variant="primary">New Post</Button>
           </Link>
         ) : (
-          <Link to="/dashboard/admin/pages/new">
+          <Link to="/admin-dashboard/cms">
             <Button variant="primary">New Page</Button>
           </Link>
         )}

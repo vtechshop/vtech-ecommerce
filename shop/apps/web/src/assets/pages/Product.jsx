@@ -1,6 +1,6 @@
 // FILE: apps/web/src/pages/Product.jsx
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
@@ -173,7 +173,8 @@ const Product = () => {
       return response.data.data;
     },
     retry: 2,
-    staleTime: 0, // Always fetch fresh data for product pages in tests
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes to prevent unnecessary refetches
+    gcTime: 10 * 60 * 1000, // Keep in garbage collection for 10 minutes
   });
 
   // Fetch reviews for this product
@@ -336,7 +337,7 @@ const Product = () => {
   const handleWishlistToggle = () => {
     if (!isAuthenticated) {
       toast.error('Please log in to add items to your wishlist');
-      navigate('/login', { state: { from: `/products/${slug}` } });
+      navigate('/login', { state: { from: `/product/${slug}` } });
       return;
     }
     toggleWishlistMutation.mutate(product._id);
@@ -415,7 +416,7 @@ const Product = () => {
           <div className="text-6xl mb-4">📦</div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
           <p className="text-gray-700 mb-6">The product you're looking for doesn't exist or has been removed.</p>
-          <a href="/" className="btn btn-primary">Back to Home</a>
+          <Link to="/" className="btn btn-primary">Back to Home</Link>
         </div>
       </div>
     );

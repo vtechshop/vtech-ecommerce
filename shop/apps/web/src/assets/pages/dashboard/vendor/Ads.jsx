@@ -11,6 +11,7 @@ import { formatCurrency, formatDate } from '@/utils/format';
 const Ads = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['ad-campaigns'],
@@ -68,9 +69,9 @@ const Ads = () => {
           <Button onClick={() => setIsModalOpen(true)} variant="outline">
             Recharge Wallet
           </Button>
-          <Link to="/vendor-dashboard/ads/create">
-            <Button variant="primary">Create Campaign</Button>
-          </Link>
+          <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
+            Create Campaign
+          </Button>
         </div>
       </div>
 
@@ -119,9 +120,9 @@ const Ads = () => {
           </svg>
           <h3 className="text-xl font-semibold mb-2">No campaigns yet</h3>
           <p className="text-gray-700 mb-6">Start promoting your products with sponsored ads</p>
-          <Link to="/vendor-dashboard/ads/create">
-            <Button variant="primary">Create Your First Campaign</Button>
-          </Link>
+          <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
+            Create Your First Campaign
+          </Button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -166,9 +167,9 @@ const Ads = () => {
                       Resume
                     </Button>
                   )}
-                  <Link to={`/vendor-dashboard/ads/${campaign._id}`}>
-                    <Button variant="primary" size="sm">View Report</Button>
-                  </Link>
+                  <Button variant="primary" size="sm" disabled title="Detailed reports coming soon">
+                    View Report
+                  </Button>
                 </div>
               </div>
 
@@ -232,6 +233,26 @@ const Ads = () => {
             </Button>
             <Button variant="primary">
               Proceed to Payment
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Create Campaign Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Create Ad Campaign"
+      >
+        <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              Ad campaign creation feature is coming soon! Please check back later or contact support for assistance.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+              Close
             </Button>
           </div>
         </div>

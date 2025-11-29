@@ -1,4 +1,5 @@
 import { Truck, Package, Clock, MapPin, DollarSign } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Shipping = () => {
   return (
@@ -173,7 +174,7 @@ const Shipping = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Track Your Order</h2>
           <p className="text-gray-700 mb-4">
             Once your order ships, you'll receive a tracking number via email and SMS.
-            You can track your shipment in real-time using our <a href="/track-order" className="text-blue-600 hover:text-blue-700 font-medium">order tracking page</a>.
+            You can track your shipment in real-time using our <Link to="/track-order" className="text-blue-600 hover:text-blue-700 font-medium">order tracking page</Link>.
           </p>
 
           <div className="bg-gray-50 rounded-lg p-6">

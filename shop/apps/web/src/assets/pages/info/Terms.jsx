@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const Terms = () => {
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
@@ -68,14 +70,14 @@ const Terms = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Shipping and Delivery</h2>
               <p className="text-gray-700 leading-relaxed">
                 Delivery times are estimates and not guaranteed. We are not liable for delays caused by courier services,
-                weather conditions, or other circumstances beyond our control. See our <a href="/page/shipping" className="text-blue-600 hover:underline">Shipping Policy</a> for details.
+                weather conditions, or other circumstances beyond our control. See our <Link to="/page/shipping" className="text-blue-600 hover:underline">Shipping Policy</Link> for details.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Returns and Refunds</h2>
               <p className="text-gray-700 leading-relaxed">
-                We offer a 30-day return policy for eligible products. Please review our <a href="/page/returns" className="text-blue-600 hover:underline">Returns & Refunds Policy</a> for complete details.
+                We offer a 30-day return policy for eligible products. Please review our <Link to="/page/returns" className="text-blue-600 hover:underline">Returns & Refunds Policy</Link> for complete details.
               </p>
             </section>
 

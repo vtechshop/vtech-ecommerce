@@ -1,4 +1,5 @@
 import { Users, Target, Eye, Shield, Heart, Lightbulb, MapPin, Mail, Phone, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const About = () => {
   return (
@@ -391,26 +392,26 @@ const About = () => {
               we're here to help you succeed in the digital marketplace.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <a
-                href="/register?role=vendor"
+              <Link
+                to="/register?role=vendor"
                 className="inline-flex items-center justify-center bg-white text-blue-600 px-8 py-4 rounded-xl hover:bg-gray-100 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 <Users className="w-5 h-5 mr-2" />
                 Become a Vendor
-              </a>
-              <a
-                href="/register?role=affiliate"
+              </Link>
+              <Link
+                to="/register?role=affiliate"
                 className="inline-flex items-center justify-center bg-green-500 text-white px-8 py-4 rounded-xl hover:bg-green-600 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 <Heart className="w-5 h-5 mr-2" />
                 Join as Affiliate
-              </a>
-              <a
-                href="/search"
+              </Link>
+              <Link
+                to="/search"
                 className="inline-flex items-center justify-center bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl hover:bg-white hover:text-gray-600 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 Start Shopping
-              </a>
+              </Link>
             </div>
           </div>
         </div>

@@ -120,7 +120,7 @@ const QuickView = ({ product, isOpen, onClose }) => {
     if (!isAuthenticated) {
       toast.error('Please log in to add items to your wishlist');
       onClose();
-      navigate('/login', { state: { from: `/products/${product.slug}` } });
+      navigate('/login', { state: { from: `/product/${product.slug}` } });
       return;
     }
     toggleWishlistMutation.mutate(product._id);

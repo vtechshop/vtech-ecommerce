@@ -26,7 +26,7 @@ const AdminQuickReference = () => {
                 <Users className="w-8 h-8 text-blue-600 mb-2" />
                 <h3 className="font-semibold text-blue-900">Total Users</h3>
                 <p className="text-sm text-blue-700 mt-1">All registered users across all roles</p>
-                <Link to="/admin/users" className="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block">
+                <Link to="/admin-dashboard/users" className="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block">
                   Manage Users →
                 </Link>
               </div>
@@ -34,7 +34,7 @@ const AdminQuickReference = () => {
                 <Package className="w-8 h-8 text-green-600 mb-2" />
                 <h3 className="font-semibold text-green-900">Total Products</h3>
                 <p className="text-sm text-green-700 mt-1">Active products in the catalog</p>
-                <Link to="/admin/products" className="text-xs text-green-600 hover:text-green-800 mt-2 inline-block">
+                <Link to="/admin-dashboard/products" className="text-xs text-green-600 hover:text-green-800 mt-2 inline-block">
                   Manage Products →
                 </Link>
               </div>
@@ -42,7 +42,7 @@ const AdminQuickReference = () => {
                 <DollarSign className="w-8 h-8 text-purple-600 mb-2" />
                 <h3 className="font-semibold text-purple-900">Total Revenue</h3>
                 <p className="text-sm text-purple-700 mt-1">All-time platform revenue</p>
-                <Link to="/admin/settlements" className="text-xs text-purple-600 hover:text-purple-800 mt-2 inline-block">
+                <Link to="/admin-dashboard/payouts" className="text-xs text-purple-600 hover:text-purple-800 mt-2 inline-block">
                   View Settlements →
                 </Link>
               </div>
@@ -50,7 +50,7 @@ const AdminQuickReference = () => {
                 <FileText className="w-8 h-8 text-blue-600 mb-2" />
                 <h3 className="font-semibold text-primary-900">Total Orders</h3>
                 <p className="text-sm text-blue-700 mt-1">All orders on the platform</p>
-                <Link to="/admin/orders" className="text-xs text-blue-600 hover:text-primary-800 mt-2 inline-block">
+                <Link to="/admin-dashboard/orders" className="text-xs text-blue-600 hover:text-primary-800 mt-2 inline-block">
                   Manage Orders →
                 </Link>
               </div>
@@ -75,7 +75,7 @@ const AdminQuickReference = () => {
                   <li>• Handle user complaints and disputes</li>
                   <li>• Monitor user activity and behavior</li>
                 </ul>
-                <Link to="/admin/users" className="text-sm text-blue-600 hover:text-blue-700 mt-3 inline-block font-medium">
+                <Link to="/admin-dashboard/users" className="text-sm text-blue-600 hover:text-blue-700 mt-3 inline-block font-medium">
                   Go to User Management →
                 </Link>
               </div>
@@ -91,7 +91,7 @@ const AdminQuickReference = () => {
                   <li>• Remove inappropriate content</li>
                   <li>• Ensure product quality standards</li>
                 </ul>
-                <Link to="/admin/products" className="text-sm text-blue-600 hover:text-blue-700 mt-3 inline-block font-medium">
+                <Link to="/admin-dashboard/products" className="text-sm text-blue-600 hover:text-blue-700 mt-3 inline-block font-medium">
                   Go to Product Management →
                 </Link>
               </div>
@@ -107,7 +107,7 @@ const AdminQuickReference = () => {
                   <li>• Track delivery status across vendors</li>
                   <li>• Resolve payment issues</li>
                 </ul>
-                <Link to="/admin/orders" className="text-sm text-blue-600 hover:text-blue-700 mt-3 inline-block font-medium">
+                <Link to="/admin-dashboard/orders" className="text-sm text-blue-600 hover:text-blue-700 mt-3 inline-block font-medium">
                   Go to Order Management →
                 </Link>
               </div>
@@ -123,7 +123,7 @@ const AdminQuickReference = () => {
                   <li>• Monitor platform revenue and fees</li>
                   <li>• Generate financial reports</li>
                 </ul>
-                <Link to="/admin/settlements" className="text-sm text-blue-600 hover:text-blue-700 mt-3 inline-block font-medium">
+                <Link to="/admin-dashboard/payouts" className="text-sm text-blue-600 hover:text-blue-700 mt-3 inline-block font-medium">
                   Go to Settlements →
                 </Link>
               </div>
@@ -466,32 +466,32 @@ const AdminQuickReference = () => {
           <section className="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg shadow-md p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Quick Admin Actions</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link to="/admin/users" className="bg-white border-2 border-primary-200 rounded-lg p-6 hover:border-primary-400 hover:shadow-lg transition-all text-center group">
+              <Link to="/admin-dashboard/users" className="bg-white border-2 border-primary-200 rounded-lg p-6 hover:border-primary-400 hover:shadow-lg transition-all text-center group">
                 <Users className="w-10 h-10 text-blue-600 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="font-semibold text-gray-900 mb-1">User Management</h3>
                 <p className="text-sm text-gray-700">Manage all user accounts</p>
               </Link>
-              <Link to="/admin/products" className="bg-white border-2 border-green-200 rounded-lg p-6 hover:border-green-400 hover:shadow-lg transition-all text-center group">
+              <Link to="/admin-dashboard/products" className="bg-white border-2 border-green-200 rounded-lg p-6 hover:border-green-400 hover:shadow-lg transition-all text-center group">
                 <Package className="w-10 h-10 text-green-600 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="font-semibold text-gray-900 mb-1">Product Management</h3>
                 <p className="text-sm text-gray-700">Review product listings</p>
               </Link>
-              <Link to="/admin/orders" className="bg-white border-2 border-orange-200 rounded-lg p-6 hover:border-orange-400 hover:shadow-lg transition-all text-center group">
+              <Link to="/admin-dashboard/orders" className="bg-white border-2 border-orange-200 rounded-lg p-6 hover:border-orange-400 hover:shadow-lg transition-all text-center group">
                 <FileText className="w-10 h-10 text-orange-600 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="font-semibold text-gray-900 mb-1">Order Management</h3>
                 <p className="text-sm text-gray-700">Monitor all orders</p>
               </Link>
-              <Link to="/admin/settlements" className="bg-white border-2 border-purple-200 rounded-lg p-6 hover:border-purple-400 hover:shadow-lg transition-all text-center group">
+              <Link to="/admin-dashboard/payouts" className="bg-white border-2 border-purple-200 rounded-lg p-6 hover:border-purple-400 hover:shadow-lg transition-all text-center group">
                 <DollarSign className="w-10 h-10 text-purple-600 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="font-semibold text-gray-900 mb-1">Settlements</h3>
                 <p className="text-sm text-gray-700">Approve vendor payouts</p>
               </Link>
-              <Link to="/admin/sponsored-ads" className="bg-white border-2 border-blue-200 rounded-lg p-6 hover:border-blue-400 hover:shadow-lg transition-all text-center group">
+              <Link to="/admin-dashboard/ads" className="bg-white border-2 border-blue-200 rounded-lg p-6 hover:border-blue-400 hover:shadow-lg transition-all text-center group">
                 <BarChart3 className="w-10 h-10 text-blue-600 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="font-semibold text-gray-900 mb-1">Sponsored Ads</h3>
                 <p className="text-sm text-gray-700">Manage ad campaigns</p>
               </Link>
-              <Link to="/admin/communications" className="bg-white border-2 border-indigo-200 rounded-lg p-6 hover:border-indigo-400 hover:shadow-lg transition-all text-center group">
+              <Link to="/admin-dashboard/communications" className="bg-white border-2 border-indigo-200 rounded-lg p-6 hover:border-indigo-400 hover:shadow-lg transition-all text-center group">
                 <MessageSquare className="w-10 h-10 text-indigo-600 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="font-semibold text-gray-900 mb-1">Communications</h3>
                 <p className="text-sm text-gray-700">User messages & support</p>

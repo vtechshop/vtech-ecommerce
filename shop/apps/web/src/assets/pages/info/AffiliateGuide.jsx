@@ -1,4 +1,5 @@
 import { DollarSign, TrendingUp, Link2, Share2, BarChart3, CheckCircle, AlertCircle, Award, Users, Clock, Target } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const AffiliateGuide = () => {
   return (
@@ -549,9 +550,9 @@ const AffiliateGuide = () => {
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2">FAQ</h4>
-                <a href="/page/faq" className="text-sm text-blue-600 hover:text-blue-700">
+                <Link to="/page/faq" className="text-sm text-blue-600 hover:text-blue-700">
                   Visit FAQ Page →
-                </a>
+                </Link>
               </div>
             </div>
           </section>

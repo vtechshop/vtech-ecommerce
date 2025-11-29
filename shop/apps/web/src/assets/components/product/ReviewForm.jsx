@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import api from '@/utils/api';
 import { useToast } from '@/components/common/ToastContainer';
@@ -145,7 +146,7 @@ const ReviewForm = ({ productId, onReviewSubmitted }) => {
 
           {!isAuthenticated && (
             <p className="text-xs text-gray-700 bg-primary-50 px-3 py-1.5 rounded-lg border border-primary-200">
-              Please <a href="/login" className="text-blue-600 font-bold hover:underline">login</a> to submit a review
+              Please <Link to="/login" className="text-blue-600 font-bold hover:underline">login</Link> to submit a review
             </p>
           )}
         </div>

@@ -1,5 +1,6 @@
 // FILE: apps/web/src/components/consent/CookieBanner.jsx
 import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { acceptAll, rejectNonEssential, showBanner } from '@/store/slices/consentSlice';
 import { useState } from 'react';
 import Modal from '../common/Modal';
@@ -52,9 +53,9 @@ const CookieBanner = () => {
               <p className="text-gray-700 text-sm">
                 We use cookies to enhance your browsing experience, serve personalized ads or content, 
                 and analyze our traffic. By clicking "Accept All", you consent to our use of cookies.{' '}
-                <a href="/cookie-policy" className="text-blue-600 hover:underline">
+                <Link to="/cookie-policy" className="text-blue-600 hover:underline">
                   Read our Cookie Policy
-                </a>
+                </Link>
               </p>
             </div>
             <div className="flex items-center gap-3">

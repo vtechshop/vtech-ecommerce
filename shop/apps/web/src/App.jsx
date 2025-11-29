@@ -172,20 +172,38 @@ function App() {
     captureAffiliateFromURL(searchParams);
   }, [searchParams]);
 
-  // Clear React Query cache when user logs out or role changes
+  // Clear user-specific React Query cache when user logs out or role changes
+  // IMPORTANT: Only clear user-specific queries, NOT public data (products, categories, etc.)
   useEffect(() => {
     const previousUser = previousUserRef.current;
 
     // User logged out (was logged in, now null)
     if (previousUser && !user) {
-      queryClient.clear();
-      sessionStorage.clear(); // Clear all session storage (pagination, filters, scroll positions)
+      // Only clear user-specific queries, preserve public data cache
+      queryClient.removeQueries({ queryKey: ['wishlist'] });
+      queryClient.removeQueries({ queryKey: ['orders'] });
+      queryClient.removeQueries({ queryKey: ['addresses'] });
+      queryClient.removeQueries({ queryKey: ['user'] });
+      queryClient.removeQueries({ queryKey: ['cart'] });
+      queryClient.removeQueries({ queryKey: ['notifications'] });
+      queryClient.removeQueries({ queryKey: ['tickets'] });
+      queryClient.removeQueries({ queryKey: ['commissions'] });
+      queryClient.removeQueries({ queryKey: ['settlements'] });
+      // Don't clear sessionStorage - preserve UI state like pagination/filters
     }
 
     // User role changed (switched between customer/vendor/affiliate/admin)
     if (previousUser && user && previousUser.role !== user.role) {
-      queryClient.clear();
-      sessionStorage.clear(); // Clear session storage to reset pagination/filters
+      // Only clear role-specific queries
+      queryClient.removeQueries({ queryKey: ['wishlist'] });
+      queryClient.removeQueries({ queryKey: ['orders'] });
+      queryClient.removeQueries({ queryKey: ['vendor'] });
+      queryClient.removeQueries({ queryKey: ['affiliate'] });
+      queryClient.removeQueries({ queryKey: ['admin'] });
+      queryClient.removeQueries({ queryKey: ['tickets'] });
+      queryClient.removeQueries({ queryKey: ['commissions'] });
+      queryClient.removeQueries({ queryKey: ['settlements'] });
+      // Don't clear sessionStorage - preserve UI state
     }
 
     // Update ref for next comparison

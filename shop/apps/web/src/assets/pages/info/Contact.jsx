@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
 import api from '@/utils/api';
 
@@ -207,18 +208,18 @@ const Contact = () => {
                 Need immediate assistance? Check out these helpful resources:
               </p>
               <div className="space-y-3">
-                <a href="/page/faq" className="block bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 transition-colors">
+                <Link to="/page/faq" className="block bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 transition-colors">
                   FAQ - Frequently Asked Questions
-                </a>
-                <a href="/track-order" className="block bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 transition-colors">
+                </Link>
+                <Link to="/track-order" className="block bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 transition-colors">
                   Track Your Order
-                </a>
-                <a href="/page/returns" className="block bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 transition-colors">
+                </Link>
+                <Link to="/page/returns" className="block bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 transition-colors">
                   Returns & Refunds
-                </a>
-                <a href="/page/shipping" className="block bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 transition-colors">
+                </Link>
+                <Link to="/page/shipping" className="block bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 transition-colors">
                   Shipping Information
-                </a>
+                </Link>
               </div>
             </div>
 

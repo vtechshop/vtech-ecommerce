@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const Privacy = () => {
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
@@ -90,7 +92,7 @@ const Privacy = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Cookies and Tracking</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
                 We use cookies and similar technologies to enhance your experience. You can control cookies through your browser settings.
-                See our <a href="/cookie-policy" className="text-blue-600 hover:underline">Cookie Policy</a> for more details.
+                See our <Link to="/cookie-policy" className="text-blue-600 hover:underline">Cookie Policy</Link> for more details.
               </p>
             </section>
 

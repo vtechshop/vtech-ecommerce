@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const VendorTerms = () => {
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
@@ -63,7 +65,7 @@ const VendorTerms = () => {
               </p>
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-900 font-semibold mb-1">Want to learn more?</p>
-                <p className="text-sm text-blue-800">Visit our <a href="/page/vendor-guide" className="underline font-semibold">Vendor Guide</a> for detailed commission calculations and payment timelines.</p>
+                <p className="text-sm text-blue-800">Visit our <Link to="/page/vendor-guide" className="underline font-semibold">Vendor Guide</Link> for detailed commission calculations and payment timelines.</p>
               </div>
             </section>
 

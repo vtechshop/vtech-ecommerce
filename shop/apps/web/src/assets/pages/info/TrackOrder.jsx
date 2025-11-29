@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import api from '../../utils/api';
 import TrackingTimeline from '../../components/common/TrackingTimeline';
@@ -128,9 +129,9 @@ const TrackOrder = () => {
             <div className="mt-8 pt-6 border-t border-gray-200">
               <p className="text-sm text-gray-700">
                 Need help with your order?{' '}
-                <a href="/page/contact" className="text-blue-600 hover:text-blue-700 font-medium">
+                <Link to="/page/contact" className="text-blue-600 hover:text-blue-700 font-medium">
                   Contact our support team
-                </a>
+                </Link>
               </p>
             </div>
           </div>

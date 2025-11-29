@@ -1,6 +1,6 @@
 // FILE: apps/web/src/pages/ProductDetail.jsx
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
@@ -168,9 +168,9 @@ const ProductDetail = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="text-sm text-gray-700 mb-6">
-          <a href="/" className="hover:text-gray-600">Home</a>
+          <Link to="/" className="hover:text-gray-600">Home</Link>
           <span className="mx-2">/</span>
-          <a href="/products" className="hover:text-gray-600">Products</a>
+          <Link to="/search" className="hover:text-gray-600">Products</Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900">{product.title}</span>
         </div>
