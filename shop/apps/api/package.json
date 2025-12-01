@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon",
+    "build": "cd ../web && npm install && npm run build",
+    "render-build": "cd ../web && npm install && npm run build",
     "seed": "node src/seed/seed.js",
     "seed:settings": "node src/seed/seedSettings.js",
     "seed:gst": "node src/seed/seedIndianGST.js",
