@@ -17,6 +17,11 @@ const connectDB = async () => {
     return;
   }
 
+  // Log connection string format (hide password)
+  const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/shop';
+  const maskedUri = mongoUri.replace(/:([^@]+)@/, ':****@');
+  logger.info(`Attempting to connect to: ${maskedUri}`);
+
   // Check if already connected
   if (mongoose.connection.readyState === 1) {
     logger.info('MongoDB already connected');
@@ -52,7 +57,14 @@ const connectDB = async () => {
     isConnecting = false;
     connectionAttempts++;
 
-    logger.error(`❌ MongoDB connection error (attempt ${connectionAttempts}/${MAX_RETRY_ATTEMPTS}):`, error.message);
+    logger.error(`❌ MongoDB connection error (attempt ${connectionAttempts}/${MAX_RETRY_ATTEMPTS}):`, error.message || error);
+    logger.error('Full error details:', JSON.stringify({
+      name: error.name,
+      code: error.code,
+      codeName: error.codeName,
+      message: error.message,
+      reason: error.reason?.message || error.reason
+    }, null, 2));
 
     // Retry logic
     if (connectionAttempts < MAX_RETRY_ATTEMPTS) {
