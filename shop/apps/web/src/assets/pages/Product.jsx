@@ -8,6 +8,7 @@ import { useToast } from '@/components/common/ToastContainer';
 import api from '@/utils/api';
 import { Star, Heart, ShoppingCart, Truck, Shield, RotateCcw, Share2, Minus, Plus, Check, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
+import { normalizeImageUrl } from '@/utils/placeholders';
 import { addToRecentlyViewed } from '@/utils/recentlyViewed';
 import { captureAffiliateFromURL } from '@/utils/affiliateTracking';
 import RecentlyViewed from '@/components/product/RecentlyViewed';
@@ -433,7 +434,7 @@ const Product = () => {
                 <div className="aspect-square">
                   {product.images && product.images.length > 0 ? (
                     <img
-                      src={product.images[selectedImage]}
+                      src={normalizeImageUrl(product.images[selectedImage])}
                       alt={product.title}
                       className="w-full h-full object-contain p-4"
                     />
@@ -459,7 +460,7 @@ const Product = () => {
                       }`}
                     >
                       <img
-                        src={image}
+                        src={normalizeImageUrl(image)}
                         alt={`${product.title} ${index + 1}`}
                         className="w-full h-full object-contain p-1"
                       />

@@ -6,6 +6,7 @@ import { useDispatch } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
 import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency } from '@/utils/format';
+import { normalizeImageUrl } from '@/utils/placeholders';
 
 const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const dispatch = useDispatch();
@@ -68,7 +69,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         <div className="relative aspect-[4/3] bg-gray-50 flex-shrink-0">
           {product.images && product.images.length > 0 ? (
             <img
-              src={product.images[0]}
+              src={normalizeImageUrl(product.images[0])}
               alt={product.title}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             />

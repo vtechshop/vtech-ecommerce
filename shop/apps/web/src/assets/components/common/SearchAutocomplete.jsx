@@ -5,6 +5,7 @@ import { Search, TrendingUp, Clock, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
 import { formatCurrency } from '@/utils/format';
+import { normalizeImageUrl } from '@/utils/placeholders';
 
 const SearchAutocomplete = React.memo(({ className = '' }) => {
   const navigate = useNavigate();
@@ -206,7 +207,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                   <div className="w-12 h-12 flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
                     {product.images && product.images[0] ? (
                       <img
-                        src={product.images[0]}
+                        src={normalizeImageUrl(product.images[0])}
                         alt={product.title}
                         className="w-full h-full object-cover"
                       />
@@ -300,7 +301,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                   <div className="w-10 h-10 flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
                     {product.images && product.images[0] ? (
                       <img
-                        src={product.images[0]}
+                        src={normalizeImageUrl(product.images[0])}
                         alt={product.title}
                         className="w-full h-full object-cover"
                       />

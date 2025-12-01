@@ -4,6 +4,7 @@ import { removeFromCart, clearCart } from '@/store/slices/cartSlice';
 import { useNavigate } from 'react-router-dom';
 import Button from '@/components/common/Button';
 import { formatCurrency } from '@/utils/format';
+import { normalizeImageUrl } from '@/utils/placeholders';
 import { X, ShoppingCart, Trash2 } from 'lucide-react';
 
 const CartDrawer = ({ isOpen, onClose }) => {
@@ -73,7 +74,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                   className="flex gap-3 p-3 border border-gray-200 rounded-lg hover:shadow-card hover:border-blue-500 transition-all duration-300 cart-item-add"
                 >
                   <img
-                    src={item.product.images?.[0] || '/placeholder.jpg'}
+                    src={normalizeImageUrl(item.product.images?.[0])}
                     alt={item.product.title}
                     className="w-20 h-20 object-cover rounded"
                   />

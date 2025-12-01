@@ -2,6 +2,7 @@
 import { useDispatch } from 'react-redux';
 import { updateQuantity, removeFromCart } from '@/store/slices/cartSlice';
 import { formatCurrency } from '@/utils/format';
+import { normalizeImageUrl } from '@/utils/placeholders';
 import { Trash2, Plus, Minus } from 'lucide-react';
 
 const CartItem = ({ item }) => {
@@ -27,7 +28,7 @@ const CartItem = ({ item }) => {
       data-cy="cart-item"
     >
       <img
-        src={item.product.images?.[0] || '/placeholder.jpg'}
+        src={normalizeImageUrl(item.product.images?.[0])}
         alt={item.product.title}
         className="w-24 h-24 object-cover rounded"
         data-testid="item-image"

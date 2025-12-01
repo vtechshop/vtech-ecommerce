@@ -7,6 +7,7 @@ import { useMutation } from '@tanstack/react-query';
 import { addToCart } from '@/store/slices/cartSlice';
 import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency } from '@/utils/format';
+import { normalizeImageUrl } from '@/utils/placeholders';
 import api from '@/utils/api';
 
 const QuickView = ({ product, isOpen, onClose }) => {
@@ -156,7 +157,7 @@ const QuickView = ({ product, isOpen, onClose }) => {
             <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
               {product.images && product.images.length > 0 ? (
                 <img
-                  src={product.images[selectedImage]}
+                  src={normalizeImageUrl(product.images[selectedImage])}
                   alt={product.title}
                   className="w-full h-full object-cover"
                 />
@@ -181,7 +182,7 @@ const QuickView = ({ product, isOpen, onClose }) => {
                     }`}
                   >
                     <img
-                      src={image}
+                      src={normalizeImageUrl(image)}
                       alt={`${product.title} ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
