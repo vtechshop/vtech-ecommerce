@@ -122,7 +122,7 @@ class AffiliateService {
     const linkCode = await AffiliateLink.generateLinkCode();
 
     // Generate URL
-    const baseUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
     const url = productId
       ? `${baseUrl}/product/${product.slug}?ref=${linkCode}`
       : `${baseUrl}?ref=${linkCode}`;

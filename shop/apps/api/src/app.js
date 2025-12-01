@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 const logger = require('./config/logger');
 const env = require('./config/env');
 const { xssSanitize, mongoSanitize } = require('./middleware/sanitize');
@@ -140,6 +141,7 @@ app.use((req, res, next) => {
     '/api/contact',    // Public contact form - rate limited separately
     '/api/checkout',   // Checkout flow - needs to work for guests
     '/api/ads',        // Ad tracking (impressions/clicks) - public analytics
+    '/api/upload',     // File uploads - protected by JWT authentication
     '/health',         // Health check
   ];
 
@@ -270,7 +272,25 @@ app.use('/api', require('./routes/index'));
 // Static files (uploads)
 app.use('/uploads', express.static('uploads'));
 
-// 404 handler
+// SPA Fallback for Production (Render deployment)
+// Serve frontend static files and handle client-side routing
+if (env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../../web/dist');
+
+  // Serve static files from the React build
+  app.use(express.static(frontendPath));
+
+  // Handle SPA routing - serve index.html for all non-API routes
+  app.get('*', (req, res, next) => {
+    // Skip if it's an API route
+    if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
+
+// 404 handler (only for API routes in production, all routes in development)
 app.use((req, res) => {
   res.status(404).json({
     success: false,

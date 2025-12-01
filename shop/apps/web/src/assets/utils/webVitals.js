@@ -22,21 +22,9 @@ const reportWebVitals = (metric) => {
     });
   }
 
-  // Send to custom analytics endpoint
-  if (import.meta.env.PROD) {
-    try {
-      navigator.sendBeacon('/api/analytics/web-vitals', JSON.stringify({
-        name: metric.name,
-        value: metric.value,
-        rating: metric.rating,
-        id: metric.id,
-        navigationType: metric.navigationType,
-        timestamp: Date.now(),
-      }));
-    } catch (error) {
-      // Silently fail if analytics endpoint is not available
-    }
-  }
+  // Note: Custom analytics endpoint disabled to prevent 404 errors
+  // The /api/analytics/web-vitals endpoint doesn't exist
+  // Web Vitals are already sent to Google Analytics above if gtag is configured
 };
 
 /**

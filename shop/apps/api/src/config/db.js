@@ -57,14 +57,38 @@ const connectDB = async () => {
     isConnecting = false;
     connectionAttempts++;
 
-    logger.error(`❌ MongoDB connection error (attempt ${connectionAttempts}/${MAX_RETRY_ATTEMPTS}):`, error.message || error);
-    logger.error('Full error details:', JSON.stringify({
+    // Extract the most useful error information
+    const errorInfo = {
       name: error.name,
+      message: error.message,
       code: error.code,
       codeName: error.codeName,
-      message: error.message,
-      reason: error.reason?.message || error.reason
-    }, null, 2));
+    };
+
+    // MongoDB driver errors often have nested reason
+    if (error.reason) {
+      errorInfo.reason = error.reason.message || String(error.reason);
+      if (error.reason.servers) {
+        // Topology errors - show server connection failures
+        const serverErrors = [];
+        error.reason.servers.forEach((desc, address) => {
+          if (desc.error) {
+            serverErrors.push(`${address}: ${desc.error.message || desc.error}`);
+          }
+        });
+        if (serverErrors.length > 0) {
+          errorInfo.serverErrors = serverErrors;
+        }
+      }
+    }
+
+    // Check for authentication errors specifically
+    if (error.message?.includes('authentication') || error.code === 18 || error.codeName === 'AuthenticationFailed') {
+      errorInfo.hint = 'Authentication failed - check username/password in MONGO_URI';
+    }
+
+    logger.error(`❌ MongoDB connection error (attempt ${connectionAttempts}/${MAX_RETRY_ATTEMPTS}): ${error.message || 'Unknown error'}`);
+    logger.error('Full error details: ' + JSON.stringify(errorInfo, null, 2));
 
     // Retry logic
     if (connectionAttempts < MAX_RETRY_ATTEMPTS) {

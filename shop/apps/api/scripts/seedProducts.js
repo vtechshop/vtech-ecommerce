@@ -47,27 +47,28 @@ const { slugify } = require('../src/utils/helpers');
       throw new Error('No categories found. Seed categories first.');
     }
 
+    // Using placehold.co which is more reliable than via.placeholder.com
     const samples = [
       {
         title: 'iPhone 15 Pro',
         description: 'Latest Apple flagship',
         price: 120000,
         stock: 25,
-        images: ['https://via.placeholder.com/600x600?text=iPhone+15+Pro'],
+        images: ['https://placehold.co/600x600/e2e8f0/64748b?text=iPhone+15+Pro'],
       },
       {
         title: 'Samsung Galaxy S24',
         description: 'Samsung flagship phone',
         price: 95000,
         stock: 40,
-        images: ['https://via.placeholder.com/600x600?text=Galaxy+S24'],
+        images: ['https://placehold.co/600x600/e2e8f0/64748b?text=Galaxy+S24'],
       },
       {
         title: 'OnePlus 12',
         description: 'Fast & smooth',
         price: 65000,
         stock: 50,
-        images: ['https://via.placeholder.com/600x600?text=OnePlus+12'],
+        images: ['https://placehold.co/600x600/e2e8f0/64748b?text=OnePlus+12'],
       },
     ];
 
