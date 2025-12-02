@@ -502,6 +502,13 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       ...formData,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       structuredData: schemaData, // Fixed: changed from 'schema' to 'structuredData'
+      // Convert numeric fields properly - empty strings become null/undefined
+      price: formData.price ? parseFloat(formData.price) : 0,
+      compareAt: formData.compareAt ? parseFloat(formData.compareAt) : null,
+      stock: formData.stock ? parseInt(formData.stock, 10) : 0,
+      vendorCommissionPercentage: formData.vendorCommissionPercentage ? parseFloat(formData.vendorCommissionPercentage) : undefined,
+      affiliateCommissionPercentage: formData.affiliateCommissionPercentage ? parseFloat(formData.affiliateCommissionPercentage) : undefined,
+      taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
     };
     saveMutation.mutate(dataToSubmit);
   };

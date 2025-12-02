@@ -12,8 +12,8 @@ const ProductSnippet = React.memo(({ product, onAddToCart, onViewDetails, onTogg
     onToggleWishlist?.(product._id, !isWishlisted);
   }, [isWishlisted, onToggleWishlist, product._id]);
 
-  const discountPercentage = product.comparePrice 
-    ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
+  const discountPercentage = product.compareAt
+    ? Math.round(((product.compareAt - product.price) / product.compareAt) * 100)
     : 0;
 
   const renderStars = (rating = 4.5) => {
