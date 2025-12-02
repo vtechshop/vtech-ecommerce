@@ -289,9 +289,9 @@ const Products = () => {
                   <td className="py-3 px-3 sm:px-4">
                     <div>
                       <p className="font-semibold">{formatCurrency(product.price)}</p>
-                      {product.comparePrice && (
+                      {product.compareAt && (
                         <p className="text-xs text-gray-500 line-through">
-                          {formatCurrency(product.comparePrice)}
+                          {formatCurrency(product.compareAt)}
                         </p>
                       )}
                     </div>
@@ -402,7 +402,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     description: product?.description || '',
     videoUrl: product?.videoUrl || '',
     price: product?.price || '',
-    comparePrice: product?.comparePrice || '',
+    compareAt: product?.compareAt || '',
     stock: product?.stock || '',
     sku: product?.sku || '',
     brand: product?.brand || '',
@@ -624,8 +624,8 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
               <input
                 type="number"
                 step="0.01"
-                value={formData.comparePrice}
-                onChange={(e) => setFormData({ ...formData, comparePrice: e.target.value })}
+                value={formData.compareAt}
+                onChange={(e) => setFormData({ ...formData, compareAt: e.target.value })}
                 disabled={isViewing}
                 className="input w-full"
               />
