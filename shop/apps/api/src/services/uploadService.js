@@ -28,6 +28,15 @@ class UploadService {
   getAdapter() {
     const driver = env.UPLOAD_DRIVER || 'local';
 
+    if (driver === 'cloudinary') {
+      const CloudinaryAdapter = require('../adapters/storage/CloudinaryAdapter');
+      return new CloudinaryAdapter(
+        env.CLOUDINARY_CLOUD_NAME,
+        env.CLOUDINARY_API_KEY,
+        env.CLOUDINARY_API_SECRET
+      );
+    }
+
     if (driver === 's3') {
       const S3Adapter = require('../adapters/storage/S3Adapter');
       return new S3Adapter(

@@ -35,6 +35,13 @@ module.exports = {
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@vtechshop.com',
   
   UPLOAD_DRIVER: process.env.UPLOAD_DRIVER || 'local',
+
+  // Cloudinary config
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+
+  // S3 config
   S3_BUCKET: process.env.S3_BUCKET,
   S3_REGION: process.env.S3_REGION,
   S3_KEY: process.env.S3_KEY,
