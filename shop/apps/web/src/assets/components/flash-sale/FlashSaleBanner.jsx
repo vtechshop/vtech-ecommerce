@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Zap, TrendingUp } from 'lucide-react';
 import { formatCurrency } from '@/utils/format';
+import { normalizeImageUrl } from '@/utils/placeholders';
 
 const FlashSaleBanner = ({ sale }) => {
   const [timeRemaining, setTimeRemaining] = useState(sale.timeRemaining);
@@ -145,7 +146,7 @@ const FlashSaleBanner = ({ sale }) => {
               <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-2">
                 {item.productId.images && item.productId.images[0] ? (
                   <img
-                    src={item.productId.images[0]}
+                    src={normalizeImageUrl(item.productId.images[0])}
                     alt={item.productId.title}
                     className="w-full h-full object-cover"
                   />

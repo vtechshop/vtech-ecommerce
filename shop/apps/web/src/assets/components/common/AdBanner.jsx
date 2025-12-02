@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
+import { normalizeImageUrl } from '@/utils/placeholders';
 
 const AdBanner = ({ placement, position = 'top', className = '' }) => {
   const [adToShow, setAdToShow] = useState(null);
@@ -121,7 +122,7 @@ const AdBanner = ({ placement, position = 'top', className = '' }) => {
           }}
         >
           <img
-            src={adToShow.bannerImage}
+            src={normalizeImageUrl(adToShow.bannerImage)}
             alt={adToShow.name}
             className="w-full h-full object-cover"
             loading="lazy"
