@@ -17,6 +17,7 @@ const Products = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewingProduct, setViewingProduct] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState([]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-products', page, statusFilter, searchTerm],
@@ -62,6 +63,22 @@ const Products = () => {
     },
   });
 
+  // Bulk delete mutation - deletes multiple products with single alert
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids) => {
+      await Promise.all(ids.map(id => api.delete(`/admin/products/${id}`)));
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      setSelectedProducts([]);
+      alert(`${count} product(s) deleted successfully`);
+    },
+    onError: (error) => {
+      alert('Error deleting products: ' + error.message);
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -71,7 +88,28 @@ const Products = () => {
   }
 
   const products = data?.data || [];
-  const totalPages = Math.ceil((data?.meta?.total || 0) / 20);
+  const totalProducts = data?.meta?.total || 0;
+  const totalPages = Math.ceil(totalProducts / 20);
+
+  // Select All functionality
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedProducts(products.map(p => p._id));
+    } else {
+      setSelectedProducts([]);
+    }
+  };
+
+  const handleSelectProduct = (productId, checked) => {
+    if (checked) {
+      setSelectedProducts(prev => [...prev, productId]);
+    } else {
+      setSelectedProducts(prev => prev.filter(id => id !== productId));
+    }
+  };
+
+  const isAllSelected = products.length > 0 && selectedProducts.length === products.length;
+  const isSomeSelected = selectedProducts.length > 0 && selectedProducts.length < products.length;
 
   const handleEdit = (product) => {
     setEditingProduct(product);
@@ -93,8 +131,33 @@ const Products = () => {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Product Management</h1>
+        <div>
+          <h1 className="text-3xl font-bold">Product Management</h1>
+          <p className="text-gray-600 mt-1">
+            Total Products: <span className="font-semibold text-blue-600">{totalProducts}</span>
+            {selectedProducts.length > 0 && (
+              <span className="ml-3 text-green-600">
+                ({selectedProducts.length} selected)
+              </span>
+            )}
+          </p>
+        </div>
         <div className="flex items-center gap-4">
+          {selectedProducts.length > 0 && (
+            <Button
+              variant="outline"
+              disabled={bulkDeleteMutation.isPending}
+              onClick={() => {
+                if (confirm(`Delete ${selectedProducts.length} selected products?`)) {
+                  bulkDeleteMutation.mutate(selectedProducts);
+                }
+              }}
+              className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Selected
+            </Button>
+          )}
           <Button
             onClick={() => {
               setEditingProduct(null);
@@ -159,6 +222,18 @@ const Products = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
+                <th className="text-left py-3 px-4 font-semibold text-sm w-10">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomeSelected;
+                    }}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    title="Select all products"
+                  />
+                </th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Product</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Vendor</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Price</th>
@@ -170,7 +245,15 @@ const Products = () => {
             </thead>
             <tbody>
               {products.map((product) => (
-                <tr key={product._id} className="border-b last:border-b-0 hover:bg-gray-50">
+                <tr key={product._id} className={`border-b last:border-b-0 hover:bg-gray-50 ${selectedProducts.includes(product._id) ? 'bg-blue-50' : ''}`}>
+                  <td className="py-3 px-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.includes(product._id)}
+                      onChange={(e) => handleSelectProduct(product._id, e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    />
+                  </td>
                   <td className="py-3 px-3 sm:px-4">
                     <div className="flex items-center gap-3">
                       {product.images?.[0] && (
