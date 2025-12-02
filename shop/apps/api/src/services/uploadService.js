@@ -54,16 +54,17 @@ class UploadService {
   async uploadFile(file, folder = 'general') {
     const adapter = this.getAdapter();
     const filename = `${folder}/${uuidv4()}${path.extname(file.originalname)}`;
-    
-    await adapter.upload(file, filename);
-    
+
+    // Upload returns the stored path/id (for Cloudinary this is the public_id)
+    const storedPath = await adapter.upload(file, filename);
+
     const Media = require('../models/Media');
     const media = await Media.create({
-      filename,
+      filename: storedPath || filename,
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.size,
-      url: adapter.getUrl(filename),
+      url: adapter.getUrl(storedPath || filename),
       folder,
     });
 
