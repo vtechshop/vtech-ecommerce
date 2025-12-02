@@ -449,19 +449,22 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
   const saveMutation = useMutation({
     mutationFn: async (data) => {
       if (product?._id) {
-        await api.put(`/admin/products/${product._id}`, data);
-        return 'updated';
+        const res = await api.put(`/admin/products/${product._id}`, data);
+        return { action: 'updated', data: res.data };
       } else {
-        await api.post('/admin/products', data);
-        return 'created';
+        const res = await api.post('/admin/products', data);
+        return { action: 'created', data: res.data };
       }
     },
-    onSuccess: (action) => {
-      toast.success(`Product ${action} successfully`);
+    onSuccess: (result) => {
+      toast.success(`Product ${result.action} successfully`);
       onSave();
     },
     onError: (error) => {
-      toast.error('Failed to save product: ' + error.message);
+      // Show detailed error from server
+      const errorMsg = error.response?.data?.error?.message || error.response?.data?.message || error.message;
+      toast.error('Failed to save product: ' + errorMsg);
+      console.error('Product save error:', error.response?.data || error);
     },
   });
 
@@ -510,6 +513,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       affiliateCommissionPercentage: formData.affiliateCommissionPercentage ? parseFloat(formData.affiliateCommissionPercentage) : undefined,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
     };
+    console.log('Submitting product data:', { price: dataToSubmit.price, compareAt: dataToSubmit.compareAt });
     saveMutation.mutate(dataToSubmit);
   };
 
