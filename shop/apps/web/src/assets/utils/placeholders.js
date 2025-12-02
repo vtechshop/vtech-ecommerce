@@ -45,6 +45,12 @@ export const normalizeImageUrl = (url) => {
     .replace(/^https?:\/\/localhost:\d+/, serverBaseUrl)
     .replace(/^http:\/\/127\.0\.0\.1:\d+/, serverBaseUrl);
 
+  // Replace old Render domain with new one (vtech-shop -> vtech-ecommerce)
+  normalizedUrl = normalizedUrl.replace(
+    /https?:\/\/vtech-shop\.onrender\.com/g,
+    serverBaseUrl
+  );
+
   // If URL starts with /uploads, prepend the server base URL
   if (normalizedUrl.startsWith('/uploads')) {
     normalizedUrl = serverBaseUrl + normalizedUrl;
