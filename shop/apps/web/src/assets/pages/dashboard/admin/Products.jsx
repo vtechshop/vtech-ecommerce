@@ -8,6 +8,7 @@ import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import { formatCurrency } from '@/utils/format';
 import { Plus, Edit, Trash2, Eye, Search, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Products = () => {
   const queryClient = useQueryClient();
@@ -39,7 +40,10 @@ const Products = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      alert('Product approved successfully');
+      toast.success('Product approved successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to approve product: ' + error.message);
     },
   });
 
@@ -49,7 +53,10 @@ const Products = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      alert('Product rejected');
+      toast.success('Product rejected');
+    },
+    onError: (error) => {
+      toast.error('Failed to reject product: ' + error.message);
     },
   });
 
@@ -59,11 +66,14 @@ const Products = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      alert('Product deleted successfully');
+      toast.success('Product deleted successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to delete product: ' + error.message);
     },
   });
 
-  // Bulk delete mutation - deletes multiple products with single alert
+  // Bulk delete mutation - deletes multiple products with single toast
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids) => {
       await Promise.all(ids.map(id => api.delete(`/admin/products/${id}`)));
@@ -72,10 +82,10 @@ const Products = () => {
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       setSelectedProducts([]);
-      alert(`${count} product(s) deleted successfully`);
+      toast.success(`${count} product(s) deleted successfully`);
     },
     onError: (error) => {
-      alert('Error deleting products: ' + error.message);
+      toast.error('Error deleting products: ' + error.message);
     },
   });
 
@@ -440,11 +450,19 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     mutationFn: async (data) => {
       if (product?._id) {
         await api.put(`/admin/products/${product._id}`, data);
+        return 'updated';
       } else {
         await api.post('/admin/products', data);
+        return 'created';
       }
     },
-    onSuccess: onSave,
+    onSuccess: (action) => {
+      toast.success(`Product ${action} successfully`);
+      onSave();
+    },
+    onError: (error) => {
+      toast.error('Failed to save product: ' + error.message);
+    },
   });
 
   const handleImageUpload = async (files) => {
@@ -465,7 +483,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
         images: [...prev.images, ...uploadedUrls]
       }));
     } catch (error) {
-      alert('Error uploading images: ' + error.message);
+      toast.error('Error uploading images: ' + error.message);
     } finally {
       setUploadingImages(false);
     }
