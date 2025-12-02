@@ -296,8 +296,16 @@ exports.createProduct = async (req, res, next) => {
 
 exports.updateProduct = async (req, res, next) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+    // Use findById + save to ensure proper validation context (this.price works in validators)
+    const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });
+
+    // Update fields from request body
+    Object.keys(req.body).forEach(key => {
+      product[key] = req.body[key];
+    });
+
+    await product.save();
     logger.info(`Product updated by admin: ${product.title}`);
     res.json({ success: true, data: product });
   } catch (error) { next(error); }
