@@ -11,24 +11,26 @@ async function main() {
   await mongoose.connect(MONGO_URI);
   console.log('[resetAdmin] Connected:', MONGO_URI);
 
-  const adminEmail = 'admin@example.com';
-  const newPassword = 'Password123';
+  const oldEmail = 'ledvtech@gmail.com';
+  const newEmail = 'admin@vtechkitchen.com';
+  const newPassword = 'Vtech#8090';
 
-  const admin = await User.findOne({ email: adminEmail });
+  const admin = await User.findOne({ email: oldEmail });
 
   if (!admin) {
-    console.log('❌ Admin user not found!');
+    console.log('❌ Admin user not found with email:', oldEmail);
     process.exit(1);
   }
 
+  admin.email = newEmail;
   admin.password = await hashPassword(newPassword);
   admin.failedLoginAttempts = 0;
   admin.lockUntil = null;
   await admin.save();
 
-  console.log('✅ Admin password reset successfully!');
-  console.log('Email:', adminEmail);
-  console.log('Password:', newPassword);
+  console.log('✅ Admin updated successfully!');
+  console.log('New Email:', newEmail);
+  console.log('New Password:', newPassword);
 
   await mongoose.disconnect();
 }
