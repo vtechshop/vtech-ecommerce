@@ -1,53 +1,63 @@
 // FILE: apps/api/src/services/notificationService.js
-const { Resend } = require('resend');
+const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
 const env = require('../config/env');
 const logger = require('../config/logger');
 
 class NotificationService {
   constructor() {
-    this.resend = null;
+    this.mailerSend = null;
     this.isConfigured = false;
     this.initialize();
   }
 
   initialize() {
-    if (env.RESEND_API_KEY) {
+    if (env.MAILERSEND_API_KEY) {
       try {
-        this.resend = new Resend(env.RESEND_API_KEY);
+        this.mailerSend = new MailerSend({
+          apiKey: env.MAILERSEND_API_KEY,
+        });
         this.isConfigured = true;
-        logger.info('Notification service configured with Resend');
+        logger.info('Notification service configured with MailerSend');
       } catch (error) {
         logger.error('Failed to configure notification service:', error);
         this.isConfigured = false;
       }
     } else {
-      logger.warn('Notification service not configured - Resend API key missing. Emails will be logged only.');
+      logger.warn('Notification service not configured - MailerSend API key missing. Emails will be logged only.');
       this.isConfigured = false;
     }
   }
 
   async sendEmail(to, subject, html, text) {
-    if (!this.isConfigured || !this.resend) {
-      logger.warn('Cannot send email - Resend not configured:', { to, subject });
-      return { success: false, reason: 'RESEND_NOT_CONFIGURED', messageId: null };
+    if (!this.isConfigured || !this.mailerSend) {
+      logger.warn('Cannot send email - MailerSend not configured:', { to, subject });
+      return { success: false, reason: 'MAILERSEND_NOT_CONFIGURED', messageId: null };
     }
 
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: env.MAIL_FROM,
-        to,
-        subject,
-        html,
-        text,
-      });
+      // Parse from email and name
+      const fromMatch = env.MAIL_FROM.match(/^(.+?)\s*<(.+?)>$/);
+      const fromName = fromMatch ? fromMatch[1].trim() : 'VTech Shop';
+      const fromEmail = fromMatch ? fromMatch[2].trim() : env.MAIL_FROM;
 
-      if (error) {
-        logger.error('Email send failed:', error);
-        return { success: false, error: error.message, messageId: null };
+      const sentFrom = new Sender(fromEmail, fromName);
+      const recipients = [new Recipient(to)];
+
+      const emailParams = new EmailParams()
+        .setFrom(sentFrom)
+        .setTo(recipients)
+        .setSubject(subject)
+        .setHtml(html);
+
+      // Add reply-to
+      if (env.REPLY_TO_EMAIL) {
+        emailParams.setReplyTo({ email: env.REPLY_TO_EMAIL, name: env.REPLY_TO_NAME || 'VTech Support' });
       }
 
-      logger.info(`Email sent successfully: ${data.id} to ${to}`);
-      return { success: true, messageId: data.id };
+      const response = await this.mailerSend.email.send(emailParams);
+
+      logger.info(`Email sent successfully to ${to}`);
+      return { success: true, messageId: response.headers?.['x-message-id'] || 'sent' };
     } catch (error) {
       logger.error('Email send failed:', error);
       return { success: false, error: error.message, messageId: null };
