@@ -199,6 +199,11 @@ class EmailService {
         .setSubject(emailData.subject)
         .setHtml(emailData.html);
 
+      // Add reply-to so customers can reply to support email
+      if (env.REPLY_TO_EMAIL) {
+        emailParams.setReplyTo({ email: env.REPLY_TO_EMAIL, name: env.REPLY_TO_NAME || 'VTech Support' });
+      }
+
       const response = await this.mailerSend.email.send(emailParams);
 
       logger.info('Email sent successfully:', {

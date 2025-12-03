@@ -30,6 +30,8 @@ module.exports = {
   
   MAILERSEND_API_KEY: process.env.MAILERSEND_API_KEY,
   MAIL_FROM: process.env.MAIL_FROM || 'VTech Shop <noreply@vtechshop.com>',
+  REPLY_TO_EMAIL: process.env.REPLY_TO_EMAIL,
+  REPLY_TO_NAME: process.env.REPLY_TO_NAME || 'VTech Support',
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'support@vtechshop.com',
   SUPPORT_PHONE: process.env.SUPPORT_PHONE || '+1-800-VTECH-00',
   ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@vtechshop.com',
