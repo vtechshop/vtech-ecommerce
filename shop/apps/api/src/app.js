@@ -61,6 +61,8 @@ const allowedOrigins = [
   'http://localhost:3000',                    // Alternative local port
   'https://vtech-ecommerce.vercel.app',       // Vercel production
   'https://loquacious-sfogliatella-745014.netlify.app',  // Netlify production
+  'https://vtechkitchen.com',                 // Custom domain (root)
+  'https://www.vtechkitchen.com',             // Custom domain (www)
 ];
 
 // Add CLIENT_URL from environment if it exists and not already in list
