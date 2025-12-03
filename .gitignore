@@ -2,11 +2,20 @@
 node_modules/
 */node_modules/
 
-# Environment files
+# Environment files (NEVER commit these!)
 .env
 .env.local
 .env.*.local
 *.env
+!.env.example
+
+# Secrets and credentials
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+credentials.json
 
 # Build outputs
 dist/

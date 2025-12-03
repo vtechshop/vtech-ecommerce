@@ -1,9 +1,24 @@
 // FILE: apps/api/src/seed/seed.js
+// WARNING: This script is for LOCAL DEVELOPMENT/TESTING ONLY
+// DO NOT run in production - it will DELETE ALL DATA!
 const mongoose = require('mongoose');
 const { connectDB } = require('../config/db');
 const logger = require('../config/logger');
 const { hashPassword } = require('../utils/hash');
 const { generateAffiliateCode, generateOrderId, generateSKU } = require('../utils/helpers');
+
+// Generate random secure password
+function generateSecurePassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const special = '!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < 8; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  password += special.charAt(Math.floor(Math.random() * special.length));
+  password += Math.floor(Math.random() * 10);
+  return password;
+}
 
 const User = require('../models/User');
 const Vendor = require('../models/Vendor');
@@ -19,9 +34,16 @@ const Page = require('../models/Page');
 
 const seed = async () => {
   try {
+    // Safety check - don't run in production
+    if (process.env.NODE_ENV === 'production') {
+      logger.error('❌ This script should NOT be run in production!');
+      process.exit(1);
+    }
+
     await connectDB();
 
     logger.info('Starting seed process...');
+    logger.info('⚠️  WARNING: This will DELETE ALL existing data!');
 
     // Clear existing data
     await Promise.all([
@@ -40,8 +62,14 @@ const seed = async () => {
 
     logger.info('Cleared existing data');
 
+    // Generate random passwords at runtime (not hardcoded)
+    const adminPass = generateSecurePassword();
+    const vendorPass = generateSecurePassword();
+    const affiliatePass = generateSecurePassword();
+    const customerPass = generateSecurePassword();
+
     // Create admin user
-    const adminPassword = await hashPassword('admin123456');
+    const adminPassword = await hashPassword(adminPass);
     const admin = await User.create({
       name: 'Admin User',
       email: 'admin@shop.test',
@@ -53,7 +81,7 @@ const seed = async () => {
     logger.info('Admin user created');
 
     // Create vendor user
-    const vendorPassword = await hashPassword('vendor123456');
+    const vendorPassword = await hashPassword(vendorPass);
     const vendorUser = await User.create({
       name: 'Demo Vendor',
       email: 'vendor@shop.test',
@@ -83,7 +111,7 @@ const seed = async () => {
     logger.info('Vendor created');
 
     // Create affiliate user
-    const affiliatePassword = await hashPassword('affiliate123456');
+    const affiliatePassword = await hashPassword(affiliatePass);
     const affiliateUser = await User.create({
       name: 'Demo Affiliate',
       email: 'affiliate@shop.test',
@@ -104,7 +132,7 @@ const seed = async () => {
     logger.info('Affiliate created');
 
     // Create customer user
-    const customerPassword = await hashPassword('customer123456');
+    const customerPassword = await hashPassword(customerPass);
     const customer = await User.create({
       name: 'Demo Customer',
       email: 'customer@shop.test',
@@ -355,11 +383,11 @@ const seed = async () => {
     logger.info('CMS content created');
 
     logger.info('✅ Seed completed successfully!');
-    logger.info('\n📧 Login Credentials:');
-    logger.info('Admin: admin@shop.test / admin123456');
-    logger.info('Vendor: vendor@shop.test / vendor123456');
-    logger.info('Affiliate: affiliate@shop.test / affiliate123456');
-    logger.info('Customer: customer@shop.test / customer123456');
+    logger.info('\n📧 Login Credentials (SAVE THESE - randomly generated):');
+    logger.info(`Admin: admin@shop.test / ${adminPass}`);
+    logger.info(`Vendor: vendor@shop.test / ${vendorPass}`);
+    logger.info(`Affiliate: affiliate@shop.test / ${affiliatePass}`);
+    logger.info(`Customer: customer@shop.test / ${customerPass}`);
 
     process.exit(0);
   } catch (error) {
