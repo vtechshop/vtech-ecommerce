@@ -1,18 +1,20 @@
 // FILE: apps/api/src/services/emailService.js
-const { Resend } = require('resend');
+const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
 const env = require('../config/env');
 const logger = require('../config/logger');
 
 class EmailService {
   constructor() {
-    this.resend = null;
+    this.mailerSend = null;
     this.initialize();
   }
 
   initialize() {
-    if (env.RESEND_API_KEY) {
-      this.resend = new Resend(env.RESEND_API_KEY);
-      logger.info('Email service ready (Resend)');
+    if (env.MAILERSEND_API_KEY) {
+      this.mailerSend = new MailerSend({
+        apiKey: env.MAILERSEND_API_KEY,
+      });
+      logger.info('Email service ready (MailerSend)');
     } else {
       logger.info('Email service not configured - emails will be logged only');
     }
@@ -24,6 +26,7 @@ class EmailService {
     const emailData = {
       from: env.MAIL_FROM,
       to: user.email,
+      toName: user.name,
       subject: 'Verify Your Email Address',
       html: `
         <!DOCTYPE html>
@@ -72,6 +75,7 @@ class EmailService {
     const emailData = {
       from: env.MAIL_FROM,
       to: user.email,
+      toName: user.name,
       subject: 'Password Reset Request',
       html: `
         <!DOCTYPE html>
@@ -117,6 +121,7 @@ class EmailService {
     const emailData = {
       from: env.MAIL_FROM,
       to: user.email,
+      toName: user.name,
       subject: 'Account Temporarily Locked - Security Alert',
       html: `
         <!DOCTYPE html>
@@ -159,9 +164,9 @@ class EmailService {
   }
 
   async send(emailData) {
-    if (!this.resend) {
-      // In development without Resend API key, just log the email
-      logger.info('Email would be sent (Resend not configured):', {
+    if (!this.mailerSend) {
+      // In development without MailerSend API key, just log the email
+      logger.info('Email would be sent (MailerSend not configured):', {
         to: emailData.to,
         subject: emailData.subject,
       });
@@ -174,24 +179,33 @@ class EmailService {
 
       return {
         success: true,
-        message: 'Email simulated (Resend not configured)',
+        message: 'Email simulated (MailerSend not configured)',
         actionUrl: urlMatch ? urlMatch[1] : null
       };
     }
 
     try {
-      const { data, error } = await this.resend.emails.send(emailData);
+      // Parse from email and name
+      const fromMatch = emailData.from.match(/^(.+?)\s*<(.+?)>$/);
+      const fromName = fromMatch ? fromMatch[1].trim() : 'VTech Shop';
+      const fromEmail = fromMatch ? fromMatch[2].trim() : emailData.from;
 
-      if (error) {
-        logger.error('Email sending failed:', error);
-        throw new Error('Failed to send email');
-      }
+      const sentFrom = new Sender(fromEmail, fromName);
+      const recipients = [new Recipient(emailData.to, emailData.toName || emailData.to)];
+
+      const emailParams = new EmailParams()
+        .setFrom(sentFrom)
+        .setTo(recipients)
+        .setSubject(emailData.subject)
+        .setHtml(emailData.html);
+
+      const response = await this.mailerSend.email.send(emailParams);
 
       logger.info('Email sent successfully:', {
         to: emailData.to,
-        id: data.id,
+        messageId: response.headers?.['x-message-id'] || 'sent',
       });
-      return { success: true, id: data.id };
+      return { success: true, messageId: response.headers?.['x-message-id'] };
     } catch (error) {
       logger.error('Email sending failed:', error);
       throw new Error('Failed to send email');

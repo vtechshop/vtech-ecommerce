@@ -45,7 +45,7 @@
     "pino-pretty": "^10.3.0",
     "rate-limit-redis": "^4.2.2",
     "razorpay": "^2.9.6",
-    "resend": "^6.5.2",
+    "mailersend": "^2.3.0",
     "stripe": "^19.2.0",
     "uuid": "^9.0.1"
   },
