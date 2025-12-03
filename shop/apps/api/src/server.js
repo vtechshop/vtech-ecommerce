@@ -35,21 +35,30 @@ process.on('unhandledRejection', (err) => {
     // Connect to Redis (optional - continues if fails in development)
     await connectRedis();
 
-    // One-time admin password reset if ADMIN_EMAIL and ADMIN_PASSWORD are set
+    // One-time admin password reset/create if ADMIN_EMAIL and ADMIN_PASSWORD are set
     if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
       try {
         const User = require('./models/User');
         const { hashPassword } = require('./utils/hash');
 
-        const admin = await User.findOne({ email: process.env.ADMIN_EMAIL });
+        let admin = await User.findOne({ email: process.env.ADMIN_EMAIL });
         if (admin) {
           admin.password = await hashPassword(process.env.ADMIN_PASSWORD);
           admin.failedLoginAttempts = 0;
           admin.lockUntil = null;
+          admin.role = 'admin';
           await admin.save();
           logger.info(`✅ Admin password updated for: ${process.env.ADMIN_EMAIL}`);
         } else {
-          logger.warn(`⚠️ Admin user not found: ${process.env.ADMIN_EMAIL}`);
+          // Create new admin if not exists
+          admin = await User.create({
+            name: 'Admin',
+            email: process.env.ADMIN_EMAIL,
+            password: await hashPassword(process.env.ADMIN_PASSWORD),
+            role: 'admin',
+            emailVerified: true,
+          });
+          logger.info(`✅ New admin created: ${process.env.ADMIN_EMAIL}`);
         }
       } catch (err) {
         logger.error('Admin password reset failed:', err.message);
