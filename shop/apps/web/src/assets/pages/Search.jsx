@@ -8,7 +8,6 @@ import QuickView from '@/components/product/QuickView';
 import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import SponsoredLabel from '@/components/ads/SponsoredLabel';
-import BrandShowcase from '@/components/product/BrandShowcase';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 
@@ -300,18 +299,6 @@ const Search = () => {
                     })}
                   </div>
                   <div className="border-b border-gray-200 my-6"></div>
-                </div>
-              )}
-
-              {/* Brand Showcase - Show when browsing all products (no search query) */}
-              {!query && page === 1 && (
-                <div className="mb-8">
-                  <BrandShowcase
-                    title={t('home.topBrands')}
-                    subtitle={t('home.topBrandsSubtitle')}
-                    backgroundColor="from-orange-500 to-red-500"
-                    limit={4}
-                  />
                 </div>
               )}
 
