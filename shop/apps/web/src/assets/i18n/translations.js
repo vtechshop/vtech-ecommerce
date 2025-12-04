@@ -55,6 +55,8 @@ export const translations = {
     'home.monthlyPayout': 'Monthly payout options',
     'home.startSelling': 'Start Selling Today',
     'home.joinAffiliate': 'Join Affiliate Program',
+    'home.topBrands': 'Top Brands | Starting ₹99',
+    'home.topBrandsSubtitle': 'Shop from your favorite brands',
 
     // Product
     'product.addToCart': 'Add to Cart',
@@ -123,6 +125,8 @@ export const translations = {
     'home.monthlyPayout': 'மாதாந்திர செலுத்தல் விருப்பங்கள்',
     'home.startSelling': 'இன்று விற்பனையைத் தொடங்குங்கள்',
     'home.joinAffiliate': 'இணைப்பாளர் திட்டத்தில் சேருங்கள்',
+    'home.topBrands': 'சிறந்த பிராண்டுகள் | ₹99 முதல்',
+    'home.topBrandsSubtitle': 'உங்கள் பிடித்த பிராண்டுகளில் ஷாப் செய்யுங்கள்',
 
     // Product
     'product.addToCart': 'வண்டியில் சேர்',
@@ -191,6 +195,8 @@ export const translations = {
     'home.monthlyPayout': 'मासिक भुगतान विकल्प',
     'home.startSelling': 'आज बिक्री शुरू करें',
     'home.joinAffiliate': 'सहयोगी कार्यक्रम में शामिल हों',
+    'home.topBrands': 'टॉप ब्रांड्स | ₹99 से शुरू',
+    'home.topBrandsSubtitle': 'अपने पसंदीदा ब्रांड्स से खरीदारी करें',
 
     // Product
     'product.addToCart': 'कार्ट में जोड़ें',

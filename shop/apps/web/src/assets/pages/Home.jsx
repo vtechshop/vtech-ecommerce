@@ -6,6 +6,7 @@ import api from '@/utils/api';
 import ProductCard from '@/components/product/ProductCard';
 import FlashSaleBanner from '@/components/flash-sale/FlashSaleBanner';
 import ProductRecommendations from '@/components/product/ProductRecommendations';
+import BrandShowcase from '@/components/product/BrandShowcase';
 import Spinner from '@/components/common/Spinner';
 import SponsorAd from '@/components/ads/SponsorAd';
 import useSponsorAds from '@/hooks/useSponsorAds';
@@ -200,6 +201,14 @@ const Home = React.memo(() => {
                 </div>
               )}
             </section>
+
+            {/* Top Brands Showcase - Mobile-friendly 2x2 grid */}
+            <BrandShowcase
+              title={t('home.topBrands')}
+              subtitle={t('home.topBrandsSubtitle')}
+              backgroundColor="from-orange-500 to-red-500"
+              limit={4}
+            />
 
             {/* Join as Vendor or Affiliate */}
             <section className="mb-8">

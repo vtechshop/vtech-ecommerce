@@ -8,9 +8,12 @@ import QuickView from '@/components/product/QuickView';
 import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import SponsoredLabel from '@/components/ads/SponsoredLabel';
+import BrandShowcase from '@/components/product/BrandShowcase';
 import { updateMetaTags } from '@/utils/seo';
+import useTranslation from '@/hooks/useTranslation';
 
 const Search = () => {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sponsoredAds, setSponsoredAds] = useState([]);
   const [adsError, setAdsError] = useState(null);
@@ -300,6 +303,18 @@ const Search = () => {
                 </div>
               )}
 
+              {/* Brand Showcase - Show when browsing all products (no search query) */}
+              {!query && page === 1 && (
+                <div className="mb-8">
+                  <BrandShowcase
+                    title={t('home.topBrands')}
+                    subtitle={t('home.topBrandsSubtitle')}
+                    backgroundColor="from-orange-500 to-red-500"
+                    limit={4}
+                  />
+                </div>
+              )}
+
               {/* Regular Products */}
               {products.length === 0 ? (
                 <div className="text-center py-12">
@@ -323,7 +338,7 @@ const Search = () => {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                     {products.map((product) => (
                       <ProductCard
                         key={product.id ?? product._id}
