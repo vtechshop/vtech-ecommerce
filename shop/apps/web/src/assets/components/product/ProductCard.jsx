@@ -65,13 +65,13 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         to={`/product/${product.slug}`}
         onClick={handleClick}
       >
-        {/* Image - Fixed height */}
-        <div className="relative aspect-square bg-white flex-shrink-0">
+        {/* Image - Auto height to show full image */}
+        <div className="relative bg-gray-50 flex-shrink-0 flex items-center justify-center min-h-[180px] sm:min-h-[200px] p-3">
           {product.images && product.images.length > 0 ? (
             <img
               src={normalizeImageUrl(product.images[0])}
               alt={product.title}
-              className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500"
+              className="max-w-full max-h-[200px] sm:max-h-[250px] w-auto h-auto object-contain group-hover:scale-105 transition-transform duration-500"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400">
