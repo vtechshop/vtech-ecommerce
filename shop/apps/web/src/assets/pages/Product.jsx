@@ -733,7 +733,7 @@ const Product = () => {
                         src={product.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
                         title="Product Video"
                         style={{ border: 0 }}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
                         allowFullScreen
                         className="rounded-lg shadow-md w-full"
                       ></iframe>

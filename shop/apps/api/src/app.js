@@ -144,6 +144,7 @@ app.use((req, res, next) => {
     '/api/checkout',   // Checkout flow - needs to work for guests
     '/api/ads',        // Ad tracking (impressions/clicks) - public analytics
     '/api/upload',     // File uploads - protected by JWT authentication
+    '/api/user',       // User profile/addresses - protected by JWT authentication
     '/health',         // Health check
   ];
 
