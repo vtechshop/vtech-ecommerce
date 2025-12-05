@@ -93,8 +93,10 @@ describe('Checkout Integration Tests', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('orderId');
-      expect(response.body.data.status).toBe('placed');
+      // Multi-vendor order response structure
+      expect(response.body.data).toHaveProperty('orderIds');
+      expect(response.body.data).toHaveProperty('vendorOrders');
+      expect(response.body.data.vendorOrders[0].status).toBe('placed');
     });
 
     test('should require items', async () => {

@@ -11,7 +11,7 @@ describe('Authentication Integration Tests', () => {
         .send({
           name: 'Test User',
           email: 'test@example.com',
-          password: 'password123456',
+          password: 'Password123!', // Strong password with uppercase, lowercase, number, special char
         });
 
       expect(response.status).toBe(201);
@@ -32,7 +32,7 @@ describe('Authentication Integration Tests', () => {
         .send({
           name: 'Test User',
           email: 'existing@example.com',
-          password: 'password123456',
+          password: 'Password123!',
         });
 
       expect(response.status).toBe(400);

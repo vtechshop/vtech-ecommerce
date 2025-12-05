@@ -95,7 +95,8 @@ describe('Order Integration Tests', () => {
     test('should cancel order', async () => {
       const response = await request(app)
         .post(`/api/orders/${orderId}/cancel`)
-        .set('Authorization', `Bearer ${userToken}`);
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ reason: 'Changed my mind' }); // Reason is required
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
