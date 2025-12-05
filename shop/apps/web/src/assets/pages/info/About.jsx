@@ -342,9 +342,9 @@ const About = () => {
                 <div>
                   <h3 className="font-bold text-gray-900 mb-2">Address</h3>
                   <p className="text-gray-700 leading-relaxed">
-                    Vtech<br />
-                    Ganapathy<br />
-                    Coimbatore, Tamil Nadu<br />
+                    V-Tech Shop<br />
+                    464, Sathy Rd, Ganapathy<br />
+                    Coimbatore, Tamil Nadu 641006<br />
                     India
                   </p>
                 </div>
