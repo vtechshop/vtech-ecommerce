@@ -26,9 +26,9 @@ const Button = ({
   };
 
   const sizes = {
-    sm: 'px-3 py-2 text-sm',
-    md: 'px-4 py-2.5 text-base',
-    lg: 'px-6 sm:px-8 py-2.5 sm:py-3 text-base sm:text-lg',
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-3 py-2 sm:px-4 sm:py-2.5 text-sm sm:text-base',
+    lg: 'px-4 py-2 sm:px-6 sm:py-2.5 md:px-8 md:py-3 text-sm sm:text-base md:text-lg',
   };
 
   return (
