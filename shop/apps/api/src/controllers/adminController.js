@@ -706,11 +706,11 @@ exports.getPendingKYC = async (req, res, next) => {
     // Fetch pending affiliates
     if (!type || type === 'affiliate') {
       [affiliates, totalAffiliates] = await Promise.all([
-        Affiliate.find({ kycStatus: 'pending' })
+        Affiliate.find({ 'kyc.status': 'pending' })
           .populate('userId', 'name email')
           .sort({ createdAt: -1 })
           .lean(),
-        Affiliate.countDocuments({ kycStatus: 'pending' }),
+        Affiliate.countDocuments({ 'kyc.status': 'pending' }),
       ]);
       // Add type field to each affiliate
       affiliates = affiliates.map(a => ({ ...a, type: 'affiliate' }));
@@ -794,7 +794,8 @@ exports.approveAffiliateKYC = async (req, res, next) => {
     const affiliate = await Affiliate.findByIdAndUpdate(
       req.params.id,
       {
-        kycStatus: 'approved',
+        'kyc.status': 'approved',
+        'kyc.verifiedAt': new Date(),
         status: 'active',
         approvedAt: new Date()
       },
@@ -820,7 +821,8 @@ exports.rejectAffiliateKYC = async (req, res, next) => {
     const affiliate = await Affiliate.findByIdAndUpdate(
       req.params.id,
       {
-        kycStatus: 'rejected',
+        'kyc.status': 'rejected',
+        'kyc.rejectionReason': req.body.reason,
         status: 'rejected',
         rejectionReason: req.body.reason
       },
