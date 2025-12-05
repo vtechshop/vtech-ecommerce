@@ -296,31 +296,31 @@ const VendorCommissions = () => {
       {/* Commissions Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[900px]">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px]">
                   Vendor
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                   Order
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Product
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
                   Amount
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[60px]">
                   Rate
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[180px]">
                   Actions
                 </th>
               </tr>
@@ -328,83 +328,77 @@ const VendorCommissions = () => {
             <tbody className="divide-y divide-gray-200">
               {data?.commissions?.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
                     No commissions found
                   </td>
                 </tr>
               ) : (
                 data?.commissions?.map((commission) => (
                   <tr key={commission._id} className={`transition-colors ${getPendingItemClasses(commission.status)}`}>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <Store className="w-4 h-4 text-gray-400" />
-                        <div>
+                        <Store className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <div className="min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-gray-900 truncate text-sm">
                               {commission.subjectId?.storeName || commission.subjectId?.userId?.name || 'Unknown'}
                             </p>
-                            <PendingBadge status={commission.status} />
                           </div>
-                          <p className="text-xs text-gray-500">ID: {commission._id.slice(-8)} • {formatRelativeTime(commission.createdAt)}</p>
+                          <p className="text-xs text-gray-500 truncate">ID: {commission._id.slice(-8)}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <ShoppingCart className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm font-mono text-gray-700">
-                          {commission.orderId?.orderId || 'N/A'}
-                        </span>
-                      </div>
+                    <td className="px-4 py-3">
+                      <span className="text-xs font-mono text-gray-700">
+                        {commission.orderId?.orderId || 'N/A'}
+                      </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">
+                    <td className="px-4 py-3">
+                      <div className="text-sm text-gray-900 truncate max-w-[150px]" title={commission.productId?.title}>
                         {commission.productId?.title || 'N/A'}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="font-bold text-green-600">
+                    <td className="px-4 py-3">
+                      <span className="font-bold text-green-600 text-sm">
                         {formatCurrency(commission.amount)}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <span className="text-sm text-gray-700">
                         {commission.percentage}%
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(commission.status)}`}>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(commission.status)}`}>
                         {getStatusIcon(commission.status)}
                         {commission.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-700">
-                        <Calendar className="w-4 h-4 text-gray-400" />
+                    <td className="px-4 py-3">
+                      <div className="text-xs text-gray-700">
                         {new Date(commission.createdAt).toLocaleDateString()}
                       </div>
                       {commission.paidAt && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-green-600">
                           Paid: {new Date(commission.paidAt).toLocaleDateString()}
                         </p>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 flex-wrap">
                         {commission.status === 'pending' && (
                           <>
                             <Button
                               variant="success"
-                              size="sm"
+                              size="xs"
                               onClick={() => approveCommissionMutation.mutate(commission._id)}
                               disabled={approveCommissionMutation.isPending}
                             >
-                              <Check className="w-4 h-4 mr-1" />
                               Approve
                             </Button>
                             <Button
                               variant="danger"
-                              size="sm"
+                              size="xs"
                               onClick={() => {
                                 if (window.confirm('Are you sure you want to reject this commission?')) {
                                   rejectCommissionMutation.mutate(commission._id);
@@ -412,7 +406,6 @@ const VendorCommissions = () => {
                               }}
                               disabled={rejectCommissionMutation.isPending}
                             >
-                              <X className="w-4 h-4 mr-1" />
                               Reject
                             </Button>
                           </>
@@ -420,22 +413,22 @@ const VendorCommissions = () => {
                         {commission.status === 'approved' && (
                           <Button
                             variant="primary"
-                            size="sm"
+                            size="xs"
                             onClick={() => payCommissionMutation.mutate(commission._id)}
                             disabled={payCommissionMutation.isPending}
                           >
-                            <DollarSign className="w-4 h-4 mr-1" />
+                            <DollarSign className="w-3 h-3 mr-1" />
                             Pay
                           </Button>
                         )}
                         {commission.status === 'paid' && (
-                          <span className="text-green-600 text-sm font-medium">
-                            ✓ Paid
+                          <span className="text-green-600 text-xs font-medium flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" /> Paid
                           </span>
                         )}
                         {commission.status === 'cancelled' && (
-                          <span className="text-red-600 text-sm font-medium">
-                            ✗ Cancelled
+                          <span className="text-red-600 text-xs font-medium flex items-center gap-1">
+                            <X className="w-4 h-4" /> Cancelled
                           </span>
                         )}
                       </div>
