@@ -16,7 +16,6 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const hasDiscount = React.useMemo(() => product.compareAt && product.compareAt > product.price, [product.compareAt, product.price]);
   const discountPercent = React.useMemo(() => hasDiscount ? Math.round(((product.compareAt - product.price) / product.compareAt) * 100) : 0, [hasDiscount, product.compareAt, product.price]);
 
-
   const handleClick = useCallback((e) => {
     if (onClick) {
       onClick(e);
@@ -44,7 +43,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
     return [...Array(5)].map((_, i) => (
       <svg
         key={i}
-        className={`w-4 h-4 ${
+        className={`w-3 h-3 sm:w-4 sm:h-4 ${
           i < Math.floor(product.rating) ? 'text-yellow-400' : 'text-gray-300'
         }`}
         fill="currentColor"
@@ -56,126 +55,102 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   }, [product.rating]);
 
   return (
-    <div
-      className="group bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-2xl hover:border-primary-500 hover:-translate-y-3 hover:scale-102 transition-all duration-400 relative product-card transform h-full flex flex-col"
+    <Link
+      to={`/product/${product.slug}`}
+      onClick={handleClick}
+      className="group bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-xl hover:border-primary-500 transition-all duration-300 block h-full"
       data-testid="product-card"
       data-cy="product-card"
     >
-      <Link
-        to={`/product/${product.slug}`}
-        onClick={handleClick}
-      >
-        {/* Image - Auto height to show full image */}
-        <div className="relative bg-gray-50 flex-shrink-0 flex items-center justify-center min-h-[180px] sm:min-h-[200px] p-3">
-          {product.images && product.images.length > 0 ? (
-            <img
-              src={normalizeImageUrl(product.images[0])}
-              alt={product.title}
-              className="max-w-full max-h-[200px] sm:max-h-[250px] w-auto h-auto object-contain group-hover:scale-105 transition-transform duration-500"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              No image
-            </div>
-          )}
-          {hasDiscount && (
-            <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded animate-bounce-in product-badge">
-              -{discountPercent}%
-            </div>
-          )}
-          {product.stock <= 0 && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-              <span className="bg-white text-gray-900 px-4 py-2 rounded font-semibold">
-                Out of Stock
-              </span>
-            </div>
-          )}
+      {/* Image Container */}
+      <div className="relative aspect-square bg-gray-50 overflow-hidden">
+        {product.images && product.images.length > 0 ? (
+          <img
+            src={normalizeImageUrl(product.images[0])}
+            alt={product.title}
+            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+            No image
+          </div>
+        )}
 
-          {/* Quick View Button - Shows on hover */}
-          {onQuickView && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onQuickView(product);
-              }}
-              className="absolute inset-x-0 bottom-0 bg-white/95 py-2.5 px-4 text-gray-900 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2 border-t border-gray-200"
-            >
-              <Eye className="w-4 h-4" />
-              Quick View
-            </button>
-          )}
-        </div>
-      </Link>
+        {/* Discount Badge */}
+        {hasDiscount && (
+          <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
+            -{discountPercent}%
+          </div>
+        )}
 
-      {/* Content - Flex grow to fill space */}
-      <Link
-        to={`/product/${product.slug}`}
-        onClick={handleClick}
-        className="p-4 flex-grow flex flex-col"
-      >
-        {/* Title - Fixed height with line clamp */}
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-gray-600 transition-colors min-h-[2.5rem]">
+        {/* Out of Stock Overlay */}
+        {product.stock <= 0 && (
+          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <span className="bg-white text-gray-900 px-2 py-1 sm:px-4 sm:py-2 rounded text-xs sm:text-sm font-semibold">
+              Out of Stock
+            </span>
+          </div>
+        )}
+
+        {/* Quick View - Desktop only */}
+        {onQuickView && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onQuickView(product);
+            }}
+            className="absolute inset-x-0 bottom-0 bg-white/95 py-2 px-3 text-gray-900 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:flex items-center justify-center gap-2 border-t border-gray-200 text-sm"
+          >
+            <Eye className="w-4 h-4" />
+            Quick View
+          </button>
+        )}
+      </div>
+
+      {/* Content */}
+      <div className="p-2 sm:p-3">
+        {/* Title */}
+        <h3 className="font-medium text-gray-900 text-xs sm:text-sm line-clamp-2 mb-1 sm:mb-2 min-h-[2rem] sm:min-h-[2.5rem]">
           {product.title}
         </h3>
 
-        {/* Rating - Fixed height slot */}
-        <div className="h-6 mb-2">
+        {/* Rating - Hidden on mobile */}
+        <div className="hidden sm:block h-5 mb-2">
           {ratingStars && (
             <div className="flex items-center gap-1">
-              <div className="flex">
-                {ratingStars}
-              </div>
-              <span className="text-xs text-gray-700">({product.reviewCount || 0})</span>
+              <div className="flex">{ratingStars}</div>
+              <span className="text-xs text-gray-500">({product.reviewCount || 0})</span>
             </div>
           )}
         </div>
 
-        {/* Tags - Fixed height slot */}
-        <div className="h-6 mb-2">
-          {product.tags && product.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 overflow-hidden">
-              {product.tags.slice(0, 2).map((tag, index) => (
-                <span
-                  key={index}
-                  className="inline-block px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded truncate max-w-[100px]"
-                >
-                  #{tag}
-                </span>
-              ))}
-              {product.tags.length > 2 && (
-                <span className="text-xs text-gray-500">+{product.tags.length - 2}</span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Price - Push to bottom */}
-        <div className="flex items-baseline gap-2 mt-auto">
-          <span className="text-xl font-bold text-blue-600">
+        {/* Price */}
+        <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
+          <span className="text-sm sm:text-lg font-bold text-blue-600">
             {formatCurrency(product.price)}
           </span>
           {hasDiscount && (
-            <span className="text-sm text-gray-500 line-through">
+            <span className="text-[10px] sm:text-sm text-gray-400 line-through">
               {formatCurrency(product.compareAt)}
             </span>
           )}
         </div>
-      </Link>
+      </div>
 
-      {/* Add to Cart Button - Fixed at bottom */}
-      <div className="px-4 pb-4 mt-auto">
+      {/* Add to Cart - Desktop only */}
+      <div className="hidden sm:block px-3 pb-3">
         <button
           onClick={handleAddToCart}
           disabled={product.stock <= 0}
-          className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+          className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm"
           data-testid="add-to-cart-btn"
         >
           <ShoppingCart className="w-4 h-4" />
           {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
         </button>
       </div>
-    </div>
+    </Link>
   );
 });
 
