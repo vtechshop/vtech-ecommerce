@@ -66,7 +66,12 @@ exports.addItem = async (req, res, next) => {
       });
     }
 
-    const product = await Product.findById(productId);
+    const query = userId ? { userId } : { guestId };
+    const normalizedVariantId = variantId === undefined ? null : variantId;
+
+    // Single query: Try to increment existing item OR add new item
+    // Use lean product lookup for speed (no Mongoose document overhead)
+    const product = await Product.findById(productId).select('title price images slug stock').lean();
 
     if (!product) {
       return res.status(404).json({
@@ -88,20 +93,8 @@ exports.addItem = async (req, res, next) => {
       });
     }
 
-    const query = userId ? { userId } : { guestId };
-
-    let cart = await Cart.findOne(query);
-
-    if (!cart) {
-      cart = new Cart(query);
-    }
-
-    // Normalize variantId to prevent null vs undefined mismatch
-    const normalizedVariantId = variantId === undefined ? null : variantId;
-
-    // Use atomic operations to prevent race conditions
-    // Try to increment existing item first
-    const updatedCart = await Cart.findOneAndUpdate(
+    // Try atomic increment first (fastest path for existing items)
+    let cart = await Cart.findOneAndUpdate(
       {
         ...query,
         'items.productId': productId,
@@ -113,13 +106,8 @@ exports.addItem = async (req, res, next) => {
       { new: true }
     );
 
-    if (updatedCart) {
-      // Item existed and was updated - save triggers pre-save hook for totals
-      await updatedCart.save();
-      await updatedCart.populate('items.productId');
-      cart = updatedCart;
-    } else {
-      // Item doesn't exist, add it
+    if (!cart) {
+      // Item doesn't exist - add it with upsert (creates cart if needed)
       cart = await Cart.findOneAndUpdate(
         query,
         {
@@ -137,11 +125,10 @@ exports.addItem = async (req, res, next) => {
         },
         { new: true, upsert: true }
       );
-
-      // Save triggers pre-save hook for totals calculation
-      await cart.save();
-      await cart.populate('items.productId');
     }
+
+    // Calculate totals and save (single save operation)
+    await cart.save();
 
     res.json({
       success: true,
