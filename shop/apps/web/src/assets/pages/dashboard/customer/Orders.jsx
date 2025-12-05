@@ -187,39 +187,39 @@ const Orders = () => {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t gap-3">
                   <div>
                     <p className="text-sm text-gray-700">Total Amount</p>
                     <p className="text-xl font-bold">{formatCurrency(order.totals?.total || 0)}</p>
                   </div>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
                     {/* Reorder Button */}
                     {canReorder(order) && (
                       <button
                         onClick={() => handleReorder(order)}
                         disabled={reorderingOrderId === order._id}
-                        className="btn btn-outline flex items-center gap-2"
+                        className="btn btn-outline flex items-center justify-center gap-1 flex-1 sm:flex-none"
                       >
                         {reorderingOrderId === order._id ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
-                            Reordering...
+                            <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-primary-600"></div>
+                            <span className="hidden sm:inline">Reordering...</span>
                           </>
                         ) : (
                           <>
-                            <RotateCcw className="w-4 h-4" />
+                            <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4" />
                             Reorder
                           </>
                         )}
                       </button>
                     )}
                     {order.shipment?.awb && (
-                      <Link to={`/track-order?orderId=${order.orderId}`}>
-                        <button className="btn btn-outline">Track Order</button>
+                      <Link to={`/track-order?orderId=${order.orderId}`} className="flex-1 sm:flex-none">
+                        <button className="btn btn-outline w-full">Track</button>
                       </Link>
                     )}
-                    <Link to={`/dashboard/orders/${order._id}`}>
-                      <button className="btn btn-primary">View Details</button>
+                    <Link to={`/dashboard/orders/${order._id}`} className="flex-1 sm:flex-none">
+                      <button className="btn btn-primary w-full whitespace-nowrap">View Details</button>
                     </Link>
                   </div>
                 </div>
