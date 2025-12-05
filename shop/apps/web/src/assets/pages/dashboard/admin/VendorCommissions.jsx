@@ -55,9 +55,6 @@ const VendorCommissions = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
       queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
       toast.success('Commission approved!');
-      // Switch to Approved tab after approval
-      setStatusFilter('approved');
-      setPage(1);
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to approve commission');
@@ -74,9 +71,6 @@ const VendorCommissions = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
       queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
       toast.success('Commission marked as paid!');
-      // Switch to Paid tab after payment
-      setStatusFilter('paid');
-      setPage(1);
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to pay commission');
@@ -93,9 +87,6 @@ const VendorCommissions = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
       queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
       toast.success('Commission rejected');
-      // Switch to Cancelled tab after rejection
-      setStatusFilter('cancelled');
-      setPage(1);
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to reject commission');
