@@ -652,7 +652,15 @@ exports.createOrder = async (req, res, next) => {
 
         // Send to admin (pass vendor profile for store name info)
         try {
-          await notificationService.sendAdminOrderNotification(vendorOrder, vendorOrder.items, vendorUser, vendorProfile);
+          // Populate userId with email for registered users
+          let orderForAdmin = vendorOrder.toObject ? vendorOrder.toObject() : vendorOrder;
+          if (vendorOrder.userId && !vendorOrder.isGuest) {
+            const customerUser = await User.findById(vendorOrder.userId).select('email name');
+            if (customerUser) {
+              orderForAdmin.userId = customerUser;
+            }
+          }
+          await notificationService.sendAdminOrderNotification(orderForAdmin, vendorOrder.items, vendorUser, vendorProfile);
           logger.info(`Admin notification sent for order ${vendorOrder.orderId}`);
         } catch (adminEmailError) {
           logger.error(`Failed to send admin notification for order ${vendorOrder.orderId}:`, adminEmailError);

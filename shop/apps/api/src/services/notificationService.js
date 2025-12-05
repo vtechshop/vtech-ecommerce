@@ -139,10 +139,10 @@ class NotificationService {
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Shipping Address</h3>
-              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName || 'N/A'}</strong></p>
-              <p style="margin: 5px 0;">${order.shipTo?.address || 'N/A'}</p>
+              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName}</strong></p>
+              <p style="margin: 5px 0;">${order.shipTo?.address}</p>
               <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zip || ''}</p>
-              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone || 'N/A'}</p>
+              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone}</p>
             </div>
 
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
@@ -266,10 +266,10 @@ class NotificationService {
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Shipping Address</h3>
-              <p style="margin: 5px 0;"><strong>${vendorOrders[0]?.shipTo?.fullName || 'N/A'}</strong></p>
-              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.address || 'N/A'}</p>
-              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.city || ''}, ${vendorOrders[0]?.shipTo?.state || ''} ${vendorOrders[0]?.shipTo?.zip || ''}</p>
-              <p style="margin: 5px 0;">Phone: ${vendorOrders[0]?.shipTo?.phone || 'N/A'}</p>
+              <p style="margin: 5px 0;"><strong>${vendorOrders[0]?.shipTo?.fullName}</strong></p>
+              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.address}</p>
+              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.city}, ${vendorOrders[0]?.shipTo?.state} ${vendorOrders[0]?.shipTo?.zip}</p>
+              <p style="margin: 5px 0;">Phone: ${vendorOrders[0]?.shipTo?.phone}</p>
             </div>
 
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
@@ -378,10 +378,10 @@ class NotificationService {
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Delivery Address</h3>
-              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName || 'N/A'}</strong></p>
-              <p style="margin: 5px 0;">${order.shipTo?.address || 'N/A'}</p>
+              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName}</strong></p>
+              <p style="margin: 5px 0;">${order.shipTo?.address}</p>
               <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zip || ''}</p>
-              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone || 'N/A'}</p>
+              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone}</p>
             </div>
 
             <div class="alert">
@@ -452,8 +452,8 @@ class NotificationService {
             <div class="stats">
               <p style="margin: 5px 0;"><strong>Vendor Store:</strong> ${vendorDisplayName}</p>
               <p style="margin: 5px 0;"><strong>Vendor Contact:</strong> ${vendorUser?.email || 'N/A'}</p>
-              <p style="margin: 5px 0;"><strong>Customer:</strong> ${order.shipTo?.fullName || 'N/A'} ${order.isGuest ? '(Guest)' : ''}</p>
-              <p style="margin: 5px 0;"><strong>Email:</strong> ${order.guestEmail || 'Registered User'}</p>
+              <p style="margin: 5px 0;"><strong>Customer:</strong> ${order.shipTo?.fullName} ${order.isGuest ? '(Guest)' : ''}</p>
+              <p style="margin: 5px 0;"><strong>Email:</strong> ${order.guestEmail || order.userId?.email || 'N/A'}</p>
               <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${order.payment?.method === 'cod' ? 'Cash on Delivery' : (order.payment?.method || 'N/A').toUpperCase()}</p>
               <p style="margin: 5px 0;"><strong>Vendor Products Total:</strong> ₹${totalAmount.toFixed(2)}</p>
             </div>
@@ -479,10 +479,10 @@ class NotificationService {
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Shipping Address</h3>
-              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName || 'N/A'}</strong></p>
-              <p style="margin: 5px 0;">${order.shipTo?.address || 'N/A'}</p>
+              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName}</strong></p>
+              <p style="margin: 5px 0;">${order.shipTo?.address}</p>
               <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zip || ''}</p>
-              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone || 'N/A'}</p>
+              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone}</p>
             </div>
 
             <p style="text-align: center;">
