@@ -36,7 +36,7 @@ const VendorKYC = () => {
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
   // Fetch KYC data
-  const { data: kycData, isLoading } = useQuery({
+  const { data: kycData, isLoading, error: kycError } = useQuery({
     queryKey: ['vendor-kyc'],
     queryFn: async () => {
       const response = await api.get('/vendors/kyc');
@@ -53,6 +53,7 @@ const VendorKYC = () => {
         });
       }
     },
+    retry: false, // Don't retry if vendor profile not found
   });
 
   // Update KYC mutation
@@ -181,6 +182,27 @@ const VendorKYC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Handle vendor profile not found error
+  if (kycError?.response?.data?.error?.code === 'NOT_FOUND') {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-8 text-center">
+          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-yellow-800 mb-2">Vendor Profile Not Found</h2>
+          <p className="text-yellow-700 mb-6">
+            Your vendor profile has not been created yet. Please complete the vendor onboarding process first.
+          </p>
+          <a
+            href="/dashboard/become-vendor"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
+          >
+            Complete Vendor Onboarding
+          </a>
+        </div>
       </div>
     );
   }

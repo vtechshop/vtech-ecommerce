@@ -57,7 +57,7 @@ exports.getNotificationCounts = async (req, res, next) => {
 
       // Open support tickets
       counts.openTickets = await Ticket.countDocuments({
-        status: { $in: ['open', 'pending'] },
+        status: { $in: ['open', 'in_progress'] },
       });
 
       // Pending vendor approvals

@@ -116,7 +116,7 @@ const VendorCommissions = () => {
     const csvData = [
       ['Vendor', 'Order ID', 'Product', 'Amount', 'Rate', 'Status', 'Date', 'Paid Date'].join(','),
       ...(data?.commissions || []).map(comm => [
-        comm.subjectId?.shopName || 'N/A',
+        comm.subjectId?.storeName || 'N/A',
         comm.orderId?.orderId || 'N/A',
         comm.productId?.title || 'N/A',
         comm.amount.toFixed(2),
@@ -341,7 +341,7 @@ const VendorCommissions = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <p className="font-medium text-gray-900">
-                              {commission.subjectId?.shopName || commission.subjectId?.userId?.name || 'Unknown'}
+                              {commission.subjectId?.storeName || commission.subjectId?.userId?.name || 'Unknown'}
                             </p>
                             <PendingBadge status={commission.status} />
                           </div>

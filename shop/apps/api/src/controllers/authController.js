@@ -107,8 +107,19 @@ exports.register = async (req, res, next) => {
         const baseSlug = slugify(name || email.split('@')[0], { lower: true, strict: true });
         const vendor = await Vendor.create({
           userId: user._id,
-          storeName: name || 'My Store',
+          storeName: name ? `${name}'s Store` : 'My Store',
           slug: `${baseSlug}-${Date.now()}`,
+          description: '',
+          kyc: {
+            businessName: name || '',
+            businessType: 'sole_proprietorship',
+            businessAddress: '',
+            taxId: '',
+            phoneNumber: '',
+            documents: [],
+            status: 'pending',
+          },
+          bank: {},
           status: 'pending', // Requires admin approval
         });
 

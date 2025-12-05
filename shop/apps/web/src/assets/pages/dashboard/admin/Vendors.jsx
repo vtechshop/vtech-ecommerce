@@ -324,7 +324,7 @@ const Vendors = () => {
                   <td className="py-3 px-3 sm:px-4">
                     <div>
                       <p className="font-medium">{vendor.storeName}</p>
-                      <p className="text-xs text-gray-700">{vendor.storeSlug}</p>
+                      <p className="text-xs text-gray-700">{vendor.slug}</p>
                     </div>
                   </td>
                   <td className="py-3 px-4 text-sm">
@@ -489,7 +489,7 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Store Slug</label>
-                  <p className="text-sm font-mono">{vendor.storeSlug}</p>
+                  <p className="text-sm font-mono">{vendor.slug}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700">Owner Name</label>

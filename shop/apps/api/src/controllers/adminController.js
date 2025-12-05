@@ -205,14 +205,21 @@ exports.resetUserPassword = async (req, res, next) => {
 // ---------- Products ----------
 exports.getProducts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status } = req.query;
+    const { page = 1, limit = 20, status, vendorId, search } = req.query;
     const query = {};
     if (status === 'published') query.published = true;
     if (status === 'unpublished') query.published = false;
+    if (vendorId) query.vendorId = vendorId;
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { sku: { $regex: search, $options: 'i' } }
+      ];
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [products, total] = await Promise.all([
-      Product.find(query).populate('vendorId', 'storeName').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).lean(),
+      Product.find(query).populate('vendorId', 'storeName slug').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).lean(),
       Product.countDocuments(query),
     ]);
     res.json({ success: true, data: products, meta: getPaginationMeta(total, +page, +limit) });
@@ -361,9 +368,17 @@ exports.deleteCategory = async (req, res, next) => {
 // ---------- Orders ----------
 exports.getOrders = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status } = req.query;
+    const { page = 1, limit = 20, status, vendorId, search } = req.query;
     const query = {};
     if (status) query.status = status;
+    if (vendorId) query['items.vendorId'] = vendorId;
+    if (search) {
+      query.$or = [
+        { orderId: { $regex: search, $options: 'i' } },
+        { 'shipTo.fullName': { $regex: search, $options: 'i' } },
+        { guestEmail: { $regex: search, $options: 'i' } }
+      ];
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [orders, total] = await Promise.all([
@@ -902,7 +917,7 @@ exports.getCommissionStats = async (req, res, next) => {
     const { type } = req.query;
     const query = type ? { type } : {};
 
-    const [totalStats, pendingStats, paidStats, affiliateCount] = await Promise.all([
+    const [totalStats, pendingStats, paidStats, affiliateCount, vendorCount] = await Promise.all([
       Commission.aggregate([
         { $match: query },
         { $group: { _id: null, totalAmount: { $sum: '$amount' } } }
@@ -915,7 +930,8 @@ exports.getCommissionStats = async (req, res, next) => {
         { $match: { ...query, status: 'paid' } },
         { $group: { _id: null, paidAmount: { $sum: '$amount' }, paidCount: { $sum: 1 } } }
       ]),
-      type === 'affiliate' ? Affiliate.countDocuments({ status: 'active' }) : Promise.resolve(0)
+      type === 'affiliate' ? Affiliate.countDocuments({ status: 'active' }) : Promise.resolve(0),
+      type === 'vendor' || !type ? Vendor.countDocuments({ status: 'active' }) : Promise.resolve(0)
     ]);
 
     const stats = {
@@ -924,7 +940,8 @@ exports.getCommissionStats = async (req, res, next) => {
       pendingCount: pendingStats[0]?.pendingCount || 0,
       paidAmount: paidStats[0]?.paidAmount || 0,
       paidCount: paidStats[0]?.paidCount || 0,
-      affiliateCount: affiliateCount
+      affiliateCount: affiliateCount,
+      vendorCount: vendorCount
     };
 
     res.json({ success: true, data: stats });
