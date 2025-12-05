@@ -150,7 +150,7 @@ class NotificationService {
             </div>
 
             <p style="text-align: center;">
-              <a href="${env.CLIENT_URL}/orders/${order.orderId}" class="button">Track Your Order</a>
+              <a href="${env.CLIENT_URL}/dashboard/orders/${order._id}" class="button">Track Your Order</a>
             </p>
 
             <p style="margin-top: 30px;">Need help? Contact our support team at <a href="mailto:${env.SUPPORT_EMAIL || 'support@vtechshop.com'}">${env.SUPPORT_EMAIL || 'support@vtechshop.com'}</a> or call ${env.SUPPORT_PHONE || 'N/A'}.</p>
@@ -204,7 +204,7 @@ class NotificationService {
           </tr>
         </table>
         <p style="margin: 15px 0 0 0;">
-          <a href="${env.CLIENT_URL}/orders/${order.orderId}"
+          <a href="${env.CLIENT_URL}/dashboard/orders/${order._id}"
              style="color: #FF9F1C; text-decoration: none; font-weight: bold; font-size: 14px;">
             Track Order ${order.orderId} →
           </a>
@@ -389,7 +389,7 @@ class NotificationService {
             </div>
 
             <p style="text-align: center;">
-              <a href="${env.CLIENT_URL}/vendor/orders/${order.orderId}" class="button">View Order Details</a>
+              <a href="${env.CLIENT_URL}/vendor-dashboard/orders/${order._id}" class="button">View Order Details</a>
             </p>
 
             <p style="margin-top: 30px;"><em>- Vtech Shop Team</em></p>
@@ -482,7 +482,7 @@ class NotificationService {
             </div>
 
             <p style="text-align: center;">
-              <a href="${env.CLIENT_URL}/admin/orders/${order.orderId}" class="button">View Order in Admin Panel</a>
+              <a href="${env.CLIENT_URL}/admin-dashboard/orders" class="button">View Order in Admin Panel</a>
             </p>
 
             <p style="margin-top: 30px;"><em>- Vtech Shop System</em></p>
