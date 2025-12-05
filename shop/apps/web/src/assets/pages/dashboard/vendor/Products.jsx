@@ -83,14 +83,29 @@ const Products = () => {
       // If successful, vendor is approved, open modal
       setIsModalOpen(true);
     } catch (error) {
-      // If 404, vendor doesn't exist or not approved
-      if (error.response?.status === 404) {
+      const errorCode = error.response?.data?.error?.code;
+      const kycStatus = error.response?.data?.error?.kycStatus;
+
+      if (errorCode === 'KYC_REQUIRED') {
+        setToastMessage('Please complete your vendor profile and KYC verification first.');
+        setToastType('warning');
+      } else if (errorCode === 'KYC_NOT_APPROVED') {
+        if (kycStatus === 'pending') {
+          setToastMessage('Your KYC verification is pending approval. Please wait for admin to approve your account before adding products.');
+        } else if (kycStatus === 'rejected') {
+          setToastMessage('Your KYC verification was rejected. Please update your KYC documents and resubmit.');
+        } else {
+          setToastMessage('Please complete KYC verification before adding products.');
+        }
+        setToastType('warning');
+      } else if (error.response?.status === 404) {
         setToastMessage('Your vendor application is pending approval. Please wait for admin to approve your account before adding products.');
-        setShowToast(true);
+        setToastType('warning');
       } else {
         setToastMessage('Unable to verify vendor status. Please try again or contact support.');
-        setShowToast(true);
+        setToastType('error');
       }
+      setShowToast(true);
     }
   };
 
