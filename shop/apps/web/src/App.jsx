@@ -72,7 +72,12 @@ const BecomeVendor = lazy(() => import('./assets/pages/dashboard/customer/Become
 const BecomeAffiliate = lazy(() => import('./assets/pages/dashboard/customer/BecomeAffiliate'));
 
 // Protected route wrapper - MUST be outside App component to prevent remounting on every render
-const ProtectedRoute = ({ user, children, allowedRoles = [], requireVendorApproval = false }) => {
+const ProtectedRoute = ({ user, initialized, children, allowedRoles = [], requireVendorApproval = false }) => {
+  // Wait for auth initialization before redirecting
+  if (!initialized) {
+    return <Loading message="Authenticating..." />;
+  }
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
@@ -151,7 +156,7 @@ const AffiliateKYC = lazy(() => import('./assets/pages/dashboard/affiliate/Affil
 
 function App() {
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
+  const { user, initialized } = useSelector((state) => state.auth);
   const queryClient = useQueryClient();
   const previousUserRef = useRef(null);
   const [searchParams] = useSearchParams();
@@ -258,7 +263,7 @@ function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute user={user} allowedRoles={['customer', 'vendor', 'affiliate', 'support', 'admin']}>
+              <ProtectedRoute user={user} initialized={initialized} allowedRoles={['customer', 'vendor', 'affiliate', 'support', 'admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -277,7 +282,7 @@ function App() {
           <Route
             path="/vendor-dashboard"
             element={
-              <ProtectedRoute user={user} allowedRoles={['vendor', 'admin']}>
+              <ProtectedRoute user={user} initialized={initialized} allowedRoles={['vendor', 'admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -287,21 +292,21 @@ function App() {
             <Route path="support" element={<VendorSupport />} />
 
             {/* Protected vendor routes - require KYC approval */}
-            <Route index element={<ProtectedRoute user={user} requireVendorApproval><VendorDashboard /></ProtectedRoute>} />
-            <Route path="products" element={<ProtectedRoute user={user} requireVendorApproval><VendorProducts /></ProtectedRoute>} />
-            <Route path="inventory" element={<ProtectedRoute user={user} requireVendorApproval><Inventory /></ProtectedRoute>} />
-            <Route path="orders" element={<ProtectedRoute user={user} requireVendorApproval><VendorOrders /></ProtectedRoute>} />
-            <Route path="orders/:id" element={<ProtectedRoute user={user} requireVendorApproval><VendorOrderDetail /></ProtectedRoute>} />
-            <Route path="settlements" element={<ProtectedRoute user={user} requireVendorApproval><Settlements /></ProtectedRoute>} />
-            <Route path="ads" element={<ProtectedRoute user={user} requireVendorApproval><VendorAds /></ProtectedRoute>} />
-            <Route path="settings" element={<ProtectedRoute user={user} requireVendorApproval><VendorSettings /></ProtectedRoute>} />
+            <Route index element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorDashboard /></ProtectedRoute>} />
+            <Route path="products" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorProducts /></ProtectedRoute>} />
+            <Route path="inventory" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><Inventory /></ProtectedRoute>} />
+            <Route path="orders" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorOrders /></ProtectedRoute>} />
+            <Route path="orders/:id" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorOrderDetail /></ProtectedRoute>} />
+            <Route path="settlements" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><Settlements /></ProtectedRoute>} />
+            <Route path="ads" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorAds /></ProtectedRoute>} />
+            <Route path="settings" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorSettings /></ProtectedRoute>} />
           </Route>
 
           {/* Affiliate dashboard */}
           <Route
             path="/affiliate-dashboard"
             element={
-              <ProtectedRoute user={user} allowedRoles={['affiliate', 'admin']}>
+              <ProtectedRoute user={user} initialized={initialized} allowedRoles={['affiliate', 'admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -318,7 +323,7 @@ function App() {
           <Route
             path="/support-dashboard"
             element={
-              <ProtectedRoute user={user} allowedRoles={['support', 'admin']}>
+              <ProtectedRoute user={user} initialized={initialized} allowedRoles={['support', 'admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
@@ -331,7 +336,7 @@ function App() {
           <Route
             path="/admin-dashboard"
             element={
-              <ProtectedRoute user={user} allowedRoles={['admin']}>
+              <ProtectedRoute user={user} initialized={initialized} allowedRoles={['admin']}>
                 <DashboardLayout />
               </ProtectedRoute>
             }
