@@ -76,7 +76,7 @@ export default function VerifyEmail() {
             </p>
             <Link
               to="/login"
-              className="inline-block mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
+              className="inline-block mt-4 px-4 py-1.5 sm:px-6 sm:py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition text-sm sm:text-base"
             >
               Go to Login
             </Link>
@@ -105,13 +105,13 @@ export default function VerifyEmail() {
             <div className="space-y-3">
               <Link
                 to="/login"
-                className="block w-full px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition text-center"
+                className="block w-full px-4 py-1.5 sm:px-6 sm:py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition text-center text-sm sm:text-base"
               >
                 Go to Login
               </Link>
               <Link
                 to="/register"
-                className="block w-full px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-center"
+                className="block w-full px-4 py-1.5 sm:px-6 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-center text-sm sm:text-base"
               >
                 Create New Account
               </Link>

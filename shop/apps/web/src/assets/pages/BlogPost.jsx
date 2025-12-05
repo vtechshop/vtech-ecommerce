@@ -407,7 +407,7 @@ const BlogPost = () => {
                             <button
                               type="submit"
                               disabled={commentMutation.isPending || !comment.trim()}
-                              className="flex items-center gap-2 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              className="flex items-center gap-2 px-4 py-1.5 sm:px-6 sm:py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm sm:text-base"
                             >
                               <Send className="w-4 h-4" />
                               {commentMutation.isPending ? 'Posting...' : 'Post Comment'}

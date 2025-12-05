@@ -96,13 +96,13 @@ const Home = React.memo(() => {
             <div className="flex gap-4 animate-fade-in-up stagger-delay-2">
               <Link
                 to="/search"
-                className="inline-block bg-white text-primary-600 px-6 py-3 rounded-lg font-semibold text-base hover:bg-gray-100 hover:scale-105 transition-all duration-300 shadow-lg transform"
+                className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-gray-100 hover:scale-105 transition-all duration-300 shadow-lg transform"
               >
                 {t('home.startShopping')}
               </Link>
               <Link
                 to="/page/about"
-                className="inline-block bg-secondary-600 text-white px-6 py-3 rounded-lg font-semibold text-base hover:bg-secondary-700 hover:scale-105 transition-all duration-300 shadow-lg transform"
+                className="inline-block bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 hover:scale-105 transition-all duration-300 shadow-lg transform"
               >
                 {t('home.learnMore')}
               </Link>
@@ -246,7 +246,7 @@ const Home = React.memo(() => {
                   </ul>
                   <Link
                     to={user?.role === 'customer' ? '/dashboard/become-vendor' : '/register?role=vendor'}
-                    className="inline-block w-full text-center bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors shadow-md"
+                    className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors shadow-md"
                   >
                     {t('home.startSelling')}
                   </Link>
@@ -293,7 +293,7 @@ const Home = React.memo(() => {
                   </ul>
                   <Link
                     to={user?.role === 'customer' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
-                    className="inline-block w-full text-center bg-secondary-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-secondary-700 transition-colors shadow-md"
+                    className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors shadow-md"
                   >
                     {t('home.joinAffiliate')}
                   </Link>

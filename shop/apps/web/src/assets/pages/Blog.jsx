@@ -245,7 +245,7 @@ const Blog = () => {
                   setFilters({ category: '', type: '', search: '' });
                   setPage(1);
                 }}
-                className="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors"
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors text-sm sm:text-base"
               >
                 Clear all filters
               </button>
