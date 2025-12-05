@@ -133,7 +133,7 @@ const VendorKYC = () => {
       formData.append('file', file);
       formData.append('folder', 'kyc-documents');
 
-      const uploadResponse = await api.post('/upload', formData, {
+      const uploadResponse = await api.post('/upload/single', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -274,10 +274,12 @@ const VendorKYC = () => {
                 onChange={(value) => setFormData({ ...formData, businessType: value })}
                 options={[
                   { value: '', label: 'Select type' },
-                  { value: 'individual', label: 'Individual/Sole Proprietor' },
-                  { value: 'llc', label: 'LLC' },
-                  { value: 'corporation', label: 'Corporation' },
-                  { value: 'partnership', label: 'Partnership' }
+                  { value: 'sole_proprietorship', label: 'Individual/Sole Proprietor' },
+                  { value: 'partnership', label: 'Partnership' },
+                  { value: 'private_limited', label: 'Private Limited' },
+                  { value: 'public_limited', label: 'Public Limited' },
+                  { value: 'llp', label: 'LLP (Limited Liability Partnership)' },
+                  { value: 'other', label: 'Other' }
                 ]}
                 placeholder="Select type"
                 className="w-full"
