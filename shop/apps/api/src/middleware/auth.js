@@ -89,6 +89,58 @@ async function requireVerifiedEmail(req, res, next) {
   }
 }
 
+// Middleware to require approved KYC for vendor operations
+async function requireApprovedKYC(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+    });
+  }
+
+  // Admins bypass KYC check
+  if (req.user.role === 'admin') {
+    return next();
+  }
+
+  // Only check KYC for vendors
+  if (req.user.role !== 'vendor') {
+    return next();
+  }
+
+  try {
+    const Vendor = require('../models/Vendor');
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'KYC_REQUIRED',
+          message: 'Vendor profile not found. Please complete vendor onboarding first.',
+        },
+      });
+    }
+
+    if (vendor.kyc.status !== 'approved') {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'KYC_NOT_APPROVED',
+          message: 'Your KYC verification is pending or was rejected. Please complete KYC verification to access this feature.',
+          kycStatus: vendor.kyc.status,
+        },
+      });
+    }
+
+    // Attach vendor to request for downstream use
+    req.vendor = vendor;
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
 // Optional authentication - attach user if token exists, but don't require it
 function optionalAuth(req, res, next) {
   try {
@@ -118,4 +170,4 @@ function optionalAuth(req, res, next) {
   }
 }
 
-module.exports = { authenticate, authorize, requireVerifiedEmail, optionalAuth };
+module.exports = { authenticate, authorize, requireVerifiedEmail, requireApprovedKYC, optionalAuth };

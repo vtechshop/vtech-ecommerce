@@ -192,7 +192,7 @@ const AffiliateTerms = () => {
                 For affiliate program support:
               </p>
               <div className="bg-gray-50 rounded-lg p-6">
-                <p className="text-gray-700"><strong>Email:</strong> ledvtech@gmail.com</p>
+                <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
                 <p className="text-gray-700"><strong>Affiliate Dashboard:</strong> Log in for resources and support</p>
               </div>

@@ -26,7 +26,7 @@ const ProductReviews = ({ reviews = [], rating, reviewCount, onEdit, onDelete })
       {/* Rating Summary */}
       <div className="flex items-center gap-6 mb-8 pb-8 border-b">
         <div className="text-center">
-          <p className="text-5xl font-bold mb-2">{rating?.toFixed(1) || '0.0'}</p>
+          <p className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2">{rating?.toFixed(1) || '0.0'}</p>
           <div className="flex justify-center mb-1">
             {renderStars(rating || 0)}
           </div>

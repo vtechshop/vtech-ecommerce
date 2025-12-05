@@ -59,7 +59,7 @@ const Blog = () => {
       <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16 mb-8">
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">
-            <h1 className="text-5xl font-bold mb-4">Our Blog</h1>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">Our Blog</h1>
             <p className="text-xl text-primary-100">
               Discover the latest tech news, product reviews, guides, and industry insights
             </p>

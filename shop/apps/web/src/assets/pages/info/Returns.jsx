@@ -95,7 +95,7 @@ const Returns = () => {
                 <h3 className="font-semibold text-gray-900 mb-2">Initiate Return Request</h3>
                 <p className="text-gray-700">
                   Log in to your account, go to "My Orders" and click on "Return" for the product you want to return.
-                  You can also contact us at <a href="mailto:ledvtech@gmail.com" className="text-blue-600">ledvtech@gmail.com</a>
+                  You can also contact us at <a href="mailto:vtechshop.customercare@gmail.com" className="text-blue-600">vtechshop.customercare@gmail.com</a>
                 </p>
               </div>
             </div>
@@ -211,10 +211,10 @@ const Returns = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
-              href="mailto:ledvtech@gmail.com"
+              href="mailto:vtechshop.customercare@gmail.com"
               className="inline-block bg-primary-600 text-white px-6 py-3 rounded-md hover:bg-primary-700 transition-colors font-medium"
             >
-              Email: ledvtech@gmail.com
+              Email: vtechshop.customercare@gmail.com
             </a>
             <a
               href="tel:+919944556683"

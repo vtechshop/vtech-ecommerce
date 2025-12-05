@@ -184,7 +184,7 @@ const VendorTerms = () => {
                 For vendor support and inquiries:
               </p>
               <div className="bg-gray-50 rounded-lg p-6">
-                <p className="text-gray-700"><strong>Email:</strong> ledvtech@gmail.com</p>
+                <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
                 <p className="text-gray-700"><strong>Vendor Portal:</strong> Log in to your vendor dashboard</p>
               </div>

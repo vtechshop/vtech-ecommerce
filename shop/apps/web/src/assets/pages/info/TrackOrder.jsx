@@ -144,7 +144,7 @@ const TrackOrder = () => {
             <ul className="text-sm text-primary-800 space-y-2">
               <li>• Check your email confirmation for the order number</li>
               <li>• Log in to your account to view all your orders</li>
-              <li>• Contact customer support at ledvtech@gmail.com</li>
+              <li>• Contact customer support at vtechshop.customercare@gmail.com</li>
             </ul>
           </div>
         )}

@@ -672,7 +672,7 @@ const BlogPost = () => {
                     ) : (
                       <div className={`bg-gradient-to-br ${color.bgFrom} ${color.bgTo} rounded-lg h-64 flex items-center justify-center mb-4`}>
                         <div className="text-center">
-                          <div className="text-6xl mb-2">
+                          <div className="text-4xl md:text-5xl lg:text-6xl mb-2">
                             {index === 0 ? '📱' : index === 1 ? '💻' : '🎯'}
                           </div>
                           <p className="text-gray-700 font-medium">Advertisement Space</p>
@@ -710,7 +710,7 @@ const BlogPost = () => {
                 <div className="p-6">
                   <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg h-64 flex items-center justify-center mb-4">
                     <div className="text-center">
-                      <div className="text-6xl mb-2">📱</div>
+                      <div className="text-4xl md:text-5xl lg:text-6xl mb-2">📱</div>
                       <p className="text-gray-700 font-medium">Advertisement Space</p>
                       <p className="text-sm text-gray-500">300 x 250</p>
                     </div>

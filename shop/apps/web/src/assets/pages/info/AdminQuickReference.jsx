@@ -506,7 +506,7 @@ const AdminQuickReference = () => {
               For platform technical issues or questions about admin features
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:ledvtech@gmail.com" className="inline-block bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium">
+              <a href="mailto:vtechshop.customercare@gmail.com" className="inline-block bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium">
                 Contact Support
               </a>
               <Link to="/page/faq" className="inline-block bg-white text-blue-600 border-2 border-primary-600 px-6 py-3 rounded-lg hover:bg-primary-50 transition-colors font-medium">

@@ -40,7 +40,7 @@ const FAQ = () => {
         },
         {
           q: 'Do you ship internationally?',
-          a: 'Currently, we ship within India only. For international shipping inquiries, please contact us at ledvtech@gmail.com'
+          a: 'Currently, we ship within India only. For international shipping inquiries, please contact us at vtechshop.customercare@gmail.com'
         },
         {
           q: 'What if nobody is home during delivery?',
@@ -147,7 +147,7 @@ const FAQ = () => {
         },
         {
           q: 'Can I be both a Vendor and an Affiliate?',
-          a: 'Currently, you can only have one role at a time (either Vendor OR Affiliate). If you switch roles, you will lose access to your previous role\'s dashboard and data. We recommend choosing the role that best fits your business model. Contact support at ledvtech@gmail.com if you need both roles simultaneously.'
+          a: 'Currently, you can only have one role at a time (either Vendor OR Affiliate). If you switch roles, you will lose access to your previous role\'s dashboard and data. We recommend choosing the role that best fits your business model. Contact support at vtechshop.customercare@gmail.com if you need both roles simultaneously.'
         },
         {
           q: 'What happens if I switch from Affiliate to Vendor (or vice versa)?',
@@ -172,7 +172,7 @@ const FAQ = () => {
         },
         {
           q: 'Can I request products not listed on the site?',
-          a: 'Yes, contact us at ledvtech@gmail.com with your requirement, and we\'ll try to source it for you.'
+          a: 'Yes, contact us at vtechshop.customercare@gmail.com with your requirement, and we\'ll try to source it for you.'
         }
       ]
     }
@@ -274,7 +274,7 @@ const FAQ = () => {
               Contact Support
             </a>
             <a
-              href="mailto:ledvtech@gmail.com"
+              href="mailto:vtechshop.customercare@gmail.com"
               className="inline-block bg-white text-blue-600 border-2 border-primary-600 px-6 py-3 rounded-md hover:bg-primary-50 transition-colors font-medium"
             >
               Email Us

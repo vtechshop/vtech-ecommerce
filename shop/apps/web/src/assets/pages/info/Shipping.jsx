@@ -184,7 +184,7 @@ const Shipping = () => {
               <li>• Delivery times are estimates and may vary based on location</li>
               <li>• Remote areas may require additional 2-3 days for delivery</li>
               <li>• Someone must be available to receive the package at the delivery address</li>
-              <li>• For international shipping, please contact us at ledvtech@gmail.com</li>
+              <li>• For international shipping, please contact us at vtechshop.customercare@gmail.com</li>
             </ul>
           </div>
         </div>

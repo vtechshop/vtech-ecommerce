@@ -435,36 +435,15 @@ async function getSettlements(req, res, next) {
 // ---------- KYC METHODS ----------
 async function getKYC(req, res, next) {
   try {
-    let vendor = await Vendor.findOne({ userId: req.user._id });
-
-    // Auto-create vendor profile if user has vendor role but no profile
-    if (!vendor && req.user.role === 'vendor') {
-      logger.warn(`Auto-creating vendor profile for user ${req.user._id} (${req.user.email})`);
-
-      const User = require('../models/User');
-      const user = await User.findById(req.user._id);
-
-      vendor = await Vendor.create({
-        userId: req.user._id,
-        storeName: `${user.name}'s Store`,
-        slug: slugify(`${user.name}'s Store`),
-        description: 'My online store',
-        kyc: {
-          businessName: user.name,
-          businessType: 'sole_proprietorship',
-          status: 'pending'
-        },
-        bank: {},
-        status: 'pending',
-      });
-
-      logger.info(`Auto-created vendor profile: ${vendor._id} for user ${req.user._id}`);
-    }
+    const vendor = await Vendor.findOne({ userId: req.user._id });
 
     if (!vendor) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Vendor profile not found. Please complete vendor onboarding first.'
+        },
       });
     }
 
@@ -591,12 +570,20 @@ async function deleteKYCDocument(req, res, next) {
       });
     }
 
-    // Find and remove document
-    const documentIndex = vendor.kyc.documents?.findIndex(
+    // Check if documents array exists and has items
+    if (!vendor.kyc.documents || vendor.kyc.documents.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Document not found' },
+      });
+    }
+
+    // Find document index
+    const documentIndex = vendor.kyc.documents.findIndex(
       doc => doc._id.toString() === documentId
     );
 
-    if (documentIndex === -1 || documentIndex === undefined) {
+    if (documentIndex === -1) {
       return res.status(404).json({
         success: false,
         error: { code: 'NOT_FOUND', message: 'Document not found' },

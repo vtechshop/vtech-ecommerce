@@ -224,7 +224,7 @@ exports.sendEmail = async (req, res, next) => {
     const communication = await Communication.create({
       type: 'email',
       direction: 'outgoing',
-      from: process.env.ADMIN_EMAIL || 'ledvtech@gmail.com',
+      from: process.env.ADMIN_EMAIL || 'vtechshop.customercare@gmail.com',
       fromName: 'Vtech',
       to,
       toName,
@@ -294,7 +294,7 @@ exports.sendMarketingCampaign = async (req, res, next) => {
       const comm = await Communication.create({
         type: 'marketing',
         direction: 'outgoing',
-        from: process.env.ADMIN_EMAIL || 'ledvtech@gmail.com',
+        from: process.env.ADMIN_EMAIL || 'vtechshop.customercare@gmail.com',
         fromName: 'LED Vtech Marketing',
         to: recipient.email || recipient.phone,
         toName: recipient.name,

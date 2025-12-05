@@ -414,8 +414,8 @@ const Product = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">📦</div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
+          <div className="text-4xl md:text-5xl lg:text-6xl mb-4">📦</div>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
           <p className="text-gray-700 mb-6">The product you're looking for doesn't exist or has been removed.</p>
           <Link to="/" className="btn btn-primary">Back to Home</Link>
         </div>
@@ -441,7 +441,7 @@ const Product = () => {
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400">
                       <div className="text-center">
-                        <div className="text-5xl mb-2">📦</div>
+                        <div className="text-3xl md:text-4xl lg:text-5xl mb-2">📦</div>
                         <p className="text-sm">No Image</p>
                       </div>
                     </div>
@@ -817,8 +817,8 @@ const Product = () => {
               ) : (
                 <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-xl p-12 text-center h-full flex items-center justify-center">
                   <div>
-                    <div className="text-6xl mb-4">⭐</div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">No Reviews Yet</h3>
+                    <div className="text-4xl md:text-5xl lg:text-6xl mb-4">⭐</div>
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">No Reviews Yet</h3>
                     <p className="text-gray-700">Be the first to review this product!</p>
                   </div>
                 </div>

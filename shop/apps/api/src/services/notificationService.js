@@ -402,9 +402,12 @@ class NotificationService {
     return this.sendEmail(vendor.email, `New Order #${order.orderId} - Action Required`, html);
   }
 
-  async sendAdminOrderNotification(order, items, vendor) {
+  async sendAdminOrderNotification(order, items, vendorUser, vendorProfile = null) {
     // Calculate total for these specific items
     const totalAmount = items.reduce((sum, item) => sum + (item.priceSnapshot * item.qty), 0);
+
+    // Get vendor display name: prefer store name from profile, fallback to user name
+    const vendorDisplayName = vendorProfile?.storeName || vendorUser?.name || 'Unknown Vendor';
 
     const itemsHtml = items.map(item => `
       <tr>
@@ -442,12 +445,13 @@ class NotificationService {
           </div>
           <div class="content">
             <p>Hi Admin,</p>
-            <p>A new order has been placed on Vtech Shop containing products from vendor: <strong>${vendor?.name || 'Unknown Vendor'}</strong></p>
+            <p>A new order has been placed on Vtech Shop containing products from vendor: <strong>${vendorDisplayName}</strong></p>
 
             <div class="order-id">Order #${order.orderId}</div>
 
             <div class="stats">
-              <p style="margin: 5px 0;"><strong>Vendor:</strong> ${vendor?.name || 'N/A'}</p>
+              <p style="margin: 5px 0;"><strong>Vendor Store:</strong> ${vendorDisplayName}</p>
+              <p style="margin: 5px 0;"><strong>Vendor Contact:</strong> ${vendorUser?.email || 'N/A'}</p>
               <p style="margin: 5px 0;"><strong>Customer:</strong> ${order.shipTo?.fullName || 'N/A'} ${order.isGuest ? '(Guest)' : ''}</p>
               <p style="margin: 5px 0;"><strong>Email:</strong> ${order.guestEmail || 'Registered User'}</p>
               <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${order.payment?.method === 'cod' ? 'Cash on Delivery' : (order.payment?.method || 'N/A').toUpperCase()}</p>
@@ -492,8 +496,8 @@ class NotificationService {
       </html>
     `;
 
-    const subject = vendor?.name
-      ? `New Order #${order.orderId} - ${vendor.name} Products`
+    const subject = vendorDisplayName !== 'Unknown Vendor'
+      ? `New Order #${order.orderId} - ${vendorDisplayName} Products`
       : `New Order #${order.orderId} Received`;
 
     return this.sendEmail(env.ADMIN_EMAIL, subject, html);

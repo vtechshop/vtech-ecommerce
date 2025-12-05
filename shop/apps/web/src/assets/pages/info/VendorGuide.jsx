@@ -21,7 +21,7 @@ const VendorGuide = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
             <BookOpen className="w-8 h-8 text-blue-600" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Vendor Guide</h1>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Vendor Guide</h1>
           <p className="text-xl text-gray-700 max-w-3xl mx-auto">
             Everything you need to know about selling on V-Tech, earning commissions, and growing your business with sponsored ads.
           </p>
@@ -572,7 +572,7 @@ const VendorGuide = () => {
                 Contact Support
               </Link>
               <a
-                href="mailto:ledvtech@gmail.com"
+                href="mailto:vtechshop.customercare@gmail.com"
                 className="inline-block bg-primary-700 text-white px-6 py-3 rounded-md hover:bg-primary-800 transition-colors font-medium"
               >
                 Email Us

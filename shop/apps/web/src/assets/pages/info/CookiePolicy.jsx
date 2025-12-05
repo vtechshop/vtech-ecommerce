@@ -111,7 +111,7 @@ const CookiePolicy = () => {
                 If you have questions about our use of cookies:
               </p>
               <div className="bg-gray-50 rounded-lg p-6">
-                <p className="text-gray-700"><strong>Email:</strong> ledvtech@gmail.com</p>
+                <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
               </div>
             </section>

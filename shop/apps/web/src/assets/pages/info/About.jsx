@@ -356,7 +356,7 @@ const About = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-900 mb-2">Email</h3>
-                  <p className="text-gray-700">ledvtech@gmail.com</p>
+                  <p className="text-gray-700">vtechshop.customercare@gmail.com</p>
                 </div>
               </div>
 

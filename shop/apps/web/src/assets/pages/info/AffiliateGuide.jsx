@@ -7,7 +7,7 @@ const AffiliateGuide = () => {
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Affiliate Guide</h1>
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Affiliate Guide</h1>
           <p className="text-xl text-gray-700 max-w-3xl mx-auto">
             Everything you need to know about earning commissions as a V-Tech affiliate partner
           </p>
@@ -133,7 +133,7 @@ const AffiliateGuide = () => {
                     <span className="text-3xl">🥉</span>
                     <h3 className="text-2xl font-bold text-amber-800">Bronze</h3>
                   </div>
-                  <span className="text-4xl font-bold text-amber-600">5%</span>
+                  <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-amber-600">5%</span>
                 </div>
                 <div className="space-y-2">
                   <p className="font-semibold text-amber-900">₹10,000+ sales/month</p>
@@ -152,7 +152,7 @@ const AffiliateGuide = () => {
                     <span className="text-3xl">🥈</span>
                     <h3 className="text-2xl font-bold text-gray-900">Silver</h3>
                   </div>
-                  <span className="text-4xl font-bold text-gray-700">6%</span>
+                  <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-700">6%</span>
                 </div>
                 <div className="space-y-2">
                   <p className="font-semibold text-gray-900">₹25,000+ sales/month</p>
@@ -171,7 +171,7 @@ const AffiliateGuide = () => {
                     <span className="text-3xl">🥇</span>
                     <h3 className="text-2xl font-bold text-yellow-800">Gold</h3>
                   </div>
-                  <span className="text-4xl font-bold text-yellow-600">7%</span>
+                  <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-yellow-600">7%</span>
                 </div>
                 <div className="space-y-2">
                   <p className="font-semibold text-yellow-900">₹50,000+ sales/month</p>
@@ -191,7 +191,7 @@ const AffiliateGuide = () => {
                     <span className="text-3xl">💎</span>
                     <h3 className="text-2xl font-bold text-purple-800">Platinum</h3>
                   </div>
-                  <span className="text-4xl font-bold text-purple-600">8%</span>
+                  <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-purple-600">8%</span>
                 </div>
                 <div className="space-y-2">
                   <p className="font-semibold text-purple-900">₹1,00,000+ sales/month</p>
@@ -542,7 +542,7 @@ const AffiliateGuide = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2">Email Support</h4>
-                <p className="text-sm text-gray-700">ledvtech@gmail.com</p>
+                <p className="text-sm text-gray-700">vtechshop.customercare@gmail.com</p>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2">Phone Support</h4>

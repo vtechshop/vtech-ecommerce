@@ -617,6 +617,7 @@ exports.createOrder = async (req, res, next) => {
   // Send vendor and admin notifications (one per vendor order)
   try {
     const User = require('../models/User');
+    const Vendor = require('../models/Vendor');
 
     for (const vendorOrder of vendorOrders) {
       try {
@@ -630,17 +631,28 @@ exports.createOrder = async (req, res, next) => {
           logger.warn(`Skipping notification for order ${vendorOrder.orderId}: no vendorId`);
           continue;
         }
-        const vendor = await User.findById(vendorId);
 
-        // Send to vendor
-        if (vendor && vendor.email) {
-          await notificationService.sendVendorOrderNotification(vendor, vendorOrder, vendorOrder.items);
-          logger.info(`Vendor notification sent to: ${vendor.email} for order ${vendorOrder.orderId}`);
+        // vendorId references Vendor model, not User model
+        // First find the Vendor, then get the User from vendor.userId
+        const vendorProfile = await Vendor.findById(vendorId);
+        if (!vendorProfile) {
+          logger.warn(`Skipping notification for order ${vendorOrder.orderId}: vendor profile not found`);
+          continue;
         }
 
-        // Send to admin
+        const vendorUser = await User.findById(vendorProfile.userId);
+
+        // Send to vendor
+        if (vendorUser && vendorUser.email) {
+          await notificationService.sendVendorOrderNotification(vendorUser, vendorOrder, vendorOrder.items);
+          logger.info(`Vendor notification sent to: ${vendorUser.email} for order ${vendorOrder.orderId}`);
+        } else {
+          logger.warn(`Skipping vendor notification for order ${vendorOrder.orderId}: vendor user not found or no email`);
+        }
+
+        // Send to admin (pass vendor profile for store name info)
         try {
-          await notificationService.sendAdminOrderNotification(vendorOrder, vendorOrder.items, vendor);
+          await notificationService.sendAdminOrderNotification(vendorOrder, vendorOrder.items, vendorUser, vendorProfile);
           logger.info(`Admin notification sent for order ${vendorOrder.orderId}`);
         } catch (adminEmailError) {
           logger.error(`Failed to send admin notification for order ${vendorOrder.orderId}:`, adminEmailError);

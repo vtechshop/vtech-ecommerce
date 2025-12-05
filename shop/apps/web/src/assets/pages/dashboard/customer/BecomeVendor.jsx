@@ -141,7 +141,7 @@ const BecomeVendor = () => {
                       💡 Want to be BOTH {user.role === 'affiliate' ? 'an Affiliate and a Vendor' : 'Support and a Vendor'}?
                     </p>
                     <p className="text-sm text-yellow-800">
-                      Please contact our support team at <strong>ledvtech@gmail.com</strong> or
+                      Please contact our support team at <strong>vtechshop.customercare@gmail.com</strong> or
                       call <strong>+91 99445 56683</strong> before proceeding. We may be able to help you maintain both roles.
                     </p>
                   </div>

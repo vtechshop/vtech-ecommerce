@@ -84,7 +84,7 @@ const Privacy = () => {
                 <li>Data portability</li>
               </ul>
               <p className="text-gray-700 leading-relaxed mt-4">
-                To exercise these rights, contact us at <a href="mailto:ledvtech@gmail.com" className="text-blue-600 hover:underline">ledvtech@gmail.com</a>
+                To exercise these rights, contact us at <a href="mailto:vtechshop.customercare@gmail.com" className="text-blue-600 hover:underline">vtechshop.customercare@gmail.com</a>
               </p>
             </section>
 
@@ -125,7 +125,7 @@ const Privacy = () => {
                 For questions or concerns about this Privacy Policy or our data practices:
               </p>
               <div className="bg-gray-50 rounded-lg p-6">
-                <p className="text-gray-700"><strong>Email:</strong> ledvtech@gmail.com</p>
+                <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
                 <p className="text-gray-700"><strong>Address:</strong> Vtech, Ganapathy, Coimbatore</p>
               </div>
