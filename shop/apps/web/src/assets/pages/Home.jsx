@@ -187,7 +187,7 @@ const Home = React.memo(() => {
                   <Spinner size="lg" />
                 </div>
               ) : displayFeaturedProducts?.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                   {displayFeaturedProducts.map((p, index) => (
                     <div key={p._id} className="animate-fade-in-up" style={{animationDelay: `${index * 100}ms`}}>
                       <ProductCard product={p} />
