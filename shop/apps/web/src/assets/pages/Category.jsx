@@ -130,8 +130,8 @@ const Category = () => {
   }
 
   return (
-    <div className="min-h-screen bg-blue-50 pt-[50px]">
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl py-8">
+    <div className="min-h-screen bg-blue-50">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl py-6">
         {/* Ad Banner - Top of Category Page */}
         <AdBanner placement="category_top_banner" position="top" className="mb-6" />
 
