@@ -144,9 +144,8 @@ class OrderService {
       throw new Error('Order has not been paid');
     }
 
-    // Process refund through payment service
-    const paymentService = require('./paymentService');
-    await paymentService.refund(order.payment.provider, order.payment.paymentId, amount);
+    // Refund is processed via PhonePe payment controller
+    // This function just updates the order status - actual refund is done via /api/payments/phonepe/refund
 
     // Update order
     order.refund = {

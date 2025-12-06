@@ -9,7 +9,7 @@ const { generateOrderId } = require('../utils/helpers');
 const { getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
 const env = require('../config/env');
-const paymentService = require('../services/paymentService');
+// Payment is now handled by PhonePe controller directly
 const warrantyService = require('../services/warrantyService');
 const notificationService = require('../services/notificationService');
 
