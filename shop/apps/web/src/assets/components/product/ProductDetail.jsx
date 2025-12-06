@@ -358,7 +358,7 @@ const ProductDetail = () => {
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Shield className="w-5 h-5 text-blue-600" />
-                <span>30-day return policy</span>
+                <span>7-day return policy</span>
               </div>
             </div>
           </div>

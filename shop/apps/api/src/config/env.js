@@ -11,8 +11,8 @@ function validateSecret(name, value, minLength = 64) {
   return value;
 }
 
-// Only allow fallbacks in development/test, enforce in production
-const isDevelopment = process.env.NODE_ENV !== 'production';
+// Enforce strict security in production
+const isProduction = process.env.NODE_ENV === 'production';
 
 module.exports = {
   NODE_ENV: process.env.NODE_ENV || 'development',
@@ -22,9 +22,13 @@ module.exports = {
 
   MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/shop',
 
-  // CRITICAL: No fallbacks for JWT secrets - must be set in .env
-  JWT_ACCESS_SECRET: validateSecret('JWT_ACCESS_SECRET', process.env.JWT_ACCESS_SECRET || (isDevelopment ? process.env.ACCESS_TOKEN_SECRET : null)),
-  JWT_REFRESH_SECRET: validateSecret('JWT_REFRESH_SECRET', process.env.JWT_REFRESH_SECRET || (isDevelopment ? process.env.REFRESH_TOKEN_SECRET : null)),
+  // CRITICAL: No fallbacks for JWT secrets in production - must be set in .env
+  JWT_ACCESS_SECRET: isProduction
+    ? validateSecret('JWT_ACCESS_SECRET', process.env.JWT_ACCESS_SECRET)
+    : (process.env.JWT_ACCESS_SECRET || process.env.ACCESS_TOKEN_SECRET || 'dev-access-secret-change-in-production'),
+  JWT_REFRESH_SECRET: isProduction
+    ? validateSecret('JWT_REFRESH_SECRET', process.env.JWT_REFRESH_SECRET)
+    : (process.env.JWT_REFRESH_SECRET || process.env.REFRESH_TOKEN_SECRET || 'dev-refresh-secret-change-in-production'),
   JWT_ACCESS_TTL: process.env.JWT_ACCESS_TTL || process.env.ACCESS_TOKEN_EXPIRES_IN || '15m',
   JWT_REFRESH_TTL: process.env.JWT_REFRESH_TTL || process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
   
@@ -49,10 +53,10 @@ module.exports = {
   S3_KEY: process.env.S3_KEY,
   S3_SECRET: process.env.S3_SECRET,
   
-  STRIPE_KEY: process.env.STRIPE_KEY,
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
-  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
-  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
+  // PhonePe config
+  PHONEPE_MERCHANT_ID: process.env.PHONEPE_MERCHANT_ID,
+  PHONEPE_SALT_KEY: process.env.PHONEPE_SALT_KEY,
+  PHONEPE_SALT_INDEX: process.env.PHONEPE_SALT_INDEX || '1',
   
   GA4_MEASUREMENT_ID: process.env.GA4_MEASUREMENT_ID,
   META_PIXEL_ID: process.env.META_PIXEL_ID,

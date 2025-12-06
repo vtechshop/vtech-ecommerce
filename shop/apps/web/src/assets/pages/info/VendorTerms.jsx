@@ -108,7 +108,7 @@ const VendorTerms = () => {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Returns & Refunds</h2>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
-                <li>Honor the platform's 30-day return policy</li>
+                <li>Honor the platform's 7-day return policy</li>
                 <li>Accept and process valid return requests</li>
                 <li>Inspect returned products within 3 business days</li>
                 <li>Refunds for vendor errors are your responsibility</li>

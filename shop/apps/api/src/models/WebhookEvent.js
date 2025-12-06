@@ -11,7 +11,7 @@ const webhookEventSchema = new mongoose.Schema({
   },
   provider: {
     type: String,
-    enum: ['stripe', 'razorpay'],
+    enum: ['phonepe'],
     required: true,
   },
   eventType: String,
@@ -21,10 +21,10 @@ const webhookEventSchema = new mongoose.Schema({
     // Note: index created by TTL index below
   },
   orderId: String,
-  payload: mongoose.Schema.Types.Mixed, // Store full webhook payload for debugging
+  metadata: mongoose.Schema.Types.Mixed, // Store only essential metadata (no sensitive data)
 }, { timestamps: true });
 
-// TTL index - auto-delete webhook events older than 7 days (604800 seconds)
+// TTL index - auto-delete webhook events older than 7 days (604800 seconds) - matches refund policy window
 webhookEventSchema.index({ processedAt: 1 }, { expireAfterSeconds: 604800 });
 
 // Compound index for quick provider+eventId lookups

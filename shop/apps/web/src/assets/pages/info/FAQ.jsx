@@ -32,7 +32,7 @@ const FAQ = () => {
       questions: [
         {
           q: 'How long does delivery take?',
-          a: 'Standard delivery takes 5-7 business days, Express delivery 2-3 days, and Same Day delivery is available in select cities.'
+          a: 'Items are shipped within 2 days and delivered within 10 days maximum based on location.'
         },
         {
           q: 'Do you offer free shipping?',
@@ -53,15 +53,15 @@ const FAQ = () => {
       questions: [
         {
           q: 'What is your return policy?',
-          a: 'We offer a 30-day return policy. Products must be unused, in original packaging with tags intact. We provide free pickup for returns.'
+          a: 'We offer a 7-day return policy. Products must be unused, in original packaging with tags intact. We provide free pickup for returns.'
         },
         {
           q: 'How long does it take to get a refund?',
-          a: 'Refunds are processed within 5-7 business days for cards, 3-5 days for UPI/Net Banking, and 7-10 days for COD orders after we receive the returned product.'
+          a: 'Refunds are processed within 7 days and credited to your original payment method within 5-7 business days after we receive the returned product.'
         },
         {
           q: 'Can I exchange a product?',
-          a: 'Yes, you can exchange products for different size, color, or variant. Exchanges are processed faster than refunds.'
+          a: 'Yes, you can exchange products for different size, color, or variant. Exchange items are shipped within 5 days and delivered within 7 days.'
         },
         {
           q: 'What items cannot be returned?',

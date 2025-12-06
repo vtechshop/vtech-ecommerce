@@ -55,11 +55,11 @@ exports.handleMessage = async (req, res, next) => {
     }
     // Shipping information
     else if (lowerMessage.includes('shipping') || lowerMessage.includes('delivery')) {
-      reply = '🚚 **Shipping Options:**\n\n• **Standard** (5-7 business days) - ₹50\n• **Express** (2-3 business days) - ₹150\n• **Overnight** (next day) - ₹250\n\n✨ **FREE shipping** on orders over ₹500!\n\nAll orders are processed within 24 hours.';
+      reply = '🚚 **Shipping & Delivery:**\n\n• Items shipped within **2 days**\n• Delivered within **10 days** maximum based on location\n\n✨ **FREE shipping** on orders over ₹500!\n\nAll orders are processed and shipped within 2 days.';
     }
     // Returns & refunds
     else if (lowerMessage.includes('return') || lowerMessage.includes('refund')) {
-      reply = '↩️ **Return Policy:**\n\n• Returns accepted within **30 days** of delivery\n• Items must be unused and in original packaging\n• Free return shipping for defective items\n• Refunds processed within 5-7 business days\n\nTo initiate a return, visit your Orders page and click "Request Return" on the order.';
+      reply = '↩️ **Return Policy:**\n\n• Returns accepted within **7 days** of delivery\n• Items must be unused and in original packaging\n• Free return shipping for defective items\n• Refunds processed within **7 days**, credited in **5-7 business days**\n• Exchange items shipped in **5 days**, delivered in **7 days**\n\nTo initiate a return, visit your Orders page and click "Request Return" on the order.';
     }
     // Payment methods
     else if (lowerMessage.includes('payment') || lowerMessage.includes('pay')) {

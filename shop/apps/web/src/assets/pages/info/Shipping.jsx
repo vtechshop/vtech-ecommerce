@@ -23,7 +23,7 @@ const Shipping = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold text-lg">Standard Shipping</h3>
-                  <p className="text-gray-700 text-sm">5-7 Business Days</p>
+                  <p className="text-gray-700 text-sm">Shipped in 2 days, Delivered in up to 10 days</p>
                 </div>
               </div>
               <p className="text-gray-700 mb-2">Free on orders above ₹500</p>
@@ -91,7 +91,7 @@ const Shipping = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Order Confirmation</h3>
-                <p className="text-gray-700">Orders are processed within 1-2 business days after payment confirmation</p>
+                <p className="text-gray-700">Orders are processed and shipped within 2 days after payment confirmation</p>
               </div>
             </div>
 
@@ -162,7 +162,7 @@ const Shipping = () => {
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  Delivery time may vary (5-10 days)
+                  Delivery within 10 days maximum based on location
                 </li>
               </ul>
             </div>

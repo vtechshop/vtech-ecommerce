@@ -13,10 +13,10 @@ const Returns = () => {
 
         {/* Return Policy Overview */}
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">30-Day Return Policy</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">7-Day Return Policy</h2>
           <p className="text-gray-700 mb-6 leading-relaxed">
-            We offer a hassle-free 30-day return policy for most items. If you're not satisfied with your purchase,
-            you can return it within 30 days of delivery for a full refund or exchange.
+            We offer a hassle-free 7-day return policy for most items. If you're not satisfied with your purchase,
+            you can return it within 7 days of delivery for a full refund or exchange.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -32,8 +32,8 @@ const Returns = () => {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
                 <RotateCcw className="w-8 h-8 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">30 Days</h3>
-              <p className="text-sm text-gray-700">Full refund within 30 days</p>
+              <h3 className="font-semibold text-gray-900 mb-2">7 Days</h3>
+              <p className="text-sm text-gray-700">Full refund within 7 days</p>
             </div>
 
             <div className="text-center p-6 bg-secondary-50 rounded-lg">
@@ -41,7 +41,7 @@ const Returns = () => {
                 <Clock className="w-8 h-8 text-secondary-600" />
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">Quick Process</h3>
-              <p className="text-sm text-gray-700">Refund processed in 5-7 days</p>
+              <p className="text-sm text-gray-700">Refund processed in 7 days, credited in 5-7 days</p>
             </div>
           </div>
         </div>
@@ -60,7 +60,7 @@ const Returns = () => {
                 <li>• Product must be unused and in original packaging</li>
                 <li>• All tags and labels must be intact</li>
                 <li>• Product must be in the same condition as received</li>
-                <li>• Return request must be initiated within 30 days of delivery</li>
+                <li>• Return request must be initiated within 7 days of delivery</li>
                 <li>• Original invoice must be included</li>
               </ul>
             </div>
@@ -133,7 +133,7 @@ const Returns = () => {
                 <h3 className="font-semibold text-gray-900 mb-2">Quality Check & Refund</h3>
                 <p className="text-gray-700">
                   Once we receive the product, our team will inspect it. If approved, your refund will be processed
-                  within 5-7 business days to your original payment method.
+                  within 7 days and credited to your original payment method in 5-7 business days.
                 </p>
               </div>
             </div>
@@ -174,7 +174,7 @@ const Returns = () => {
                   <h3 className="font-semibold text-gray-900 mb-2">Exchange Option</h3>
                   <p className="text-primary-800 text-sm">
                     Prefer an exchange? You can exchange your product for a different size, color, or variant.
-                    Exchange requests are processed faster than refunds!
+                    Exchange items are shipped within 5 days and delivered within 7 days!
                   </p>
                 </div>
               </div>
