@@ -1,0 +1,5 @@
+# Block all search engines during development
+# REMOVE OR MODIFY THIS FILE WHEN READY TO GO LIVE
+
+User-agent: *
+Disallow: /
