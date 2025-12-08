@@ -5,6 +5,7 @@ const { body, param } = require('express-validator');
 const { validate } = require('../middleware/validator');
 const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/auth');
+const { webhookLimiter } = require('../middleware/rateLimiter');
 const shippingController = require('../controllers/shippingController');
 
 // Set carrier and AWB (vendor/admin only)
@@ -44,8 +45,8 @@ router.get(
   shippingController.generateLabel
 );
 
-// Shipping webhook (carrier updates)
-router.post('/webhooks/:carrier', shippingController.carrierWebhook);
+// Shipping webhook (carrier updates) - rate limited to prevent DoS
+router.post('/webhooks/:carrier', webhookLimiter, shippingController.carrierWebhook);
 
 // ==================== DELHIVERY TRACKING ROUTES ====================
 

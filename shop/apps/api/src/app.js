@@ -165,8 +165,10 @@ app.use((req, res, next) => {
 // Rate limiting - more lenient in development/test environments
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: env.NODE_ENV === 'production' ? 1000 : (env.NODE_ENV === 'test' ? 100000 : 10000), // 1000 in production, very high in dev/test
+  max: env.NODE_ENV === 'production' ? 500 : (env.NODE_ENV === 'test' ? 100000 : 10000), // 500 in production (increased from 100), very high in dev/test
   message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false,
   skip: (req) => {
     // Skip rate limiting for auth routes in development/test to allow Cypress tests
     if (env.NODE_ENV !== 'production' && req.url.startsWith('/auth')) {
@@ -236,10 +238,15 @@ app.get('/api/security-check', (_req, res) => {
       accountLockout: '5 failed attempts, 15 min lockout',
     },
     rateLimiting: {
-      general: '100 req/15min (production)',
+      general: '500 req/15min (production)',
       auth: '5 req/15min',
       passwordReset: '3 req/15min',
       emailVerification: '5 req/hour',
+      payment: '10 req/hour',
+      webhook: '100 req/min',
+      contentInteraction: '30 req/min (likes/comments/shares)',
+      upload: '50 req/hour',
+      checkout: '100 req/15min',
     },
     inputValidation: {
       xssSanitization: 'enabled',

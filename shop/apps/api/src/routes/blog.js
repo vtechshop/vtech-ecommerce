@@ -4,6 +4,7 @@ const router = express.Router();
 const blogController = require('../controllers/blogController');
 const { authenticate, authorize } = require('../middleware/auth');
 const { uploadMultipleMiddleware } = require('../middleware/upload');
+const { contentInteractionLimiter } = require('../middleware/rateLimiter');
 
 // Public routes
 router.get('/', blogController.getBlogs);
@@ -11,10 +12,10 @@ router.get('/categories', blogController.getCategories);
 router.get('/tags', blogController.getTags);
 router.get('/:slug', blogController.getBlog);
 router.get('/:slug/comments', blogController.getComments);
-router.post('/:slug/like', authenticate, blogController.likeBlog);
-router.post('/:slug/share', blogController.shareBlog);
-router.post('/:slug/comments', authenticate, blogController.addComment);
-router.post('/comments/:commentId/like', authenticate, blogController.likeComment);
+router.post('/:slug/like', authenticate, contentInteractionLimiter, blogController.likeBlog);
+router.post('/:slug/share', contentInteractionLimiter, blogController.shareBlog);
+router.post('/:slug/comments', authenticate, contentInteractionLimiter, blogController.addComment);
+router.post('/comments/:commentId/like', authenticate, contentInteractionLimiter, blogController.likeComment);
 
 // Admin routes
 router.get('/admin/all', authenticate, authorize(['admin']), blogController.adminGetBlogs);
