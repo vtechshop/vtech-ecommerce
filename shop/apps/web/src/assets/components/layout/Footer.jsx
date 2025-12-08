@@ -42,26 +42,8 @@ const Footer = () => {
                   Electronics
                 </Link>
               </li>
-              <li>
-                <Link to="/category/fashion" className="hover:text-white transition-colors">
-                  Fashion
-                </Link>
-              </li>
-              <li>
-                <Link to="/category/home-garden" className="hover:text-white transition-colors">
-                  Home & Garden
-                </Link>
-              </li>
-              <li>
-                <Link to="/category/sports" className="hover:text-white transition-colors">
-                  Sports
-                </Link>
-              </li>
-              <li>
-                <Link to="/search?featured=true" className="hover:text-white transition-colors">
-                  Featured Products
-                </Link>
-              </li>
+              
+             
             </ul>
           </div>
 

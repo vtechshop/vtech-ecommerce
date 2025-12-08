@@ -72,11 +72,10 @@ const Returns = () => {
               </h3>
               <ul className="space-y-2 text-gray-700 ml-7">
                 <li>• Products marked as non-returnable</li>
-                <li>• Personal care and intimate items</li>
+               
                 <li>• Products with tampered serial numbers</li>
                 <li>• Damaged due to misuse or mishandling</li>
-                <li>• Customized or personalized products</li>
-                <li>• Perishable goods and gift cards</li>
+               
               </ul>
             </div>
           </div>
