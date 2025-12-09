@@ -8,7 +8,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import Loading from './assets/components/common/Loading';
 import { ToastProvider } from './assets/components/common/ToastContainer';
 import { loadConsent } from './assets/store/slices/consentSlice';
-import { initializeAuth } from './assets/store/slices/authSlice';
+import { initializeAuth, forceInitialized } from './assets/store/slices/authSlice';
 import { loadCart } from './assets/store/slices/cartSlice';
 import useAnalytics from './assets/hooks/useAnalytics';
 import { initCsrfProtection } from './assets/utils/api';
@@ -164,12 +164,23 @@ function App() {
 
   useEffect(() => {
     dispatch(loadConsent());
-    dispatch(initializeAuth());
     dispatch(loadCart());
     // Initialize CSRF protection (only active in production)
     initCsrfProtection();
     // Initialize Web Vitals performance monitoring
     initWebVitals();
+
+    // Initialize auth with timeout fallback
+    const authPromise = dispatch(initializeAuth());
+
+    // Fallback: If auth initialization takes more than 5 seconds, force completion
+    const timeoutId = setTimeout(() => {
+      console.warn('Auth initialization timeout - forcing completion');
+      dispatch(forceInitialized());
+    }, 5000);
+
+    // Clear timeout when auth completes
+    authPromise.finally(() => clearTimeout(timeoutId));
   }, [dispatch]);
 
   // Capture affiliate code from URL parameters (works on any page)

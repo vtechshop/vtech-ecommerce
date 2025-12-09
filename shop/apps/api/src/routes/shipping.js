@@ -98,4 +98,63 @@ router.get(
   shippingController.getServiceStatus
 );
 
+// ==================== ADMIN CARRIER SELECTION ROUTES ====================
+
+// Get all available carriers (Admin)
+router.get(
+  '/carriers',
+  authenticate,
+  authorize(['admin']),
+  shippingController.getAvailableCarriers
+);
+
+// Get shipping quotes for specific order (Admin/Vendor)
+router.get(
+  '/orders/:orderId/quotes',
+  authenticate,
+  authorize(['admin', 'vendor']),
+  [
+    param('orderId').notEmpty().withMessage('Order ID is required'),
+  ],
+  validate,
+  shippingController.getShippingQuotesForOrder
+);
+
+// Assign carrier to order and create shipment (Admin/Vendor)
+router.post(
+  '/orders/:orderId/assign-carrier',
+  authenticate,
+  authorize(['admin', 'vendor']),
+  [
+    param('orderId').notEmpty().withMessage('Order ID is required'),
+    body('carrier').notEmpty().withMessage('Carrier is required'),
+  ],
+  validate,
+  shippingController.assignCarrierToOrder
+);
+
+// Get recommended carrier for order (Admin/Vendor)
+router.get(
+  '/orders/:orderId/recommended',
+  authenticate,
+  authorize(['admin', 'vendor']),
+  [
+    param('orderId').notEmpty().withMessage('Order ID is required'),
+  ],
+  validate,
+  shippingController.getRecommendedCarrier
+);
+
+// Check carrier status (Admin)
+router.get(
+  '/carriers/:carrier/status',
+  authenticate,
+  authorize(['admin']),
+  [
+    param('carrier').notEmpty().withMessage('Carrier name is required'),
+  ],
+  validate,
+  shippingController.getCarrierStatus
+);
+
 module.exports = router;

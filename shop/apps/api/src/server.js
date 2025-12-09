@@ -11,6 +11,7 @@ const app = require('./app');
 
 // Handle uncaught exceptions - log but don't crash in development
 process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION DETAILS:', err);
   logger.error('UNCAUGHT EXCEPTION!', { name: err.name, message: err.message, stack: err.stack });
   // Only exit in production for critical errors
   if (process.env.NODE_ENV === 'production') {
@@ -27,6 +28,9 @@ process.on('unhandledRejection', (err) => {
   // This prevents the server from crashing on minor async errors
 });
 
+// Load tracking sync job at module level
+const trackingSyncJob = require('./jobs/trackingSyncJob');
+
 (async () => {
   try {
     // Connect to MongoDB
@@ -34,6 +38,10 @@ process.on('unhandledRejection', (err) => {
 
     // Connect to Redis (optional - continues if fails in development)
     await connectRedis();
+
+    // Start tracking sync background job
+    trackingSyncJob.start();
+    logger.info('✅ Tracking sync background job started');
 
     // One-time admin password reset/create if ADMIN_EMAIL and ADMIN_PASSWORD are set
     if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
@@ -73,6 +81,10 @@ process.on('unhandledRejection', (err) => {
       logger.info(`${signal} received, shutting down gracefully`);
       server.close(async () => {
         try {
+          // Stop tracking sync job
+          trackingSyncJob.stop();
+          logger.info('Tracking sync job stopped');
+
           // Close MongoDB connection
           const mongoose = require('mongoose');
           await mongoose.connection.close();

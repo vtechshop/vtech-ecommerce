@@ -3,15 +3,129 @@ const Order = require('../models/Order');
 const User = require('../models/User');
 const Vendor = require('../models/Vendor');
 const logger = require('../config/logger');
+const shippingService = require('../services/shippingService');
 const delhiveryService = require('../services/delhiveryService');
+const trackingSyncService = require('../services/trackingSyncService');
 
-// Set carrier and AWB
-exports.setCarrierAndAwb = async (req, res, next) => {
+// ============================================
+// ADMIN: Get Available Shipping Carriers
+// ============================================
+exports.getAvailableCarriers = async (req, res, next) => {
+  try {
+    const carriers = shippingService.getAvailableCarriers();
+
+    res.json({
+      success: true,
+      data: {
+        carriers,
+        count: carriers.length,
+        message: carriers.length === 0
+          ? 'No carriers configured. Please add carrier credentials to .env file.'
+          : `${carriers.length} carrier(s) available`
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ============================================
+// ADMIN: Get Shipping Rate Quotes for Order
+// ============================================
+exports.getShippingQuotesForOrder = async (req, res, next) => {
   try {
     const { orderId } = req.params;
-    const { carrier, awb } = req.body;
 
-    const order = await Order.findOne({ orderId });
+    // Support both MongoDB _id and readable orderId
+    const mongoose = require('mongoose');
+    const query = mongoose.Types.ObjectId.isValid(orderId)
+      ? { _id: orderId }
+      : { orderId };
+
+    const order = await Order.findOne(query);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        },
+      });
+    }
+
+    if (!order.shipTo || !order.shipTo.zipCode) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_ORDER',
+          message: 'Order does not have valid shipping address',
+        },
+      });
+    }
+
+    // Calculate total weight from order items
+    const totalWeight = order.items.reduce((sum, item) => {
+      // Assume 500g per item if not specified
+      const itemWeight = item.weight || 500;
+      return sum + (itemWeight * item.qty);
+    }, 0);
+
+    // Get rates from all available carriers
+    const rates = await shippingService.calculateShippingRates(
+      { zipCode: '110001' }, // Your warehouse/store pincode (should come from settings)
+      { zipCode: order.shipTo.zipCode },
+      { weight: totalWeight },
+      order.totals.total // For COD calculation
+    );
+
+    logger.info(`Shipping quotes fetched for order ${orderId}: ${rates.length} options`);
+
+    res.json({
+      success: true,
+      data: {
+        orderId: order.orderId,
+        destination: {
+          city: order.shipTo.city,
+          state: order.shipTo.state,
+          zipCode: order.shipTo.zipCode
+        },
+        weight: totalWeight,
+        rates: rates,
+        recommended: rates[0] // Cheapest option
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting shipping quotes:', error);
+    next(error);
+  }
+};
+
+// ============================================
+// ADMIN/VENDOR: Assign Carrier to Order
+// ============================================
+exports.assignCarrierToOrder = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    const { carrier } = req.body; // e.g., "delhivery", "shiprocket", "bluedart"
+
+    if (!carrier) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Carrier name is required',
+        },
+      });
+    }
+
+    // Support both MongoDB _id and readable orderId
+    const mongoose = require('mongoose');
+    const query = mongoose.Types.ObjectId.isValid(orderId)
+      ? { _id: orderId }
+      : { orderId };
+
+    const order = await Order.findOne(query);
 
     if (!order) {
       return res.status(404).json({
@@ -25,27 +139,192 @@ exports.setCarrierAndAwb = async (req, res, next) => {
 
     // Check if vendor owns this order (unless admin)
     if (req.user.role === 'vendor') {
-      // Load vendor profile from database
-      const user = await User.findById(req.user._id).select('vendorProfile');
+      const user = await User.findById(req.user._id).populate('vendorProfile');
       if (!user || !user.vendorProfile) {
         return res.status(403).json({
           success: false,
-          error: {
-            code: 'FORBIDDEN',
-            message: 'Vendor profile not found',
-          },
+          error: { code: 'FORBIDDEN', message: 'Vendor profile not found' },
         });
       }
       const hasItem = order.items.some(
-        item => item.vendorId && item.vendorId.toString() === user.vendorProfile.toString()
+        item => item.vendorId && item.vendorId.toString() === user.vendorProfile._id.toString()
       );
       if (!hasItem) {
         return res.status(403).json({
           success: false,
-          error: {
-            code: 'FORBIDDEN',
-            message: 'Not authorized',
-          },
+          error: { code: 'FORBIDDEN', message: 'Not authorized' },
+        });
+      }
+    }
+
+    // Verify carrier is available
+    if (!shippingService.isCarrierConfigured(carrier)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_CARRIER',
+          message: `Carrier "${carrier}" is not configured. Available carriers: ${shippingService.getAvailableCarriers().map(c => c.id).join(', ')}`,
+        },
+      });
+    }
+
+    // Create shipment with selected carrier
+    const orderData = {
+      orderId: order.orderId,
+      shipTo: order.shipTo,
+      items: order.items,
+      totals: order.totals,
+      payment: order.payment,
+      guestEmail: order.guestEmail,
+      customerNotes: order.customerNotes,
+      weight: order.items.reduce((sum, item) => sum + ((item.weight || 500) * item.qty), 0),
+      dimensions: { length: 30, width: 20, height: 10 }, // Default dimensions
+    };
+
+    const shipment = await shippingService.createShipment(orderData, carrier);
+
+    // Update order with shipment details
+    order.shipment = {
+      carrier: shipment.carrier,
+      awb: shipment.awb,
+      trackingUrl: shipment.trackingUrl,
+      shippedAt: null,
+      deliveredAt: null,
+      events: [{
+        code: 'CREATED',
+        description: `Shipment created with ${carrier}`,
+        timestamp: new Date(),
+      }],
+    };
+
+    order.events.push({
+      status: 'processing',
+      description: `Shipping label created via ${carrier}`,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+
+    logger.info(`✅ Order ${orderId} assigned to ${carrier} - AWB: ${shipment.awb}`);
+
+    res.json({
+      success: true,
+      message: `Order assigned to ${carrier} successfully`,
+      data: {
+        orderId: order.orderId,
+        carrier: shipment.carrier,
+        awb: shipment.awb,
+        trackingUrl: shipment.trackingUrl,
+        shipment: shipment
+      }
+    });
+  } catch (error) {
+    logger.error('Error assigning carrier to order:', error);
+    next(error);
+  }
+};
+
+// ============================================
+// ADMIN: Get Recommended Carrier for Order
+// ============================================
+exports.getRecommendedCarrier = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    const { priority = 'cost' } = req.query; // 'cost' or 'speed'
+
+    // Support both MongoDB _id and readable orderId
+    const mongoose = require('mongoose');
+    const query = mongoose.Types.ObjectId.isValid(orderId)
+      ? { _id: orderId }
+      : { orderId };
+
+    const order = await Order.findOne(query);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Order not found' },
+      });
+    }
+
+    const totalWeight = order.items.reduce((sum, item) =>
+      sum + ((item.weight || 500) * item.qty), 0
+    );
+
+    const recommended = await shippingService.getRecommendedCarrier(
+      { zipCode: '110001' },
+      { zipCode: order.shipTo.zipCode },
+      { weight: totalWeight },
+      priority
+    );
+
+    res.json({
+      success: true,
+      data: {
+        orderId: order.orderId,
+        recommended: recommended,
+        priority: priority,
+        message: `Best ${priority} option: ${recommended.carrier} - ₹${recommended.rate}`
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting recommended carrier:', error);
+    next(error);
+  }
+};
+
+// ============================================
+// ADMIN: Check Carrier Status/Health
+// ============================================
+exports.getCarrierStatus = async (req, res, next) => {
+  try {
+    const { carrier } = req.params;
+
+    const status = await shippingService.getCarrierStatus(carrier);
+
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    logger.error('Error checking carrier status:', error);
+    next(error);
+  }
+};
+
+// ============================================
+// LEGACY: Set carrier and AWB manually
+// ============================================
+exports.setCarrierAndAwb = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    const { carrier, awb } = req.body;
+
+    const order = await Order.findOne({ orderId });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Order not found' },
+      });
+    }
+
+    // Check if vendor owns this order (unless admin)
+    if (req.user.role === 'vendor') {
+      const user = await User.findById(req.user._id).populate('vendorProfile');
+      if (!user || !user.vendorProfile) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'Vendor profile not found' },
+        });
+      }
+      const hasItem = order.items.some(
+        item => item.vendorId && item.vendorId.toString() === user.vendorProfile._id.toString()
+      );
+      if (!hasItem) {
+        return res.status(403).json({
+          success: false,
+          error: { code: 'FORBIDDEN', message: 'Not authorized' },
         });
       }
     }
@@ -55,14 +334,14 @@ exports.setCarrierAndAwb = async (req, res, next) => {
       awb,
       events: [{
         code: 'CREATED',
-        description: 'Shipping label created',
+        description: 'Shipping label created manually',
         timestamp: new Date(),
       }],
     };
 
     await order.save();
 
-    logger.info(`Shipping info added to order: ${orderId}`);
+    logger.info(`Manual shipping info added to order: ${orderId}`);
 
     res.json({
       success: true,
@@ -73,7 +352,9 @@ exports.setCarrierAndAwb = async (req, res, next) => {
   }
 };
 
+// ============================================
 // Mark as packed
+// ============================================
 exports.markAsPacked = async (req, res, next) => {
   try {
     const { orderId } = req.params;
@@ -83,10 +364,7 @@ exports.markAsPacked = async (req, res, next) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        },
+        error: { code: 'NOT_FOUND', message: 'Order not found' },
       });
     }
 
@@ -100,7 +378,7 @@ exports.markAsPacked = async (req, res, next) => {
     if (order.shipment) {
       order.shipment.events.push({
         code: 'PACKED',
-        description: 'Package packed',
+        description: 'Order packed',
         timestamp: new Date(),
       });
     }
@@ -118,7 +396,9 @@ exports.markAsPacked = async (req, res, next) => {
   }
 };
 
+// ============================================
 // Mark as shipped
+// ============================================
 exports.markAsShipped = async (req, res, next) => {
   try {
     const { orderId } = req.params;
@@ -128,10 +408,7 @@ exports.markAsShipped = async (req, res, next) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        },
+        error: { code: 'NOT_FOUND', message: 'Order not found' },
       });
     }
 
@@ -146,17 +423,12 @@ exports.markAsShipped = async (req, res, next) => {
       order.shipment.shippedAt = new Date();
       order.shipment.events.push({
         code: 'SHIPPED',
-        description: 'Package picked up by carrier',
+        description: 'Order shipped',
         timestamp: new Date(),
       });
     }
 
     await order.save();
-
-    const notificationService = require('../services/notificationService');
-    const User = require('../models/User');
-    const user = await User.findById(order.userId);
-    await notificationService.sendShippingNotification(user, order);
 
     logger.info(`Order marked as shipped: ${orderId}`);
 
@@ -169,7 +441,9 @@ exports.markAsShipped = async (req, res, next) => {
   }
 };
 
-// Generate shipping label (mock)
+// ============================================
+// Generate shipping label
+// ============================================
 exports.generateLabel = async (req, res, next) => {
   try {
     const { orderId } = req.params;
@@ -179,422 +453,236 @@ exports.generateLabel = async (req, res, next) => {
     if (!order) {
       return res.status(404).json({
         success: false,
+        error: { code: 'NOT_FOUND', message: 'Order not found' },
+      });
+    }
+
+    if (!order.shipment || !order.shipment.awb) {
+      return res.status(400).json({
+        success: false,
         error: {
-          code: 'NOT_FOUND',
-          message: 'Order not found',
+          code: 'NO_SHIPMENT',
+          message: 'Order does not have shipping information. Assign a carrier first.',
         },
       });
     }
 
-    // In production, generate actual label via carrier API
-    const mockLabel = {
-      url: `https://example.com/labels/${orderId}.pdf`,
-      format: 'pdf',
-      generatedAt: new Date(),
-    };
+    // Get label from carrier
+    const label = await shippingService.getLabel(
+      order.shipment.awb,
+      order.shipment.carrier
+    );
 
     res.json({
       success: true,
-      data: mockLabel,
+      data: {
+        orderId: order.orderId,
+        awb: order.shipment.awb,
+        carrier: order.shipment.carrier,
+        label: label
+      }
     });
   } catch (error) {
+    logger.error('Error generating label:', error);
     next(error);
   }
 };
 
-// Carrier webhook (receives tracking updates)
+// ============================================
+// Carrier webhook handler
+// ============================================
 exports.carrierWebhook = async (req, res, next) => {
   try {
     const { carrier } = req.params;
-    const { awb, event_code, description, location, timestamp } = req.body;
 
-    // Find order by AWB
-    const order = await Order.findOne({ 'shipment.awb': awb });
+    logger.info(`Webhook received from ${carrier}:`, req.body);
 
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        },
-      });
-    }
-
-    // Add tracking event
-    order.shipment.events.push({
-      code: event_code,
-      description,
-      location,
-      timestamp: timestamp || new Date(),
-    });
-
-    // Update order status based on event
-    const statusMap = {
-      IN_TRANSIT: 'shipped',
-      OUT_FOR_DELIVERY: 'out_for_delivery',
-      DELIVERED: 'delivered',
-      FAILED: 'shipped', // Keep as shipped, but failed delivery attempt
-    };
-
-    if (statusMap[event_code]) {
-      order.status = statusMap[event_code];
-      order.events.push({
-        status: statusMap[event_code],
-        description,
-        timestamp: timestamp || new Date(),
-      });
-
-      if (event_code === 'DELIVERED') {
-        order.shipment.deliveredAt = timestamp || new Date();
-        
-        // Approve commissions on delivery
-        const Commission = require('../models/Commission');
-        await Commission.updateMany(
-          { orderId: order._id, status: 'pending' },
-          { 
-            status: 'approved',
-            approvedAt: new Date(),
-          }
-        );
-      }
-    }
-
-    await order.save();
-
-    logger.info(`Tracking update received for order: ${order.orderId} - ${event_code}`);
+    // Process webhook based on carrier
+    // Each carrier has different webhook format
+    // This is a placeholder - implement based on carrier documentation
 
     res.json({
       success: true,
-      message: 'Webhook processed',
+      message: 'Webhook received',
     });
   } catch (error) {
+    logger.error('Webhook error:', error);
     next(error);
   }
 };
 
-// ==================== DELHIVERY TRACKING INTEGRATION ====================
+// ============================================
+// DELHIVERY SPECIFIC ROUTES (Legacy)
+// ============================================
 
-/**
- * Get tracking information for a shipment
- * Public endpoint - can track with order ID or AWB
- *
- * Query params:
- * - orderId: Order ID
- * - awb: AWB tracking number
- * - email: Email for verification (optional for logged-in users)
- */
+// Get tracking information
 exports.getTrackingInfo = async (req, res, next) => {
   try {
-    const { orderId, awb, email } = req.query;
-    const userId = req.user?._id;
+    const { awb, carrier } = req.query;
 
-    // Must provide either orderId or awb
-    if (!orderId && !awb) {
+    if (!awb) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide order ID or tracking number (AWB)',
+        error: { code: 'VALIDATION_ERROR', message: 'AWB number is required' },
       });
     }
 
-    let order;
-
-    // Find order by orderId or awb
-    if (orderId) {
-      order = await Order.findOne({ orderId });
-    } else if (awb) {
-      order = await Order.findOne({ 'shipment.awb': awb });
-    }
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Order not found',
-      });
-    }
-
-    // Authorization check
-    // Allow if: user owns order, is guest with correct email, or is admin/vendor
-    const isOwner = userId && order.userId && order.userId.toString() === userId.toString();
-    const isGuest = order.isGuest && email && order.guestEmail === email.toLowerCase();
-    const isAdmin = req.user?.role === 'admin';
-    const isVendor = req.user?.role === 'vendor' && order.items.some(
-      item => item.vendorId && item.vendorId.toString() === req.user.vendorProfile?._id?.toString()
-    );
-
-    if (!isOwner && !isGuest && !isAdmin && !isVendor) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to view this tracking information',
-      });
-    }
-
-    // If no AWB yet, return order status only
-    if (!order.shipment?.awb) {
-      return res.json({
-        success: true,
-        order: {
-          orderId: order.orderId,
-          status: order.status,
-          events: order.events,
-          shipment: null,
-        },
-        tracking: null,
-        message: 'Shipment has not been dispatched yet',
-      });
-    }
-
-    // Fetch real-time tracking from Delhivery
-    const tracking = await delhiveryService.trackShipment(order.shipment.awb);
-
-    // Update order with latest tracking data if successful
-    if (tracking.success && tracking.scans) {
-      order.shipment.events = tracking.scans;
-      order.shipment.carrier = 'Delhivery';
-
-      // Update order status based on tracking
-      if (tracking.status === 'delivered' && order.status !== 'delivered') {
-        order.status = 'delivered';
-        order.shipment.deliveredAt = tracking.deliveredDate || new Date();
-        order.events.push({
-          status: 'delivered',
-          description: 'Order delivered successfully',
-          timestamp: tracking.deliveredDate || new Date(),
-        });
-
-        // Approve commissions on delivery
-        const Commission = require('../models/Commission');
-        await Commission.updateMany(
-          { orderId: order._id, status: 'pending' },
-          {
-            status: 'approved',
-            approvedAt: new Date(),
-          }
-        );
-      } else if (tracking.status === 'out_for_delivery' && order.status === 'shipped') {
-        order.status = 'out_for_delivery';
-        order.events.push({
-          status: 'out_for_delivery',
-          description: 'Out for delivery',
-          timestamp: new Date(),
-        });
-      }
-
-      await order.save();
-    }
+    const tracking = await shippingService.trackShipment(awb, carrier || null);
 
     res.json({
       success: true,
-      order: {
-        orderId: order.orderId,
-        status: order.status,
-        events: order.events,
-        shipment: {
-          carrier: order.shipment.carrier,
-          awb: order.shipment.awb,
-          shippedAt: order.shipment.shippedAt,
-          deliveredAt: order.shipment.deliveredAt,
-        },
-      },
-      tracking: tracking.success ? {
-        status: tracking.status,
-        statusDescription: tracking.statusDescription,
-        scans: tracking.scans,
-        origin: tracking.origin,
-        destination: tracking.destination,
-        estimatedDelivery: tracking.estimatedDelivery,
-        deliveredDate: tracking.deliveredDate,
-      } : null,
-      error: tracking.success ? null : tracking.error,
+      data: tracking
     });
-
   } catch (error) {
-    logger.error('Tracking info error:', error);
+    logger.error('Tracking error:', error);
     next(error);
   }
 };
 
-/**
- * Sync tracking data for an order (Admin/Vendor only)
- * POST /api/shipping/orders/:orderId/sync
- */
+// Sync tracking data
 exports.syncTrackingData = async (req, res, next) => {
   try {
     const { orderId } = req.params;
-    const userRole = req.user.role;
 
-    const order = await Order.findOne({ orderId });
+    // Support both MongoDB _id and readable orderId
+    const mongoose = require('mongoose');
+    const query = mongoose.Types.ObjectId.isValid(orderId)
+      ? { _id: orderId }
+      : { orderId };
 
-    if (!order) {
+    const order = await Order.findOne(query);
+
+    if (!order || !order.shipment || !order.shipment.awb) {
       return res.status(404).json({
         success: false,
-        message: 'Order not found',
+        error: { code: 'NOT_FOUND', message: 'Order or shipment not found' },
       });
     }
 
-    // Check authorization
-    const isAdmin = userRole === 'admin';
-    const isVendor = userRole === 'vendor' && order.items.some(
-      item => item.vendorId && item.vendorId.toString() === req.user.vendorProfile?._id?.toString()
-    );
+    // Use tracking sync service to get updated status
+    const syncResult = await trackingSyncService.syncOrderTracking(order);
 
-    if (!isAdmin && !isVendor) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to sync tracking data',
-      });
-    }
-
-    if (!order.shipment?.awb) {
+    if (!syncResult.success) {
       return res.status(400).json({
         success: false,
-        message: 'Order does not have a tracking number',
+        error: { code: 'SYNC_FAILED', message: syncResult.message }
       });
     }
 
-    // Fetch latest tracking data
-    const tracking = await delhiveryService.trackShipment(order.shipment.awb);
-
-    if (!tracking.success) {
-      return res.status(400).json({
-        success: false,
-        message: tracking.error || 'Unable to sync tracking data',
-      });
+    // Update order with latest tracking info and status
+    if (syncResult.tracking) {
+      order.shipment.carrierStatus = syncResult.tracking.status;
+      order.shipment.currentLocation = syncResult.tracking.currentLocation;
+      order.shipment.estimatedDelivery = syncResult.tracking.estimatedDelivery;
+      order.shipment.trackingLastSynced = syncResult.tracking.lastUpdated;
+      order.shipment.events = syncResult.tracking.events;
     }
 
-    // Update order with latest data
-    order.shipment.events = tracking.scans;
+    // Update order status if it changed
+    if (syncResult.statusChanged) {
+      const oldStatus = order.status;
+      order.status = syncResult.newStatus;
 
-    // Update status if delivered
-    if (tracking.status === 'delivered' && order.status !== 'delivered') {
-      order.status = 'delivered';
-      order.shipment.deliveredAt = tracking.deliveredDate || new Date();
+      // Add status change event
       order.events.push({
-        status: 'delivered',
-        description: 'Order delivered successfully',
-        timestamp: tracking.deliveredDate || new Date(),
+        status: syncResult.newStatus,
+        description: `Status automatically updated from carrier: ${syncResult.tracking.status}`,
+        timestamp: new Date()
       });
 
-      // Approve commissions on delivery
-      const Commission = require('../models/Commission');
-      await Commission.updateMany(
-        { orderId: order._id, status: 'pending' },
-        {
-          status: 'approved',
-          approvedAt: new Date(),
-        }
-      );
-    } else if (tracking.status === 'out_for_delivery' && order.status === 'shipped') {
-      order.status = 'out_for_delivery';
-      order.events.push({
-        status: 'out_for_delivery',
-        description: 'Out for delivery',
-        timestamp: new Date(),
-      });
+      // Set deliveredAt timestamp if order is delivered
+      if (syncResult.newStatus === 'delivered' && !order.shipment.deliveredAt) {
+        order.shipment.deliveredAt = new Date();
+      }
+
+      logger.info(`✅ Order ${order.orderId} status automatically updated: ${oldStatus} → ${syncResult.newStatus}`);
     }
 
     await order.save();
 
     res.json({
       success: true,
-      message: 'Tracking data synced successfully',
-      order: {
+      data: {
         orderId: order.orderId,
-        status: order.status,
-        shipment: order.shipment,
-      },
-      tracking,
+        statusChanged: syncResult.statusChanged,
+        oldStatus: syncResult.oldStatus,
+        newStatus: syncResult.newStatus,
+        tracking: syncResult.tracking,
+        message: syncResult.statusChanged
+          ? `Order status automatically updated to ${syncResult.newStatus}`
+          : 'Tracking data synced successfully'
+      }
     });
-
   } catch (error) {
-    logger.error('Sync tracking data error:', error);
+    logger.error('❌ Sync tracking error:', error.message);
     next(error);
   }
 };
 
-/**
- * Calculate shipping rate (Public endpoint)
- * POST /api/shipping/calculate-rate
- */
+// Calculate shipping rate
 exports.calculateShippingRate = async (req, res, next) => {
   try {
-    const { originPin, destinationPin, weight, cod } = req.body;
+    const { originPin, destinationPin, weight } = req.body;
 
-    if (!originPin || !destinationPin || !weight) {
-      return res.status(400).json({
-        success: false,
-        message: 'Origin PIN, destination PIN, and weight are required',
-      });
-    }
+    const rates = await shippingService.calculateShippingRates(
+      { zipCode: originPin },
+      { zipCode: destinationPin },
+      { weight: weight }
+    );
 
-    const rateData = await delhiveryService.calculateRate({
-      originPin,
-      destinationPin,
-      weight,
-      cod: cod || false,
+    res.json({
+      success: true,
+      data: { rates }
     });
-
-    res.json(rateData);
-
   } catch (error) {
-    logger.error('Calculate shipping rate error:', error);
     next(error);
   }
 };
 
-/**
- * Schedule pickup (Vendor only)
- * POST /api/shipping/schedule-pickup
- */
+// Schedule pickup (Delhivery)
 exports.schedulePickup = async (req, res, next) => {
   try {
-    const pickupData = req.body;
+    const pickupDetails = req.body;
 
-    // Vendor authorization check done by middleware
-    const pickup = await delhiveryService.schedulePickup(pickupData);
+    // For now, use Delhivery for pickup
+    // In future, can detect carrier from order
+    const result = await delhiveryService.schedulePickup(pickupDetails);
 
-    res.json(pickup);
-
+    res.json({
+      success: true,
+      data: result
+    });
   } catch (error) {
-    logger.error('Schedule pickup error:', error);
     next(error);
   }
 };
 
-/**
- * Create shipment/waybill (Vendor only)
- * POST /api/shipping/create-shipment
- */
+// Create shipment/waybill (Delhivery)
 exports.createShipment = async (req, res, next) => {
   try {
     const shipmentData = req.body;
 
-    // Vendor authorization check done by middleware
-    const shipment = await delhiveryService.createShipment(shipmentData);
+    const result = await delhiveryService.createWaybill(shipmentData);
 
-    res.json(shipment);
-
+    res.json({
+      success: true,
+      data: result
+    });
   } catch (error) {
-    logger.error('Create shipment error:', error);
     next(error);
   }
 };
 
-/**
- * Get Delhivery service status
- * GET /api/shipping/status
- */
+// Get Delhivery service status
 exports.getServiceStatus = async (req, res, next) => {
   try {
+    const status = await delhiveryService.getServiceStatus();
+
     res.json({
       success: true,
-      enabled: delhiveryService.isEnabled(),
-      message: delhiveryService.isEnabled()
-        ? 'Delhivery tracking service is active'
-        : 'Delhivery tracking service is disabled (using mock data)',
+      data: status
     });
   } catch (error) {
-    logger.error('Get service status error:', error);
     next(error);
   }
 };

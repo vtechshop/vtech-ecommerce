@@ -51,7 +51,15 @@ const orderSchema = new mongoose.Schema({
     paidAt: Date, amount: Number,
   },
   shipment: {
-    carrier: String, awb: String, shippedAt: Date, deliveredAt: Date,
+    carrier: String,
+    awb: String,
+    trackingUrl: String,
+    shippedAt: Date,
+    deliveredAt: Date,
+    trackingLastSynced: Date, // Last time tracking was synced from carrier API
+    carrierStatus: String, // Raw status from carrier API
+    currentLocation: String, // Current location from carrier
+    estimatedDelivery: Date, // Estimated delivery date from carrier
     events: [{ code: String, description: String, location: String, timestamp: Date }],
   },
   invoices: [{ url: String, generatedAt: Date }],

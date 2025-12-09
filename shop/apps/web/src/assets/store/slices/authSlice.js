@@ -149,9 +149,15 @@ const slice = createSlice({
     setUser: (state, action) => {
       state.user = action.payload;
     },
+    forceInitialized: (state) => {
+      // Force initialization to complete (used as timeout fallback)
+      state.loading = false;
+      state.initialized = true;
+      // Don't change authentication state - keep existing values
+    },
   },
   extraReducers: (b) => {
-    b.addCase(initializeAuth.pending, (s) => { s.loading = false; s.error = null; })
+    b.addCase(initializeAuth.pending, (s) => { s.loading = true; s.error = null; })
      .addCase(initializeAuth.fulfilled, (s, a) => {
        s.loading = false;
        s.initialized = true;
@@ -159,9 +165,14 @@ const slice = createSlice({
          s.user = a.payload.user;
          s.accessToken = a.payload.accessToken;
          s.isAuthenticated = true;
+       } else {
+         // No user data (not authenticated), but initialization is complete
+         s.user = null;
+         s.accessToken = null;
+         s.isAuthenticated = false;
        }
      })
-     .addCase(initializeAuth.rejected, (s, a) => { s.loading = false; s.error = null; s.isAuthenticated = false; s.initialized = true; })
+     .addCase(initializeAuth.rejected, (s, a) => { s.loading = false; s.error = null; s.isAuthenticated = false; s.initialized = true; s.user = null; s.accessToken = null; })
 
      .addCase(login.pending, (s) => { s.loading = true; s.error = null; })
      .addCase(login.fulfilled, (s, a) => {
@@ -169,8 +180,9 @@ const slice = createSlice({
        s.user = a.payload.user;
        s.accessToken = a.payload.accessToken;
        s.isAuthenticated = true;
+       s.initialized = true; // Mark as initialized after successful login
      })
-     .addCase(login.rejected, (s, a) => { s.loading = false; s.error = a.payload; })
+     .addCase(login.rejected, (s, a) => { s.loading = false; s.error = a.payload; s.initialized = true; })
 
      .addCase(register.pending, (s) => { s.loading = true; s.error = null; })
      .addCase(register.fulfilled, (s, a) => {
@@ -178,8 +190,9 @@ const slice = createSlice({
        s.user = a.payload.user;
        s.accessToken = a.payload.accessToken;
        s.isAuthenticated = true;
+       s.initialized = true; // Mark as initialized after successful registration
      })
-     .addCase(register.rejected, (s, a) => { s.loading = false; s.error = a.payload; })
+     .addCase(register.rejected, (s, a) => { s.loading = false; s.error = a.payload; s.initialized = true; })
 
      .addCase(logout.fulfilled, (s) => {
        s.user = null;
@@ -198,5 +211,5 @@ const slice = createSlice({
   },
 });
 
-export const { setCredentials, clearCredentials, updateUserProfile, setUser } = slice.actions;
+export const { setCredentials, clearCredentials, updateUserProfile, setUser, forceInitialized } = slice.actions;
 export default slice.reducer;

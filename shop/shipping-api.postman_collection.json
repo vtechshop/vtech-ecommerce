@@ -1,0 +1,374 @@
+{
+  "info": {
+    "name": "Admin Shipping Carrier Selection",
+    "description": "API collection for testing admin shipping carrier selection workflow",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "ORD-1234567890",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('adminToken', response.token);",
+                  "    pm.environment.set('adminToken', response.token);",
+                  "    console.log('✅ Admin token saved:', response.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Carrier Management",
+      "item": [
+        {
+          "name": "Get Available Carriers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shipping/carriers",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "carriers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Carrier Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shipping/carriers/delhivery/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "carriers", "delhivery", "status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Order Shipping",
+      "item": [
+        {
+          "name": "Get Shipping Quotes for Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Received quotes from', response.data.rates.length, 'carriers');",
+                  "    response.data.rates.forEach((rate, i) => {",
+                  "        console.log(`${i+1}. ${rate.carrierName}: ₹${rate.rate} (${rate.estimatedDays} days)`);",
+                  "    });",
+                  "    console.log('Recommended:', response.data.recommended.carrier);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shipping/orders/{{orderId}}/quotes",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "orders", "{{orderId}}", "quotes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recommended Carrier (Cost Priority)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shipping/orders/{{orderId}}/recommended?priority=cost",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "orders", "{{orderId}}", "recommended"],
+              "query": [
+                {
+                  "key": "priority",
+                  "value": "cost"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recommended Carrier (Speed Priority)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shipping/orders/{{orderId}}/recommended?priority=speed",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "orders", "{{orderId}}", "recommended"],
+              "query": [
+                {
+                  "key": "priority",
+                  "value": "speed"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Carrier - Delhivery",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    console.log('✅ Shipment created!');",
+                  "    console.log('Carrier:', response.data.carrier);",
+                  "    console.log('AWB:', response.data.awb);",
+                  "    console.log('Tracking URL:', response.data.trackingUrl);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carrier\": \"delhivery\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shipping/orders/{{orderId}}/assign-carrier",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "orders", "{{orderId}}", "assign-carrier"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Carrier - Shiprocket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carrier\": \"shiprocket\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shipping/orders/{{orderId}}/assign-carrier",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "orders", "{{orderId}}", "assign-carrier"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Carrier - BlueDart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carrier\": \"bluedart\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shipping/orders/{{orderId}}/assign-carrier",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "orders", "{{orderId}}", "assign-carrier"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Order Status Updates",
+      "item": [
+        {
+          "name": "Mark as Packed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shipping/orders/{{orderId}}/packed",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "orders", "{{orderId}}", "packed"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark as Shipped",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shipping/orders/{{orderId}}/shipped",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "orders", "{{orderId}}", "shipped"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Tracking",
+      "item": [
+        {
+          "name": "Get Tracking Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/shipping/tracking?awb=DL123456789",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "tracking"],
+              "query": [
+                {
+                  "key": "awb",
+                  "value": "DL123456789"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sync Tracking Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/shipping/orders/{{orderId}}/sync",
+              "host": ["{{baseUrl}}"],
+              "path": ["shipping", "orders", "{{orderId}}", "sync"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
