@@ -264,21 +264,7 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, isLoading }) => {
   const queryClient = useQueryClient();
   const [newStatus, setNewStatus] = useState(order.status);
   const [statusDescription, setStatusDescription] = useState('');
-  const [showCarrierQuotes, setShowCarrierQuotes] = useState(false);
   const [selectedCarrier, setSelectedCarrier] = useState(null);
-
-  // Fetch shipping quotes
-  const { data: quotes, isLoading: quotesLoading, error: quotesError, refetch: refetchQuotes } = useQuery({
-    queryKey: ['shipping-quotes', order._id],
-    queryFn: async () => {
-      console.log('Fetching quotes for order:', order._id);
-      const response = await api.get(`/shipping/orders/${order._id}/quotes`);
-      console.log('Quotes response:', response.data);
-      return response.data.data.rates; // Extract rates array from response
-    },
-    enabled: showCarrierQuotes,
-    retry: false,
-  });
 
   // Assign carrier mutation
   const assignCarrierMutation = useMutation({
@@ -485,101 +471,32 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, isLoading }) => {
             {/* Assign Carrier Section */}
             {!order.shipment?.carrier && (
               <div className="space-y-4">
-                {!showCarrierQuotes ? (
-                  <Button
-                    onClick={() => setShowCarrierQuotes(true)}
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2"
+                <div>
+                  <label htmlFor="carrier-select" className="block text-sm font-medium text-gray-900 mb-2">
+                    Select Shipping Carrier
+                  </label>
+                  <select
+                    id="carrier-select"
+                    value={selectedCarrier || ''}
+                    onChange={(e) => setSelectedCarrier(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <Truck className="w-4 h-4" />
-                    Get Shipping Quotes
-                  </Button>
-                ) : (
-                  <div className="space-y-4">
-                    {quotesLoading ? (
-                      <div className="flex justify-center py-8">
-                        <Spinner size="md" />
-                        <p className="ml-3 text-gray-700">Fetching rates from carriers...</p>
-                      </div>
-                    ) : quotes && quotes.length > 0 ? (
-                      <>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {quotes.map((quote) => (
-                            <div
-                              key={quote.carrier}
-                              className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                                selectedCarrier === quote.carrier
-                                  ? 'border-blue-500 bg-blue-50'
-                                  : 'border-gray-200 hover:border-gray-300'
-                              }`}
-                              onClick={() => setSelectedCarrier(quote.carrier)}
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-semibold capitalize">{quote.carrier}</h4>
-                                {quote.recommended && (
-                                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-semibold">
-                                    Recommended
-                                  </span>
-                                )}
-                              </div>
-                              <div className="space-y-1">
-                                <p className="text-2xl font-bold text-blue-600">
-                                  {formatCurrency(quote.rate)}
-                                </p>
-                                {quote.estimatedDays && (
-                                  <p className="text-sm text-gray-700">
-                                    Delivery: {quote.estimatedDays} days
-                                  </p>
-                                )}
-                                {quote.serviceName && (
-                                  <p className="text-xs text-gray-700">{quote.serviceName}</p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                    <option value="">-- Select Carrier --</option>
+                    <option value="delhivery">Delhivery</option>
+                    <option value="shiprocket">Shiprocket</option>
+                    <option value="bluedart">BlueDart</option>
+                  </select>
+                </div>
 
-                        <div className="flex items-center justify-end gap-3">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              setShowCarrierQuotes(false);
-                              setSelectedCarrier(null);
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={() => assignCarrierMutation.mutate({ carrier: selectedCarrier })}
-                            disabled={!selectedCarrier || assignCarrierMutation.isPending}
-                          >
-                            {assignCarrierMutation.isPending ? 'Assigning...' : 'Assign Carrier'}
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-700 mb-4">
-                          {quotesError ? `Error: ${quotesError.message}` : 'No shipping quotes available.'}
-                        </p>
-                        {quotesError && (
-                          <p className="text-sm text-red-600 mb-4">
-                            {quotesError.response?.data?.error?.message || 'Failed to fetch shipping quotes'}
-                          </p>
-                        )}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setShowCarrierQuotes(false)}
-                        >
-                          Close
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <Button
+                  type="button"
+                  onClick={() => assignCarrierMutation.mutate({ carrier: selectedCarrier })}
+                  disabled={!selectedCarrier || assignCarrierMutation.isPending}
+                  className="w-full flex items-center justify-center gap-2"
+                >
+                  <Truck className="w-4 h-4" />
+                  {assignCarrierMutation.isPending ? 'Assigning Carrier...' : 'Assign Carrier'}
+                </Button>
               </div>
             )}
           </div>
