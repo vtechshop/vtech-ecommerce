@@ -268,13 +268,16 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, isLoading }) => {
   const [selectedCarrier, setSelectedCarrier] = useState(null);
 
   // Fetch shipping quotes
-  const { data: quotes, isLoading: quotesLoading, refetch: refetchQuotes } = useQuery({
+  const { data: quotes, isLoading: quotesLoading, error: quotesError, refetch: refetchQuotes } = useQuery({
     queryKey: ['shipping-quotes', order._id],
     queryFn: async () => {
+      console.log('Fetching quotes for order:', order._id);
       const response = await api.get(`/shipping/orders/${order._id}/quotes`);
+      console.log('Quotes response:', response.data);
       return response.data.data.rates; // Extract rates array from response
     },
     enabled: showCarrierQuotes,
+    retry: false,
   });
 
   // Assign carrier mutation
@@ -558,7 +561,14 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, isLoading }) => {
                       </>
                     ) : (
                       <div className="text-center py-8">
-                        <p className="text-gray-700 mb-4">No shipping quotes available.</p>
+                        <p className="text-gray-700 mb-4">
+                          {quotesError ? `Error: ${quotesError.message}` : 'No shipping quotes available.'}
+                        </p>
+                        {quotesError && (
+                          <p className="text-sm text-red-600 mb-4">
+                            {quotesError.response?.data?.error?.message || 'Failed to fetch shipping quotes'}
+                          </p>
+                        )}
                         <Button
                           type="button"
                           variant="outline"
