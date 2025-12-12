@@ -140,6 +140,7 @@ app.use((req, res, next) => {
     '/api/vendors',    // Protected by JWT + vendor role check
     '/api/orders',     // Protected by JWT authentication
     '/api/affiliates', // Protected by JWT + affiliate role check
+    '/api/tickets',    // Protected by JWT authentication
     '/api/contact',    // Public contact form - rate limited separately
     '/api/checkout',   // Checkout flow - needs to work for guests
     '/api/ads',        // Ad tracking (impressions/clicks) - public analytics
