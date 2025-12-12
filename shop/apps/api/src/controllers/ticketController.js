@@ -91,11 +91,13 @@ exports.getTickets = async (req, res, next) => {
     if (priority) query.priority = priority;
 
     // Search in subject and description
+    // SECURITY: Escape special regex characters to prevent RegExp injection
     if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { subject: new RegExp(search, 'i') },
-        { description: new RegExp(search, 'i') },
-        { ticketId: new RegExp(search, 'i') },
+        { subject: new RegExp(escapedSearch, 'i') },
+        { description: new RegExp(escapedSearch, 'i') },
+        { ticketId: new RegExp(escapedSearch, 'i') },
       ];
     }
 

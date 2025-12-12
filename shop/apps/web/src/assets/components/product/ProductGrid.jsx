@@ -138,10 +138,10 @@ const ProductGrid = React.memo(({
             onChange={(value) => setFilters({ ...filters, priceRange: value })}
             options={[
               { value: '', label: 'All Prices' },
-              { value: '0-25', label: 'Under $25' },
-              { value: '25-50', label: '$25 - $50' },
-              { value: '50-100', label: '$50 - $100' },
-              { value: '100+', label: '$100+' },
+              { value: '0-500', label: 'Under ₹500' },
+              { value: '500-1000', label: '₹500 - ₹1,000' },
+              { value: '1000-2000', label: '₹1,000 - ₹2,000' },
+              { value: '2000+', label: '₹2,000+' },
             ]}
             placeholder="All Prices"
             className="w-32 text-sm"

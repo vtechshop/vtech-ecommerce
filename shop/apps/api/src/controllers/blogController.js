@@ -5,6 +5,7 @@ const BlogLike = require('../models/BlogLike');
 const CommentLike = require('../models/CommentLike');
 const { getPaginationMeta, escapeRegex } = require('../utils/helpers');
 const logger = require('../config/logger');
+const AppError = require('../utils/AppError');
 
 // Get all blogs (public)
 exports.getBlogs = async (req, res, next) => {

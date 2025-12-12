@@ -3,6 +3,7 @@ const router = express.Router();
 const admin = require('../controllers/adminController');
 const crm = require('../controllers/crmController');
 const { authenticate, authorize } = require('../middleware/auth');
+const { validateObjectId } = require('../middleware/validate');
 
 // secure all admin endpoints
 router.use(authenticate);
@@ -11,83 +12,83 @@ router.use(authorize(['admin']));
 // Dashboard
 router.get('/dashboard/stats', admin.getDashboardStats);
 
-// Users
+// Users - SECURITY: Added ObjectId validation
 router.get('/users', admin.getUsers);
-router.get('/users/:id', admin.getUserById);
-router.put('/users/:id', admin.updateUser);
-router.delete('/users/:id', admin.deleteUser);
-router.put('/users/:id/reset-password', admin.resetUserPassword);
+router.get('/users/:id', validateObjectId('id'), admin.getUserById);
+router.put('/users/:id', validateObjectId('id'), admin.updateUser);
+router.delete('/users/:id', validateObjectId('id'), admin.deleteUser);
+router.put('/users/:id/reset-password', validateObjectId('id'), admin.resetUserPassword);
 
-// Products
+// Products - SECURITY: Added ObjectId validation
 router.get('/products', admin.getProducts);
-router.get('/products/:id', admin.getProductById);
+router.get('/products/:id', validateObjectId('id'), admin.getProductById);
 router.post('/products', admin.createProduct);
-router.put('/products/:id', admin.updateProduct);
-router.delete('/products/:id', admin.deleteProduct);
-router.put('/products/:id/approve', admin.approveProduct);
-router.put('/products/:id/reject', admin.rejectProduct);
-router.put('/products/:id/commission-rules', admin.updateProductCommissionRules);
+router.put('/products/:id', validateObjectId('id'), admin.updateProduct);
+router.delete('/products/:id', validateObjectId('id'), admin.deleteProduct);
+router.put('/products/:id/approve', validateObjectId('id'), admin.approveProduct);
+router.put('/products/:id/reject', validateObjectId('id'), admin.rejectProduct);
+router.put('/products/:id/commission-rules', validateObjectId('id'), admin.updateProductCommissionRules);
 
-// Categories
+// Categories - SECURITY: Added ObjectId validation
 router.get('/categories', admin.getCategories);
 router.post('/categories', admin.createCategory);
-router.put('/categories/:id', admin.updateCategory);
-router.delete('/categories/:id', admin.deleteCategory);
+router.put('/categories/:id', validateObjectId('id'), admin.updateCategory);
+router.delete('/categories/:id', validateObjectId('id'), admin.deleteCategory);
 
-// Orders
+// Orders - SECURITY: Added ObjectId validation
 router.get('/orders', admin.getOrders);
-router.get('/orders/:id', admin.getOrderById);
-router.put('/orders/:id/status', admin.updateOrderStatus);
+router.get('/orders/:id', validateObjectId('id'), admin.getOrderById);
+router.put('/orders/:id/status', validateObjectId('id'), admin.updateOrderStatus);
 
-// Vendors
+// Vendors - SECURITY: Added ObjectId validation
 router.get('/vendors', admin.getVendors);
-router.put('/vendors/:id/approve', admin.approveVendor);
-router.put('/vendors/:id/reject', admin.rejectVendor);
-router.put('/vendors/:id/suspend', admin.suspendVendor);
-router.put('/vendors/:id/commission', admin.updateVendorCommission);
-router.put('/vendors/:id/commission-rules', admin.updateVendorCommissionRules);
+router.put('/vendors/:id/approve', validateObjectId('id'), admin.approveVendor);
+router.put('/vendors/:id/reject', validateObjectId('id'), admin.rejectVendor);
+router.put('/vendors/:id/suspend', validateObjectId('id'), admin.suspendVendor);
+router.put('/vendors/:id/commission', validateObjectId('id'), admin.updateVendorCommission);
+router.put('/vendors/:id/commission-rules', validateObjectId('id'), admin.updateVendorCommissionRules);
 
-// Affiliates
+// Affiliates - SECURITY: Added ObjectId validation
 router.get('/affiliates', admin.getAffiliates);
-router.put('/affiliates/:id/approve', admin.approveAffiliate);
-router.put('/affiliates/:id/reject', admin.rejectAffiliate);
-router.put('/affiliates/:id/suspend', admin.suspendAffiliate);
-router.put('/affiliates/:id/commission-rules', admin.updateAffiliateCommissionRules);
+router.put('/affiliates/:id/approve', validateObjectId('id'), admin.approveAffiliate);
+router.put('/affiliates/:id/reject', validateObjectId('id'), admin.rejectAffiliate);
+router.put('/affiliates/:id/suspend', validateObjectId('id'), admin.suspendAffiliate);
+router.put('/affiliates/:id/commission-rules', validateObjectId('id'), admin.updateAffiliateCommissionRules);
 
-// Commissions / Payouts
+// Commissions / Payouts - SECURITY: Added ObjectId validation
 router.get('/commissions', admin.getCommissions);
 router.get('/commissions/stats', admin.getCommissionStats);
-router.put('/commissions/:id/approve', admin.approveCommission);
-router.put('/commissions/:id/reject', admin.rejectCommission);
-router.put('/commissions/:id/pay', admin.payCommission);
+router.put('/commissions/:id/approve', validateObjectId('id'), admin.approveCommission);
+router.put('/commissions/:id/reject', validateObjectId('id'), admin.rejectCommission);
+router.put('/commissions/:id/pay', validateObjectId('id'), admin.payCommission);
 router.post('/commissions/bulk-approve', admin.bulkApproveCommissions);
 router.post('/commissions/bulk-pay', admin.bulkPayCommissions);
 router.get('/payouts', admin.getPayouts);
 router.post('/payouts', admin.createPayout);
 
-// Enhanced Payout Management
+// Enhanced Payout Management - SECURITY: Added ObjectId validation
 router.get('/payouts/pending', admin.getVendorPendingPayouts);
 router.post('/payouts/process', admin.processVendorPayout);
-router.post('/payouts/vendor/:vendorId/batch', admin.batchProcessVendorPayout);
+router.post('/payouts/vendor/:vendorId/batch', validateObjectId('vendorId'), admin.batchProcessVendorPayout);
 router.get('/payouts/history', admin.getPayoutHistory);
 
-// Ads
+// Ads - SECURITY: Added ObjectId validation
 router.get('/ads/campaigns', admin.getAdCampaigns);
 router.post('/ads/campaigns', admin.createAdCampaign);
-router.put('/ads/campaigns/:id', admin.updateAdCampaign);
-router.delete('/ads/campaigns/:id', admin.deleteAdCampaign);
-router.put('/ads/campaigns/:id/status', admin.updateAdCampaignStatus);
+router.put('/ads/campaigns/:id', validateObjectId('id'), admin.updateAdCampaign);
+router.delete('/ads/campaigns/:id', validateObjectId('id'), admin.deleteAdCampaign);
+router.put('/ads/campaigns/:id/status', validateObjectId('id'), admin.updateAdCampaignStatus);
 
-// Blog / CMS
+// Blog / CMS - SECURITY: Added ObjectId validation
 router.get('/posts', admin.getPosts);
 router.post('/posts', admin.createPost);
-router.put('/posts/:id', admin.updatePost);
-router.delete('/posts/:id', admin.deletePost);
+router.put('/posts/:id', validateObjectId('id'), admin.updatePost);
+router.delete('/posts/:id', validateObjectId('id'), admin.deletePost);
 
 router.get('/pages', admin.getPages);
 router.post('/pages', admin.createPage);
-router.put('/pages/:id', admin.updatePage);
-router.delete('/pages/:id', admin.deletePage);
+router.put('/pages/:id', validateObjectId('id'), admin.updatePage);
+router.delete('/pages/:id', validateObjectId('id'), admin.deletePage);
 
 // Settings
 router.get('/settings', admin.getSettings);

@@ -225,7 +225,49 @@ const Checkout = () => {
       paymentDetails: {},
     };
 
-    createOrderMutation.mutate(orderData);
+    // For Razorpay, create order first then initiate payment
+    if (paymentMethod === 'razorpay') {
+      // Import dynamically to avoid loading Razorpay on initial page load
+      const { initiateRazorpayPayment } = await import('@/utils/razorpay');
+
+      // Create order first
+      createOrderMutation.mutate(orderData, {
+        onSuccess: async (createdOrder) => {
+          try {
+            // Initiate Razorpay payment
+            await initiateRazorpayPayment({
+              orderId: createdOrder._id,
+              amount: createdOrder.totals.total,
+              customer: {
+                name: selectedAddress.fullName,
+                email: user?.email || '',
+                phone: selectedAddress.phone,
+              },
+              onSuccess: (paymentResult) => {
+                toast.success('Payment successful!');
+                // Set flag to prevent cart redirect
+                setOrderPlaced(true);
+                // Clear cart
+                dispatch(clearCart());
+                // Navigate to order confirmation
+                navigate(`/orders/${createdOrder._id}`);
+              },
+              onFailure: (error) => {
+                toast.error(error.description || error.message || 'Payment failed. Please try again.');
+                // Don't clear cart on payment failure
+                // User can retry payment from order page
+              },
+            });
+          } catch (error) {
+            console.error('Razorpay payment error:', error);
+            toast.error('Failed to initiate payment. Please try again.');
+          }
+        },
+      });
+    } else {
+      // For COD and other methods, create order normally
+      createOrderMutation.mutate(orderData);
+    }
   };
 
   // Don't render anything if cart is empty (unless order was just placed - navigation will handle it)
@@ -521,72 +563,29 @@ const Checkout = () => {
                       </div>
                     </button>
 
-                    {/* Credit/Debit Card - Coming Soon */}
+                    {/* Razorpay - Available */}
                     <button
                       type="button"
-                      onClick={() => {
-                        setPaymentMethod('card');
-                        toast.info('Credit/Debit Card payment is not available yet. Coming Soon!');
-                      }}
-                      className="w-full text-left p-4 border-2 rounded-lg transition-colors border-gray-200 bg-gray-50 opacity-75 cursor-not-allowed"
+                      onClick={() => setPaymentMethod('razorpay')}
+                      className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
+                        paymentMethod === 'razorpay'
+                          ? 'border-primary-600 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
                     >
                       <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
-                        <span className="font-semibold text-gray-500">Credit/Debit Card</span>
-                        <span className="ml-auto text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Coming Soon</span>
-                      </div>
-                    </button>
-
-                    {/* UPI - Coming Soon */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaymentMethod('upi');
-                        toast.info('UPI payment is not available yet. Coming Soon!');
-                      }}
-                      className="w-full text-left p-4 border-2 rounded-lg transition-colors border-gray-200 bg-gray-50 opacity-75 cursor-not-allowed"
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        <span className="font-semibold text-gray-500">UPI</span>
-                        <span className="ml-auto text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Coming Soon</span>
-                      </div>
-                    </button>
-
-                    {/* Net Banking - Coming Soon */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPaymentMethod('netbanking');
-                        toast.info('Net Banking payment is not available yet. Coming Soon!');
-                      }}
-                      className="w-full text-left p-4 border-2 rounded-lg transition-colors border-gray-200 bg-gray-50 opacity-75 cursor-not-allowed"
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                        </svg>
-                        <span className="font-semibold text-gray-500">Net Banking</span>
-                        <span className="ml-auto text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Coming Soon</span>
+                        <div className="flex-1">
+                          <span className="font-semibold">Online Payment (Razorpay)</span>
+                          <p className="text-xs text-gray-700 mt-1">Pay via Card, UPI, Net Banking, or Wallet</p>
+                        </div>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">Secure</span>
                       </div>
                     </button>
                   </div>
                 </div>
-
-                {/* Warning if non-COD payment selected */}
-                {paymentMethod !== 'cod' && (
-                  <div className="mb-6">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <p className="text-sm text-yellow-800">
-                        <strong>This payment method is not available yet.</strong> Please select <strong>Cash on Delivery</strong> to complete your order.
-                      </p>
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex gap-3">
                   <Button type="button" onClick={() => setStep(2)} variant="outline">
@@ -597,9 +596,8 @@ const Checkout = () => {
                     variant="primary"
                     fullWidth
                     loading={createOrderMutation.isPending}
-                    disabled={paymentMethod !== 'cod'}
                   >
-                    {paymentMethod === 'cod' ? 'Place Order' : 'Select COD to Continue'}
+                    {paymentMethod === 'cod' ? 'Place Order' : 'Continue to Payment'}
                   </Button>
                 </div>
               </form>

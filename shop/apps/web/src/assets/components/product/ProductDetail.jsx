@@ -354,7 +354,7 @@ const ProductDetail = () => {
             <div className="space-y-3 mt-6">
               <div className="flex items-center gap-3 text-sm">
                 <Truck className="w-5 h-5 text-green-600" />
-                <span>Free shipping on orders over $50</span>
+                <span>Free shipping on orders over ₹500</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Shield className="w-5 h-5 text-blue-600" />

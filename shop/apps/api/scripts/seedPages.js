@@ -268,7 +268,7 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/shop';
         </ul>
 
         <h2>Payment Terms</h2>
-        <p>Commissions are paid monthly, typically by the 15th of each month for the previous month's sales. Minimum payout is $50.</p>
+        <p>Commissions are paid monthly, typically by the 15th of each month for the previous month's sales. Minimum payout is ₹500.</p>
 
         <h2>Ready to Earn?</h2>
         <p><a href="/register?role=affiliate">Join Our Affiliate Program</a> today!</p>

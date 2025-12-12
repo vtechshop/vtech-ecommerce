@@ -32,7 +32,7 @@ export const translations = {
 
     // Home Page
     'home.heroTitle': 'Discover Amazing Products',
-    'home.heroDesc': 'Shop from thousands of trusted vendors. Free shipping on orders over $50.',
+    'home.heroDesc': 'Shop from thousands of trusted vendors. Free shipping on orders over ₹500.',
     'home.startShopping': 'Start Shopping',
     'home.learnMore': 'Learn More',
     'home.sponsored': 'Sponsored',
@@ -102,7 +102,7 @@ export const translations = {
 
     // Home Page - Tamil
     'home.heroTitle': 'அற்புதமான தயாரிப்புகளை கண்டறியுங்கள்',
-    'home.heroDesc': 'ஆயிரக்கணக்கான நம்பகமான விற்பனையாளர்களிடமிருந்து வாங்குங்கள். $50க்கு மேல் ஆர்டர்களுக்கு இலவச டெலிவரி.',
+    'home.heroDesc': 'ஆயிரக்கணக்கான நம்பகமான விற்பனையாளர்களிடமிருந்து வாங்குங்கள். ₹500க்கு மேல் ஆர்டர்களுக்கு இலவச டெலிவரி.',
     'home.startShopping': 'கடைக்குச் செல்லுங்கள்',
     'home.learnMore': 'மேலும் அறியவும்',
     'home.sponsored': 'ஸ்பான்சர் செய்யப்பட்டது',
@@ -172,7 +172,7 @@ export const translations = {
 
     // Home Page - Hindi
     'home.heroTitle': 'अद्भुत उत्पादों की खोज करें',
-    'home.heroDesc': 'हजारों विश्वसनीय विक्रेताओं से खरीदारी करें। $50 से अधिक के ऑर्डर पर मुफ्त शिपिंग।',
+    'home.heroDesc': 'हजारों विश्वसनीय विक्रेताओं से खरीदारी करें। ₹500 से अधिक के ऑर्डर पर मुफ्त शिपिंग।',
     'home.startShopping': 'खरीदारी शुरू करें',
     'home.learnMore': 'और जानें',
     'home.sponsored': 'प्रायोजित',

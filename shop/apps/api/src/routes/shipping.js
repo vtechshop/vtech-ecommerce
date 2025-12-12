@@ -3,16 +3,18 @@ const express = require('express');
 const router = express.Router();
 const { body, param } = require('express-validator');
 const { validate } = require('../middleware/validator');
+const { validateObjectId } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
 const { authorize } = require('../middleware/auth');
 const { webhookLimiter } = require('../middleware/rateLimiter');
 const shippingController = require('../controllers/shippingController');
 
-// Set carrier and AWB (vendor/admin only)
+// Set carrier and AWB (vendor/admin only) - SECURITY: Added ObjectId validation
 router.post(
   '/orders/:orderId/carrier',
   authenticate,
   authorize(['vendor', 'admin']),
+  validateObjectId('orderId'),
   [
     body('carrier').notEmpty().withMessage('Carrier is required'),
     body('awb').notEmpty().withMessage('AWB is required'),
@@ -21,27 +23,30 @@ router.post(
   shippingController.setCarrierAndAwb
 );
 
-// Mark as packed
+// Mark as packed - SECURITY: Added ObjectId validation
 router.post(
   '/orders/:orderId/packed',
   authenticate,
   authorize(['vendor', 'admin']),
+  validateObjectId('orderId'),
   shippingController.markAsPacked
 );
 
-// Mark as shipped
+// Mark as shipped - SECURITY: Added ObjectId validation
 router.post(
   '/orders/:orderId/shipped',
   authenticate,
   authorize(['vendor', 'admin']),
+  validateObjectId('orderId'),
   shippingController.markAsShipped
 );
 
-// Generate shipping label (mock)
+// Generate shipping label (mock) - SECURITY: Added ObjectId validation
 router.get(
   '/orders/:orderId/label',
   authenticate,
   authorize(['vendor', 'admin']),
+  validateObjectId('orderId'),
   shippingController.generateLabel
 );
 
@@ -54,11 +59,12 @@ router.post('/webhooks/:carrier', webhookLimiter, shippingController.carrierWebh
 const { optionalAuth } = require('../middleware/auth');
 router.get('/tracking', optionalAuth, shippingController.getTrackingInfo);
 
-// Sync tracking data from Delhivery (Admin/Vendor only)
+// Sync tracking data from Delhivery (Admin/Vendor only) - SECURITY: Added ObjectId validation
 router.post(
   '/orders/:orderId/sync',
   authenticate,
   authorize(['vendor', 'admin']),
+  validateObjectId('orderId'),
   shippingController.syncTrackingData
 );
 
@@ -94,7 +100,7 @@ router.post(
 router.get(
   '/status',
   authenticate,
-  authorize('admin'),
+  authorize(['admin']),
   shippingController.getServiceStatus
 );
 
@@ -108,40 +114,34 @@ router.get(
   shippingController.getAvailableCarriers
 );
 
-// Get shipping quotes for specific order (Admin/Vendor)
+// Get shipping quotes for specific order (Admin/Vendor) - SECURITY: Added ObjectId validation
 router.get(
   '/orders/:orderId/quotes',
   authenticate,
   authorize(['admin', 'vendor']),
-  [
-    param('orderId').notEmpty().withMessage('Order ID is required'),
-  ],
-  validate,
+  validateObjectId('orderId'),
   shippingController.getShippingQuotesForOrder
 );
 
-// Assign carrier to order and create shipment (Admin/Vendor)
+// Assign carrier to order and create shipment (Admin/Vendor) - SECURITY: Added ObjectId validation
 router.post(
   '/orders/:orderId/assign-carrier',
   authenticate,
   authorize(['admin', 'vendor']),
+  validateObjectId('orderId'),
   [
-    param('orderId').notEmpty().withMessage('Order ID is required'),
     body('carrier').notEmpty().withMessage('Carrier is required'),
   ],
   validate,
   shippingController.assignCarrierToOrder
 );
 
-// Get recommended carrier for order (Admin/Vendor)
+// Get recommended carrier for order (Admin/Vendor) - SECURITY: Added ObjectId validation
 router.get(
   '/orders/:orderId/recommended',
   authenticate,
   authorize(['admin', 'vendor']),
-  [
-    param('orderId').notEmpty().withMessage('Order ID is required'),
-  ],
-  validate,
+  validateObjectId('orderId'),
   shippingController.getRecommendedCarrier
 );
 

@@ -12,7 +12,7 @@ const Setting = require('../src/models/Setting');
 
     const defaults = [
       { key: 'site_name', value: 'Shop', type: 'string', category: 'general', description: 'Storefront name' },
-      { key: 'free_shipping_banner', value: 'Free shipping on orders over $50', type: 'string', category: 'general' },
+      { key: 'free_shipping_banner', value: 'Free shipping on orders over ₹500', type: 'string', category: 'general' },
 
       { key: 'stripe_enabled', value: false, type: 'boolean', category: 'payment' },
       { key: 'razorpay_enabled', value: false, type: 'boolean', category: 'payment' },

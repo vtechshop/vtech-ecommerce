@@ -13,7 +13,7 @@ router.get('/tags', blogController.getTags);
 router.get('/:slug', blogController.getBlog);
 router.get('/:slug/comments', blogController.getComments);
 router.post('/:slug/like', authenticate, contentInteractionLimiter, blogController.likeBlog);
-router.post('/:slug/share', contentInteractionLimiter, blogController.shareBlog);
+router.post('/:slug/share', authenticate, contentInteractionLimiter, blogController.shareBlog); // SECURITY: Added authentication to prevent spam
 router.post('/:slug/comments', authenticate, contentInteractionLimiter, blogController.addComment);
 router.post('/comments/:commentId/like', authenticate, contentInteractionLimiter, blogController.likeComment);
 

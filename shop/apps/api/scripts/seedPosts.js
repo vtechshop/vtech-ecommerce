@@ -15,305 +15,230 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/shop';
   const now = new Date();
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-  const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-  const fourDaysAgo = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000);
 
   const posts = [
     {
-      title: 'Welcome to Our Marketplace!',
-      slug: 'welcome-to-our-marketplace',
-      excerpt: 'Discover quality products from thousands of vendors worldwide. Learn about our marketplace features and how to get started.',
+      title: 'Vtech Commercial Blender - Power and Precision for Professional Kitchens',
+      slug: 'vtech-commercial-blender-professional-kitchen',
+      excerpt: 'Discover the Vtech Commercial Blender - a heavy-duty powerhouse designed for professional kitchens, restaurants, and commercial food preparation.',
       content: `
-        <p>Welcome to our online marketplace! We're thrilled to have you here.</p>
+        <p>When it comes to commercial food preparation, having the right equipment can make all the difference. The <strong>Vtech Commercial Blender</strong> is engineered to deliver exceptional performance in the most demanding professional kitchen environments.</p>
 
-        <h2>What Makes Us Different?</h2>
-        <p>Our marketplace connects you with trusted vendors from around the world, offering a wide range of products at competitive prices. Whether you're looking for electronics, fashion, home goods, or sporting equipment, you'll find it here.</p>
+        <h2>Heavy-Duty Power for Professional Use</h2>
+        <p>The Vtech Commercial Blender is built with professional-grade components that ensure consistent, reliable performance day after day. Whether you're running a busy restaurant, café, smoothie bar, or catering business, this blender is designed to handle high-volume operations without compromising on quality.</p>
 
         <h2>Key Features</h2>
         <ul>
-          <li><strong>Secure Shopping:</strong> All transactions are protected with industry-standard encryption</li>
-          <li><strong>Buyer Protection:</strong> 30-day return policy on most items</li>
-          <li><strong>Fast Shipping:</strong> Quick delivery from local and international vendors</li>
-          <li><strong>24/7 Support:</strong> Our customer service team is always ready to help</li>
-          <li><strong>Best Prices:</strong> Regular deals and discounts across all categories</li>
+          <li><strong>Professional-Grade Motor:</strong> Powerful motor designed for continuous commercial use</li>
+          <li><strong>Durable Construction:</strong> Built with heavy-duty materials to withstand rigorous daily operations</li>
+          <li><strong>Versatile Performance:</strong> Perfect for smoothies, soups, sauces, purees, and more</li>
+          <li><strong>Easy to Clean:</strong> Designed for quick cleanup between uses in busy kitchens</li>
+          <li><strong>Reliable Brand:</strong> Backed by Vtech's reputation for quality commercial kitchen equipment</li>
         </ul>
 
-        <h2>How to Get Started</h2>
-        <p>Getting started is easy:</p>
-        <ol>
-          <li>Create a free account in seconds</li>
-          <li>Browse thousands of products by category</li>
-          <li>Add items to your cart and checkout securely</li>
-          <li>Track your order in real-time</li>
-          <li>Enjoy your purchase!</li>
-        </ol>
+        <h2>Perfect For</h2>
+        <ul>
+          <li>Restaurants and cafés</li>
+          <li>Juice bars and smoothie shops</li>
+          <li>Hotels and catering services</li>
+          <li>Commercial kitchens and food prep facilities</li>
+          <li>Health food stores and nutrition centers</li>
+        </ul>
 
-        <p>Have questions? Check out our <a href="/page/about">About page</a> or <a href="/page/contact">contact us</a> anytime.</p>
+        <h2>Why Choose Vtech Commercial Blender?</h2>
+        <p>Vtech has established itself as a trusted name in commercial kitchen equipment. This commercial blender combines durability, power, and efficiency to meet the demands of professional food service operations. The robust design ensures long-lasting performance, while the powerful motor handles even the toughest blending tasks with ease.</p>
 
-        <p>Happy shopping!</p>
+        <h2>Specifications</h2>
+        <ul>
+          <li><strong>Price:</strong> ₹18,500</li>
+          <li><strong>Brand:</strong> Vtech</li>
+          <li><strong>SKU:</strong> SKU-MIO8U66Z4NA</li>
+          <li><strong>Tax Rate:</strong> 18% GST</li>
+          <li><strong>Stock:</strong> Available (100 units)</li>
+        </ul>
+
+        <h2>Investment in Quality</h2>
+        <p>At ₹18,500, the Vtech Commercial Blender represents an excellent investment for any commercial kitchen. The combination of professional-grade performance, durability, and reliability makes it a cost-effective choice for businesses that demand the best.</p>
+
+        <p>Watch our detailed product video to see the Vtech Commercial Blender in action: <a href="https://youtu.be/xnckGklO1a4" target="_blank">Product Demo Video</a></p>
+
+        <h2>Order Today</h2>
+        <p>Upgrade your commercial kitchen with the Vtech Commercial Blender. With 100 units in stock and fast shipping, you can start experiencing professional-grade blending performance in your kitchen right away.</p>
+
+        <p><a href="/product/vtech-commercial-blender">View Product Details and Order Now</a></p>
       `,
-      category: 'News',
+      category: 'Product Showcase',
       published: true,
-      readTime: 3,
+      readTime: 4,
       publishedAt: now,
       createdAt: now,
       updatedAt: now
     },
     {
-      title: '10 Tips for Smart Online Shopping',
-      slug: '10-tips-smart-online-shopping',
-      excerpt: 'Master the art of online shopping with these essential tips to save money, find quality products, and shop safely.',
+      title: 'Vtech 15 Liter Commercial Tilting Wet Grinder - The Ultimate Solution for Commercial Grinding',
+      slug: 'vtech-15-liter-commercial-tilting-wet-grinder',
+      excerpt: 'Upgrade your commercial kitchen with the Vtech 15 Liter Commercial Tilting Wet Grinder - perfect for restaurants, hotels, and large-scale food preparation.',
       content: `
-        <p>Online shopping offers convenience and great deals, but it pays to shop smart. Here are our top 10 tips for getting the most out of your online shopping experience.</p>
+        <p>Introducing the <strong>Vtech 15 Liter Commercial Tilting Wet Grinder</strong> - a game-changing piece of equipment designed specifically for commercial kitchens, restaurants, hotels, and catering businesses that demand efficiency, consistency, and quality in their food preparation.</p>
 
-        <h2>1. Compare Prices</h2>
-        <p>Don't settle for the first price you see. Check multiple vendors and use price comparison tools to ensure you're getting the best deal.</p>
+        <h2>Why Choose a Commercial Wet Grinder?</h2>
+        <p>Wet grinders are essential equipment for preparing authentic South Indian cuisine, including dosa batter, idli batter, and various chutneys. The Vtech 15 Liter Commercial Tilting Wet Grinder takes this traditional kitchen tool to a professional level, offering superior capacity, durability, and convenience.</p>
 
-        <h2>2. Read Reviews</h2>
-        <p>Customer reviews are invaluable. Look for products with high ratings and read both positive and negative reviews to get a balanced perspective.</p>
+        <h2>Key Features</h2>
+        <ul>
+          <li><strong>15 Liter Capacity:</strong> Large drum size perfect for high-volume commercial operations</li>
+          <li><strong>Tilting Mechanism:</strong> Innovative tilting design makes it easy to pour out batter without strain or mess</li>
+          <li><strong>Heavy-Duty Construction:</strong> Built with commercial-grade materials for long-lasting durability</li>
+          <li><strong>Powerful Motor:</strong> Efficient grinding with consistent results every time</li>
+          <li><strong>Easy to Clean:</strong> Designed for quick cleanup between batches in busy kitchens</li>
+          <li><strong>Energy Efficient:</strong> Optimized motor performance reduces electricity consumption</li>
+        </ul>
 
-        <h2>3. Check the Return Policy</h2>
-        <p>Always review the vendor's return policy before purchasing. Make sure you understand the timeframe and conditions for returns.</p>
+        <h2>Perfect For</h2>
+        <ul>
+          <li>South Indian restaurants and eateries</li>
+          <li>Hotel kitchens and buffet services</li>
+          <li>Catering businesses and event services</li>
+          <li>Commercial kitchen operations</li>
+          <li>Food production facilities</li>
+          <li>Tiffin centers and breakfast joints</li>
+        </ul>
 
-        <h2>4. Look for Discounts</h2>
-        <p>Sign up for newsletters, follow vendors on social media, and check for coupon codes before checking out. You can save significantly with promotional offers.</p>
+        <h2>The Tilting Advantage</h2>
+        <p>What sets this wet grinder apart is its innovative <strong>tilting mechanism</strong>. Traditional wet grinders require you to scoop out the batter manually, which can be time-consuming and messy. The Vtech tilting design allows you to simply tilt the drum and pour the batter directly into your container - saving time, reducing mess, and improving workplace safety.</p>
 
-        <h2>5. Use Secure Payment Methods</h2>
-        <p>Stick to trusted payment gateways and consider using credit cards or secure payment services for added protection.</p>
+        <h2>Commercial-Grade Performance</h2>
+        <p>This isn't your typical household wet grinder. The Vtech 15 Liter Commercial Wet Grinder is engineered for continuous operation in demanding commercial environments. The robust motor and heavy-duty construction ensure reliable performance batch after batch, day after day.</p>
 
-        <h2>6. Check Shipping Costs</h2>
-        <p>Factor in shipping costs when comparing prices. Sometimes a slightly higher-priced item with free shipping is actually the better deal.</p>
+        <h2>Applications</h2>
+        <p>Use the Vtech 15 Liter Commercial Tilting Wet Grinder for:</p>
+        <ul>
+          <li>Idli and dosa batter preparation</li>
+          <li>Grinding chutneys and masalas</li>
+          <li>Preparing wet batters for various dishes</li>
+          <li>Grinding lentils, rice, and grains</li>
+          <li>Making coconut-based preparations</li>
+        </ul>
 
-        <h2>7. Verify Vendor Ratings</h2>
-        <p>Check the vendor's rating and reviews. Established vendors with high ratings are generally more reliable.</p>
+        <h2>Specifications</h2>
+        <ul>
+          <li><strong>Capacity:</strong> 15 Liters</li>
+          <li><strong>Price:</strong> ₹42,000</li>
+          <li><strong>Brand:</strong> Vtech</li>
+          <li><strong>SKU:</strong> SKU-MIOEBR5L0M6</li>
+          <li><strong>Tax Rate:</strong> 18% GST</li>
+          <li><strong>Stock:</strong> Available (99 units)</li>
+          <li><strong>Featured Product:</strong> Yes</li>
+        </ul>
 
-        <h2>8. Keep Records</h2>
-        <p>Save confirmation emails, order numbers, and receipts. These are essential for tracking shipments and handling returns if needed.</p>
+        <h2>Investment That Pays for Itself</h2>
+        <p>At ₹42,000, the Vtech 15 Liter Commercial Tilting Wet Grinder is a smart investment for any commercial kitchen. The time saved, consistency achieved, and durability provided make this equipment pay for itself quickly through increased productivity and reduced labor costs.</p>
 
-        <h2>9. Watch for Red Flags</h2>
-        <p>Be wary of deals that seem too good to be true, poor grammar in product descriptions, or vendors with no contact information.</p>
+        <h2>See It in Action</h2>
+        <p>Watch our comprehensive product demonstration video to see the Vtech 15 Liter Commercial Tilting Wet Grinder in action: <a href="https://youtu.be/Rpp9RvyMmpQ" target="_blank">Watch Demo Video</a></p>
 
-        <h2>10. Track Your Orders</h2>
-        <p>Use order tracking features to monitor your shipment. Most issues can be resolved quickly if you stay informed about your order status.</p>
+        <h2>What Customers Say</h2>
+        <p>Commercial kitchen operators who have upgraded to the Vtech 15 Liter Commercial Tilting Wet Grinder report significant improvements in their operations:</p>
+        <ul>
+          <li>Faster batter preparation</li>
+          <li>More consistent quality</li>
+          <li>Reduced labor time</li>
+          <li>Cleaner, more efficient operation</li>
+          <li>Reliable daily performance</li>
+        </ul>
 
-        <p>Follow these tips to shop smarter and safer online. Happy shopping!</p>
+        <h2>Order Your Vtech Wet Grinder Today</h2>
+        <p>Don't let outdated equipment slow down your commercial kitchen. Upgrade to the Vtech 15 Liter Commercial Tilting Wet Grinder and experience the difference that professional-grade equipment makes.</p>
+
+        <p>With 99 units currently in stock and fast shipping available, you can start enjoying the benefits of this premium commercial wet grinder right away.</p>
+
+        <p><a href="/product/vtech-15-liter-commercial-tilting-wet-grinder">View Full Product Details and Order Now</a></p>
       `,
-      category: 'Shopping Tips',
+      category: 'Product Showcase',
       published: true,
-      readTime: 5,
+      readTime: 6,
       publishedAt: yesterday,
       createdAt: yesterday,
       updatedAt: yesterday
     },
     {
-      title: 'How to Choose the Perfect Smartphone in 2025',
-      slug: 'choose-perfect-smartphone-2025',
-      excerpt: 'Confused by all the smartphone options? This comprehensive guide will help you find the perfect phone for your needs and budget.',
+      title: 'Why Commercial Kitchen Equipment from Vtech is the Smart Choice',
+      slug: 'why-vtech-commercial-kitchen-equipment',
+      excerpt: 'Discover why restaurant owners, hoteliers, and catering professionals trust Vtech for their commercial kitchen equipment needs.',
       content: `
-        <p>With so many smartphones on the market, choosing the right one can be overwhelming. This guide will help you make an informed decision.</p>
+        <p>When it comes to equipping a commercial kitchen, the choices you make can significantly impact your business operations, food quality, and bottom line. Vtech has emerged as a trusted name in commercial kitchen equipment, offering professional-grade solutions that deliver reliability, efficiency, and value.</p>
 
-        <h2>1. Determine Your Budget</h2>
-        <p>Smartphones range from budget-friendly options under $300 to premium flagship devices over $1000. Set a realistic budget before you start shopping.</p>
+        <h2>The Vtech Difference</h2>
+        <p>Vtech specializes in manufacturing high-quality commercial kitchen equipment designed specifically for the demanding needs of professional food service operations. From small cafés to large hotel kitchens, Vtech equipment is built to perform.</p>
 
-        <h2>2. Choose Your Operating System</h2>
-        <p><strong>iOS:</strong> Apple's ecosystem offers seamless integration with other Apple devices, regular updates, and strong security.</p>
-        <p><strong>Android:</strong> More device variety, customization options, and price ranges to choose from.</p>
-
-        <h2>3. Consider Screen Size</h2>
-        <p>Display sizes typically range from 5.5" to 6.7". Larger screens are better for media and gaming, while smaller phones are more pocketable.</p>
-
-        <h2>4. Evaluate Camera Quality</h2>
-        <p>Look for:</p>
+        <h2>Our Product Range</h2>
+        <p>Vtech offers a comprehensive range of commercial kitchen equipment:</p>
         <ul>
-          <li>Multiple lenses (wide, ultra-wide, telephoto)</li>
-          <li>Good low-light performance</li>
-          <li>Optical image stabilization</li>
-          <li>High megapixel count for the main camera</li>
+          <li><strong>Commercial Blenders:</strong> Heavy-duty blenders for smoothies, soups, and sauces</li>
+          <li><strong>Wet Grinders:</strong> Large-capacity tilting wet grinders for efficient batter preparation</li>
+          <li><strong>Food Processors:</strong> Multi-function processors for versatile food prep</li>
+          <li><strong>Mixers:</strong> Industrial-strength mixers for bakeries and kitchens</li>
         </ul>
 
-        <h2>5. Check Battery Life</h2>
-        <p>Look for phones with at least 4000mAh battery capacity. Check reviews for real-world battery performance.</p>
+        <h2>Why Choose Vtech?</h2>
 
-        <h2>6. Storage Space</h2>
-        <p>Consider how much storage you need:</p>
+        <h3>1. Built for Commercial Use</h3>
+        <p>Unlike consumer-grade equipment, Vtech products are engineered for continuous, high-volume operation. Heavy-duty motors, reinforced components, and commercial-grade materials ensure reliable performance even in the busiest kitchens.</p>
+
+        <h3>2. Innovative Features</h3>
+        <p>Vtech continuously innovates to make commercial kitchen work easier and more efficient. Features like tilting mechanisms, easy-clean designs, and energy-efficient motors demonstrate our commitment to practical innovation.</p>
+
+        <h3>3. Durability and Longevity</h3>
+        <p>Commercial kitchen equipment represents a significant investment. Vtech equipment is built to last, with robust construction that withstands the rigors of daily professional use. This durability means lower replacement costs and better return on investment.</p>
+
+        <h3>4. Competitive Pricing</h3>
+        <p>Quality commercial kitchen equipment doesn't have to break the bank. Vtech offers professional-grade equipment at competitive prices, making it accessible for businesses of all sizes.</p>
+
+        <h3>5. Energy Efficiency</h3>
+        <p>Modern commercial kitchens need to manage operating costs carefully. Vtech equipment features energy-efficient motors and designs that help reduce electricity consumption without compromising performance.</p>
+
+        <h2>Featured Products</h2>
+
+        <h3>Vtech Commercial Blender - ₹18,500</h3>
+        <p>Perfect for juice bars, smoothie shops, and restaurants. Heavy-duty construction with a powerful motor for consistent blending performance. <a href="/product/vtech-commercial-blender">Learn More</a></p>
+
+        <h3>Vtech 15 Liter Commercial Tilting Wet Grinder - ₹42,000</h3>
+        <p>The ultimate solution for South Indian restaurants and catering businesses. Large 15-liter capacity with innovative tilting mechanism for easy batter transfer. <a href="/product/vtech-15-liter-commercial-tilting-wet-grinder">Learn More</a></p>
+
+        <h2>Who Trusts Vtech?</h2>
         <ul>
-          <li>128GB: Light users</li>
-          <li>256GB: Average users</li>
-          <li>512GB+: Heavy users, photographers, gamers</li>
+          <li>Restaurant chains and independent eateries</li>
+          <li>Hotel kitchens and buffet operations</li>
+          <li>Catering companies and event services</li>
+          <li>Cloud kitchens and ghost restaurants</li>
+          <li>Institutional kitchens (schools, hospitals, corporate cafeterias)</li>
+          <li>Food production facilities</li>
         </ul>
 
-        <h2>7. Processor Performance</h2>
-        <p>For flagship performance, look for Qualcomm Snapdragon 8 series, Apple A-series, or Google Tensor chips.</p>
-
-        <h2>8. 5G Connectivity</h2>
-        <p>Most modern phones support 5G, which offers faster data speeds where available.</p>
-
-        <h2>Top Picks for 2025</h2>
+        <h2>Making the Right Investment</h2>
+        <p>Choosing commercial kitchen equipment is about more than just the initial purchase price. Consider:</p>
         <ul>
-          <li><strong>Best Overall:</strong> iPhone 15 Pro</li>
-          <li><strong>Best Android:</strong> Samsung Galaxy S24</li>
-          <li><strong>Best Budget:</strong> Google Pixel 7a</li>
-          <li><strong>Best Camera:</strong> iPhone 15 Pro Max</li>
+          <li><strong>Operating Costs:</strong> Energy-efficient equipment reduces long-term costs</li>
+          <li><strong>Maintenance:</strong> Durable, well-built equipment requires less frequent repairs</li>
+          <li><strong>Productivity:</strong> Efficient equipment helps you serve more customers</li>
+          <li><strong>Quality:</strong> Professional-grade equipment ensures consistent food quality</li>
+          <li><strong>Longevity:</strong> Equipment that lasts means better ROI</li>
         </ul>
 
-        <p>Take your time, read reviews, and don't hesitate to visit a store to handle the phones in person before making your decision.</p>
+        <h2>Free Shipping on Orders Over ₹500</h2>
+        <p>We offer free shipping on all orders over ₹500, making it even more economical to upgrade your commercial kitchen equipment.</p>
+
+        <h2>Ready to Upgrade Your Kitchen?</h2>
+        <p>Browse our complete range of Vtech commercial kitchen equipment and discover how the right equipment can transform your food service operations. With competitive pricing, quality construction, and features designed for professional use, Vtech is the smart choice for commercial kitchens.</p>
+
+        <p><a href="/search?brand=Vtech">View All Vtech Products</a></p>
       `,
-      category: 'Buying Guides',
+      category: 'Product Showcase',
       published: true,
-      readTime: 7,
+      readTime: 5,
       publishedAt: twoDaysAgo,
       createdAt: twoDaysAgo,
       updatedAt: twoDaysAgo
-    },
-    {
-      title: 'Become a Vendor: Start Selling on Our Marketplace',
-      slug: 'become-vendor-start-selling',
-      excerpt: 'Turn your business into an online success. Learn how to become a vendor on our platform and reach millions of customers.',
-      content: `
-        <p>Are you a business owner looking to expand your reach? Join thousands of successful vendors on our marketplace!</p>
-
-        <h2>Why Sell on Our Platform?</h2>
-        <ul>
-          <li><strong>Large Customer Base:</strong> Access to millions of active shoppers</li>
-          <li><strong>Low Fees:</strong> Only 15% commission per sale, no monthly fees</li>
-          <li><strong>Easy Setup:</strong> Get your store up and running in minutes</li>
-          <li><strong>Marketing Support:</strong> Benefit from our advertising and promotions</li>
-          <li><strong>Secure Payments:</strong> Fast and reliable payment processing</li>
-        </ul>
-
-        <h2>Who Can Become a Vendor?</h2>
-        <p>We welcome:</p>
-        <ul>
-          <li>Small businesses and entrepreneurs</li>
-          <li>Manufacturers and wholesalers</li>
-          <li>Artisans and craftspeople</li>
-          <li>Retailers looking to expand online</li>
-        </ul>
-
-        <h2>Getting Started</h2>
-        <ol>
-          <li><strong>Register:</strong> Create your vendor account</li>
-          <li><strong>Set Up Your Store:</strong> Add your business information and branding</li>
-          <li><strong>List Products:</strong> Upload product photos and descriptions</li>
-          <li><strong>Start Selling:</strong> Begin receiving orders immediately</li>
-        </ol>
-
-        <h2>Success Tips</h2>
-        <ul>
-          <li>Use high-quality product images</li>
-          <li>Write detailed, accurate descriptions</li>
-          <li>Price competitively</li>
-          <li>Respond quickly to customer inquiries</li>
-          <li>Ship orders promptly</li>
-          <li>Maintain high customer satisfaction ratings</li>
-        </ul>
-
-        <h2>Vendor Dashboard Features</h2>
-        <p>Manage your business with our comprehensive dashboard:</p>
-        <ul>
-          <li>Track orders and sales in real-time</li>
-          <li>Manage inventory automatically</li>
-          <li>View detailed analytics and reports</li>
-          <li>Process returns and refunds</li>
-          <li>Run promotional campaigns</li>
-        </ul>
-
-        <h2>Ready to Start?</h2>
-        <p><a href="/register?role=vendor">Register as a vendor</a> today and start growing your business with us!</p>
-
-        <p>Questions? Check our <a href="/page/vendor-terms">Vendor Terms</a> or contact our vendor support team.</p>
-      `,
-      category: 'For Vendors',
-      published: true,
-      readTime: 4,
-      publishedAt: threeDaysAgo,
-      createdAt: threeDaysAgo,
-      updatedAt: threeDaysAgo
-    },
-    {
-      title: 'Affiliate Marketing: Earn Money Promoting Products',
-      slug: 'affiliate-marketing-earn-money',
-      excerpt: 'Learn how to join our affiliate program and start earning commissions by promoting products you love.',
-      content: `
-        <p>Want to earn money online? Our affiliate program lets you earn commissions by promoting products to your audience.</p>
-
-        <h2>What is Affiliate Marketing?</h2>
-        <p>Affiliate marketing is a performance-based business model where you earn a commission for promoting products and driving sales through your unique affiliate links.</p>
-
-        <h2>How Much Can You Earn?</h2>
-        <ul>
-          <li><strong>Base Commission:</strong> 5% on all sales</li>
-          <li><strong>Special Rates:</strong> Some products offer higher commissions</li>
-          <li><strong>No Limits:</strong> The more you promote, the more you earn</li>
-          <li><strong>Passive Income:</strong> Earn from your existing content 24/7</li>
-        </ul>
-
-        <h2>Who Can Join?</h2>
-        <p>Anyone with an online presence:</p>
-        <ul>
-          <li>Bloggers and content creators</li>
-          <li>YouTubers and video creators</li>
-          <li>Social media influencers</li>
-          <li>Email marketers</li>
-          <li>Review website owners</li>
-          <li>Deal and coupon sites</li>
-        </ul>
-
-        <h2>Getting Started</h2>
-        <ol>
-          <li><strong>Sign Up:</strong> <a href="/register?role=affiliate">Register for free</a></li>
-          <li><strong>Get Your Links:</strong> Access your unique affiliate links from the dashboard</li>
-          <li><strong>Share:</strong> Promote products through your channels</li>
-          <li><strong>Earn:</strong> Get paid monthly for qualified sales</li>
-        </ol>
-
-        <h2>Promotion Strategies</h2>
-        <p><strong>1. Product Reviews</strong></p>
-        <p>Write detailed, honest reviews of products you've used or researched.</p>
-
-        <p><strong>2. Comparison Articles</strong></p>
-        <p>Create "best of" lists or comparison guides in your niche.</p>
-
-        <p><strong>3. Tutorial Content</strong></p>
-        <p>Show how to use products in tutorials or how-to guides.</p>
-
-        <p><strong>4. Social Media</strong></p>
-        <p>Share product recommendations with your followers on Instagram, Twitter, TikTok, etc.</p>
-
-        <p><strong>5. Email Marketing</strong></p>
-        <p>Include product recommendations in your newsletters (to opted-in subscribers only).</p>
-
-        <h2>Success Tips</h2>
-        <ul>
-          <li>Choose products relevant to your audience</li>
-          <li>Be transparent about affiliate relationships</li>
-          <li>Focus on products you genuinely recommend</li>
-          <li>Create quality content that provides value</li>
-          <li>Track your performance and optimize</li>
-          <li>Be patient - affiliate income grows over time</li>
-        </ul>
-
-        <h2>Affiliate Dashboard</h2>
-        <p>Track your success with our powerful dashboard:</p>
-        <ul>
-          <li>Real-time earnings and statistics</li>
-          <li>Click and conversion tracking</li>
-          <li>Performance reports</li>
-          <li>Payment history</li>
-          <li>Deep linking tools</li>
-        </ul>
-
-        <h2>Ready to Start Earning?</h2>
-        <p><a href="/register?role=affiliate">Join our affiliate program</a> today and start monetizing your content!</p>
-
-        <p>Read our <a href="/page/affiliate-terms">Affiliate Terms</a> for full program details.</p>
-      `,
-      category: 'For Affiliates',
-      published: true,
-      readTime: 6,
-      publishedAt: fourDaysAgo,
-      createdAt: fourDaysAgo,
-      updatedAt: fourDaysAgo
     },
   ];
 

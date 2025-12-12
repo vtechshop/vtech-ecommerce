@@ -46,9 +46,36 @@ const orderSchema = new mongoose.Schema({
   },
   events: [{ status: String, description: String, timestamp: { type: Date, default: Date.now } }],
   payment: {
-    provider: String, method: String, transactionId: String,
+    provider: String,
+    method: String,
+    transactionId: String,
     status: { type: String, enum: ['pending', 'paid', 'failed', 'refunded', 'cod'], default: 'pending' },
-    paidAt: Date, amount: Number,
+    paidAt: Date,
+    amount: Number,
+    currency: String,
+    // Razorpay specific fields
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    razorpaySignature: String,
+    // Payment method details (for card/UPI/wallet)
+    cardDetails: {
+      network: String,
+      last4: String,
+      type: String,
+    },
+    // Contact details from payment
+    email: String,
+    contact: String,
+    // Error details for failed payments
+    error: String,
+    failedAt: Date,
+    // Refund details
+    refund: {
+      id: String,
+      amount: Number,
+      status: String,
+      createdAt: Date,
+    },
   },
   shipment: {
     carrier: String,

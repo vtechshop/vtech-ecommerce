@@ -1,24 +1,76 @@
 // FILE: apps/web/src/components/product/RecentlyViewed.jsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getRecentlyViewed } from '@/utils/recentlyViewed';
+import { getRecentlyViewed, removeFromRecentlyViewed } from '@/utils/recentlyViewed';
 import { formatCurrency } from '@/utils/format';
 import { Eye, ShoppingCart, Star } from 'lucide-react';
 
 const RecentlyViewed = ({ currentProductId = null, limit = 6 }) => {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get recently viewed products
-    let recentProducts = getRecentlyViewed(limit + 1); // Get one extra in case current product is in the list
+    const fetchRecentProducts = async () => {
+      try {
+        setLoading(true);
 
-    // Filter out the current product if viewing a product page
-    if (currentProductId) {
-      recentProducts = recentProducts.filter(p => p._id !== currentProductId);
-    }
+        // Get recently viewed products from localStorage
+        let recentProducts = getRecentlyViewed(limit + 5); // Get extra to account for deleted products
 
-    // Limit to requested number
-    setProducts(recentProducts.slice(0, limit));
+        // Filter out the current product if viewing a product page
+        if (currentProductId) {
+          recentProducts = recentProducts.filter(p => p._id !== currentProductId);
+        }
+
+        if (recentProducts.length === 0) {
+          setProducts([]);
+          setLoading(false);
+          return;
+        }
+
+        // Extract product IDs
+        const productIds = recentProducts.map(p => p._id);
+
+        // Validate products exist in database and aren't deleted
+        const response = await fetch(`/api/products/validate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ productIds }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const validProductIds = new Set(data.validProducts || []);
+
+          // Filter to only valid products
+          const validProducts = recentProducts.filter(p => validProductIds.has(p._id));
+
+          // Remove invalid products from localStorage
+          const invalidProducts = recentProducts.filter(p => !validProductIds.has(p._id));
+          invalidProducts.forEach(p => removeFromRecentlyViewed(p._id));
+
+          // Limit to requested number
+          setProducts(validProducts.slice(0, limit));
+        } else {
+          // If validation fails, show products from localStorage (fallback)
+          setProducts(recentProducts.slice(0, limit));
+        }
+      } catch (error) {
+        console.error('Error fetching recently viewed products:', error);
+        // Fallback to localStorage data
+        let recentProducts = getRecentlyViewed(limit + 1);
+        if (currentProductId) {
+          recentProducts = recentProducts.filter(p => p._id !== currentProductId);
+        }
+        setProducts(recentProducts.slice(0, limit));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentProducts();
   }, [currentProductId, limit]);
 
   if (products.length === 0) {

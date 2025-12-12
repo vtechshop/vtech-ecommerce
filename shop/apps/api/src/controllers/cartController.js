@@ -55,13 +55,37 @@ exports.addItem = async (req, res, next) => {
     const userId = req.user?._id;
     const guestId = userId ? null : getOrCreateGuestId(req, res);
 
-    // Validate productId
+    // SECURITY: Validate productId
     if (!productId) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'MISSING_PRODUCT_ID',
           message: 'Product ID is required',
+        },
+      });
+    }
+
+    // SECURITY: Validate quantity is a positive integer
+    const parsedQuantity = parseInt(quantity);
+    if (isNaN(parsedQuantity) || parsedQuantity < 1) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_QUANTITY',
+          message: 'Quantity must be a positive number',
+        },
+      });
+    }
+
+    // SECURITY: Cap maximum quantity per item to prevent abuse
+    const MAX_QUANTITY = 100;
+    if (parsedQuantity > MAX_QUANTITY) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'QUANTITY_TOO_LARGE',
+          message: `Maximum quantity per item is ${MAX_QUANTITY}`,
         },
       });
     }
@@ -83,7 +107,7 @@ exports.addItem = async (req, res, next) => {
       });
     }
 
-    if (product.stock < quantity) {
+    if (product.stock < parsedQuantity) {
       return res.status(400).json({
         success: false,
         error: {

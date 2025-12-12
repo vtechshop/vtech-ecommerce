@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const ticketController = require('../controllers/ticketController');
 const { authenticate, authorize } = require('../middleware/auth');
+const { validateObjectId } = require('../middleware/validate');
 
 // All routes require authentication
 router.use(authenticate);
@@ -16,22 +17,22 @@ router.get('/', ticketController.getTickets);
 // Get ticket statistics (Admin only)
 router.get('/stats', authorize(['admin']), ticketController.getStats);
 
-// Get single ticket
-router.get('/:id', ticketController.getTicketById);
+// Get single ticket - SECURITY: Added ObjectId validation + ownership check in controller
+router.get('/:id', validateObjectId('id'), ticketController.getTicketById);
 
-// Add message to ticket
-router.post('/:id/messages', ticketController.addMessage);
+// Add message to ticket - SECURITY: Added ObjectId validation
+router.post('/:id/messages', validateObjectId('id'), ticketController.addMessage);
 
-// Update ticket status (Admin only)
-router.put('/:id/status', authorize(['admin']), ticketController.updateStatus);
+// Update ticket status (Admin only) - SECURITY: Added ObjectId validation
+router.put('/:id/status', validateObjectId('id'), authorize(['admin']), ticketController.updateStatus);
 
-// Assign ticket (Admin only)
-router.put('/:id/assign', authorize(['admin']), ticketController.assignTicket);
+// Assign ticket (Admin only) - SECURITY: Added ObjectId validation
+router.put('/:id/assign', validateObjectId('id'), authorize(['admin']), ticketController.assignTicket);
 
-// Update ticket priority (Admin only)
-router.put('/:id/priority', authorize(['admin']), ticketController.updatePriority);
+// Update ticket priority (Admin only) - SECURITY: Added ObjectId validation
+router.put('/:id/priority', validateObjectId('id'), authorize(['admin']), ticketController.updatePriority);
 
-// Delete ticket (Admin only)
-router.delete('/:id', authorize(['admin']), ticketController.deleteTicket);
+// Delete ticket (Admin only) - SECURITY: Added ObjectId validation
+router.delete('/:id', validateObjectId('id'), authorize(['admin']), ticketController.deleteTicket);
 
 module.exports = router;

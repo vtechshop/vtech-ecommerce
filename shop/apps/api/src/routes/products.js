@@ -3,17 +3,21 @@ const router = express.Router();
 const Product = require('../models/Product');
 const Review = require('../models/Review');
 const { authenticate } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cache');
+const { apiLimiter, publicReadLimiter } = require('../middleware/rateLimiter');
+const AppError = require('../utils/AppError');
+const mongoose = require('mongoose');
 
-// LIST (public)
-router.get('/', async (req, res, next) => {
+// LIST (public) - Cache for 5 minutes, rate limited
+router.get('/', publicReadLimiter, cacheMiddleware(300), async (req, res, next) => {
   try {
     const items = await Product.find().sort({ createdAt: -1 }).lean();
     res.json({ success: true, data: items });
   } catch (e) { next(e); }
 });
 
-// GET by id (public)
-router.get('/:id', async (req, res, next) => {
+// GET by id (public) - Cache for 10 minutes, rate limited
+router.get('/:id', publicReadLimiter, cacheMiddleware(600), async (req, res, next) => {
   try {
     const p = await Product.findById(req.params.id).lean();
     if (!p) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });
@@ -21,13 +25,53 @@ router.get('/:id', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Validate multiple products (check if they exist and aren't deleted)
+// SECURITY: Requires authentication to prevent product enumeration attacks
+router.post('/validate', authenticate, apiLimiter, async (req, res, next) => {
+  try {
+    const { productIds } = req.body;
+
+    // Validation: Check if productIds is provided and is an array
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return next(new AppError('productIds array is required', 400, 'INVALID_INPUT'));
+    }
+
+    // SECURITY: Limit array size to prevent DoS attacks (max 1000 products)
+    if (productIds.length > 1000) {
+      return next(new AppError('Cannot validate more than 1000 products at once', 400, 'ARRAY_TOO_LARGE'));
+    }
+
+    // SECURITY: Validate all product IDs are valid MongoDB ObjectIds
+    const invalidIds = productIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+    if (invalidIds.length > 0) {
+      return next(new AppError('Invalid product ID format', 400, 'INVALID_PRODUCT_ID'));
+    }
+
+    // Find products that exist and aren't deleted
+    const validProducts = await Product.find({
+      _id: { $in: productIds },
+      deleted: { $ne: true }
+    }).select('_id').lean();
+
+    // Return array of valid product IDs
+    const validProductIds = validProducts.map(p => p._id.toString());
+
+    res.json({
+      success: true,
+      validProducts: validProductIds
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Product creation removed - use /api/vendors/products instead
 // Vendors must be authenticated and authorized to create products
 
 // ============= PRODUCT REVIEWS =============
 
-// GET reviews for a product
-router.get('/:productId/reviews', async (req, res, next) => {
+// GET reviews for a product - Cache for 5 minutes
+router.get('/:productId/reviews', cacheMiddleware(300), async (req, res, next) => {
   try {
     const { productId } = req.params;
     const { page = 1, limit = 10, sort = '-createdAt' } = req.query;

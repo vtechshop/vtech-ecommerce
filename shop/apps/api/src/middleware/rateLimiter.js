@@ -249,6 +249,81 @@ const checkoutLimiter = rateLimit({
   },
 });
 
+// Catalog tracking rate limiter - prevent analytics spam
+const catalogTrackingLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // 60 tracking events per minute (1 per second)
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many tracking requests. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Lazy initialize Redis store on first request
+    if (!catalogTrackingLimiter.store) {
+      const redisStore = getOrCreateRedisStore();
+      if (redisStore) {
+        catalogTrackingLimiter.store = redisStore;
+      }
+    }
+    return false;
+  },
+});
+
+// Order tracking rate limiter - stricter to prevent email enumeration
+const orderTrackingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Only 10 order tracking attempts per 15 minutes
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many order tracking attempts. Please try again later.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Lazy initialize Redis store on first request
+    if (!orderTrackingLimiter.store) {
+      const redisStore = getOrCreateRedisStore();
+      if (redisStore) {
+        orderTrackingLimiter.store = redisStore;
+      }
+    }
+    return false;
+  },
+});
+
+// Public read rate limiter - moderate protection for public endpoints
+const publicReadLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 120, // 120 requests per minute (2 per second)
+  message: {
+    success: false,
+    error: {
+      code: 'RATE_LIMIT_EXCEEDED',
+      message: 'Too many requests. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => {
+    // Lazy initialize Redis store on first request
+    if (!publicReadLimiter.store) {
+      const redisStore = getOrCreateRedisStore();
+      if (redisStore) {
+        publicReadLimiter.store = redisStore;
+      }
+    }
+    return false;
+  },
+});
+
 module.exports = {
   apiLimiter,
   authLimiter,
@@ -259,5 +334,8 @@ module.exports = {
   contentInteractionLimiter,
   uploadLimiter,
   checkoutLimiter,
+  catalogTrackingLimiter,
+  orderTrackingLimiter,
+  publicReadLimiter,
   getOrCreateRedisStore, // Export for testing if needed
 };

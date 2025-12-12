@@ -31,10 +31,10 @@ let csrfTokenPromise = null;
 
 /**
  * Initialize CSRF protection by fetching token from server
- * Only active in production mode
+ * Only active in production (backend skips CSRF in development)
  */
 export const initCsrfProtection = async () => {
-  // Only enable CSRF in production
+  // CSRF only enabled in production to match backend behavior
   if (import.meta.env.MODE !== 'production') {
     return null;
   }
@@ -72,6 +72,7 @@ export const initCsrfProtection = async () => {
  * Get CSRF token, fetching if necessary
  */
 const getCsrfToken = async () => {
+  // CSRF only enabled in production to match backend behavior
   if (import.meta.env.MODE !== 'production') {
     return null;
   }
@@ -88,17 +89,15 @@ api.interceptors.request.use(async (config) => {
   const token = Cookies.get('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
 
-  // Add CSRF token to non-GET requests in production
-  if (import.meta.env.MODE === 'production') {
-    const method = config.method?.toUpperCase();
-    if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
-      // Ensure we have a CSRF token before making state-changing requests
-      // Skip for csrf-token endpoint to avoid circular dependency
-      if (!config.url?.includes('/csrf-token')) {
-        const currentToken = csrfToken || await getCsrfToken();
-        if (currentToken) {
-          config.headers['X-CSRF-Token'] = currentToken;
-        }
+  // Add CSRF token to non-GET requests in all environments
+  const method = config.method?.toUpperCase();
+  if (method && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    // Ensure we have a CSRF token before making state-changing requests
+    // Skip for csrf-token endpoint to avoid circular dependency
+    if (!config.url?.includes('/csrf-token')) {
+      const currentToken = csrfToken || await getCsrfToken();
+      if (currentToken) {
+        config.headers['X-CSRF-Token'] = currentToken;
       }
     }
   }
@@ -124,7 +123,6 @@ api.interceptors.response.use(
     // Handle CSRF token errors (403 with CSRF error code)
     if (error.response?.status === 403 &&
         error.response?.data?.error?.code === 'CSRF_VALIDATION_FAILED' &&
-        import.meta.env.MODE === 'production' &&
         !originalRequest._csrfRetry) {
       originalRequest._csrfRetry = true;
       // Clear the old token and fetch a new one

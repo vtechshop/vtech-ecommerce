@@ -1,6 +1,8 @@
 // FILE: middleware/validate.js
 const Joi = require('joi');
+const mongoose = require('mongoose');
 const logger = require('../config/logger');
+const AppError = require('../utils/AppError');
 
 /**
  * Validation middleware factory
@@ -42,4 +44,38 @@ const validate = (schema, property = 'body') => {
   };
 };
 
-module.exports = validate;
+/**
+ * Middleware to validate MongoDB ObjectId in route parameters
+ * Usage: router.get('/:id', validateObjectId('id'), controller.getById)
+ */
+const validateObjectId = (paramName = 'id') => {
+  return (req, res, next) => {
+    const id = req.params[paramName];
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(new AppError(`Invalid ${paramName} format`, 400, 'INVALID_OBJECT_ID'));
+    }
+
+    next();
+  };
+};
+
+/**
+ * Middleware to validate multiple ObjectIds in route parameters
+ * Usage: router.post('/', validateObjectIds(['userId', 'productId']), controller.create)
+ */
+const validateObjectIds = (paramNames = []) => {
+  return (req, res, next) => {
+    for (const paramName of paramNames) {
+      const id = req.params[paramName] || req.body[paramName] || req.query[paramName];
+
+      if (id && !mongoose.Types.ObjectId.isValid(id)) {
+        return next(new AppError(`Invalid ${paramName} format`, 400, 'INVALID_OBJECT_ID'));
+      }
+    }
+
+    next();
+  };
+};
+
+module.exports = { validate, validateObjectId, validateObjectIds };

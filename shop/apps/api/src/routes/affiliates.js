@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const affiliateController = require('../controllers/affiliateController');
 const { authenticate } = require('../middleware/auth');
+const { catalogTrackingLimiter } = require('../middleware/rateLimiter');
 
-// Public routes
-router.post('/track/click', affiliateController.trackClick);
+// Public routes - SECURITY: Added rate limiting to prevent click fraud
+router.post('/track/click', catalogTrackingLimiter, affiliateController.trackClick);
 
 // Affiliate application (authenticated)
 router.post('/apply', authenticate, affiliateController.apply);

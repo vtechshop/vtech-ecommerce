@@ -4,12 +4,14 @@ const router = express.Router();
 const adController = require('../controllers/adController');
 const adPlacementController = require('../controllers/adPlacementController');
 const { authenticate, authorize } = require('../middleware/auth');
+const { catalogTrackingLimiter } = require('../middleware/rateLimiter');
 
 // Public - Ad Placement & Tracking
 router.get('/placement/:placement', adPlacementController.getAdForPlacement);
 router.get('/sponsored', adPlacementController.getSponsoredAds);
-router.post('/:id/impression', adPlacementController.trackImpression);
-router.post('/:id/click', adPlacementController.trackClick);
+// SECURITY: Added rate limiting to prevent impression/click fraud
+router.post('/:id/impression', catalogTrackingLimiter, adPlacementController.trackImpression);
+router.post('/:id/click', catalogTrackingLimiter, adPlacementController.trackClick);
 
 // Public - Legacy
 router.post('/auction', adController.runAuction);

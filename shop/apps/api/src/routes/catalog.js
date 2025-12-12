@@ -5,25 +5,31 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const recommendationService = require('../services/recommendationService');
 const { authenticate } = require('../middleware/auth');
+const { catalogTrackingLimiter } = require('../middleware/rateLimiter');
+const AppError = require('../utils/AppError');
+const mongoose = require('mongoose');
 
 // GET /catalog/products?featured=true&limit=8&tag=electronics
 router.get('/products', async (req, res, next) => {
   try {
     const { featured, q, tag, page = 1, limit = 20, sort = '-createdAt' } = req.query;
 
+    // SECURITY: Cap limit to prevent large data retrieval (max 100 items per request)
+    const cappedLimit = Math.min(parseInt(limit), 100);
+
     const query = { published: true }; // Only show published products
     if (featured === 'true') query.featured = true;
     if (q) query.$text = { $search: q };
     if (tag) query.tags = tag.toLowerCase(); // Filter by specific tag
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const skip = (parseInt(page) - 1) * cappedLimit;
 
     const [items, total] = await Promise.all([
-      Product.find(query).sort(sort).skip(skip).limit(parseInt(limit)).lean(),
+      Product.find(query).sort(sort).skip(skip).limit(cappedLimit).lean(),
       Product.countDocuments(query),
     ]);
 
-    res.json({ success: true, data: items, meta: { total, page: Number(page), limit: Number(limit) } });
+    res.json({ success: true, data: items, meta: { total, page: Number(page), limit: cappedLimit } });
   } catch (err) {
     next(err);
   }
@@ -189,15 +195,35 @@ router.get('/products/:productId/bought-together', async (req, res, next) => {
 });
 
 // POST /catalog/track/view - Track product view
-router.post('/track/view', async (req, res, next) => {
+router.post('/track/view', catalogTrackingLimiter, async (req, res, next) => {
   try {
     const { productId, duration, source, searchQuery } = req.body;
 
+    // SECURITY: Validate productId is a valid MongoDB ObjectId
+    if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
+      return next(new AppError('Invalid or missing productId', 400, 'INVALID_PRODUCT_ID'));
+    }
+
+    // SECURITY: Validate duration is a non-negative number
+    const parsedDuration = parseInt(duration) || 0;
+    if (parsedDuration < 0 || parsedDuration > 86400000) { // Max 24 hours in milliseconds
+      return next(new AppError('Duration must be between 0 and 86400000 ms', 400, 'INVALID_DURATION'));
+    }
+
+    // SECURITY: Validate source is a reasonable string
+    const allowedSources = ['direct', 'search', 'recommendation', 'category', 'related', 'external'];
+    const validatedSource = allowedSources.includes(source) ? source : 'direct';
+
+    // SECURITY: Limit searchQuery length to prevent large payloads
+    if (searchQuery && searchQuery.length > 200) {
+      return next(new AppError('searchQuery must be less than 200 characters', 400, 'QUERY_TOO_LONG'));
+    }
+
     const viewData = {
       productId,
-      duration: duration || 0,
-      source: source || 'direct',
-      searchQuery,
+      duration: parsedDuration,
+      source: validatedSource,
+      searchQuery: searchQuery ? searchQuery.substring(0, 200) : undefined,
     };
 
     // Add userId if authenticated
@@ -217,14 +243,39 @@ router.post('/track/view', async (req, res, next) => {
 });
 
 // POST /catalog/track/search - Track search query
-router.post('/track/search', async (req, res, next) => {
+router.post('/track/search', catalogTrackingLimiter, async (req, res, next) => {
   try {
     const { query, filters, resultsCount } = req.body;
 
+    // SECURITY: Validate query string length
+    if (!query || typeof query !== 'string') {
+      return next(new AppError('Search query is required and must be a string', 400, 'INVALID_QUERY'));
+    }
+
+    if (query.length > 200) {
+      return next(new AppError('Search query must be less than 200 characters', 400, 'QUERY_TOO_LONG'));
+    }
+
+    // SECURITY: Validate filters object structure
+    if (filters && typeof filters !== 'object') {
+      return next(new AppError('Filters must be an object', 400, 'INVALID_FILTERS'));
+    }
+
+    // SECURITY: Limit filters object size
+    if (filters && JSON.stringify(filters).length > 1000) {
+      return next(new AppError('Filters object is too large', 400, 'FILTERS_TOO_LARGE'));
+    }
+
+    // SECURITY: Validate resultsCount is a non-negative number
+    const parsedResultsCount = parseInt(resultsCount) || 0;
+    if (parsedResultsCount < 0 || parsedResultsCount > 10000) {
+      return next(new AppError('Results count must be between 0 and 10000', 400, 'INVALID_RESULTS_COUNT'));
+    }
+
     const searchData = {
-      query,
+      query: query.substring(0, 200),
       filters: filters || {},
-      resultsCount: resultsCount || 0,
+      resultsCount: parsedResultsCount,
     };
 
     // Add userId if authenticated
@@ -248,15 +299,18 @@ router.post('/track/search', async (req, res, next) => {
 });
 
 // POST /catalog/track/search-click - Track clicked product from search
-router.post('/track/search-click', async (req, res, next) => {
+router.post('/track/search-click', catalogTrackingLimiter, async (req, res, next) => {
   try {
     const { searchId, productId } = req.body;
 
-    if (!searchId || !productId) {
-      return res.status(400).json({
-        success: false,
-        error: { message: 'searchId and productId are required' }
-      });
+    // SECURITY: Validate searchId is a valid MongoDB ObjectId
+    if (!searchId || !mongoose.Types.ObjectId.isValid(searchId)) {
+      return next(new AppError('Invalid or missing searchId', 400, 'INVALID_SEARCH_ID'));
+    }
+
+    // SECURITY: Validate productId is a valid MongoDB ObjectId
+    if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
+      return next(new AppError('Invalid or missing productId', 400, 'INVALID_PRODUCT_ID'));
     }
 
     await recommendationService.trackSearchClick(searchId, productId);

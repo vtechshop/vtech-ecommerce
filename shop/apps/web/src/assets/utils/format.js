@@ -41,7 +41,7 @@ export const formatRelativeTime = (date) => {
 };
 
 export const formatNumber = (num) => {
-  return new Intl.NumberFormat('en-US').format(num);
+  return new Intl.NumberFormat('en-IN').format(num);
 };
 
 export const truncate = (str, length = 100) => {

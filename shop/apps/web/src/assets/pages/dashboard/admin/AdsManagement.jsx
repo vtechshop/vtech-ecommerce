@@ -554,6 +554,7 @@ const AdsManagement = () => {
                   value={formData.placement}
                   onChange={(e) => setFormData({ ...formData, placement: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  autoComplete="off"
                   required
                 >
                   <optgroup label="Homepage">
@@ -638,6 +639,7 @@ const AdsManagement = () => {
                     backgroundSize: '1.5em 1.5em',
                     paddingRight: '3rem'
                   }}
+                  autoComplete="off"
                   required
                 >
                   <option value="" style={{ background: '#f9fafb', color: '#6b7280', padding: '12px' }}>Select position...</option>

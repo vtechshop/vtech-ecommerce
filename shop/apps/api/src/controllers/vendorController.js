@@ -182,8 +182,8 @@ async function createProduct(req, res, next) {
       sku: sku,
     });
 
-    vendor.totalProducts += 1;
-    await vendor.save();
+    // SECURITY: Use atomic increment to prevent race conditions
+    await Vendor.findByIdAndUpdate(vendor._id, { $inc: { totalProducts: 1 } });
 
     logger.info(`Product created: ${product.title}`);
     res.status(201).json({ success: true, data: product });
@@ -242,8 +242,11 @@ async function deleteProduct(req, res, next) {
       });
     }
 
-    vendor.totalProducts = Math.max(0, vendor.totalProducts - 1);
-    await vendor.save();
+    // SECURITY: Use atomic decrement to prevent race conditions (min value 0)
+    await Vendor.findByIdAndUpdate(vendor._id, {
+      $inc: { totalProducts: -1 },
+      $max: { totalProducts: 0 }
+    });
 
     logger.info(`Product deleted: ${product.title}`);
     res.json({ success: true, data: { message: 'Product deleted successfully' } });

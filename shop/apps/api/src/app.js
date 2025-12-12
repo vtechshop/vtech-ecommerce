@@ -318,6 +318,17 @@ app.use(csrfErrorHandler);
 app.use((err, req, res, next) => {
   logger.error(err);
 
+  // AppError - operational errors with custom status codes
+  if (err.isOperational) {
+    return res.status(err.statusCode).json({
+      success: false,
+      error: {
+        code: err.code,
+        message: err.message,
+      },
+    });
+  }
+
   // Mongoose validation error
   if (err.name === 'ValidationError') {
     return res.status(400).json({
@@ -365,7 +376,7 @@ app.use((err, req, res, next) => {
   }
 
   // Default error
-  res.status(err.status || 500).json({
+  res.status(err.status || err.statusCode || 500).json({
     success: false,
     error: {
       code: err.code || 'INTERNAL_ERROR',

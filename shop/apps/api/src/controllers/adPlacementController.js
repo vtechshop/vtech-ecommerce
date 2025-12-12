@@ -1,6 +1,8 @@
 // FILE: apps/api/src/controllers/adPlacementController.js
 const AdCampaign = require('../models/AdCampaign');
 const Setting = require('../models/Setting');
+const AppError = require('../utils/AppError');
+const mongoose = require('mongoose');
 
 /**
  * GET /ads/sponsored
@@ -136,10 +138,15 @@ exports.getAdForPlacement = async (req, res) => {
  * POST /ads/:id/impression
  * Track ad impression
  */
-exports.trackImpression = async (req, res) => {
+exports.trackImpression = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { placement } = req.body;
+
+    // SECURITY: Validate id is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(new AppError('Invalid campaign ID', 400, 'INVALID_CAMPAIGN_ID'));
+    }
 
     const campaign = await AdCampaign.findById(id);
     if (!campaign) {
@@ -182,10 +189,15 @@ exports.trackImpression = async (req, res) => {
  * POST /ads/:id/click
  * Track ad click
  */
-exports.trackClick = async (req, res) => {
+exports.trackClick = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { placement } = req.body;
+
+    // SECURITY: Validate id is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(new AppError('Invalid campaign ID', 400, 'INVALID_CAMPAIGN_ID'));
+    }
 
     const campaign = await AdCampaign.findById(id);
     if (!campaign) {

@@ -11,7 +11,7 @@ class RuleBasedProvider extends ChatbotProvider {
       },
       {
         patterns: ['shipping', 'delivery', 'ship'],
-        response: 'We offer Standard (5-7 days), Express (2-3 days), and Overnight shipping. Free shipping on orders over $50!',
+        response: 'We offer Standard (5-7 days), Express (2-3 days), and Overnight shipping. Free shipping on orders over ₹500!',
       },
       {
         patterns: ['return', 'refund', 'exchange'],

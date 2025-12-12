@@ -1,11 +1,22 @@
 // FILE: apps/api/src/controllers/checkoutController.js
 const ShippingZone = require('../models/ShippingZone');
 const Tax = require('../models/Tax');
+const AppError = require('../utils/AppError');
 
 // Get shipping quotes
 exports.getShippingQuotes = async (req, res, next) => {
   try {
     const { addressId, address, items } = req.body;
+
+    // SECURITY: Validate that either addressId or address is provided
+    if (!addressId && !address) {
+      return next(new AppError('Either addressId or address must be provided', 400, 'MISSING_ADDRESS'));
+    }
+
+    // SECURITY: Validate address structure if provided
+    if (address && typeof address !== 'object') {
+      return next(new AppError('Address must be an object', 400, 'INVALID_ADDRESS'));
+    }
 
     // In a real app, you'd get the address and calculate shipping
     // For now, return mock quotes (prices in INR)
@@ -74,6 +85,21 @@ exports.getShippingQuotes = async (req, res, next) => {
 exports.calculateTaxes = async (req, res, next) => {
   try {
     const { subtotal, address } = req.body;
+
+    // SECURITY: Validate subtotal is provided and is a positive number
+    if (!subtotal || typeof subtotal !== 'number' || subtotal < 0) {
+      return next(new AppError('Valid subtotal amount is required', 400, 'INVALID_SUBTOTAL'));
+    }
+
+    // SECURITY: Prevent unreasonably large subtotal values (max 100 million)
+    if (subtotal > 100000000) {
+      return next(new AppError('Subtotal amount is too large', 400, 'SUBTOTAL_TOO_LARGE'));
+    }
+
+    // SECURITY: Validate address if provided
+    if (address && typeof address !== 'object') {
+      return next(new AppError('Address must be an object', 400, 'INVALID_ADDRESS'));
+    }
 
     // In a real app, calculate based on address and tax rules
     // For now, return 18% GST (standard rate in India)

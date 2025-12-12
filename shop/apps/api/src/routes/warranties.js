@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const warrantyService = require('../services/warrantyService');
 const { authenticate, authorize } = require('../middleware/auth');
+const { validateObjectId } = require('../middleware/validate');
 
 // Generate warranty (typically called after order completion)
 // POST /api/warranties/generate
@@ -34,9 +35,9 @@ router.get('/my-warranties', authenticate, async (req, res, next) => {
   }
 });
 
-// Get specific warranty by ID
+// Get specific warranty by ID - SECURITY: Added ObjectId validation
 // GET /api/warranties/:warrantyId
-router.get('/:warrantyId', authenticate, async (req, res, next) => {
+router.get('/:warrantyId', authenticate, validateObjectId('warrantyId'), async (req, res, next) => {
   try {
     const { warrantyId } = req.params;
     const userRole = req.user.role;
