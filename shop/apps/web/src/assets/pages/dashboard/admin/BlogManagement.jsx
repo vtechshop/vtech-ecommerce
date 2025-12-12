@@ -24,6 +24,7 @@ const BlogManagement = () => {
   });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingBlog, setEditingBlog] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // { blog: {...}, show: true }
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -141,9 +142,18 @@ const BlogManagement = () => {
   };
 
   const handleDelete = (blog) => {
-    if (window.confirm(`Are you sure you want to delete "${blog.title}"?`)) {
-      deleteMutation.mutate(blog._id);
+    setDeleteConfirm({ blog, show: true });
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirm?.blog?._id) {
+      deleteMutation.mutate(deleteConfirm.blog._id);
+      setDeleteConfirm(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirm(null);
   };
 
   const handleSubmit = (e) => {
@@ -566,6 +576,34 @@ const BlogManagement = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm?.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Confirm Delete
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "{deleteConfirm.blog?.title}"?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}
