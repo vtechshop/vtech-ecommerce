@@ -506,13 +506,20 @@ const BlogManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <CustomSelect
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="Tech News, Product Reviews, How-To Guides, etc."
+                  onChange={(value) => setFormData({ ...formData, category: value })}
+                  options={[
+                    { value: 'Tech News', label: 'Tech News' },
+                    { value: 'Product Reviews', label: 'Product Reviews' },
+                    { value: 'How-To Guides', label: 'How-To Guides' },
+                    { value: 'Industry Trends', label: 'Industry Trends' },
+                    { value: 'Company News', label: 'Company News' },
+                    { value: 'Tips & Tricks', label: 'Tips & Tricks' }
+                  ]}
+                  placeholder="Select category"
+                  className="w-full"
                 />
               </div>
 

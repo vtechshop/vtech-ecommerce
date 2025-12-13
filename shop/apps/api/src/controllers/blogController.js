@@ -419,6 +419,13 @@ exports.adminGetBlog = async (req, res, next) => {
 // Create blog
 exports.createBlog = async (req, res, next) => {
   try {
+    // Remove empty string values to prevent validation errors
+    Object.keys(req.body).forEach(key => {
+      if (req.body[key] === '') {
+        delete req.body[key];
+      }
+    });
+
     const blogData = {
       ...req.body,
       author: req.user._id,
@@ -444,6 +451,7 @@ exports.createBlog = async (req, res, next) => {
       data: blog,
     });
   } catch (error) {
+    logger.error('Blog creation error:', error);
     next(error);
   }
 };
