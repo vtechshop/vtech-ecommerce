@@ -68,15 +68,32 @@ const uploadMiddleware = (fieldName) => {
 };
 
 // Multiple files upload middleware
-const uploadMultipleMiddleware = (fieldName, maxCount = 5) => {
-  return multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-      fileSize: 5 * 1024 * 1024, // 5MB limit per file
-      files: maxCount
-    }
-  }).array(fieldName, maxCount);
+const uploadMultipleMiddleware = (fields) => {
+  // Support both array of field names and multer fields format
+  if (Array.isArray(fields) && typeof fields[0] === 'string') {
+    // Convert array of field names to multer fields format
+    const fieldConfigs = fields.map(name => ({ name, maxCount: name === 'images' ? 5 : 1 }));
+    return multer({
+      storage: storage,
+      fileFilter: fileFilter,
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit per file
+        files: 10
+      }
+    }).fields(fieldConfigs);
+  } else {
+    // Legacy support for single field name
+    const fieldName = fields;
+    const maxCount = 5;
+    return multer({
+      storage: storage,
+      fileFilter: fileFilter,
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit per file
+        files: maxCount
+      }
+    }).array(fieldName, maxCount);
+  }
 };
 
 module.exports = {

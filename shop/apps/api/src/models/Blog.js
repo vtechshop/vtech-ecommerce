@@ -53,7 +53,9 @@ const blogSchema = new mongoose.Schema(
     // Featured image/thumbnail
     featuredImage: {
       type: String,
-      required: true,
+      required: function() {
+        return this.isNew; // Only required for new documents
+      },
     },
     images: [String],
     // Author info
@@ -67,7 +69,9 @@ const blogSchema = new mongoose.Schema(
     category: {
       type: String,
       enum: ['Tech News', 'Product Reviews', 'How-To Guides', 'Industry Trends', 'Company News', 'Tips & Tricks'],
-      required: true,
+      required: function() {
+        return this.isNew; // Only required for new documents
+      },
     },
     tags: [String],
     // SEO

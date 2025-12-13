@@ -126,19 +126,27 @@ const BlogManagement = () => {
     setShowCreateModal(true);
   };
 
-  const handleEdit = (blog) => {
-    setEditingBlog(blog);
-    setFormData({
-      title: blog.title || '',
-      slug: blog.slug || '',
-      content: blog.content || '',
-      excerpt: blog.excerpt || '',
-      category: blog.category || '',
-      status: blog.status || 'draft',
-      featuredImage: blog.featuredImage || '',
-      type: blog.type || 'post',
-    });
-    setShowCreateModal(true);
+  const handleEdit = async (blog) => {
+    // Fetch full blog details including content (list view excludes content)
+    try {
+      const response = await api.get(`/blog/admin/${blog._id}`);
+      const fullBlog = response.data.data;
+
+      setEditingBlog(fullBlog);
+      setFormData({
+        title: fullBlog.title || '',
+        slug: fullBlog.slug || '',
+        content: fullBlog.content || '',
+        excerpt: fullBlog.excerpt || '',
+        category: fullBlog.category || '',
+        status: fullBlog.status || 'draft',
+        featuredImage: fullBlog.featuredImage || '',
+        type: fullBlog.type || 'post',
+      });
+      setShowCreateModal(true);
+    } catch (error) {
+      toast.error('Failed to load blog details');
+    }
   };
 
   const handleDelete = (blog) => {

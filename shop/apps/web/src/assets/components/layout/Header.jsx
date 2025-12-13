@@ -8,7 +8,7 @@ import SearchAutocomplete from '@/components/common/SearchAutocomplete';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import useTranslation from '@/hooks/useTranslation';
 
-const Header = () => {
+const Header = ({ onMobileMenuToggle }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,6 +25,17 @@ const Header = () => {
                          location.pathname.includes('/affiliate-dashboard') ||
                          location.pathname.includes('/support-dashboard') ||
                          location.pathname.includes('/admin-dashboard');
+
+  // Handle mobile menu toggle
+  const handleMobileMenuToggle = () => {
+    if (isDashboardPage && onMobileMenuToggle) {
+      // On dashboard pages, use the callback to open sidebar
+      onMobileMenuToggle();
+    } else {
+      // On regular pages, toggle the header mobile menu
+      setMobileMenuOpen(!mobileMenuOpen);
+    }
+  };
 
   const cartItemCount = items.reduce((sum, item) => sum + item.qty, 0);
 
@@ -177,22 +188,20 @@ const Header = () => {
               )}
             </Link>
 
-            {/* Mobile menu toggle - hidden on dashboard pages */}
-            {!isDashboardPage && (
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden dark:text-gray-200"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
-            )}
+            {/* Mobile menu toggle - always visible */}
+            <button
+              onClick={handleMobileMenuToggle}
+              className="md:hidden dark:text-gray-200"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -242,8 +251,8 @@ const Header = () => {
         )}
       </div>
 
-      {/* Mobile menu */}
-      {!isDashboardPage && mobileMenuOpen && (
+      {/* Mobile menu - only show on non-dashboard pages */}
+      {mobileMenuOpen && !isDashboardPage && (
         <div className="md:hidden border-t dark:border-gray-700 bg-white dark:bg-gray-900">
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-2">
             <Link
@@ -287,6 +296,13 @@ const Header = () => {
               onClick={() => setMobileMenuOpen(false)}
             >
               About
+            </Link>
+            <Link
+              to="/track-order"
+              className="py-2 hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Track Order
             </Link>
             {/* Only show Become Vendor/Affiliate for non-logged in users */}
             {!isAuthenticated && (

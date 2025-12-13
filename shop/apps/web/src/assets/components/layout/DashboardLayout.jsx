@@ -14,6 +14,7 @@ const DashboardLayout = () => {
   const dispatch = useDispatch();
   const { user, isVendor, isAffiliate, isSupport, isAdmin } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { counts } = useNotifications();
   const toast = useToast();
   const hasRefreshedRef = useRef(false);
@@ -229,16 +230,91 @@ const DashboardLayout = () => {
       list: (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
       ),
+      'file-text': (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      ),
     };
     return icons[iconName] || icons.chart;
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <Header />
+      <Header onMobileMenuToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
       <div className="flex flex-1">
-        {/* Sidebar */}
+        {/* Mobile Sidebar Overlay */}
+        {mobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+
+        {/* Mobile Sidebar */}
+        <aside
+          className={`fixed top-0 left-0 h-full w-64 bg-gray-900 border-r border-dark-400 transition-transform duration-300 z-50 md:hidden ${
+            mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-white font-bold text-lg">Menu</span>
+              <button
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-2 hover:bg-dark-400 rounded-md text-gray-300 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <nav className="space-y-2">
+              {navItems.map((item) => {
+                const notificationCount = getNotificationCount(item.path);
+                const isLocked = isMenuItemLocked(item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={(e) => {
+                      handleNavItemClick(e, item);
+                      if (!isLocked) setMobileSidebarOpen(false);
+                    }}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors relative ${
+                      location.pathname === item.path
+                        ? 'bg-primary-600 text-white shadow-lg'
+                        : isLocked
+                          ? 'text-gray-500 hover:bg-dark-400 hover:text-gray-400 cursor-not-allowed opacity-60'
+                          : 'text-gray-300 hover:bg-dark-400 hover:text-white'
+                    }`}
+                  >
+                    <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {getIcon(item.icon)}
+                    </svg>
+                    <span className="font-medium flex items-center gap-2">
+                      {item.label}
+                      {isLocked && (
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      )}
+                    </span>
+                    {!isLocked && notificationCount > 0 && (
+                      <NotificationBadge
+                        count={notificationCount}
+                        variant="red"
+                        className="ml-auto"
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
+
+        {/* Desktop Sidebar */}
         <aside
           className={`${
             sidebarOpen ? 'w-64' : 'w-20'

@@ -2,11 +2,19 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
 
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Initialize Razorpay instance only if credentials are configured
+let razorpay = null;
+const isConfigured = process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET;
+
+if (isConfigured) {
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+  console.log('[INFO] Razorpay payment service initialized');
+} else {
+  console.log('[WARN] Razorpay not configured - payment features will be disabled');
+}
 
 /**
  * Create a Razorpay order
@@ -16,6 +24,13 @@ const razorpay = new Razorpay({
  * @returns {Promise<object>} Razorpay order object
  */
 const createOrder = async (amount, currency = 'INR', options = {}) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env',
+    };
+  }
+
   try {
     // Convert amount to paise (Razorpay expects amount in smallest currency unit)
     const amountInPaise = Math.round(amount * 100);
@@ -50,6 +65,11 @@ const createOrder = async (amount, currency = 'INR', options = {}) => {
  * @returns {boolean} Whether signature is valid
  */
 const verifyPaymentSignature = (orderId, paymentId, signature) => {
+  if (!isConfigured) {
+    console.error('Razorpay is not configured - cannot verify signature');
+    return false;
+  }
+
   try {
     const text = `${orderId}|${paymentId}`;
     const generatedSignature = crypto
@@ -70,6 +90,13 @@ const verifyPaymentSignature = (orderId, paymentId, signature) => {
  * @returns {Promise<object>} Payment details
  */
 const fetchPayment = async (paymentId) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env',
+    };
+  }
+
   try {
     const payment = await razorpay.payments.fetch(paymentId);
     return {
@@ -91,6 +118,13 @@ const fetchPayment = async (paymentId) => {
  * @returns {Promise<object>} Order details
  */
 const fetchOrder = async (orderId) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env',
+    };
+  }
+
   try {
     const order = await razorpay.orders.fetch(orderId);
     return {
@@ -113,6 +147,13 @@ const fetchOrder = async (orderId) => {
  * @returns {Promise<object>} Refund details
  */
 const createRefund = async (paymentId, amount = null) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env',
+    };
+  }
+
   try {
     const refundOptions = {
       payment_id: paymentId,
@@ -138,6 +179,7 @@ const createRefund = async (paymentId, amount = null) => {
 
 module.exports = {
   razorpay,
+  isConfigured,
   createOrder,
   verifyPaymentSignature,
   fetchPayment,

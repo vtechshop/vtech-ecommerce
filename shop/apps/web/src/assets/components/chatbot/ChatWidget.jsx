@@ -140,6 +140,11 @@ const ChatWidget = () => {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Don't show chatbot for admin users - must be after ALL hooks
+  if (user?.role === 'admin') {
+    return null;
+  }
+
   return (
     <>
       {/* Chat Toggle Button */}

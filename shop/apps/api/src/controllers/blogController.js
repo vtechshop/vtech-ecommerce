@@ -453,6 +453,10 @@ exports.updateBlog = async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    logger.info(`Update blog request - ID: ${id}, Body:`, req.body);
+    logger.info(`Content-Type: ${req.headers['content-type']}`);
+    logger.info(`Has files: ${!!req.files}`);
+
     const blog = await Blog.findById(id);
 
     if (!blog) {
@@ -474,16 +478,27 @@ exports.updateBlog = async (req, res, next) => {
       }
     }
 
-    Object.assign(blog, req.body);
-    await blog.save();
+    // Remove empty string values to prevent validation errors
+    Object.keys(req.body).forEach(key => {
+      if (req.body[key] === '') {
+        delete req.body[key];
+      }
+    });
 
-    logger.info(`Blog updated: ${blog._id} by user ${req.user._id}`);
+    logger.info(`After cleaning - updating with:`, req.body);
+
+    Object.assign(blog, req.body);
+    await blog.save({ validateModifiedOnly: true });
+
+    logger.info(`Blog updated successfully: ${blog._id} by user ${req.user._id}`);
 
     res.json({
       success: true,
       data: blog,
     });
   } catch (error) {
+    logger.error(`Blog update error for ID ${id}:`, error);
+    logger.error(`Error stack:`, error.stack);
     next(error);
   }
 };

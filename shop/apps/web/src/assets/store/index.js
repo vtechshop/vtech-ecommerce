@@ -13,6 +13,12 @@ const store = configureStore({
     consent: consentReducer,
     chat: chatReducer, // <-- wire it
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ['cart/loadCart', 'auth/initializeAuth'],
+      },
+    }),
 });
 
 export default store;
