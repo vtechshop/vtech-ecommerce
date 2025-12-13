@@ -293,7 +293,7 @@ const BlogPost = () => {
                 <img
                   src={data.featuredImage}
                   alt={data.title}
-                  className="w-full h-96 object-cover"
+                  className="w-full h-96 object-contain bg-gray-100"
                 />
               )}
 
