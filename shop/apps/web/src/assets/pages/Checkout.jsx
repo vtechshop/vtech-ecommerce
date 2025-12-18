@@ -246,22 +246,39 @@ const Checkout = () => {
         // Create order first
         console.log('📝 Creating order with data:', orderData);
         createOrderMutation.mutate(orderData, {
-          onSuccess: async (createdOrder) => {
-            console.log('✅ Order created:', createdOrder);
+          onSuccess: async (response) => {
+            console.log('✅ Order API response:', response);
 
-            // Validate order was created successfully
-            if (!createdOrder || !createdOrder._id) {
-              console.error('❌ Order created but missing ID:', createdOrder);
-              toast.error('Order was created but has invalid data. Please contact support.');
+            // Backend returns vendorOrders array for multi-vendor support
+            // Extract the first order for payment (or use the main order if single vendor)
+            let orderForPayment;
+
+            if (response.vendorOrders && response.vendorOrders.length > 0) {
+              // Multi-vendor order: use first vendor order for payment
+              orderForPayment = response.vendorOrders[0];
+              console.log('✅ Using first vendor order for payment:', orderForPayment);
+            } else if (response._id) {
+              // Single order response
+              orderForPayment = response;
+            } else {
+              console.error('❌ Invalid response format:', response);
+              toast.error('Order was created but has invalid format. Please contact support.');
+              return;
+            }
+
+            // Validate order has required fields
+            if (!orderForPayment || !orderForPayment._id) {
+              console.error('❌ Order missing ID:', orderForPayment);
+              toast.error('Order was created but missing ID. Please contact support.');
               return;
             }
 
             try {
               // Initiate Razorpay payment
-              console.log('🚀 Initiating Razorpay payment for order:', createdOrder._id);
+              console.log('🚀 Initiating Razorpay payment for order:', orderForPayment._id);
               await initiateRazorpayPayment({
-                orderId: createdOrder._id,
-                amount: createdOrder.totals.total,
+                orderId: orderForPayment._id,
+                amount: orderForPayment.totals.total,
                 customer: {
                   name: selectedAddress.fullName,
                   email: user?.email || '',
@@ -275,14 +292,14 @@ const Checkout = () => {
                   // Clear cart
                   dispatch(clearCart());
                   // Navigate to order confirmation
-                  navigate(`/orders/${createdOrder._id}`);
+                  navigate(`/orders/${orderForPayment._id}`);
                 },
                 onFailure: (error) => {
                   console.error('❌ Payment failed:', error);
                   toast.error(error.description || error.message || 'Payment failed. Please try again.');
                   // Don't clear cart on payment failure
                   // User can retry payment from order page
-                  navigate(`/order-confirmation/${createdOrder._id}`);
+                  navigate(`/order-confirmation/${orderForPayment._id}`);
                 },
               });
             } catch (error) {
@@ -290,8 +307,8 @@ const Checkout = () => {
               console.error('Error details:', error.message, error.stack);
               toast.error(`Payment initialization failed: ${error.message}`);
               // Only navigate if we have a valid order ID
-              if (createdOrder && createdOrder._id) {
-                navigate(`/order-confirmation/${createdOrder._id}`);
+              if (orderForPayment && orderForPayment._id) {
+                navigate(`/order-confirmation/${orderForPayment._id}`);
               } else {
                 toast.error('Cannot navigate to order page - order ID is missing');
               }
