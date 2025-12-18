@@ -740,6 +740,9 @@ exports.getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
+    console.log('📋 Fetching order with ID:', id);
+    console.log('👤 User:', req.user ? { id: req.user._id, email: req.user.email } : 'Not authenticated');
+
     // Try to find by either _id (MongoDB ObjectId) or orderId (string like "ORD-XXX")
     let order;
 
@@ -793,12 +796,16 @@ exports.getOrderById = async (req, res, next) => {
     // Check if it's a valid MongoDB ObjectId format
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
       const query = await buildQuery({ _id: id });
+      console.log('🔍 MongoDB ObjectId query:', JSON.stringify(query, null, 2));
       order = await Order.findOne(query).lean();
     } else {
       // Assume it's an orderId string
       const query = await buildQuery({ orderId: id });
+      console.log('🔍 OrderId string query:', JSON.stringify(query, null, 2));
       order = await Order.findOne(query).lean();
     }
+
+    console.log('📦 Order found:', order ? { id: order._id, orderId: order.orderId, userId: order.userId } : 'Not found');
 
     if (!order) {
       return res.status(404).json({
