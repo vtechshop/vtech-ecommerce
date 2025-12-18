@@ -245,7 +245,7 @@ const Home = React.memo(() => {
                     </li>
                   </ul>
                   <Link
-                    to={user?.role === 'customer' ? '/dashboard/become-vendor' : '/register?role=vendor'}
+                    to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
                     className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors shadow-md"
                   >
                     {t('home.startSelling')}

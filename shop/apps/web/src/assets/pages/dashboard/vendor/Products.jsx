@@ -293,6 +293,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
   const [formData, setFormData] = useState({
     title: product?.title || '',
     description: product?.description || '',
+    videoUrl: product?.videoUrl || '',
     price: product?.price || '',
     compareAt: product?.compareAt || '',
     stock: product?.stock || '',
@@ -402,6 +403,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
     const dataToSubmit = {
       title: formData.title,
       description: formData.description,
+      videoUrl: formData.videoUrl,
       price: parseFloat(formData.price),
       compareAt: formData.compareAt ? parseFloat(formData.compareAt) : undefined,
       stock: parseInt(formData.stock),
@@ -682,6 +684,23 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                 rows={4}
                 required
               />
+            </div>
+
+            {/* YouTube Video URL */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                YouTube Video URL (Optional)
+              </label>
+              <input
+                type="text"
+                value={formData.videoUrl || ''}
+                onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                className="input w-full"
+                placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Add a YouTube video URL to showcase your product (will be displayed at 300px height)
+              </p>
             </div>
 
             {/* Warranty Section */}
