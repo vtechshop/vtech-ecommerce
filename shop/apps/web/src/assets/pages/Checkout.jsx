@@ -81,13 +81,19 @@ const Checkout = () => {
     queryKey: ['shipping-quotes', selectedAddress],
     queryFn: async () => {
       console.log('🚚 Fetching shipping quotes with address:', selectedAddress);
+      console.log('📦 Items:', items);
       const response = await api.post('/checkout/shipping-quotes', {
         items,
         address: selectedAddress, // Send the selected address
       });
       return response.data.data;
     },
-    enabled: step >= 2 && !!selectedAddress && Object.keys(selectedAddress || {}).length > 0, // Only fetch when address is selected and not empty
+    // Only fetch when on step 2+ AND address is complete with required fields
+    enabled: step >= 2 &&
+             !!selectedAddress &&
+             !!selectedAddress.city &&
+             !!selectedAddress.state &&
+             !!selectedAddress.zipCode,
   });
 
   // Create order mutation
@@ -182,11 +188,13 @@ const Checkout = () => {
       }
     }
 
+    console.log('📝 New address set:', newAddress);
     setSelectedAddress(newAddress);
     setStep(2);
   };
 
   const handleSelectExistingAddress = (address) => {
+    console.log('📍 Selected existing address:', address);
     setSelectedAddress(address);
     setStep(2);
   };
