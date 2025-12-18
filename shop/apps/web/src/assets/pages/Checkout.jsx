@@ -80,13 +80,14 @@ const Checkout = () => {
   const { data: shippingQuotes, isLoading: loadingShipping } = useQuery({
     queryKey: ['shipping-quotes', selectedAddress],
     queryFn: async () => {
+      console.log('🚚 Fetching shipping quotes with address:', selectedAddress);
       const response = await api.post('/checkout/shipping-quotes', {
         items,
         address: selectedAddress, // Send the selected address
       });
       return response.data.data;
     },
-    enabled: step >= 2 && !!selectedAddress, // Only fetch when address is selected
+    enabled: step >= 2 && !!selectedAddress && Object.keys(selectedAddress || {}).length > 0, // Only fetch when address is selected and not empty
   });
 
   // Create order mutation
