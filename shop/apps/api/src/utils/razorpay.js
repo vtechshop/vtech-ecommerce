@@ -177,6 +177,214 @@ const createRefund = async (paymentId, amount = null) => {
   }
 };
 
+/**
+ * Create a Razorpay Linked Account (for Route/Marketplace)
+ * This allows automatic payment splits to vendors/affiliates
+ * @param {object} accountData - Account details
+ * @returns {Promise<object>} Linked account details
+ */
+const createLinkedAccount = async (accountData) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env',
+    };
+  }
+
+  try {
+    const {
+      email,
+      phone,
+      businessName,
+      businessType = 'individual', // or 'proprietorship', 'partnership', 'private_limited', etc.
+      legalInfo = {},
+    } = accountData;
+
+    const accountOptions = {
+      email,
+      phone,
+      type: 'route', // Route type for marketplace
+      reference_id: accountData.reference_id || `ref_${Date.now()}`,
+      legal_business_name: businessName,
+      business_type: businessType,
+      contact_name: accountData.contactName,
+      profile: {
+        category: accountData.category || 'ecommerce',
+        subcategory: accountData.subcategory || 'retail',
+        addresses: accountData.addresses || {},
+      },
+      legal_info: legalInfo,
+    };
+
+    const account = await razorpay.accounts.create(accountOptions);
+    return {
+      success: true,
+      account,
+    };
+  } catch (error) {
+    console.error('Razorpay linked account creation error:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Fetch Razorpay Linked Account details
+ * @param {string} accountId - Razorpay account ID
+ * @returns {Promise<object>} Account details
+ */
+const fetchLinkedAccount = async (accountId) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured',
+    };
+  }
+
+  try {
+    const account = await razorpay.accounts.fetch(accountId);
+    return {
+      success: true,
+      account,
+    };
+  } catch (error) {
+    console.error('Fetch linked account error:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Create transfers (payment splits) to linked accounts
+ * This is used for automatic vendor/affiliate payouts
+ * @param {string} paymentId - Razorpay payment ID
+ * @param {array} transfers - Array of transfer objects
+ * @returns {Promise<object>} Transfer results
+ */
+const createTransfers = async (paymentId, transfers) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured',
+    };
+  }
+
+  try {
+    const transferPromises = transfers.map(transfer => {
+      const amountInPaise = Math.round(transfer.amount * 100);
+
+      return razorpay.payments.transfer(paymentId, {
+        account: transfer.accountId,
+        amount: amountInPaise,
+        currency: transfer.currency || 'INR',
+        notes: transfer.notes || {},
+        linked_account_notes: transfer.linked_account_notes || [],
+        on_hold: transfer.on_hold || false, // Set to true to hold settlement
+        on_hold_until: transfer.on_hold_until || null, // Unix timestamp for hold release
+      });
+    });
+
+    const results = await Promise.allSettled(transferPromises);
+
+    const successfulTransfers = [];
+    const failedTransfers = [];
+
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        successfulTransfers.push({
+          ...transfers[index],
+          transferId: result.value.id,
+          status: result.value.status,
+        });
+      } else {
+        failedTransfers.push({
+          ...transfers[index],
+          error: result.reason.message,
+        });
+      }
+    });
+
+    return {
+      success: failedTransfers.length === 0,
+      successfulTransfers,
+      failedTransfers,
+      totalTransfers: transfers.length,
+    };
+  } catch (error) {
+    console.error('Create transfers error:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Fetch transfer details
+ * @param {string} transferId - Razorpay transfer ID
+ * @returns {Promise<object>} Transfer details
+ */
+const fetchTransfer = async (transferId) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured',
+    };
+  }
+
+  try {
+    const transfer = await razorpay.transfers.fetch(transferId);
+    return {
+      success: true,
+      transfer,
+    };
+  } catch (error) {
+    console.error('Fetch transfer error:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Reverse a transfer (refund to platform account)
+ * @param {string} transferId - Razorpay transfer ID
+ * @param {number} amount - Amount to reverse (optional, full reversal if not specified)
+ * @returns {Promise<object>} Reversal details
+ */
+const reverseTransfer = async (transferId, amount = null) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured',
+    };
+  }
+
+  try {
+    const reversalOptions = {};
+    if (amount) {
+      reversalOptions.amount = Math.round(amount * 100);
+    }
+
+    const reversal = await razorpay.transfers.reverse(transferId, reversalOptions);
+    return {
+      success: true,
+      reversal,
+    };
+  } catch (error) {
+    console.error('Reverse transfer error:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+};
+
 module.exports = {
   razorpay,
   isConfigured,
@@ -185,4 +393,10 @@ module.exports = {
   fetchPayment,
   fetchOrder,
   createRefund,
+  // Razorpay Route (Linked Accounts & Transfers)
+  createLinkedAccount,
+  fetchLinkedAccount,
+  createTransfers,
+  fetchTransfer,
+  reverseTransfer,
 };

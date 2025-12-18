@@ -14,6 +14,14 @@ const commissionSchema = new mongoose.Schema({
   paidAt: Date,
   paymentRef: String,
   notes: String,
+  // Razorpay Route/Transfer details
+  transfer: {
+    transferId: String, // Razorpay transfer ID (trf_XXXXX)
+    status: { type: String, enum: ['pending', 'processed', 'reversed', 'failed'] },
+    processedAt: Date,
+    failureReason: String,
+    linkedAccountId: String, // Razorpay linked account ID
+  },
 }, { timestamps: true });
 
 commissionSchema.index({ subjectId: 1, type: 1 });

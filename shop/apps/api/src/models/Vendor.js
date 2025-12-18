@@ -75,6 +75,33 @@ const vendorSchema = new mongoose.Schema({
     enum: ['not_connected', 'pending', 'active', 'rejected'],
     default: 'not_connected'
   },
+  // Razorpay Route (Linked Account) for automatic splits
+  razorpay: {
+    accountId: String, // Razorpay Linked Account ID (acc_XXXXX)
+    accountStatus: {
+      type: String,
+      enum: ['not_connected', 'created', 'activated', 'suspended'],
+      default: 'not_connected'
+    },
+    accountEmail: String,
+    accountPhone: String,
+    // KYC status on Razorpay
+    kycStatus: {
+      type: String,
+      enum: ['pending', 'verified', 'rejected'],
+      default: 'pending'
+    },
+    // Settlement configuration
+    settlementPercentage: { type: Number, default: 85 }, // Vendor gets 85% by default (platform keeps 15%)
+    settlementSchedule: {
+      type: String,
+      enum: ['instant', 'daily', 'weekly', 'monthly'],
+      default: 'instant'
+    },
+    // Metadata
+    connectedAt: Date,
+    lastSettlementAt: Date,
+  },
   // Payout tracking
   totalEarnings: { type: Number, default: 0 }, // Total amount paid out
   pendingEarnings: { type: Number, default: 0 }, // Approved but not paid

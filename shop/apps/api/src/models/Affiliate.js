@@ -80,9 +80,29 @@ const affiliateSchema = new mongoose.Schema({
   // Payment info
   paymentMethod: {
     type: String,
-    enum: ['bank', 'paypal', 'stripe'],
+    enum: ['bank', 'paypal', 'stripe', 'razorpay'],
   },
   paymentDetails: mongoose.Schema.Types.Mixed,
+  // Razorpay Route (Linked Account) for automatic splits
+  razorpay: {
+    accountId: String, // Razorpay Linked Account ID (acc_XXXXX)
+    accountStatus: {
+      type: String,
+      enum: ['not_connected', 'created', 'activated', 'suspended'],
+      default: 'not_connected'
+    },
+    accountEmail: String,
+    accountPhone: String,
+    // Settlement configuration for affiliates
+    settlementSchedule: {
+      type: String,
+      enum: ['instant', 'daily', 'weekly', 'monthly'],
+      default: 'weekly' // Affiliates typically get weekly settlements
+    },
+    // Metadata
+    connectedAt: Date,
+    lastSettlementAt: Date,
+  },
 }, {
   timestamps: true,
 });
