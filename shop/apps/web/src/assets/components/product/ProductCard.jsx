@@ -111,9 +111,20 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
       {/* Content */}
       <div className="p-2 sm:p-3">
         {/* Title */}
-        <h3 className="font-medium text-gray-900 text-xs sm:text-sm line-clamp-2 mb-1 sm:mb-2 min-h-[2rem] sm:min-h-[2.5rem]">
+        <h3 className="font-medium text-gray-900 text-xs sm:text-sm line-clamp-2 mb-1 min-h-[2rem] sm:min-h-[2.5rem]">
           {product.title}
         </h3>
+
+        {/* Vendor Name */}
+        {product.vendorId && (
+          <Link
+            to={`/vendor/${product.vendorId.slug}`}
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs text-gray-600 hover:text-primary-600 hover:underline block mb-1 sm:mb-2"
+          >
+            {product.vendorId.storeName}
+          </Link>
+        )}
 
         {/* Rating - Hidden on mobile */}
         <div className="hidden sm:block h-5 mb-2">

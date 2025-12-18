@@ -23,6 +23,7 @@ class LocalAdapter extends StorageAdapter {
     return filePath;
   }
 
+  
   async delete(filePath) {
     const fullPath = path.join(this.basePath, filePath);
     try {

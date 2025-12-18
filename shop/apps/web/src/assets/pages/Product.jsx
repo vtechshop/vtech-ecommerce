@@ -482,6 +482,19 @@ const Product = () => {
               </div>
             )}
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-snug">{product.title}</h1>
+
+            {/* Vendor Name */}
+            {product.vendorId && (
+              <Link
+                to={`/vendor/${product.vendorId.slug}`}
+                className="inline-flex items-center gap-1.5 text-sm text-gray-700 hover:text-primary-600 transition-colors group"
+              >
+                <span className="font-medium group-hover:underline">{product.vendorId.storeName}</span>
+                <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-gray-200">

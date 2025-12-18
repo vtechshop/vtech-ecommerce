@@ -9,10 +9,10 @@ const { catalogTrackingLimiter } = require('../middleware/rateLimiter');
 const AppError = require('../utils/AppError');
 const mongoose = require('mongoose');
 
-// GET /catalog/products?featured=true&limit=8&tag=electronics
+// GET /catalog/products?featured=true&limit=8&tag=electronics&vendor=demo-electronics
 router.get('/products', async (req, res, next) => {
   try {
-    const { featured, q, tag, page = 1, limit = 20, sort = '-createdAt' } = req.query;
+    const { featured, q, tag, vendor, page = 1, limit = 20, sort = '-createdAt' } = req.query;
 
     // SECURITY: Cap limit to prevent large data retrieval (max 100 items per request)
     const cappedLimit = Math.min(parseInt(limit), 100);
@@ -22,10 +22,22 @@ router.get('/products', async (req, res, next) => {
     if (q) query.$text = { $search: q };
     if (tag) query.tags = tag.toLowerCase(); // Filter by specific tag
 
+    // Filter by vendor slug
+    if (vendor) {
+      const Vendor = require('../models/Vendor');
+      const vendorDoc = await Vendor.findOne({ slug: vendor }).lean();
+      if (vendorDoc) {
+        query.vendorId = vendorDoc._id;
+      } else {
+        // Vendor not found, return empty results
+        return res.json({ success: true, data: [], meta: { total: 0, page: Number(page), limit: cappedLimit } });
+      }
+    }
+
     const skip = (parseInt(page) - 1) * cappedLimit;
 
     const [items, total] = await Promise.all([
-      Product.find(query).sort(sort).skip(skip).limit(cappedLimit).lean(),
+      Product.find(query).populate('vendorId', 'storeName slug').sort(sort).skip(skip).limit(cappedLimit).lean(),
       Product.countDocuments(query),
     ]);
 
@@ -39,7 +51,7 @@ router.get('/products', async (req, res, next) => {
 router.get('/products/:slug', async (req, res, next) => {
   try {
     const { slug } = req.params;
-    const product = await Product.findOne({ slug, published: true }).lean();
+    const product = await Product.findOne({ slug, published: true }).populate('vendorId', 'storeName slug').lean();
     if (!product) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' }});
     res.json({ success: true, data: product });
   } catch (err) {
