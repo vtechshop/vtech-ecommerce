@@ -31,6 +31,7 @@ export const loadRazorpayScript = () => {
  */
 export const createRazorpayOrder = async (orderId, amount) => {
   try {
+    console.log('📞 Calling Razorpay create-order API:', { orderId, amount });
     const response = await fetch('/api/payment/razorpay/create-order', {
       method: 'POST',
       headers: {
@@ -40,15 +41,17 @@ export const createRazorpayOrder = async (orderId, amount) => {
       body: JSON.stringify({ orderId, amount }),
     });
 
+    console.log('📡 Razorpay API response status:', response.status);
     const data = await response.json();
+    console.log('📦 Razorpay API response data:', data);
 
-    if (!data.success) {
-      throw new Error(data.error?.message || 'Failed to create order');
+    if (!response.ok || !data.success) {
+      throw new Error(data.error?.message || data.message || 'Failed to create Razorpay order');
     }
 
     return data.data;
   } catch (error) {
-    console.error('Error creating Razorpay order:', error);
+    console.error('❌ Error creating Razorpay order:', error);
     throw error;
   }
 };

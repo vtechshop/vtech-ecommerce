@@ -237,43 +237,63 @@ const Checkout = () => {
 
     // For Razorpay, create order first then initiate payment
     if (paymentMethod === 'razorpay') {
-      // Import dynamically to avoid loading Razorpay on initial page load
-      const { initiateRazorpayPayment } = await import('@/utils/razorpay');
+      try {
+        // Import dynamically to avoid loading Razorpay on initial page load
+        console.log('💳 Loading Razorpay module...');
+        const { initiateRazorpayPayment } = await import('@/utils/razorpay');
+        console.log('✅ Razorpay module loaded');
 
-      // Create order first
-      createOrderMutation.mutate(orderData, {
-        onSuccess: async (createdOrder) => {
-          try {
-            // Initiate Razorpay payment
-            await initiateRazorpayPayment({
-              orderId: createdOrder._id,
-              amount: createdOrder.totals.total,
-              customer: {
-                name: selectedAddress.fullName,
-                email: user?.email || '',
-                phone: selectedAddress.phone,
-              },
-              onSuccess: (paymentResult) => {
-                toast.success('Payment successful!');
-                // Set flag to prevent cart redirect
-                setOrderPlaced(true);
-                // Clear cart
-                dispatch(clearCart());
-                // Navigate to order confirmation
-                navigate(`/orders/${createdOrder._id}`);
-              },
-              onFailure: (error) => {
-                toast.error(error.description || error.message || 'Payment failed. Please try again.');
-                // Don't clear cart on payment failure
-                // User can retry payment from order page
-              },
-            });
-          } catch (error) {
-            console.error('Razorpay payment error:', error);
-            toast.error('Failed to initiate payment. Please try again.');
+        // Create order first
+        console.log('📝 Creating order with data:', orderData);
+        createOrderMutation.mutate(orderData, {
+          onSuccess: async (createdOrder) => {
+            console.log('✅ Order created:', createdOrder);
+            try {
+              // Initiate Razorpay payment
+              console.log('🚀 Initiating Razorpay payment for order:', createdOrder._id);
+              await initiateRazorpayPayment({
+                orderId: createdOrder._id,
+                amount: createdOrder.totals.total,
+                customer: {
+                  name: selectedAddress.fullName,
+                  email: user?.email || '',
+                  phone: selectedAddress.phone,
+                },
+                onSuccess: (paymentResult) => {
+                  console.log('✅ Payment successful:', paymentResult);
+                  toast.success('Payment successful!');
+                  // Set flag to prevent cart redirect
+                  setOrderPlaced(true);
+                  // Clear cart
+                  dispatch(clearCart());
+                  // Navigate to order confirmation
+                  navigate(`/orders/${createdOrder._id}`);
+                },
+                onFailure: (error) => {
+                  console.error('❌ Payment failed:', error);
+                  toast.error(error.description || error.message || 'Payment failed. Please try again.');
+                  // Don't clear cart on payment failure
+                  // User can retry payment from order page
+                  navigate(`/order-confirmation/${createdOrder._id}`);
+                },
+              });
+            } catch (error) {
+              console.error('❌ Razorpay payment error:', error);
+              console.error('Error details:', error.message, error.stack);
+              toast.error(`Payment initialization failed: ${error.message}`);
+              // Navigate to order page so user can retry
+              navigate(`/order-confirmation/${createdOrder._id}`);
+            }
+          },
+          onError: (error) => {
+            console.error('❌ Order creation failed:', error);
+            toast.error(error.response?.data?.message || 'Failed to create order');
           }
-        },
-      });
+        });
+      } catch (error) {
+        console.error('❌ Failed to load Razorpay module:', error);
+        toast.error('Failed to load payment system. Please refresh and try again.');
+      }
     } else {
       // For COD and other methods, create order normally
       createOrderMutation.mutate(orderData);
