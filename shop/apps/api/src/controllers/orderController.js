@@ -747,25 +747,30 @@ exports.getOrderById = async (req, res, next) => {
     const buildQuery = async (idQuery) => {
       if (req.user) {
         // Check if user is a vendor
-        const Vendor = require('../models/Vendor');
-        const vendor = await Vendor.findOne({ userId: req.user._id });
+        try {
+          const Vendor = require('../models/Vendor');
+          const vendor = await Vendor.findOne({ userId: req.user._id });
 
-        if (vendor) {
-          // Vendor can view orders containing their products
-          return {
-            ...idQuery,
-            'items.vendorId': vendor._id, // Order contains vendor's products
-          };
-        } else {
-          // Regular customer - check ownership
-          return {
-            ...idQuery,
-            $or: [
-              { userId: req.user._id }, // Order belongs to logged-in user
-              { isGuest: true, guestEmail: req.user.email }, // Guest order with matching email
-            ],
-          };
+          if (vendor) {
+            // Vendor can view orders containing their products
+            return {
+              ...idQuery,
+              'items.vendorId': vendor._id, // Order contains vendor's products
+            };
+          }
+        } catch (vendorError) {
+          logger.error('Error checking vendor status:', vendorError);
+          // Continue as regular customer if vendor check fails
         }
+
+        // Regular customer - check ownership
+        return {
+          ...idQuery,
+          $or: [
+            { userId: req.user._id }, // Order belongs to logged-in user
+            { isGuest: true, guestEmail: req.user.email }, // Guest order with matching email
+          ],
+        };
       } else {
         // Guest user - require email verification for guest order access
         const guestEmail = req.query.email;
@@ -810,6 +815,8 @@ exports.getOrderById = async (req, res, next) => {
       data: order,
     });
   } catch (error) {
+    logger.error('Get order by ID error:', error);
+    console.error('Get order by ID error:', error.message, error.stack);
     next(error);
   }
 };
