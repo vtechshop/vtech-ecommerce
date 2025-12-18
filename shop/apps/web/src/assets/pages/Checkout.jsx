@@ -248,6 +248,14 @@ const Checkout = () => {
         createOrderMutation.mutate(orderData, {
           onSuccess: async (createdOrder) => {
             console.log('✅ Order created:', createdOrder);
+
+            // Validate order was created successfully
+            if (!createdOrder || !createdOrder._id) {
+              console.error('❌ Order created but missing ID:', createdOrder);
+              toast.error('Order was created but has invalid data. Please contact support.');
+              return;
+            }
+
             try {
               // Initiate Razorpay payment
               console.log('🚀 Initiating Razorpay payment for order:', createdOrder._id);
@@ -281,13 +289,21 @@ const Checkout = () => {
               console.error('❌ Razorpay payment error:', error);
               console.error('Error details:', error.message, error.stack);
               toast.error(`Payment initialization failed: ${error.message}`);
-              // Navigate to order page so user can retry
-              navigate(`/order-confirmation/${createdOrder._id}`);
+              // Only navigate if we have a valid order ID
+              if (createdOrder && createdOrder._id) {
+                navigate(`/order-confirmation/${createdOrder._id}`);
+              } else {
+                toast.error('Cannot navigate to order page - order ID is missing');
+              }
             }
           },
           onError: (error) => {
             console.error('❌ Order creation failed:', error);
-            toast.error(error.response?.data?.message || 'Failed to create order');
+            const errorMessage = error.response?.data?.error?.message ||
+                                error.response?.data?.message ||
+                                'Failed to create order. Please try again.';
+            toast.error(errorMessage);
+            // Don't navigate anywhere - stay on checkout page so user can retry
           }
         });
       } catch (error) {
