@@ -11,11 +11,6 @@ const checkoutController = require('../controllers/checkoutController');
 router.post(
   '/shipping-quotes',
   checkoutLimiter,
-  [
-    body('addressId').optional().isMongoId(),
-    body('address').optional().isObject(),
-  ],
-  validate,
   checkoutController.getShippingQuotes
 );
 
