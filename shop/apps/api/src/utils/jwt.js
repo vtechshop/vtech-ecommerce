@@ -17,14 +17,18 @@ function validateRole(role) {
   }
 }
 
-function generateAccessToken(userId, role) {
+function generateAccessToken(userId, role, email = null) {
   validateRole(role);
-  return jwt.sign({ userId, role }, ACCESS_TOKEN_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRES_IN });
+  const payload = { userId, role };
+  if (email) payload.email = email;
+  return jwt.sign(payload, ACCESS_TOKEN_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRES_IN });
 }
 
-function generateRefreshToken(userId, role) {
+function generateRefreshToken(userId, role, email = null) {
   validateRole(role);
-  return jwt.sign({ userId, role }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+  const payload = { userId, role };
+  if (email) payload.email = email;
+  return jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 }
 
 function verifyAccessToken(token) {

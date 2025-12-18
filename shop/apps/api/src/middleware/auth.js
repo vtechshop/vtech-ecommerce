@@ -14,10 +14,11 @@ function authenticate(req, res, next) {
     }
 
     const decoded = verifyAccessToken(token);
-    // SECURITY FIX: Include role in req.user for authorization checks
+    // SECURITY FIX: Include role and email in req.user for authorization checks
     req.user = {
       _id: decoded.userId,
-      role: decoded.role
+      role: decoded.role,
+      email: decoded.email
     };
     next();
   } catch (err) {
@@ -152,7 +153,8 @@ function optionalAuth(req, res, next) {
         const decoded = verifyAccessToken(token);
         req.user = {
           _id: decoded.userId,
-          role: decoded.role
+          role: decoded.role,
+          email: decoded.email
         };
       } catch (err) {
         // Token is invalid but that's okay for optional auth

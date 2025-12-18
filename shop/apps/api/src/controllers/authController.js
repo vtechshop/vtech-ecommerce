@@ -144,8 +144,8 @@ exports.register = async (req, res, next) => {
     }
 
     // Generate tokens (user can still login but with limited access until verified)
-    const accessToken = generateAccessToken(user._id, user.role);
-    const refreshToken = generateRefreshToken(user._id, user.role);
+    const accessToken = generateAccessToken(user._id, user.role, user.email);
+    const refreshToken = generateRefreshToken(user._id, user.role, user.email);
 
     // SECURITY: Store hashed refresh token in database
     user.refreshToken = hashRefreshToken(refreshToken);
@@ -359,8 +359,8 @@ exports.login = async (req, res, next) => {
     user.loginAttempts = 0;
     user.lockUntil = undefined;
 
-    const accessToken = generateAccessToken(user._id, user.role);
-    const refreshToken = generateRefreshToken(user._id, user.role);
+    const accessToken = generateAccessToken(user._id, user.role, user.email);
+    const refreshToken = generateRefreshToken(user._id, user.role, user.email);
 
     // SECURITY: Store hashed refresh token in database
     user.refreshToken = hashRefreshToken(refreshToken);
@@ -437,7 +437,7 @@ exports.refresh = async (req, res, next) => {
       });
     }
 
-    const accessToken = generateAccessToken(user._id, user.role);
+    const accessToken = generateAccessToken(user._id, user.role, user.email);
     return res.json({ success: true, data: { accessToken } });
   } catch (err) {
     next(err);
