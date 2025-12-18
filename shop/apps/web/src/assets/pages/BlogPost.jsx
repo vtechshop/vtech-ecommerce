@@ -33,25 +33,8 @@ const BlogPost = () => {
     },
   });
 
-  // Fetch sponsor ads for blog sidebar
-  const { data: sponsorAds } = useQuery({
-    queryKey: ['blog-sponsor-ads'],
-    queryFn: async () => {
-      try {
-        const response = await api.get('/ads/sponsored', {
-          params: {
-            placement: 'blog_sidebar',
-            limit: 3
-          }
-        });
-        return response.data.data?.ads || [];
-      } catch (error) {
-        // Silent fail for sponsor ads
-        return [];
-      }
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  // Sponsor ads are now handled by AdBanner component
+  // No need for separate query here
 
   // Fetch comments separately
   const { data: comments } = useQuery({
@@ -602,84 +585,6 @@ const BlogPost = () => {
             <div className="sticky top-24 space-y-6">
               {/* AdBanner - Blog Sidebar */}
               <AdBanner placement="blog_sidebar" position="right" />
-
-              {/* Dynamic Sponsor Ads (if needed for backward compatibility) */}
-              {sponsorAds && sponsorAds.length > 0 ? (
-                sponsorAds.map((ad, index) => {
-                  const colors = [
-                    { from: 'from-purple-500', to: 'to-pink-500', bgFrom: 'from-purple-100', bgTo: 'to-pink-100', btnFrom: 'from-purple-600', btnTo: 'to-pink-600' },
-                    { from: 'from-blue-500', to: 'to-cyan-500', bgFrom: 'from-blue-100', bgTo: 'to-cyan-100', btnFrom: 'from-blue-600', btnTo: 'to-cyan-600' },
-                    { from: 'from-orange-500', to: 'to-red-500', bgFrom: 'from-orange-100', bgTo: 'to-red-100', btnFrom: 'from-orange-600', btnTo: 'to-red-600' }
-                  ];
-                  const color = colors[index % colors.length];
-
-                  return (
-                    <div key={ad._id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                      <div className={`bg-gradient-to-r ${color.from} ${color.to} px-4 py-2`}>
-                        <p className="text-white text-xs font-semibold uppercase tracking-wide">Sponsored</p>
-                      </div>
-                      <div className="p-6">
-                        {ad.bannerImage ? (
-                          <img
-                            src={ad.bannerImage}
-                            alt={ad.name}
-                            className="w-full h-64 object-cover rounded-lg mb-4"
-                          />
-                        ) : (
-                          <div className={`bg-gradient-to-br ${color.bgFrom} ${color.bgTo} rounded-lg h-64 flex items-center justify-center mb-4`}>
-                            <div className="text-center">
-                              <div className="text-4xl md:text-5xl lg:text-6xl mb-2">
-                                {index === 0 ? '📱' : index === 1 ? '💻' : '🎯'}
-                              </div>
-                              <p className="text-gray-700 font-medium">Advertisement Space</p>
-                              <p className="text-sm text-gray-500">300 x 250</p>
-                            </div>
-                          </div>
-                        )}
-                        <h3 className="font-bold text-gray-900 mb-2">{ad.name}</h3>
-                        <p className="text-sm text-gray-700 mb-4">
-                          {ad.targeting?.keywords?.slice(0, 3).map(k => k.keyword).join(', ') || 'Sponsored Advertisement'}
-                        </p>
-                        <a
-                          href={ad.targetUrl || '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => {
-                            // Track click
-                            api.post(`/ads/${ad._id}/click`).catch(() => {});
-                          }}
-                          className={`block w-full px-4 py-2 bg-gradient-to-r ${color.btnFrom} ${color.btnTo} text-white rounded-lg hover:opacity-90 transition-all font-medium text-center`}
-                        >
-                          Learn More
-                        </a>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                // Fallback placeholders if no ads available
-                <>
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2">
-                      <p className="text-white text-xs font-semibold uppercase tracking-wide">Sponsored</p>
-                    </div>
-                    <div className="p-6">
-                      <div className="bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg h-64 flex items-center justify-center mb-4">
-                        <div className="text-center">
-                          <div className="text-4xl md:text-5xl lg:text-6xl mb-2">📱</div>
-                          <p className="text-gray-700 font-medium">Advertisement Space</p>
-                          <p className="text-sm text-gray-500">300 x 250</p>
-                        </div>
-                      </div>
-                      <h3 className="font-bold text-gray-900 mb-2">Featured Product</h3>
-                      <p className="text-sm text-gray-700 mb-4">Discover amazing deals on the latest tech products.</p>
-                      <button className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium">
-                        Learn More
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
 
               {/* Newsletter Signup */}
               <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-lg p-6 text-white">

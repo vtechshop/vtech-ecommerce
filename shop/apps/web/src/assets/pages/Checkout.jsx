@@ -35,7 +35,7 @@ const Checkout = () => {
     country: DEFAULT_COUNTRY, // 'IN' for India
   });
   const [shippingMethod, setShippingMethod] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [paymentMethod, setPaymentMethod] = useState('razorpay'); // Default to Razorpay
   const [saveAddress, setSaveAddress] = useState(true); // Save address to account by default
   const [orderPlaced, setOrderPlaced] = useState(false); // Flag to prevent redirect after order success
 
@@ -78,14 +78,15 @@ const Checkout = () => {
 
   // Fetch shipping quotes
   const { data: shippingQuotes, isLoading: loadingShipping } = useQuery({
-    queryKey: ['shipping-quotes'],
+    queryKey: ['shipping-quotes', selectedAddress],
     queryFn: async () => {
       const response = await api.post('/checkout/shipping-quotes', {
         items,
+        address: selectedAddress, // Send the selected address
       });
       return response.data.data;
     },
-    enabled: step >= 2,
+    enabled: step >= 2 && !!selectedAddress, // Only fetch when address is selected
   });
 
   // Create order mutation
@@ -538,52 +539,26 @@ const Checkout = () => {
               <h2 className="text-xl md:text-2xl font-bold mb-4">Payment Method</h2>
 
               <form onSubmit={handlePaymentSubmit}>
-                {/* Payment Method Selection */}
+                {/* Payment Method - Only Razorpay */}
                 <div className="mb-6">
-                  <div className="space-y-3">
-                    {/* Cash on Delivery - Available */}
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('cod')}
-                      className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
-                        paymentMethod === 'cod'
-                          ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        <div className="flex-1">
-                          <span className="font-semibold">Cash on Delivery</span>
-                          <p className="text-xs text-gray-700 mt-1">Pay when you receive your order</p>
-                        </div>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">Available</span>
+                  <div className="p-4 border-2 border-primary-600 bg-primary-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                      <div className="flex-1">
+                        <span className="font-semibold text-lg">Online Payment (Razorpay)</span>
+                        <p className="text-sm text-gray-700 mt-1">Secure payment via Card, UPI, Net Banking, or Wallet</p>
                       </div>
-                    </button>
+                      <span className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">Secure</span>
+                    </div>
+                  </div>
 
-                    {/* Razorpay - Available */}
-                    <button
-                      type="button"
-                      onClick={() => setPaymentMethod('razorpay')}
-                      className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
-                        paymentMethod === 'razorpay'
-                          ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                        </svg>
-                        <div className="flex-1">
-                          <span className="font-semibold">Online Payment (Razorpay)</span>
-                          <p className="text-xs text-gray-700 mt-1">Pay via Card, UPI, Net Banking, or Wallet</p>
-                        </div>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">Secure</span>
-                      </div>
-                    </button>
+                  <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                    <span>Your payment information is encrypted and secure</span>
                   </div>
                 </div>
 
@@ -597,7 +572,7 @@ const Checkout = () => {
                     fullWidth
                     loading={createOrderMutation.isPending}
                   >
-                    {paymentMethod === 'cod' ? 'Place Order' : 'Continue to Payment'}
+                    Continue to Payment
                   </Button>
                 </div>
               </form>
