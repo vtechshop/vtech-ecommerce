@@ -1,4 +1,6 @@
 // FILE: apps/web/src/utils/razorpay.js
+import api from './api';
+
 /**
  * Load Razorpay script dynamically
  * @returns {Promise<boolean>} Whether script was loaded successfully
@@ -31,25 +33,27 @@ export const loadRazorpayScript = () => {
  */
 export const createRazorpayOrder = async (orderId, amount) => {
   try {
-    const response = await fetch('/api/payment/razorpay/create-order', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-      },
-      body: JSON.stringify({ orderId, amount }),
+    console.log('📞 Calling Razorpay create-order API:', { orderId, amount });
+    const response = await api.post('/payment/razorpay/create-order', {
+      orderId,
+      amount,
     });
 
-    const data = await response.json();
+    console.log('📡 Razorpay API response:', response.data);
 
-    if (!data.success) {
-      throw new Error(data.error?.message || 'Failed to create order');
+    if (!response.data.success) {
+      throw new Error(response.data.error?.message || response.data.message || 'Failed to create Razorpay order');
     }
 
-    return data.data;
+    return response.data.data;
   } catch (error) {
-    console.error('Error creating Razorpay order:', error);
-    throw error;
+    console.error('❌ Error creating Razorpay order:', error);
+    // Extract error message from axios response
+    const errorMessage = error.response?.data?.error?.message ||
+                        error.response?.data?.message ||
+                        error.message ||
+                        'Failed to create Razorpay order';
+    throw new Error(errorMessage);
   }
 };
 
@@ -60,25 +64,20 @@ export const createRazorpayOrder = async (orderId, amount) => {
  */
 export const verifyRazorpayPayment = async (paymentData) => {
   try {
-    const response = await fetch('/api/payment/razorpay/verify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-      },
-      body: JSON.stringify(paymentData),
-    });
+    const response = await api.post('/payment/razorpay/verify', paymentData);
 
-    const data = await response.json();
-
-    if (!data.success) {
-      throw new Error(data.error?.message || 'Payment verification failed');
+    if (!response.data.success) {
+      throw new Error(response.data.error?.message || 'Payment verification failed');
     }
 
-    return data.data;
+    return response.data.data;
   } catch (error) {
     console.error('Error verifying payment:', error);
-    throw error;
+    const errorMessage = error.response?.data?.error?.message ||
+                        error.response?.data?.message ||
+                        error.message ||
+                        'Payment verification failed';
+    throw new Error(errorMessage);
   }
 };
 
@@ -90,14 +89,7 @@ export const verifyRazorpayPayment = async (paymentData) => {
  */
 export const recordPaymentFailure = async (orderId, error) => {
   try {
-    await fetch('/api/payment/razorpay/failure', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
-      },
-      body: JSON.stringify({ orderId, error }),
-    });
+    await api.post('/payment/razorpay/failure', { orderId, error });
   } catch (err) {
     console.error('Error recording payment failure:', err);
   }
@@ -218,9 +210,8 @@ export const initiateRazorpayPayment = async ({
  */
 export const getRazorpayKey = async () => {
   try {
-    const response = await fetch('/api/payment/razorpay/key');
-    const data = await response.json();
-    return data.keyId;
+    const response = await api.get('/payment/razorpay/key');
+    return response.data.keyId;
   } catch (error) {
     console.error('Error fetching Razorpay key:', error);
     throw error;

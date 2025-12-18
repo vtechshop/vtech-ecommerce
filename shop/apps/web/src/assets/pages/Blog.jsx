@@ -69,7 +69,9 @@ const Blog = () => {
 
       <div className="container mx-auto px-4 -mt-8">
         {/* Ad Banner - Top of Blog */}
-        <AdBanner placement="blog_top" position="top" className="mb-8" />
+        <div className="mb-8">
+          <AdBanner placement="blog_top" position="top" />
+        </div>
 
         {/* Filters - Elevated Card */}
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-10 backdrop-blur-sm">
@@ -203,8 +205,8 @@ const Blog = () => {
 
             {/* Sidebar - Ad Banner */}
             <div className="lg:col-span-1">
-              <div className="sticky top-4">
-                <AdBanner placement="blog_sidebar" position="right" className="mb-6" />
+              <div className="sticky top-4 space-y-6">
+                <AdBanner placement="blog_sidebar" position="right" />
               </div>
             </div>
           </div>

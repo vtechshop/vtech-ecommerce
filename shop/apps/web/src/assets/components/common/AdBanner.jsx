@@ -6,36 +6,59 @@ import { normalizeImageUrl } from '@/utils/placeholders';
 const AdBanner = ({ placement, position = 'top', className = '' }) => {
   const [adToShow, setAdToShow] = useState(null);
 
-  const { data: adsData } = useQuery({
+  const { data: adsData, isError, error } = useQuery({
     queryKey: ['ad-placement', placement],
     queryFn: async () => {
       try {
         const response = await api.get(`/ads/placement/${placement}`);
         return response.data;
       } catch (error) {
-        console.error('Error fetching ads:', error);
+        console.error(`Error fetching ads for placement "${placement}":`, error);
         return null;
       }
     },
     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
     retry: 1,
+    enabled: !!placement, // Only fetch if placement is provided
   });
+
+  // Debug logging
+  useEffect(() => {
+    if (isError) {
+      console.error(`Ad placement "${placement}" error:`, error);
+    }
+    if (adsData) {
+      console.log(`Ad data for "${placement}":`, adsData);
+    }
+  }, [adsData, isError, error, placement]);
 
   useEffect(() => {
     if (adsData?.data) {
       // If multiple ads, pick one randomly or by highest bid
       const ads = Array.isArray(adsData.data) ? adsData.data : [adsData.data];
 
-      // Filter by position if specified
-      const filteredAds = ads.filter(ad => !position || ad.position === position);
+      // Filter by position if specified - be more lenient with position matching
+      const filteredAds = ads.filter(ad => {
+        if (!position) return true; // No position filter
+        if (!ad.position) return true; // Ad has no position set, show anyway
+        return ad.position === position; // Exact match
+      });
+
+      console.log(`Filtered ads for "${placement}" (position: ${position}):`, filteredAds);
 
       if (filteredAds.length > 0) {
         // Pick highest bid or random
         const selectedAd = filteredAds.sort((a, b) => b.bid - a.bid)[0];
+        console.log(`Selected ad for "${placement}":`, selectedAd.name);
         setAdToShow(selectedAd);
+      } else {
+        console.warn(`No ads matched for "${placement}" with position "${position}"`);
+        setAdToShow(null);
       }
+    } else {
+      setAdToShow(null);
     }
-  }, [adsData, position]);
+  }, [adsData, position, placement]);
 
   const handleClick = async () => {
     if (!adToShow) return;
