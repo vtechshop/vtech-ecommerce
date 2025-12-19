@@ -2,7 +2,7 @@
 const router = express.Router();
 const Product = require('../models/Product');
 const Review = require('../models/Review');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, optionalAuth } = require('../middleware/auth');
 const { cacheMiddleware } = require('../middleware/cache');
 const { apiLimiter, publicReadLimiter } = require('../middleware/rateLimiter');
 const AppError = require('../utils/AppError');
@@ -26,8 +26,8 @@ router.get('/:id', publicReadLimiter, cacheMiddleware(600), async (req, res, nex
 });
 
 // Validate multiple products (check if they exist and aren't deleted)
-// SECURITY: Requires authentication to prevent product enumeration attacks
-router.post('/validate', authenticate, apiLimiter, async (req, res, next) => {
+// Support both authenticated and guest users (needed for recently viewed products)
+router.post('/validate', optionalAuth, apiLimiter, async (req, res, next) => {
   try {
     const { productIds } = req.body;
 
