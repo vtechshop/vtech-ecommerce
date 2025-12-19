@@ -11,7 +11,8 @@ const vendorSchema = new mongoose.Schema({
     businessName: { type: String, trim: true, minlength: 2 },
     businessType: {
       type: String,
-      enum: ['sole_proprietorship', 'partnership', 'private_limited', 'public_limited', 'llp', 'llc', 'other']
+      enum: ['sole_proprietorship', 'partnership', 'private_limited', 'public_limited', 'llp', 'llc', 'other'],
+      set: v => v ? v.toLowerCase() : v
     },
     businessAddress: String,
     taxId: {
