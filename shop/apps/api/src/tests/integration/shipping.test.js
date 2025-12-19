@@ -68,7 +68,8 @@ describe('Shipping Integration Tests', () => {
       },
     });
 
-    orderId = order.orderId;
+    // Use MongoDB _id for API calls, not the human-readable orderId
+    orderId = order._id.toString();
   });
 
   describe('POST /api/shipping/orders/:orderId/carrier', () => {
