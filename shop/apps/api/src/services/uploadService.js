@@ -13,14 +13,14 @@ class UploadService {
         fileSize: 10 * 1024 * 1024, // 10MB
       },
       fileFilter: (req, file, cb) => {
-        const allowedTypes = /jpeg|jpg|png|gif|webp|pdf/;
+        const allowedTypes = /jpeg|jpg|png|gif|webp|avif|svg|pdf/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
         const mimetype = allowedTypes.test(file.mimetype);
 
         if (mimetype && extname) {
           return cb(null, true);
         }
-        cb(new Error('Invalid file type'));
+        cb(new Error('Invalid file type. Supported formats: JPG, PNG, GIF, WebP, AVIF, SVG, PDF'));
       },
     });
   }

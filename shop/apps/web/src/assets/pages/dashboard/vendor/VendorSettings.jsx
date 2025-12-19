@@ -337,13 +337,13 @@ const VendorSettings = () => {
                     {uploading ? 'Uploading...' : 'Upload Logo'}
                     <input
                       type="file"
-                      accept="image/jpeg,image/jpg,image/png"
+                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/avif,image/svg+xml"
                       onChange={handleLogoUpload}
                       disabled={uploading}
                       className="hidden"
                     />
                   </label>
-                  <p className="text-xs text-gray-500 mt-1">JPG or PNG, max 2MB</p>
+                  <p className="text-xs text-gray-500 mt-1">JPG, PNG, GIF, WebP, AVIF, or SVG - max 10MB</p>
                 </div>
               </div>
             </div>
