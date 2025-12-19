@@ -29,7 +29,9 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
-        cache-dependency-path: shop/apps/api/package-lock.json
+        cache-dependency-path: |
+          shop/apps/api/package-lock.json
+          shop/apps/web/package-lock.json
     
     - name: Install API dependencies
       run: |
@@ -41,11 +43,15 @@ jobs:
         cd shop/apps/api
         npm test
       env:
-        MONGO_URI: mongodb://localhost:27017/shop-test
-        JWT_ACCESS_SECRET: test-secret-min-32-chars-long
+        NODE_ENV: test
+        MONGODB_URI: mongodb://localhost:27017/shop-test
+        JWT_SECRET: test-secret-min-32-chars-long
         JWT_REFRESH_SECRET: test-refresh-secret-min-32-chars
         REDIS_HOST: localhost
         REDIS_PORT: 6379
+        CLOUDINARY_CLOUD_NAME: test
+        CLOUDINARY_API_KEY: test
+        CLOUDINARY_API_SECRET: test
     
     - name: Install Web dependencies
       run: |
@@ -56,6 +62,8 @@ jobs:
       run: |
         cd shop/apps/web
         npm run build
+      env:
+        VITE_API_URL: https://api.vtechkitchen.com/api
 
   build-and-push:
     needs: test
@@ -74,16 +82,16 @@ jobs:
     - name: Build and push API
       uses: docker/build-push-action@v4
       with:
-        context: .
-        file: ./configs/docker/Dockerfile.api
+        context: ./shop
+        file: ./shop/configs/Dockerfile.api
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/shop-api:latest
-    
+
     - name: Build and push Web
       uses: docker/build-push-action@v4
       with:
-        context: .
-        file: ./configs/docker/Dockerfile.web
+        context: ./shop
+        file: ./shop/configs/Dockerfile.web
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/shop-web:latest
 
