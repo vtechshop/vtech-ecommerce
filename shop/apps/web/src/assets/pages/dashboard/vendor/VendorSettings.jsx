@@ -149,16 +149,16 @@ const VendorSettings = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file size (2MB max)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Logo size must be less than 2MB');
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Logo size must be less than 10MB');
       return;
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/svg+xml'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Only JPG and PNG files are allowed');
+      toast.error('Only JPG, PNG, GIF, WebP, AVIF, and SVG files are allowed');
       return;
     }
 
