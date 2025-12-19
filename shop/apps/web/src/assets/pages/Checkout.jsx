@@ -224,17 +224,36 @@ const Checkout = () => {
     }
 
     const orderData = {
-      items: items.map(item => ({
+      items: items.map(item => {
         // Handle both populated (object) and non-populated (string) productId
-        productId: typeof item.productId === 'object' ? item.productId._id : item.productId || item._id,
-        variantId: item.variantId,
-        qty: item.qty || item.quantity,
-      })),
+        let productId = item.productId;
+
+        // If productId is an object (populated), extract the _id
+        if (typeof productId === 'object' && productId !== null) {
+          productId = productId._id || productId.id;
+        }
+
+        // Fallback to item._id if productId is still not valid
+        if (!productId) {
+          productId = item._id;
+        }
+
+        console.log('🔍 Cart item:', item);
+        console.log('📋 Extracted productId:', productId);
+
+        return {
+          productId,
+          variantId: item.variantId,
+          qty: item.qty || item.quantity,
+        };
+      }),
       shipTo: selectedAddress,
       shippingMethod: shippingMethod.id,
       paymentMethod,
       paymentDetails: {},
     };
+
+    console.log('📦 Final orderData:', orderData);
 
     // For Razorpay, create order first then initiate payment
     if (paymentMethod === 'razorpay') {
