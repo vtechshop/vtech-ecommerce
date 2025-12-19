@@ -29,7 +29,16 @@ describe('Vendor Integration Tests', () => {
       storeName: 'Test Vendor Store',
       slug: 'test-vendor-store',
       status: 'active',
+      kyc: {
+        status: 'approved',
+        submittedAt: new Date(),
+        reviewedAt: new Date(),
+      },
     });
+
+    // Link vendor profile to user
+    vendorUser.vendorProfile = vendor._id;
+    await vendorUser.save();
   });
 
   describe('POST /api/vendors/products', () => {
