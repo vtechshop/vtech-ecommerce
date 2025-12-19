@@ -80,7 +80,7 @@ const Ads = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
       queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
-      toast.success('Campaign created successfully');
+      toast.success('Campaign created successfully! Waiting for admin approval.');
       setIsCreateModalOpen(false);
       setCampaignForm({
         name: '',
@@ -132,7 +132,7 @@ const Ads = () => {
       dailyBudget: parseFloat(campaignForm.dailyBudget),
       startAt: new Date(campaignForm.startAt),
       placement: campaignForm.placement,
-      status: 'active',
+      status: 'draft', // Changed from 'active' to 'draft' - requires admin approval
     };
 
     if (campaignForm.endAt) {
