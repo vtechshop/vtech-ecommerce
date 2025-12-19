@@ -1,17 +1,33 @@
 // FILE: apps/web/src/pages/dashboard/vendor/Ads.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
 import Spinner from '@/components/common/Spinner';
+import Input from '@/components/common/Input';
+import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency, formatDate } from '@/utils/format';
 
 const Ads = () => {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Campaign form state
+  const [campaignForm, setCampaignForm] = useState({
+    name: '',
+    type: 'SponsoredProduct',
+    pricing: 'CPC',
+    bid: '',
+    dailyBudget: '',
+    startAt: new Date().toISOString().split('T')[0],
+    endAt: '',
+    placement: 'homepage_banner',
+    productIds: [],
+  });
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['ad-campaigns'],
@@ -25,6 +41,14 @@ const Ads = () => {
     queryKey: ['ad-wallet'],
     queryFn: async () => {
       const response = await api.get('/ads/wallet');
+      return response.data.data;
+    },
+  });
+
+  const { data: products } = useQuery({
+    queryKey: ['vendor-products'],
+    queryFn: async () => {
+      const response = await api.get('/vendors/products');
       return response.data.data;
     },
   });
@@ -46,6 +70,82 @@ const Ads = () => {
       queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
     },
   });
+
+  const createCampaignMutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await api.post('/ads/campaigns', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
+      toast.success('Campaign created successfully');
+      setIsCreateModalOpen(false);
+      setCampaignForm({
+        name: '',
+        type: 'SponsoredProduct',
+        pricing: 'CPC',
+        bid: '',
+        dailyBudget: '',
+        startAt: new Date().toISOString().split('T')[0],
+        endAt: '',
+        placement: 'homepage_banner',
+        productIds: [],
+      });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to create campaign');
+    },
+  });
+
+  const handleCreateCampaign = (e) => {
+    e.preventDefault();
+
+    // Validation
+    if (!campaignForm.name.trim()) {
+      toast.error('Campaign name is required');
+      return;
+    }
+
+    if (!campaignForm.bid || parseFloat(campaignForm.bid) <= 0) {
+      toast.error('Valid bid amount is required');
+      return;
+    }
+
+    if (!campaignForm.dailyBudget || parseFloat(campaignForm.dailyBudget) <= 0) {
+      toast.error('Valid daily budget is required');
+      return;
+    }
+
+    if (campaignForm.type === 'SponsoredProduct' && campaignForm.productIds.length === 0) {
+      toast.error('Please select at least one product for sponsored product campaigns');
+      return;
+    }
+
+    // Prepare data
+    const data = {
+      name: campaignForm.name,
+      type: campaignForm.type,
+      pricing: campaignForm.pricing,
+      bid: parseFloat(campaignForm.bid),
+      dailyBudget: parseFloat(campaignForm.dailyBudget),
+      startAt: new Date(campaignForm.startAt),
+      placement: campaignForm.placement,
+      status: 'active',
+    };
+
+    if (campaignForm.endAt) {
+      data.endAt = new Date(campaignForm.endAt);
+    }
+
+    if (campaignForm.type === 'SponsoredProduct' && campaignForm.productIds.length > 0) {
+      data.targeting = {
+        products: campaignForm.productIds,
+      };
+    }
+
+    createCampaignMutation.mutate(data);
+  };
 
   if (isLoading) {
     return (
@@ -243,19 +343,174 @@ const Ads = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         title="Create Ad Campaign"
+        size="lg"
       >
-        <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              Ad campaign creation feature is coming soon! Please check back later or contact support for assistance.
-            </p>
+        <form onSubmit={handleCreateCampaign} className="space-y-6">
+          {/* Campaign Basic Info */}
+          <div className="space-y-4">
+            <Input
+              label="Campaign Name"
+              value={campaignForm.name}
+              onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })}
+              required
+              placeholder="e.g., Summer Sale Campaign"
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Campaign Type</label>
+                <select
+                  value={campaignForm.type}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, type: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  required
+                >
+                  <option value="SponsoredProduct">Sponsored Product</option>
+                  <option value="SponsoredBrand">Sponsored Brand</option>
+                  <option value="Banner">Banner Ad</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Pricing Model</label>
+                <select
+                  value={campaignForm.pricing}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, pricing: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  required
+                >
+                  <option value="CPC">CPC (Cost Per Click)</option>
+                  <option value="CPM">CPM (Cost Per 1000 Views)</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Placement</label>
+              <select
+                value={campaignForm.placement}
+                onChange={(e) => setCampaignForm({ ...campaignForm, placement: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                required
+              >
+                <optgroup label="Homepage">
+                  <option value="homepage_banner">Homepage Banner</option>
+                  <option value="homepage_top">Homepage Top</option>
+                  <option value="homepage_sidebar_left">Homepage Sidebar Left</option>
+                  <option value="homepage_sidebar_right">Homepage Sidebar Right</option>
+                </optgroup>
+                <optgroup label="Search & Category">
+                  <option value="search_sponsored_products">Search Sponsored Products</option>
+                  <option value="category_top_banner">Category Top Banner</option>
+                  <option value="category_grid">Category Grid</option>
+                </optgroup>
+                <optgroup label="Product Pages">
+                  <option value="product_sidebar">Product Sidebar</option>
+                  <option value="product_related">Product Related</option>
+                </optgroup>
+              </select>
+            </div>
+
+            {campaignForm.type === 'SponsoredProduct' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Products to Promote
+                </label>
+                <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
+                  {products?.map((product) => (
+                    <label key={product._id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={campaignForm.productIds.includes(product._id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setCampaignForm({
+                              ...campaignForm,
+                              productIds: [...campaignForm.productIds, product._id],
+                            });
+                          } else {
+                            setCampaignForm({
+                              ...campaignForm,
+                              productIds: campaignForm.productIds.filter((id) => id !== product._id),
+                            });
+                          }
+                        }}
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      <span className="text-sm">{product.title}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {campaignForm.productIds.length} product(s) selected
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label={`Bid Amount (₹) - ${campaignForm.pricing === 'CPC' ? 'per click' : 'per 1000 views'}`}
+                type="number"
+                step="0.01"
+                min="0"
+                value={campaignForm.bid}
+                onChange={(e) => setCampaignForm({ ...campaignForm, bid: e.target.value })}
+                required
+                placeholder={campaignForm.pricing === 'CPC' ? '5.00 - 20.00' : '100.00 - 300.00'}
+              />
+
+              <Input
+                label="Daily Budget (₹)"
+                type="number"
+                step="0.01"
+                min="0"
+                value={campaignForm.dailyBudget}
+                onChange={(e) => setCampaignForm({ ...campaignForm, dailyBudget: e.target.value })}
+                required
+                placeholder="Minimum ₹500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Start Date"
+                type="date"
+                value={campaignForm.startAt}
+                onChange={(e) => setCampaignForm({ ...campaignForm, startAt: e.target.value })}
+                required
+                min={new Date().toISOString().split('T')[0]}
+              />
+
+              <Input
+                label="End Date (Optional)"
+                type="date"
+                value={campaignForm.endAt}
+                onChange={(e) => setCampaignForm({ ...campaignForm, endAt: e.target.value })}
+                min={campaignForm.startAt}
+              />
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="text-sm text-yellow-800">
+                <strong>Note:</strong> Campaign will start automatically on the selected date.
+                Make sure you have sufficient balance in your ad wallet before creating the campaign.
+              </p>
+            </div>
           </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-              Close
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" loading={createCampaignMutation.isPending}>
+              Create Campaign
             </Button>
           </div>
-        </div>
+        </form>
       </Modal>
     </div>
   );
