@@ -15,6 +15,7 @@ const Ads = () => {
   const toast = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [rechargeAmount, setRechargeAmount] = useState('');
 
   // Campaign form state
   const [campaignForm, setCampaignForm] = useState({
@@ -145,6 +146,34 @@ const Ads = () => {
     }
 
     createCampaignMutation.mutate(data);
+  };
+
+  const rechargeWalletMutation = useMutation({
+    mutationFn: async (amount) => {
+      const response = await api.post('/ads/wallet/recharge', { amount });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
+      toast.success('Wallet recharged successfully');
+      setIsModalOpen(false);
+      setRechargeAmount('');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to recharge wallet');
+    },
+  });
+
+  const handleRechargeWallet = (e) => {
+    e.preventDefault();
+
+    const amount = parseFloat(rechargeAmount);
+    if (!amount || amount < 100) {
+      toast.error('Minimum recharge amount is ₹100');
+      return;
+    }
+
+    rechargeWalletMutation.mutate(amount);
   };
 
   if (isLoading) {
@@ -313,29 +342,29 @@ const Ads = () => {
         onClose={() => setIsModalOpen(false)}
         title="Recharge Ad Wallet"
       >
-        <div className="space-y-4">
+        <form onSubmit={handleRechargeWallet} className="space-y-4">
           <p className="text-sm text-gray-700">
             Current Balance: <span className="font-semibold">{formatCurrency(wallet?.balance || 0)}</span>
           </p>
-          <div>
-            <label className="block text-sm font-medium mb-2">Recharge Amount</label>
-            <input
-              type="number"
-              min="100"
-              step="100"
-              placeholder="Enter amount"
-              className="input w-full"
-            />
-          </div>
+          <Input
+            label="Recharge Amount"
+            type="number"
+            min="100"
+            step="100"
+            value={rechargeAmount}
+            onChange={(e) => setRechargeAmount(e.target.value)}
+            placeholder="Enter amount (minimum ₹100)"
+            required
+          />
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
               Cancel
             </Button>
-            <Button variant="primary">
+            <Button type="submit" variant="primary" loading={rechargeWalletMutation.isPending}>
               Proceed to Payment
             </Button>
           </div>
-        </div>
+        </form>
       </Modal>
 
       {/* Create Campaign Modal */}
