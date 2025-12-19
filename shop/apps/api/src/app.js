@@ -83,6 +83,16 @@ app.use(cors({
       }
     }
 
+    // Allow all Vercel preview deployments (*.vercel.app)
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Allow all Netlify preview deployments (*.netlify.app)
+    if (origin.endsWith('.netlify.app')) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.indexOf(origin) === -1) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
