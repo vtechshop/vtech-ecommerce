@@ -17,7 +17,7 @@ Last tested: 2025-12-19
 GET /api/payment/razorpay/key
 ```
 
-**Authentication**: Required (JWT)
+**Authentication**: ❌ Not Required (Public endpoint)
 
 **Purpose**: Get the Razorpay public key for client-side integration
 
@@ -31,16 +31,18 @@ GET /api/payment/razorpay/key
 
 **Status**:
 - ✅ Endpoint exists
-- ⚠️ Returns 401 without auth (expected)
+- ✅ Works without authentication
+- ✅ CSRF protection disabled
 
 ---
 
 ### 2. Create Razorpay Order
-```
+
+```http
 POST /api/payment/razorpay/create-order
 ```
 
-**Authentication**: Required (JWT)
+**Authentication**: ⚠️ Optional (Supports guest checkout)
 
 **Rate Limit**: 10 requests/hour (payment limiter)
 
@@ -67,18 +69,20 @@ POST /api/payment/razorpay/create-order
 
 **Status**:
 - ✅ Endpoint exists
-- ⚠️ Returns 403 without auth (expected - CSRF protection in production)
+- ✅ Works without authentication (guest checkout)
+- ✅ CSRF protection disabled
 
 **Usage**: Called from frontend after creating internal order
 
 ---
 
 ### 3. Verify Razorpay Payment
-```
+
+```http
 POST /api/payment/razorpay/verify
 ```
 
-**Authentication**: Required (JWT)
+**Authentication**: ⚠️ Optional (Supports guest checkout)
 
 **Rate Limit**: 10 requests/hour (payment limiter)
 
