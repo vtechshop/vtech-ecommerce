@@ -169,7 +169,7 @@ const VendorSettings = () => {
       formData.append('file', file);
       formData.append('folder', 'vendor-logos');
 
-      const uploadResponse = await api.post('/upload', formData, {
+      const uploadResponse = await api.post('/upload/single', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
