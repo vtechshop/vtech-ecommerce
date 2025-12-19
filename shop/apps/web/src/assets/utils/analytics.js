@@ -60,7 +60,8 @@ export const trackPurchase = (orderData) => {
     value: orderData.total,
     currency: 'USD',
     items: orderData.items.map(item => ({
-      item_id: item.productId,
+      // Handle both populated (object) and non-populated (string) productId
+      item_id: typeof item.productId === 'object' ? item.productId._id : item.productId,
       item_name: item.name,
       price: item.price,
       quantity: item.quantity,
@@ -88,7 +89,8 @@ export const trackBeginCheckout = (cartData) => {
     currency: 'USD',
     value: cartData.totals.total,
     items: cartData.items.map(item => ({
-      item_id: item.productId,
+      // Handle both populated (object) and non-populated (string) productId
+      item_id: typeof item.productId === 'object' ? item.productId._id : item.productId,
       item_name: item.name,
       price: item.priceSnapshot,
       quantity: item.qty,

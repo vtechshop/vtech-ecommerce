@@ -225,7 +225,8 @@ const Checkout = () => {
 
     const orderData = {
       items: items.map(item => ({
-        productId: item.productId || item._id,
+        // Handle both populated (object) and non-populated (string) productId
+        productId: typeof item.productId === 'object' ? item.productId._id : item.productId || item._id,
         variantId: item.variantId,
         qty: item.qty || item.quantity,
       })),
