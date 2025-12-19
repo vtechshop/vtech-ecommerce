@@ -11,7 +11,7 @@ const vendorSchema = new mongoose.Schema({
     businessName: { type: String, trim: true, minlength: 2 },
     businessType: {
       type: String,
-      enum: ['sole_proprietorship', 'partnership', 'private_limited', 'public_limited', 'llp', 'other']
+      enum: ['sole_proprietorship', 'partnership', 'private_limited', 'public_limited', 'llp', 'llc', 'other']
     },
     businessAddress: String,
     taxId: {
@@ -128,6 +128,12 @@ vendorSchema.pre('save', function (next) {
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
   }
+
+  // Convert businessType to lowercase to match enum values
+  if (this.kyc?.businessType) {
+    this.kyc.businessType = this.kyc.businessType.toLowerCase();
+  }
+
   next();
 });
 
