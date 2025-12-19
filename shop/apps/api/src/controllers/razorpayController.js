@@ -206,8 +206,17 @@ exports.verifyPayment = async (req, res, next) => {
     };
 
     // Update order status if payment is successful
-    if (payment.status === 'captured' && order.status === 'pending') {
-      order.status = 'confirmed';
+    if (payment.status === 'captured') {
+      // Change from pending_payment to placed (confirmed)
+      if (order.status === 'pending' || order.status === 'pending_payment') {
+        order.status = 'placed';
+        // Add event to order history
+        order.events.push({
+          status: 'placed',
+          description: 'Payment verified successfully',
+          timestamp: new Date(),
+        });
+      }
     }
 
     await order.save();
@@ -376,8 +385,14 @@ async function handlePaymentCaptured(payload) {
     order.payment.status = 'captured';
     order.payment.paidAt = new Date();
 
-    if (order.status === 'pending') {
-      order.status = 'confirmed';
+    // Update status from pending_payment to placed
+    if (order.status === 'pending' || order.status === 'pending_payment') {
+      order.status = 'placed';
+      order.events.push({
+        status: 'placed',
+        description: 'Payment captured successfully via webhook',
+        timestamp: new Date(),
+      });
     }
 
     await order.save();

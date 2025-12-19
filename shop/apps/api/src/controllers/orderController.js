@@ -323,6 +323,14 @@ exports.createOrder = async (req, res, next) => {
       const vendorDiscount = 0;
       const vendorTotal = vendorSubtotal + vendorTax + vendorShipping - vendorDiscount;
 
+        // Determine initial order status based on payment method
+        // COD: placed immediately (payment on delivery)
+        // Online: pending_payment (waiting for payment verification)
+        const initialStatus = paymentMethod === 'cod' ? 'placed' : 'pending_payment';
+        const initialEventDescription = paymentMethod === 'cod'
+          ? 'Order placed - Cash on Delivery'
+          : 'Order created - Awaiting payment';
+
         // Create vendor-specific order with transaction
         const vendorOrder = (await Order.create([{
           orderId: generateOrderId(), // SEQUENTIAL ORDER ID
@@ -338,10 +346,10 @@ exports.createOrder = async (req, res, next) => {
             total: vendorTotal,
           },
           shipTo,
-          status: 'placed',
+          status: initialStatus,
           events: [{
-            status: 'placed',
-            description: paymentMethod === 'cod' ? 'Order placed - Cash on Delivery' : 'Order placed',
+            status: initialStatus,
+            description: initialEventDescription,
             timestamp: new Date(),
           }],
           payment: {
