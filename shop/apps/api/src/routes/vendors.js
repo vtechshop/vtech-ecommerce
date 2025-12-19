@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const vendorController = require('../controllers/vendorController');
+const razorpayAccountController = require('../controllers/razorpayAccountController');
 const { authenticate, authorize, requireApprovedKYC } = require('../middleware/auth');
 
 // Authenticated onboarding
@@ -39,6 +40,10 @@ router.put('/settings/profile', authenticate, authorize(['vendor', 'admin']), ve
 router.put('/settings/bank', authenticate, authorize(['vendor', 'admin']), vendorController.updateBank);
 router.put('/settings/policies', authenticate, authorize(['vendor', 'admin']), vendorController.updatePolicies);
 router.put('/settings/payout', authenticate, authorize(['vendor', 'admin']), vendorController.updatePayout);
+
+// Razorpay Route (automatic payment splits) - require approved KYC
+router.post('/razorpay/connect', authenticate, authorize(['vendor']), requireApprovedKYC, razorpayAccountController.createVendorLinkedAccount);
+router.get('/razorpay/status', authenticate, authorize(['vendor', 'admin']), razorpayAccountController.getVendorAccountStatus);
 
 // Public route (MUST be last to avoid catching other routes)
 router.get('/:slug', vendorController.getVendorBySlug);

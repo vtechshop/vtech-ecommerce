@@ -342,6 +342,15 @@ exports.webhook = async (req, res, next) => {
       case 'refund.created':
         await handleRefundCreated(payload);
         break;
+      case 'transfer.processed':
+        await handleTransferProcessed(req.body.payload.transfer.entity);
+        break;
+      case 'transfer.failed':
+        await handleTransferFailed(req.body.payload.transfer.entity);
+        break;
+      case 'transfer.reversed':
+        await handleTransferReversed(req.body.payload.transfer.entity);
+        break;
       default:
         console.log(`Unhandled webhook event: ${event}`);
     }
@@ -419,6 +428,124 @@ async function handleRefundCreated(payload) {
     console.log(`Refund created for order ${order._id}`);
   } catch (error) {
     console.error('Error handling refund created:', error);
+  }
+}
+
+// Webhook handler for transfer processed
+async function handleTransferProcessed(payload) {
+  try {
+    const transferId = payload.id;
+    const orderId = payload.notes?.orderId;
+
+    logger.info(`Transfer processed webhook: ${transferId} for order ${orderId}`);
+
+    if (!orderId) {
+      logger.warn('Transfer webhook missing orderId in notes');
+      return;
+    }
+
+    // Update commission record
+    const commission = await Commission.findOne({ 'transfer.transferId': transferId });
+
+    if (commission) {
+      commission.transfer.status = 'processed';
+      commission.transfer.processedAt = new Date();
+      commission.status = 'paid';
+      commission.paidAt = new Date();
+      await commission.save();
+
+      // Update vendor/affiliate earnings
+      if (commission.type === 'vendor') {
+        await Vendor.findByIdAndUpdate(commission.subjectId, {
+          $inc: {
+            pendingEarnings: -commission.amount,
+            totalEarnings: commission.amount,
+          },
+        });
+      } else if (commission.type === 'affiliate') {
+        await Affiliate.findByIdAndUpdate(commission.subjectId, {
+          $inc: {
+            pendingEarnings: -commission.amount,
+            paidEarnings: commission.amount,
+            totalEarnings: commission.amount,
+          },
+        });
+      }
+
+      logger.info(`Commission ${commission._id} marked as paid, earnings updated`);
+    } else {
+      logger.warn(`Commission not found for transfer ${transferId}`);
+    }
+  } catch (error) {
+    logger.error('Error handling transfer processed:', error);
+  }
+}
+
+// Webhook handler for transfer failed
+async function handleTransferFailed(payload) {
+  try {
+    const transferId = payload.id;
+    const failureReason = payload.error?.description || 'Unknown error';
+
+    logger.error(`Transfer failed webhook: ${transferId} - ${failureReason}`);
+
+    // Update commission record
+    const commission = await Commission.findOne({ 'transfer.transferId': transferId });
+
+    if (commission) {
+      commission.transfer.status = 'failed';
+      commission.transfer.failureReason = failureReason;
+      commission.status = 'pending'; // Reset to pending for manual processing
+      await commission.save();
+
+      logger.info(`Commission ${commission._id} marked as failed: ${failureReason}`);
+    } else {
+      logger.warn(`Commission not found for failed transfer ${transferId}`);
+    }
+  } catch (error) {
+    logger.error('Error handling transfer failed:', error);
+  }
+}
+
+// Webhook handler for transfer reversed (refund scenario)
+async function handleTransferReversed(payload) {
+  try {
+    const transferId = payload.id;
+    const reversalId = payload.reversal?.id;
+
+    logger.info(`Transfer reversed webhook: ${transferId}, reversal: ${reversalId}`);
+
+    // Update commission record
+    const commission = await Commission.findOne({ 'transfer.transferId': transferId });
+
+    if (commission) {
+      commission.transfer.status = 'reversed';
+      commission.status = 'cancelled';
+      await commission.save();
+
+      // Reverse vendor/affiliate earnings
+      if (commission.type === 'vendor') {
+        await Vendor.findByIdAndUpdate(commission.subjectId, {
+          $inc: {
+            totalEarnings: -commission.amount,
+            pendingEarnings: commission.amount, // Add back to pending if it was paid
+          },
+        });
+      } else if (commission.type === 'affiliate') {
+        await Affiliate.findByIdAndUpdate(commission.subjectId, {
+          $inc: {
+            paidEarnings: -commission.amount,
+            totalEarnings: -commission.amount,
+          },
+        });
+      }
+
+      logger.info(`Commission ${commission._id} reversed, earnings adjusted`);
+    } else {
+      logger.warn(`Commission not found for reversed transfer ${transferId}`);
+    }
+  } catch (error) {
+    logger.error('Error handling transfer reversed:', error);
   }
 }
 

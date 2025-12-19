@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const affiliateController = require('../controllers/affiliateController');
+const razorpayAccountController = require('../controllers/razorpayAccountController');
 const { authenticate } = require('../middleware/auth');
 const { catalogTrackingLimiter } = require('../middleware/rateLimiter');
 
@@ -28,5 +29,9 @@ router.get('/kyc', affiliateController.getKYC);
 router.put('/kyc', affiliateController.updateKYC);
 router.post('/kyc/documents', affiliateController.uploadKYCDocument);
 router.delete('/kyc/documents/:documentId', affiliateController.deleteKYCDocument);
+
+// Razorpay Route (automatic payment splits)
+router.post('/razorpay/connect', razorpayAccountController.createAffiliateLinkedAccount);
+router.get('/razorpay/status', razorpayAccountController.getAffiliateAccountStatus);
 
 module.exports = router;
