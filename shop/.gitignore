@@ -1,7 +1,7 @@
 # FILE: .gitignore
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json should NOT be ignored - needed for CI/CD npm ci
 
 # Environment
 .env
