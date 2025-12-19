@@ -5,12 +5,21 @@ import api from '../../../utils/api';
 import { useToast } from '../../../components/common/ToastContainer';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
+import Modal from '../../../components/common/Modal';
 
 const VendorSettings = () => {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('profile');
   const [uploading, setUploading] = useState(false);
+
+  // Modal states
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
 
   // Fetch vendor settings
   const { data: vendorData, isLoading } = useQuery({
@@ -167,7 +176,9 @@ const VendorSettings = () => {
       setProfileData({ ...profileData, logo: uploadResponse.data.data.url });
       toast.success('Logo uploaded successfully');
     } catch (error) {
-      toast.error('Failed to upload logo');
+      console.error('Logo upload error:', error);
+      const errorMessage = error.response?.data?.error?.message || error.response?.data?.message || 'Failed to upload logo';
+      toast.error(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -192,6 +203,55 @@ const VendorSettings = () => {
   const handlePayoutSubmit = (e) => {
     e.preventDefault();
     updatePayoutMutation.mutate(payoutData);
+  };
+
+  // Change Password Mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await api.post('/user/change-password', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Password changed successfully');
+      setShowChangePasswordModal(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to change password');
+    },
+  });
+
+  // Handle password change
+  const handlePasswordChange = (e) => {
+    e.preventDefault();
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    changePasswordMutation.mutate({
+      currentPassword: passwordData.currentPassword,
+      newPassword: passwordData.newPassword,
+    });
+  };
+
+  // Security button handlers
+  const handleEnable2FA = () => {
+    toast.info('Two-Factor Authentication feature coming soon');
+  };
+
+  const handleViewActivity = () => {
+    toast.info('Login Activity feature coming soon');
+  };
+
+  const handleManageKeys = () => {
+    toast.info('API Keys management feature coming soon');
   };
 
   if (isLoading) {
@@ -555,7 +615,7 @@ const VendorSettings = () => {
                     Add an extra layer of security to your account
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleEnable2FA}>
                   Enable 2FA
                 </Button>
               </div>
@@ -567,7 +627,7 @@ const VendorSettings = () => {
                     Update your password regularly for better security
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setShowChangePasswordModal(true)}>
                   Change Password
                 </Button>
               </div>
@@ -579,7 +639,7 @@ const VendorSettings = () => {
                     View recent login attempts and active sessions
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleViewActivity}>
                   View Activity
                 </Button>
               </div>
@@ -591,7 +651,7 @@ const VendorSettings = () => {
                     Manage API keys for third-party integrations
                   </p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleManageKeys}>
                   Manage Keys
                 </Button>
               </div>
@@ -599,6 +659,56 @@ const VendorSettings = () => {
           </div>
         )}
       </div>
+
+      {/* Change Password Modal */}
+      <Modal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        title="Change Password"
+        size="md"
+      >
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <Input
+            label="Current Password"
+            type="password"
+            value={passwordData.currentPassword}
+            onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+            required
+            placeholder="Enter current password"
+          />
+
+          <Input
+            label="New Password"
+            type="password"
+            value={passwordData.newPassword}
+            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+            required
+            placeholder="Enter new password (min 6 characters)"
+          />
+
+          <Input
+            label="Confirm New Password"
+            type="password"
+            value={passwordData.confirmPassword}
+            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+            required
+            placeholder="Confirm new password"
+          />
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowChangePasswordModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" loading={changePasswordMutation.isPending}>
+              Change Password
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
