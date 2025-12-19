@@ -121,6 +121,14 @@ const vendorSchema = new mongoose.Schema({
 // extra indexes (do NOT duplicate unique on userId/slug)
 vendorSchema.index({ status: 1 });
 
+vendorSchema.pre('validate', function (next) {
+  // Convert businessType to lowercase BEFORE validation
+  if (this.kyc?.businessType) {
+    this.kyc.businessType = this.kyc.businessType.toLowerCase();
+  }
+  next();
+});
+
 vendorSchema.pre('save', function (next) {
   if (this.isModified('storeName') && !this.slug) {
     this.slug = this.storeName
@@ -129,12 +137,6 @@ vendorSchema.pre('save', function (next) {
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
   }
-
-  // Convert businessType to lowercase to match enum values
-  if (this.kyc?.businessType) {
-    this.kyc.businessType = this.kyc.businessType.toLowerCase();
-  }
-
   next();
 });
 
