@@ -117,9 +117,17 @@ const VendorStore = () => {
       {/* Vendor Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-8">
         <div className="flex items-start gap-6">
-          <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-lg">
-            {vendor.storeName.charAt(0)}
-          </div>
+          {vendor.logo ? (
+            <img
+              src={vendor.logo}
+              alt={vendor.storeName}
+              className="w-24 h-24 rounded-full object-cover shadow-lg border-2 border-gray-100"
+            />
+          ) : (
+            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-3xl font-bold text-white shadow-lg">
+              {vendor.storeName.charAt(0)}
+            </div>
+          )}
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2">{vendor.storeName}</h1>
             {vendor.description && (
