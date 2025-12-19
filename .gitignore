@@ -2,6 +2,11 @@
 node_modules/
 */node_modules/
 
+# Lock files (monorepo - keep app-specific lock files, ignore root)
+/package-lock.json
+/yarn.lock
+/pnpm-lock.yaml
+
 # Environment files (NEVER commit these!)
 .env
 .env.local
@@ -27,11 +32,13 @@ logs/
 *.log
 npm-debug.log*
 
-# IDE
+# IDE and Editor Settings
 .idea/
 .vscode/
+.claude/
 *.swp
 *.swo
+*.sublime-*
 
 # OS files
 .DS_Store
