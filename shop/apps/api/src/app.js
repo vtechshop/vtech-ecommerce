@@ -136,6 +136,7 @@ app.use((req, res, next) => {
     '/api/auth',       // Auth has its own flow
     '/api/csrf-token', // CSRF token endpoint itself
     '/api/cart',       // Session-based, not user-specific
+    '/api/payment',    // Payment endpoints - support guest checkout, rate limited
     '/api/admin',      // Protected by JWT + admin role check
     '/api/vendors',    // Protected by JWT + vendor role check
     '/api/orders',     // Protected by JWT authentication
