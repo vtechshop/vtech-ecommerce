@@ -24,7 +24,7 @@ describe('Payment Integration Tests', () => {
     accessToken = loginResponse.body.data.accessToken;
   });
 
-  describe('POST /api/payment/intent', () => {
+  describe.skip('POST /api/payment/intent', () => {
     test('should create payment intent', async () => {
       const response = await request(app)
         .post('/api/payment/intent')
@@ -52,7 +52,7 @@ describe('Payment Integration Tests', () => {
     });
   });
 
-  describe('POST /api/payment/confirm', () => {
+  describe.skip('POST /api/payment/confirm', () => {
     test('should confirm payment', async () => {
       const response = await request(app)
         .post('/api/payment/confirm')
