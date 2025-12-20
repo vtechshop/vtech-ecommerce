@@ -301,10 +301,6 @@ const VendorSettings = () => {
   };
 
   // Security button handlers
-  const handleEnable2FA = () => {
-    toast.info('Two-Factor Authentication feature coming soon');
-  };
-
   const handleViewActivity = () => {
     setShowLoginActivityModal(true);
   };
@@ -682,18 +678,6 @@ const VendorSettings = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div>
-                  <p className="font-medium text-gray-900">Two-Factor Authentication</p>
-                  <p className="text-sm text-gray-700 mt-1">
-                    Add an extra layer of security to your account
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleEnable2FA}>
-                  Enable 2FA
-                </Button>
-              </div>
-
               <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div>
                   <p className="font-medium text-gray-900">Change Password</p>
