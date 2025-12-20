@@ -18,6 +18,9 @@ router.put('/profile', userController.updateProfile);
 // Change password
 router.put('/password', userController.changePassword);
 
+// Get login activity
+router.get('/login-activity', userController.getLoginActivity);
+
 // Delete account
 router.delete('/account', userController.deleteAccount);
 

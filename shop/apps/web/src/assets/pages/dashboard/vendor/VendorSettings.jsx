@@ -6,6 +6,7 @@ import { useToast } from '../../../components/common/ToastContainer';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
 import Modal from '../../../components/common/Modal';
+import Spinner from '../../../components/common/Spinner';
 
 const VendorSettings = () => {
   const toast = useToast();
@@ -20,6 +21,7 @@ const VendorSettings = () => {
     newPassword: '',
     confirmPassword: '',
   });
+  const [showLoginActivityModal, setShowLoginActivityModal] = useState(false);
 
   // Fetch vendor settings
   const { data: vendorData, isLoading } = useQuery({
@@ -28,6 +30,16 @@ const VendorSettings = () => {
       const response = await api.get('/vendors/settings');
       return response.data.data;
     },
+  });
+
+  // Fetch login activities
+  const { data: loginActivities, isLoading: activitiesLoading } = useQuery({
+    queryKey: ['login-activities'],
+    queryFn: async () => {
+      const response = await api.get('/user/login-activity?limit=20');
+      return response.data.data;
+    },
+    enabled: showLoginActivityModal,
   });
 
   // Store Profile State
@@ -149,16 +161,16 @@ const VendorSettings = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Logo size must be less than 10MB');
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo size must be less than 2MB');
       return;
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/avif', 'image/svg+xml'];
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Only JPG, PNG, GIF, WebP, AVIF, and SVG files are allowed');
+      toast.error('Only JPG and PNG files are allowed');
       return;
     }
 
@@ -247,7 +259,7 @@ const VendorSettings = () => {
   };
 
   const handleViewActivity = () => {
-    toast.info('Login Activity feature coming soon');
+    setShowLoginActivityModal(true);
   };
 
   const handleManageKeys = () => {
@@ -708,6 +720,93 @@ const VendorSettings = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Login Activity Modal */}
+      <Modal
+        isOpen={showLoginActivityModal}
+        onClose={() => setShowLoginActivityModal(false)}
+        title="Login Activity"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            View your recent login attempts and active sessions
+          </p>
+
+          {activitiesLoading ? (
+            <div className="flex justify-center py-8">
+              <Spinner size="lg" />
+            </div>
+          ) : loginActivities && loginActivities.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Device
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date & Time
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {loginActivities.map((activity) => (
+                    <tr key={activity._id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          activity.type === 'login' ? 'bg-green-100 text-green-800' :
+                          activity.type === 'failed_login' ? 'bg-red-100 text-red-800' :
+                          activity.type === 'logout' ? 'bg-gray-100 text-gray-800' :
+                          'bg-blue-100 text-blue-800'
+                        }`}>
+                          {activity.type.replace('_', ' ')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          activity.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {activity.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm text-gray-900">{activity.browser}</div>
+                        <div className="text-xs text-gray-500">{activity.os}</div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                        {activity.ipAddress || 'Unknown'}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(activity.createdAt).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No login activity found</p>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setShowLoginActivityModal(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

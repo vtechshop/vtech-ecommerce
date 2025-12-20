@@ -10,6 +10,7 @@ const {
 } = require('../utils/jwt');
 const logger = require('../config/logger');
 const emailService = require('../services/emailService');
+const loginActivityService = require('../services/loginActivityService');
 const env = require('../config/env');
 
 // Helper function to log audit events
@@ -346,6 +347,12 @@ exports.login = async (req, res, next) => {
         remainingAttempts: MAX_LOGIN_ATTEMPTS - user.loginAttempts
       }, req);
 
+      // Log login activity
+      await loginActivityService.logActivity(user._id, 'failed_login', req, {
+        status: 'failed',
+        failureReason: 'Invalid password'
+      });
+
       return res.status(401).json({
         success: false,
         error: {
@@ -380,6 +387,9 @@ exports.login = async (req, res, next) => {
 
     // Audit log
     await logAudit(user._id, 'LOGIN_SUCCESS', { email: normalizedEmail }, req);
+
+    // Log login activity
+    await loginActivityService.logActivity(user._id, 'login', req);
 
     logger.info(`User logged in: ${normalizedEmail}`);
 

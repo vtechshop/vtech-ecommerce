@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { hashPassword, comparePassword } = require('../utils/hash');
+const loginActivityService = require('../services/loginActivityService');
 
 // Get profile
 exports.getProfile = async (req, res, next) => {
@@ -420,6 +421,21 @@ exports.deleteAccount = async (req, res, next) => {
       data: {
         message: 'Your account has been successfully deleted',
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get login activity
+exports.getLoginActivity = async (req, res, next) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const activities = await loginActivityService.getUserActivities(req.user._id, limit);
+
+    res.json({
+      success: true,
+      data: activities,
     });
   } catch (error) {
     next(error);
