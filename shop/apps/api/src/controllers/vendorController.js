@@ -853,9 +853,104 @@ async function updateOrderStatus(req, res, next) {
   }
 }
 
+// Get vendor reviews (public endpoint)
+async function getVendorReviews(req, res, next) {
+  try {
+    const { slug } = req.params;
+    const { page = 1, limit = 20, sort = 'recent' } = req.query;
+
+    // Find vendor
+    const vendor = await Vendor.findOne({ slug });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor not found' },
+      });
+    }
+
+    // Get all products for this vendor
+    const products = await Product.find({ vendorId: vendor._id }).select('_id').lean();
+    const productIds = products.map(p => p._id);
+
+    // Build sort criteria
+    let sortCriteria = {};
+    if (sort === 'recent') sortCriteria = { createdAt: -1 };
+    else if (sort === 'rating_high') sortCriteria = { rating: -1, createdAt: -1 };
+    else if (sort === 'rating_low') sortCriteria = { rating: 1, createdAt: -1 };
+    else if (sort === 'helpful') sortCriteria = { helpfulCount: -1, createdAt: -1 };
+
+    // SECURITY: Enforce maximum limit
+    const safeLimit = Math.min(parseInt(limit) || 20, 100);
+    const safePage = Math.max(parseInt(page) || 1, 1);
+    const skip = (safePage - 1) * safeLimit;
+
+    const Review = require('../models/Review');
+
+    // Get reviews for all vendor's products
+    const [reviews, total, stats] = await Promise.all([
+      Review.find({
+        productId: { $in: productIds },
+        status: 'approved',
+      })
+        .populate('userId', 'name')
+        .populate('productId', 'title slug images')
+        .sort(sortCriteria)
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+      Review.countDocuments({
+        productId: { $in: productIds },
+        status: 'approved',
+      }),
+      Review.aggregate([
+        {
+          $match: {
+            productId: { $in: productIds },
+            status: 'approved',
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            averageRating: { $avg: '$rating' },
+            totalReviews: { $sum: 1 },
+            rating5: { $sum: { $cond: [{ $eq: ['$rating', 5] }, 1, 0] } },
+            rating4: { $sum: { $cond: [{ $eq: ['$rating', 4] }, 1, 0] } },
+            rating3: { $sum: { $cond: [{ $eq: ['$rating', 3] }, 1, 0] } },
+            rating2: { $sum: { $cond: [{ $eq: ['$rating', 2] }, 1, 0] } },
+            rating1: { $sum: { $cond: [{ $eq: ['$rating', 1] }, 1, 0] } },
+            verifiedCount: { $sum: { $cond: ['$verified', 1, 0] } },
+          },
+        },
+      ]),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        reviews,
+        stats: stats[0] || {
+          averageRating: 0,
+          totalReviews: 0,
+          rating5: 0,
+          rating4: 0,
+          rating3: 0,
+          rating2: 0,
+          rating1: 0,
+          verifiedCount: 0,
+        },
+      },
+      meta: getPaginationMeta(total, safePage, safeLimit),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ---------- EXPORTS ----------
 module.exports = {
   getVendorBySlug,
+  getVendorReviews,
   onboard,
   getDashboardStats,
   getVendorProducts,

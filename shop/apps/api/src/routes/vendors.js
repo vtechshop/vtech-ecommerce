@@ -45,6 +45,9 @@ router.put('/settings/payout', authenticate, authorize(['vendor', 'admin']), ven
 router.post('/razorpay/connect', authenticate, authorize(['vendor']), requireApprovedKYC, razorpayAccountController.createVendorLinkedAccount);
 router.get('/razorpay/status', authenticate, authorize(['vendor', 'admin']), razorpayAccountController.getVendorAccountStatus);
 
+// Public routes (MUST be before /:slug to avoid being caught by dynamic route)
+router.get('/:slug/reviews', vendorController.getVendorReviews);
+
 // Public route (MUST be last to avoid catching other routes)
 router.get('/:slug', vendorController.getVendorBySlug);
 
