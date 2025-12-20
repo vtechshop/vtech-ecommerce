@@ -21,6 +21,11 @@ router.put('/password', userController.changePassword);
 // Get login activity
 router.get('/login-activity', userController.getLoginActivity);
 
+// API Keys management
+router.get('/api-keys', userController.getAPIKeys);
+router.post('/api-keys', userController.createAPIKey);
+router.delete('/api-keys/:id', userController.deleteAPIKey);
+
 // Delete account
 router.delete('/account', userController.deleteAccount);
 

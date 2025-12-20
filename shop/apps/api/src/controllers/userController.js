@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { hashPassword, comparePassword } = require('../utils/hash');
 const loginActivityService = require('../services/loginActivityService');
+const apiKeyService = require('../services/apiKeyService');
 
 // Get profile
 exports.getProfile = async (req, res, next) => {
@@ -438,6 +439,67 @@ exports.getLoginActivity = async (req, res, next) => {
       data: activities,
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+// Get user's API keys
+exports.getAPIKeys = async (req, res, next) => {
+  try {
+    const apiKeys = await apiKeyService.getUserKeys(req.user._id);
+
+    res.json({
+      success: true,
+      data: apiKeys,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create new API key
+exports.createAPIKey = async (req, res, next) => {
+  try {
+    const { name, permissions, description } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'API key name is required' },
+      });
+    }
+
+    const apiKey = await apiKeyService.createKey(req.user._id, name, {
+      permissions,
+      description,
+    });
+
+    res.status(201).json({
+      success: true,
+      data: apiKey,
+      message: 'API key created successfully. Please save this key as it won\'t be shown again.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete API key
+exports.deleteAPIKey = async (req, res, next) => {
+  try {
+    await apiKeyService.deleteKey(req.params.id, req.user._id);
+
+    res.json({
+      success: true,
+      data: { message: 'API key deleted successfully' },
+    });
+  } catch (error) {
+    if (error.message === 'API key not found') {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: error.message },
+      });
+    }
     next(error);
   }
 };
