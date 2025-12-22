@@ -592,7 +592,11 @@ exports.createOrder = async (req, res, next) => {
       };
     }
 
-    if (userInfo && vendorOrders.length > 0) {
+    // CRITICAL: Only send order confirmation email for COD orders
+    // For online payment (Razorpay/PhonePe), email is sent AFTER payment verification
+    const isCODOrder = paymentMethod === 'cod';
+
+    if (userInfo && vendorOrders.length > 0 && isCODOrder) {
       let emailResult;
 
       // Use appropriate email template based on number of orders
@@ -615,6 +619,8 @@ exports.createOrder = async (req, res, next) => {
         emailError = emailResult?.reason || emailResult?.error || 'Unknown error';
         logger.warn(`Email could not be sent to: ${userInfo.email}. Reason: ${emailError}`);
       }
+    } else if (!isCODOrder) {
+      logger.info(`Order created with pending payment - email will be sent after payment verification`);
     }
   } catch (error) {
     customerEmailSent = false;
