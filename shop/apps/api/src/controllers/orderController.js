@@ -323,13 +323,10 @@ exports.createOrder = async (req, res, next) => {
       const vendorDiscount = 0;
       const vendorTotal = vendorSubtotal + vendorTax + vendorShipping - vendorDiscount;
 
-        // Determine initial order status based on payment method
-        // COD: placed immediately (payment on delivery)
-        // Online: pending_payment (waiting for payment verification)
-        const initialStatus = paymentMethod === 'cod' ? 'placed' : 'pending_payment';
-        const initialEventDescription = paymentMethod === 'cod'
-          ? 'Order placed - Cash on Delivery'
-          : 'Order created - Awaiting payment';
+        // All orders require payment verification (COD removed)
+        // Orders start as pending_payment and change to 'placed' after payment verification
+        const initialStatus = 'pending_payment';
+        const initialEventDescription = 'Order created - Awaiting payment';
 
         // Create vendor-specific order with transaction
         const vendorOrder = (await Order.create([{
@@ -592,36 +589,10 @@ exports.createOrder = async (req, res, next) => {
       };
     }
 
-    // CRITICAL: Only send order confirmation email for COD orders
-    // For online payment (Razorpay/PhonePe), email is sent AFTER payment verification
-    const isCODOrder = paymentMethod === 'cod';
-
-    if (userInfo && vendorOrders.length > 0 && isCODOrder) {
-      let emailResult;
-
-      // Use appropriate email template based on number of orders
-      if (vendorOrders.length === 1) {
-        // Single vendor order - use simple template
-        emailResult = await notificationService.sendOrderConfirmation(userInfo, vendorOrders[0]);
-        logger.info(`Single order confirmation email sent to: ${userInfo.email}`);
-      } else {
-        // Multi-vendor order - use comprehensive template showing all orders
-        emailResult = await notificationService.sendMultiVendorOrderConfirmation(userInfo, vendorOrders, total);
-        logger.info(`Multi-vendor order confirmation email sent to: ${userInfo.email} (${vendorOrders.length} orders)`);
-      }
-
-      // Check email result
-      if (emailResult && emailResult.success) {
-        customerEmailSent = true;
-        logger.info(`Email successfully delivered to: ${userInfo.email}`);
-      } else {
-        customerEmailSent = false;
-        emailError = emailResult?.reason || emailResult?.error || 'Unknown error';
-        logger.warn(`Email could not be sent to: ${userInfo.email}. Reason: ${emailError}`);
-      }
-    } else if (!isCODOrder) {
-      logger.info(`Order created with pending payment - email will be sent after payment verification`);
-    }
+    // CRITICAL: Order confirmation email is sent AFTER payment verification
+    // See razorpayController.js verifyPayment() and webhook handler
+    // COD has been removed - all orders require online payment
+    logger.info(`Order(s) created with pending payment - email will be sent after payment verification`);
   } catch (error) {
     customerEmailSent = false;
     emailError = error.message;

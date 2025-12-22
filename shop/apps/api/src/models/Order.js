@@ -49,7 +49,7 @@ const orderSchema = new mongoose.Schema({
     provider: String,
     method: String,
     transactionId: String,
-    status: { type: String, enum: ['pending', 'paid', 'failed', 'refunded', 'cod'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
     paidAt: Date,
     amount: Number,
     currency: String,
