@@ -1,7 +1,7 @@
 // FILE: apps/web/src/pages/dashboard/admin/AdCampaignApprovals.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tantml:react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, X, Pause, Eye, ArrowLeft } from 'lucide-react';
 import api from '../../../utils/api';
 import Button from '../../../components/common/Button';
