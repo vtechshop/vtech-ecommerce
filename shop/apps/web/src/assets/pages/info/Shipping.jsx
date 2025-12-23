@@ -177,7 +177,7 @@ const Shipping = () => {
             You can track your shipment in real-time using our <Link to="/track-order" className="text-blue-600 hover:text-blue-700 font-medium">order tracking page</Link>.
           </p>
 
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-blue-100 rounded-lg p-6">
             <h3 className="font-semibold text-gray-900 mb-3">Important Notes:</h3>
             <ul className="space-y-2 text-gray-700 text-sm">
               <li>• Orders placed after 5 PM will be processed the next business day</li>

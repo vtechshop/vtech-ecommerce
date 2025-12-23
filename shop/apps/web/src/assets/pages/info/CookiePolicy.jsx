@@ -79,7 +79,7 @@ const CookiePolicy = () => {
                 You can control and manage cookies in several ways:
               </p>
 
-              <div className="bg-gray-50 rounded-lg p-6 mb-4">
+              <div className="bg-blue-100 rounded-lg p-6 mb-4">
                 <h3 className="font-semibold text-gray-900 mb-3">Browser Settings</h3>
                 <p className="text-gray-700 mb-2">Most browsers allow you to:</p>
                 <ul className="list-disc pl-6 text-gray-700 space-y-1">
@@ -110,7 +110,7 @@ const CookiePolicy = () => {
               <p className="text-gray-700 leading-relaxed mb-4">
                 If you have questions about our use of cookies:
               </p>
-              <div className="bg-gray-50 rounded-lg p-6">
+              <div className="bg-blue-100 rounded-lg p-6">
                 <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
               </div>

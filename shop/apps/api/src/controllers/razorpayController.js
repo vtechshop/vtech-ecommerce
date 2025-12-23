@@ -43,7 +43,8 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    if (order.userId.toString() !== req.user._id.toString()) {
+    // Verify order ownership (skip for guest orders)
+    if (!order.isGuest && order.userId && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: {
@@ -173,8 +174,8 @@ exports.verifyPayment = async (req, res, next) => {
       });
     }
 
-    // Verify order belongs to user
-    if (order.userId.toString() !== req.user._id.toString()) {
+    // Verify order belongs to user (skip for guest orders)
+    if (!order.isGuest && order.userId && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: {
@@ -227,6 +228,38 @@ exports.verifyPayment = async (req, res, next) => {
       processAutomaticTransfers(order, razorpayPaymentId).catch(error => {
         logger.error(`Failed to process automatic transfers for order ${order._id}:`, error);
       });
+
+      // CRITICAL: Send order confirmation email AFTER payment is verified
+      try {
+        const notificationService = require('../services/notificationService');
+        const User = require('../models/User');
+
+        // Prepare user info for email
+        let userInfo;
+        if (order.userId && !order.isGuest) {
+          const user = await User.findById(order.userId);
+          if (user) {
+            userInfo = {
+              name: user.name,
+              email: user.email,
+            };
+          }
+        } else if (order.isGuest && order.guestEmail) {
+          userInfo = {
+            name: order.shipTo?.fullName || 'Guest',
+            email: order.guestEmail,
+          };
+        }
+
+        // Send order confirmation email
+        if (userInfo) {
+          await notificationService.sendOrderConfirmation(userInfo, order);
+          logger.info(`Order confirmation email sent after payment verification: ${userInfo.email}`);
+        }
+      } catch (emailError) {
+        logger.error('Failed to send order confirmation email after payment:', emailError);
+        // Don't fail the payment verification if email fails
+      }
     }
 
     res.json({
@@ -284,8 +317,8 @@ exports.paymentFailure = async (req, res, next) => {
       });
     }
 
-    // Verify order belongs to user
-    if (order.userId.toString() !== req.user._id.toString()) {
+    // Verify order belongs to user (skip for guest orders)
+    if (!order.isGuest && order.userId && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: {
@@ -397,6 +430,35 @@ async function handlePaymentCaptured(payload) {
 
     await order.save();
     console.log(`Payment captured for order ${orderId}`);
+
+    // Send order confirmation email after webhook payment confirmation
+    try {
+      const notificationService = require('../services/notificationService');
+      const User = require('../models/User');
+
+      let userInfo;
+      if (order.userId && !order.isGuest) {
+        const user = await User.findById(order.userId);
+        if (user) {
+          userInfo = {
+            name: user.name,
+            email: user.email,
+          };
+        }
+      } else if (order.isGuest && order.guestEmail) {
+        userInfo = {
+          name: order.shipTo?.fullName || 'Guest',
+          email: order.guestEmail,
+        };
+      }
+
+      if (userInfo) {
+        await notificationService.sendOrderConfirmation(userInfo, order);
+        logger.info(`Order confirmation email sent via webhook: ${userInfo.email}`);
+      }
+    } catch (emailError) {
+      logger.error('Failed to send email via webhook:', emailError);
+    }
   } catch (error) {
     console.error('Error handling payment captured:', error);
   }

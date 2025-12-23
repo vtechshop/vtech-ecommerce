@@ -73,4 +73,8 @@ module.exports = {
   DEFAULT_SHIPPING_COST: parseFloat(process.env.DEFAULT_SHIPPING_COST) || 5.99,
   MAX_QTY_PER_ITEM: parseInt(process.env.MAX_QTY_PER_ITEM) || 100,
   MAX_ITEMS_PER_ORDER: parseInt(process.env.MAX_ITEMS_PER_ORDER) || 50,
+
+  // Delhivery Shipping Integration
+  DELHIVERY_TEST_TOKEN: process.env.DELHIVERY_TEST_TOKEN,
+  DELHIVERY_LIVE_TOKEN: process.env.DELHIVERY_LIVE_TOKEN,
 };

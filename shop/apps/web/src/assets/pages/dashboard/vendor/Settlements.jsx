@@ -108,7 +108,7 @@ const Settlements = () => {
       {/* Settlements Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b">
+          <thead className="bg-blue-100 border-b">
             <tr>
               <th className="text-left py-3 px-4 font-semibold text-sm">Order ID</th>
               <th className="text-left py-3 px-4 font-semibold text-sm">Date</th>

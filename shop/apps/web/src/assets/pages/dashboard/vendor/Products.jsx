@@ -185,7 +185,7 @@ const Products = () => {
         <>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-blue-100 border-b">
                 <tr>
                   <th className="text-left py-3 px-4 font-semibold text-sm">Product</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm">SKU</th>
@@ -218,7 +218,7 @@ const Products = () => {
                     </td>
                     <td className="py-3 px-3 sm:px-4">
                       <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                        product.published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-900'
+                        product.published ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-gray-900'
                       }`}>
                         {product.published ? 'Published' : 'Draft'}
                       </span>
@@ -606,7 +606,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
             </div>
 
             {/* GST/Tax Settings */}
-            <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="md:col-span-2 bg-blue-100 p-4 rounded-lg border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">GST/Tax Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center">
@@ -704,7 +704,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
             </div>
 
             {/* Warranty Section */}
-            <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="md:col-span-2 bg-blue-100 p-4 rounded-lg border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Warranty Information (Optional)</h3>
               <div className="space-y-4">
                 <div>
@@ -848,7 +848,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                   </div>
 
                   {/* Schema Properties based on type */}
-                  <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                  <div className="bg-blue-100 p-4 rounded border border-gray-200">
                     <h4 className="text-sm font-medium text-gray-700 mb-3">Schema Properties</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {/* Common properties for all types */}

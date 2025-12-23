@@ -332,7 +332,7 @@ const BlogCard = ({ blog }) => {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 bg-gray-100 px-2 py-1 rounded-full">
+              <span className="flex items-center gap-1.5 bg-blue-100 px-2 py-1 rounded-full">
                 <Eye className="w-3.5 h-3.5" />
                 {blog.views || 0}
               </span>

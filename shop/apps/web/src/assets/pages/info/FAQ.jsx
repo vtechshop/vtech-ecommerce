@@ -225,7 +225,7 @@ const FAQ = () => {
                     <div key={index} className="border border-gray-200 rounded-lg">
                       <button
                         onClick={() => setOpenIndex(isOpen ? null : globalIndex)}
-                        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center justify-between p-4 text-left hover:bg-blue-100 transition-colors"
                       >
                         <span className="font-semibold text-gray-900 pr-4">{item.q}</span>
                         {isOpen ? (

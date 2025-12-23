@@ -101,7 +101,7 @@ const Categories = () => {
       {/* Categories Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-blue-100 border-b border-gray-200">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Slug</th>
@@ -113,7 +113,7 @@ const Categories = () => {
           <tbody className="divide-y divide-gray-200">
             {categories?.filter(cat => !cat.parentId).map((parent) => (
               <>
-                <tr key={parent._id} className="hover:bg-gray-50">
+                <tr key={parent._id} className="hover:bg-blue-100">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <FolderTree className="w-5 h-5 text-blue-600" />
@@ -126,12 +126,12 @@ const Categories = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <code className="text-sm bg-gray-100 px-2 py-1 rounded">{parent.slug}</code>
+                    <code className="text-sm bg-blue-100 px-2 py-1 rounded">{parent.slug}</code>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">{parent.sortOrder || 0}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                      parent.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-900'
+                      parent.isActive ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-gray-900'
                     }`}>
                       {parent.isActive ? 'Active' : 'Inactive'}
                     </span>
@@ -149,7 +149,7 @@ const Categories = () => {
                 </tr>
                 {/* Subcategories */}
                 {categories?.filter(cat => cat.parentId === parent._id).map((child) => (
-                  <tr key={child._id} className="hover:bg-gray-50 bg-gray-25">
+                  <tr key={child._id} className="hover:bg-blue-100 bg-gray-25">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 ml-8">
                         <span className="text-gray-400">└─</span>
@@ -163,12 +163,12 @@ const Categories = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">{child.slug}</code>
+                      <code className="text-sm bg-blue-100 px-2 py-1 rounded">{child.slug}</code>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700">{child.sortOrder || 0}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                        child.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-900'
+                        child.isActive ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-gray-900'
                       }`}>
                         {child.isActive ? 'Active' : 'Inactive'}
                       </span>

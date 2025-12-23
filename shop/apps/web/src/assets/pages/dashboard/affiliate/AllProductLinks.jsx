@@ -314,7 +314,7 @@ const AllProductLinks = () => {
         {/* Table Header */}
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-blue-100 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Image
@@ -357,7 +357,7 @@ const AllProductLinks = () => {
                   const earning = (product.price * commissionRate / 100);
 
                   return (
-                    <tr key={product._id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={product._id} className="hover:bg-blue-100 transition-colors">
                       {/* Product Image */}
                       <td className="px-4 py-3">
                         <img
@@ -399,7 +399,7 @@ const AllProductLinks = () => {
 
                       {/* Slug */}
                       <td className="px-4 py-3">
-                        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        <code className="text-xs bg-blue-100 px-2 py-1 rounded">
                           {product.slug}
                         </code>
                       </td>
@@ -408,7 +408,7 @@ const AllProductLinks = () => {
                       {showLinks && (
                         <td className="px-4 py-3 max-w-md">
                           <div className="flex items-center gap-2">
-                            <code className="text-xs bg-gray-100 px-2 py-1 rounded flex-1 truncate">
+                            <code className="text-xs bg-blue-100 px-2 py-1 rounded flex-1 truncate">
                               {affiliateLink}
                             </code>
                           </div>

@@ -45,9 +45,9 @@ const Warranties = () => {
       active: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle, label: 'Active' },
       expiring_soon: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: AlertTriangle, label: 'Expiring Soon' },
       expired: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle, label: 'Expired' },
-      no_warranty: { bg: 'bg-gray-100', text: 'text-gray-900', icon: XCircle, label: 'No Warranty' },
+      no_warranty: { bg: 'bg-blue-100', text: 'text-gray-900', icon: XCircle, label: 'No Warranty' },
       claimed: { bg: 'bg-blue-100', text: 'text-blue-800', icon: Package, label: 'Claimed' },
-      void: { bg: 'bg-gray-100', text: 'text-gray-900', icon: XCircle, label: 'Void' },
+      void: { bg: 'bg-blue-100', text: 'text-gray-900', icon: XCircle, label: 'Void' },
     };
     const badge = badges[status] || badges.active;
     const Icon = badge.icon;
@@ -64,7 +64,7 @@ const Warranties = () => {
       manufacturer: { bg: 'bg-blue-50', text: 'text-blue-700', label: 'Manufacturer' },
       extended: { bg: 'bg-purple-50', text: 'text-purple-700', label: 'Extended' },
       seller: { bg: 'bg-amber-50', text: 'text-amber-700', label: 'Seller' },
-      none: { bg: 'bg-gray-50', text: 'text-gray-700', label: 'None' },
+      none: { bg: 'bg-blue-100', text: 'text-gray-700', label: 'None' },
     };
     const badge = badges[type] || badges.manufacturer;
     return (
@@ -168,7 +168,7 @@ const Warranties = () => {
                 <p className="text-sm font-medium text-gray-700">No Warranty</p>
                 <p className="text-2xl font-bold text-gray-700 mt-1">{stats.noWarranty || 0}</p>
               </div>
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                 <XCircle className="w-6 h-6 text-gray-700" />
               </div>
             </div>
@@ -224,7 +224,7 @@ const Warranties = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-blue-100">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Warranty ID
@@ -266,7 +266,7 @@ const Warranties = () => {
                 </tr>
               ) : (
                 warranties.map((warranty) => (
-                  <tr key={warranty._id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={warranty._id} className="hover:bg-blue-100 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-blue-600">{warranty.warrantyId}</div>
                       <div className="text-xs text-gray-500">Order: {warranty.purchaseId}</div>
@@ -357,7 +357,7 @@ const Warranties = () => {
             {/* Modal Content */}
             <div className="p-6 space-y-6">
               {/* Status Overview */}
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-blue-100 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-gray-900">Status</h3>
@@ -468,7 +468,7 @@ const Warranties = () => {
                   <h3 className="font-semibold text-gray-900 mb-3">Warranty Claims</h3>
                   <div className="space-y-3">
                     {viewingWarranty.claims.map((claim, index) => (
-                      <div key={index} className="bg-gray-50 rounded-lg p-4">
+                      <div key={index} className="bg-blue-100 rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-medium text-gray-900">Claim #{claim.claimId}</span>
                           <span className={`px-2 py-1 rounded text-xs font-medium ${
@@ -511,7 +511,7 @@ const Warranties = () => {
             <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
               <button
                 onClick={() => setViewingWarranty(null)}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 bg-blue-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Close
               </button>

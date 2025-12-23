@@ -268,7 +268,7 @@ const Settings = () => {
                               className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                                 setting.value === 'true' || setting.value === true
                                   ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-900'
+                                  : 'bg-blue-100 text-gray-900'
                               }`}
                             >
                               {setting.value === 'true' || setting.value === true ? 'Enabled' : 'Disabled'}
@@ -285,7 +285,7 @@ const Settings = () => {
                               className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                                 setting.value === 'true' || setting.value === true
                                   ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-900'
+                                  : 'bg-blue-100 text-gray-900'
                               }`}
                             >
                               {setting.value === 'true' || setting.value === true ? 'Enabled' : 'Disabled'}
@@ -330,7 +330,7 @@ const Settings = () => {
                               <option value="low">Low</option>
                             </select>
                           ) : setting.key.includes('ads.placement') && setting.key.includes('campaigns') && !isEditing ? (
-                            <div className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                            <div className="text-sm text-gray-700 bg-blue-100 p-2 rounded">
                               {setting.value || 'No campaigns assigned'}
                             </div>
                           ) : setting.key.includes('ads.placement') && setting.key.includes('campaigns') && isEditing ? (
@@ -342,7 +342,7 @@ const Settings = () => {
                               placeholder="Enter campaign IDs (comma-separated)..."
                             />
                           ) : setting.key.includes('ads.placement') && setting.key.includes('fallback') && !isEditing ? (
-                            <pre className="text-sm text-gray-700 bg-gray-50 p-2 rounded whitespace-pre-wrap">
+                            <pre className="text-sm text-gray-700 bg-blue-100 p-2 rounded whitespace-pre-wrap">
                               {JSON.stringify(JSON.parse(setting.value || '{}'), null, 2)}
                             </pre>
                           ) : setting.key.includes('ads.placement') && setting.key.includes('fallback') && isEditing ? (
@@ -354,7 +354,7 @@ const Settings = () => {
                               placeholder="Enter fallback content (JSON format)..."
                             />
                           ) : setting.type === 'json' ? (
-                            <pre className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
+                            <pre className="text-sm text-gray-700 bg-blue-100 p-2 rounded">
                               {JSON.stringify(JSON.parse(setting.value || '{}'), null, 2)}
                             </pre>
                           ) : (

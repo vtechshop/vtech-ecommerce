@@ -53,9 +53,9 @@ const CRMCustomers = () => {
       case 'at-risk':
         return 'bg-red-100 text-red-800';
       case 'inactive':
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
       default:
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
     }
   };
 
@@ -183,7 +183,7 @@ const CRMCustomers = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-blue-100 border-b">
               <tr>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Customer</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Segment</th>
@@ -196,7 +196,7 @@ const CRMCustomers = () => {
             </thead>
             <tbody>
               {customers.map((customer) => (
-                <tr key={customer._id} className="border-b last:border-b-0 hover:bg-gray-50">
+                <tr key={customer._id} className="border-b last:border-b-0 hover:bg-blue-100">
                   <td className="py-3 px-3 sm:px-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
@@ -371,7 +371,7 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
                   <div className="flex items-center gap-2 text-sm">
                     <Tag className="w-4 h-4 text-gray-400" />
                     <span className="text-gray-700">Segment:</span>
-                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${customer.segment ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-900'}`}>
+                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${customer.segment ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-gray-900'}`}>
                       {customer.segment?.toUpperCase() || 'REGULAR'}
                     </span>
                   </div>
@@ -382,19 +382,19 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
               <div>
                 <h3 className="text-lg font-semibold mb-4">Purchase Statistics</h3>
                 <div className="space-y-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-blue-100 rounded-lg p-4">
                     <p className="text-sm text-gray-700">Total Orders</p>
                     <p className="text-2xl font-bold">{customer.orderCount || 0}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-blue-100 rounded-lg p-4">
                     <p className="text-sm text-gray-700">Total Spent</p>
                     <p className="text-2xl font-bold text-green-600">{formatCurrency(customer.totalSpent || 0)}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-blue-100 rounded-lg p-4">
                     <p className="text-sm text-gray-700">Average Order Value</p>
                     <p className="text-2xl font-bold">{formatCurrency(customer.avgOrderValue || 0)}</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-blue-100 rounded-lg p-4">
                     <p className="text-sm text-gray-700">Last Order</p>
                     <p className="text-lg font-bold">
                       {customer.lastOrderDate ? formatDate(customer.lastOrderDate) : 'Never'}
@@ -450,7 +450,7 @@ const CustomerDetailsModal = ({ customer, onClose }) => {
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-end gap-4">
+        <div className="px-6 py-4 border-t bg-blue-100 flex items-center justify-end gap-4">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>

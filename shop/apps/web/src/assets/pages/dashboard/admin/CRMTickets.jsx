@@ -57,7 +57,7 @@ const CRMTickets = () => {
       case 'low':
         return 'bg-green-100 text-green-800';
       default:
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
     }
   };
 
@@ -70,9 +70,9 @@ const CRMTickets = () => {
       case 'resolved':
         return 'bg-green-100 text-green-800';
       case 'closed':
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
       default:
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
     }
   };
 
@@ -235,7 +235,7 @@ const CRMTickets = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-blue-100 border-b">
               <tr>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Ticket ID</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Subject</th>
@@ -368,7 +368,7 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
             {/* Ticket Info */}
             <div className="lg:col-span-2 space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-blue-100 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
@@ -433,7 +433,7 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
 
             {/* Ticket Details Sidebar */}
             <div className="space-y-4">
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-blue-100 rounded-lg p-4">
                 <h3 className="font-semibold mb-3 text-sm">Ticket Details</h3>
                 <div className="space-y-3">
                   <div>
@@ -492,7 +492,7 @@ const TicketDetailsModal = ({ ticket, onClose }) => {
           </div>
         </div>
 
-        <div className="px-6 py-4 border-t bg-gray-50 flex items-center justify-end gap-4">
+        <div className="px-6 py-4 border-t bg-blue-100 flex items-center justify-end gap-4">
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>

@@ -88,7 +88,7 @@ const Communications = () => {
     };
 
     return (
-      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status] || 'bg-gray-100 text-gray-900'}`}>
+      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status] || 'bg-blue-100 text-gray-900'}`}>
         {status}
       </span>
     );
@@ -229,7 +229,7 @@ const Communications = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-blue-100 border-b">
               <tr>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Type</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Direction</th>
@@ -244,7 +244,7 @@ const Communications = () => {
             <tbody>
               {communications.length > 0 ? (
                 communications.map((comm) => (
-                  <tr key={comm._id} className="border-b hover:bg-gray-50">
+                  <tr key={comm._id} className="border-b hover:bg-blue-100">
                     <td className="py-3 px-3 sm:px-4">
                       <div className="flex items-center gap-2">
                         {getTypeIcon(comm.type)}
@@ -382,7 +382,7 @@ const MessageDetailsModal = ({ message, onClose }) => {
           {/* Message */}
           <div>
             <label className="text-sm font-semibold text-gray-700">Message:</label>
-            <div className="mt-2 p-4 bg-gray-50 rounded-lg whitespace-pre-wrap">
+            <div className="mt-2 p-4 bg-blue-100 rounded-lg whitespace-pre-wrap">
               {message.message}
             </div>
           </div>
@@ -391,7 +391,7 @@ const MessageDetailsModal = ({ message, onClose }) => {
           {message.htmlContent && (
             <div>
               <label className="text-sm font-semibold text-gray-700">HTML Content:</label>
-              <div className="mt-2 p-4 bg-gray-50 rounded-lg border max-h-64 overflow-auto">
+              <div className="mt-2 p-4 bg-blue-100 rounded-lg border max-h-64 overflow-auto">
                 <div dangerouslySetInnerHTML={{ __html: message.htmlContent }} />
               </div>
             </div>
@@ -435,7 +435,7 @@ const MessageDetailsModal = ({ message, onClose }) => {
           {message.metadata && Object.keys(message.metadata).length > 0 && (
             <div>
               <label className="text-sm font-semibold text-gray-700">Metadata:</label>
-              <pre className="mt-2 p-4 bg-gray-50 rounded-lg text-xs overflow-auto">
+              <pre className="mt-2 p-4 bg-blue-100 rounded-lg text-xs overflow-auto">
                 {JSON.stringify(message.metadata, null, 2)}
               </pre>
             </div>

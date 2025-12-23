@@ -135,7 +135,7 @@ const AffiliateTerms = () => {
               <p className="text-gray-700 leading-relaxed mb-4">
                 You must clearly disclose your affiliate relationship when promoting our products:
               </p>
-              <div className="bg-gray-50 border-l-4 border-primary-600 p-6">
+              <div className="bg-blue-100 border-l-4 border-primary-600 p-6">
                 <p className="text-gray-700 italic">
                   Example: "This post contains affiliate links. I may earn a commission if you make a purchase through these links at no extra cost to you."
                 </p>
@@ -191,7 +191,7 @@ const AffiliateTerms = () => {
               <p className="text-gray-700 leading-relaxed mb-4">
                 For affiliate program support:
               </p>
-              <div className="bg-gray-50 rounded-lg p-6">
+              <div className="bg-blue-100 rounded-lg p-6">
                 <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
                 <p className="text-gray-700"><strong>Affiliate Dashboard:</strong> Log in for resources and support</p>

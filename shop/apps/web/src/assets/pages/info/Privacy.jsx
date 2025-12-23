@@ -124,7 +124,7 @@ const Privacy = () => {
               <p className="text-gray-700 leading-relaxed mb-4">
                 For questions or concerns about this Privacy Policy or our data practices:
               </p>
-              <div className="bg-gray-50 rounded-lg p-6">
+              <div className="bg-blue-100 rounded-lg p-6">
                 <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
                 <p className="text-gray-700"><strong>Address:</strong> V-Tech Shop, 464, Sathy Rd, Ganapathy, Coimbatore, Tamil Nadu 641006</p>

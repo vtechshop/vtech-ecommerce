@@ -87,7 +87,8 @@ const OrderDetail = () => {
     );
   }
 
-  const canCancel = ['placed', 'paid'].includes(order.status);
+  // Allow cancellation for pending_payment, placed, and paid orders (before shipping)
+  const canCancel = ['pending_payment', 'placed', 'paid'].includes(order.status);
 
   return (
     <div>
@@ -236,12 +237,18 @@ const OrderDetail = () => {
                 <span className="text-gray-700">Status:</span>
                 <span
                   className={`font-semibold ${
-                    order.payment?.status === 'paid' ? 'text-green-600' : 'text-orange-600'
+                    order.status === 'cancelled'
+                      ? 'text-red-600'
+                      : order.payment?.status === 'paid'
+                      ? 'text-green-600'
+                      : 'text-orange-600'
                   }`}
                 >
-                  {String(order.payment?.status || 'pending')
-                    .replace(/_/g, ' ')
-                    .replace(/\b\w/g, (c) => c.toUpperCase())}
+                  {order.status === 'cancelled'
+                    ? 'Cancelled'
+                    : String(order.payment?.status || 'pending')
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, (c) => c.toUpperCase())}
                 </span>
               </div>
               {order.payment?.transactionId && (

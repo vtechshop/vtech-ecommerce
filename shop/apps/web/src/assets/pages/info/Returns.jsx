@@ -144,7 +144,7 @@ const Returns = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Refund Information</h2>
 
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-6">
+            <div className="bg-blue-100 rounded-lg p-6">
               <h3 className="font-semibold text-gray-900 mb-3">Refund Timeline</h3>
               <ul className="space-y-2 text-gray-700">
                 <li className="flex items-start gap-2">
@@ -188,7 +188,7 @@ const Returns = () => {
             You can cancel your order before it is shipped. Once shipped, you'll need to follow the return process.
           </p>
 
-          <div className="bg-gray-50 rounded-lg p-6">
+          <div className="bg-blue-100 rounded-lg p-6">
             <h3 className="font-semibold text-gray-900 mb-3">How to Cancel:</h3>
             <ul className="space-y-2 text-gray-700">
               <li>1. Go to "My Orders" in your account</li>

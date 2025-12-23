@@ -368,7 +368,7 @@ const Checkout = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-blue-100 min-h-screen">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 max-w-screen-2xl">
         {/* Header */}
         <div className="mb-6 md:mb-8">

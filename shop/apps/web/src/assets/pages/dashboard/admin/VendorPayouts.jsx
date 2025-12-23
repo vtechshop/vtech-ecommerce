@@ -142,7 +142,7 @@ const VendorPayouts = () => {
 
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-blue-100">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Vendor
@@ -161,7 +161,7 @@ const VendorPayouts = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {pendingPayouts && pendingPayouts.length > 0 ? (
                 pendingPayouts.map((vendor) => (
-                  <tr key={vendor.vendorId} className="hover:bg-gray-50">
+                  <tr key={vendor.vendorId} className="hover:bg-blue-100">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {vendor.vendorName}
@@ -217,7 +217,7 @@ const VendorPayouts = () => {
             </h2>
 
             <div className="mb-6">
-              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+              <div className="bg-blue-100 rounded-lg p-4 mb-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-sm text-gray-700">Vendor</div>
@@ -239,12 +239,12 @@ const VendorPayouts = () => {
               {/* Commission Details */}
               {vendorCommissions && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                  <div className="bg-blue-100 px-4 py-2 border-b border-gray-200">
                     <h3 className="font-semibold text-gray-900">Commission Details</h3>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
                     {vendorCommissions.map((commission) => (
-                      <div key={commission._id} className="px-4 py-3 border-b border-gray-100 hover:bg-gray-50">
+                      <div key={commission._id} className="px-4 py-3 border-b border-gray-100 hover:bg-blue-100">
                         <div className="flex justify-between items-start">
                           <div>
                             <div className="text-sm font-medium">

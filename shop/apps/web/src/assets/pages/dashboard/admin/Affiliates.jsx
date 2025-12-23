@@ -98,9 +98,9 @@ const Affiliate = () => {
       case 'suspended':
         return 'bg-red-100 text-red-800';
       case 'rejected':
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
       default:
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
     }
   };
 
@@ -187,7 +187,7 @@ const Affiliate = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-blue-100 border-b">
               <tr>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Affiliate</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Code</th>
@@ -334,9 +334,9 @@ const AffiliateDetailsModal = ({ affiliate, onClose, onApprove, onReject, onSusp
       case 'suspended':
         return 'bg-red-100 text-red-800';
       case 'rejected':
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
       default:
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
     }
   };
 
@@ -431,7 +431,7 @@ const AffiliateDetailsModal = ({ affiliate, onClose, onApprove, onReject, onSusp
           {affiliate.kyc && (
             <div className="mt-6">
               <h3 className="text-lg font-semibold mb-4">KYC Information</h3>
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-blue-100 rounded-lg p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-700">Full Name</label>

@@ -230,7 +230,7 @@ const Products = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-blue-100 border-b">
               <tr>
                 <th className="text-left py-3 px-4 font-semibold text-sm w-10">
                   <input
@@ -255,7 +255,7 @@ const Products = () => {
             </thead>
             <tbody>
               {products.map((product) => (
-                <tr key={product._id} className={`border-b last:border-b-0 hover:bg-gray-50 ${selectedProducts.includes(product._id) ? 'bg-blue-50' : ''}`}>
+                <tr key={product._id} className={`border-b last:border-b-0 hover:bg-blue-100 ${selectedProducts.includes(product._id) ? 'bg-blue-50' : ''}`}>
                   <td className="py-3 px-4">
                     <input
                       type="checkbox"
@@ -307,7 +307,7 @@ const Products = () => {
                       className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                         product.published
                           ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-900'
+                          : 'bg-blue-100 text-gray-900'
                       }`}
                     >
                       {product.published ? 'Published' : 'Unpublished'}
@@ -703,7 +703,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
           </div>
 
           {/* GST/Tax Settings */}
-          <div className="md:col-span-2 bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+          <div className="md:col-span-2 bg-blue-100 p-4 rounded-lg border border-gray-200 mt-4">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">GST/Tax Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center">
@@ -836,7 +836,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="text-center py-8 bg-blue-100 rounded-lg border border-gray-200">
                 <p className="text-gray-500 text-sm">📷 No images uploaded yet</p>
                 {!isViewing && (
                   <p className="text-gray-400 text-xs mt-1">Upload images using the button above</p>
@@ -846,7 +846,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
           </div>
 
           {/* Warranty Section */}
-          <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div className="mt-6 p-4 border border-gray-200 rounded-lg bg-blue-100">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Warranty Information</h3>
               <label className="flex items-center">
@@ -1029,7 +1029,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                   </div>
 
                   {/* Schema Properties based on type */}
-                  <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                  <div className="bg-blue-100 p-4 rounded border border-gray-200">
                     <h4 className="text-sm font-medium text-gray-700 mb-3">Schema Properties</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {/* Common properties for all types */}

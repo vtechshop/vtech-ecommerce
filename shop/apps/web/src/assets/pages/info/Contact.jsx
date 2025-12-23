@@ -117,7 +117,7 @@ const Contact = () => {
                     value={formData.name}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-blue-100 disabled:cursor-not-allowed"
                     placeholder="John Doe"
                   />
                 </div>
@@ -134,7 +134,7 @@ const Contact = () => {
                     value={formData.email}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-blue-100 disabled:cursor-not-allowed"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -151,7 +151,7 @@ const Contact = () => {
                     value={formData.subject}
                     onChange={handleChange}
                     disabled={isSubmitting}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-blue-100 disabled:cursor-not-allowed"
                     placeholder="How can we help?"
                   />
                 </div>
@@ -168,7 +168,7 @@ const Contact = () => {
                     onChange={handleChange}
                     disabled={isSubmitting}
                     rows={5}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:bg-blue-100 disabled:cursor-not-allowed"
                     placeholder="Tell us more about your inquiry..."
                   />
                 </div>

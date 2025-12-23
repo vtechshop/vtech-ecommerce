@@ -135,10 +135,10 @@ const Tickets = () => {
       open: 'bg-blue-100 text-blue-800',
       in_progress: 'bg-yellow-100 text-yellow-800',
       resolved: 'bg-green-100 text-green-800',
-      closed: 'bg-gray-100 text-gray-900',
+      closed: 'bg-blue-100 text-gray-900',
     };
     return (
-      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${styles[status] || 'bg-gray-100 text-gray-900'}`}>
+      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${styles[status] || 'bg-blue-100 text-gray-900'}`}>
         {status.replace('_', ' ').toUpperCase()}
       </span>
     );
@@ -147,13 +147,13 @@ const Tickets = () => {
   const getPriorityBadge = (priority) => {
     if (!priority) return null;
     const styles = {
-      low: 'bg-gray-100 text-gray-900',
+      low: 'bg-blue-100 text-gray-900',
       medium: 'bg-blue-100 text-blue-800',
       high: 'bg-orange-100 text-orange-800',
       urgent: 'bg-red-100 text-red-800',
     };
     return (
-      <span className={`px-2 py-1 text-xs font-semibold rounded ${styles[priority] || 'bg-gray-100 text-gray-900'}`}>
+      <span className={`px-2 py-1 text-xs font-semibold rounded ${styles[priority] || 'bg-blue-100 text-gray-900'}`}>
         {priority.toUpperCase()}
       </span>
     );
@@ -238,7 +238,7 @@ const Tickets = () => {
             <p className="text-sm text-green-600">Resolved</p>
             <p className="text-2xl font-bold text-green-900">{stats.resolved}</p>
           </div>
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+          <div className="bg-blue-100 rounded-lg border border-gray-200 p-4">
             <p className="text-sm text-gray-700">Closed</p>
             <p className="text-2xl font-bold text-gray-900">{stats.closed}</p>
           </div>
@@ -253,7 +253,7 @@ const Tickets = () => {
             className={`flex-1 px-6 py-4 font-medium text-sm transition-colors relative ${
               activeTab === 'open'
                 ? 'text-blue-600 bg-blue-50 border-b-2 border-blue-600'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-blue-100'
             }`}
           >
             Open
@@ -264,7 +264,7 @@ const Tickets = () => {
             className={`flex-1 px-6 py-4 font-medium text-sm transition-colors relative ${
               activeTab === 'in_progress'
                 ? 'text-yellow-600 bg-yellow-50 border-b-2 border-yellow-600'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-blue-100'
             }`}
           >
             In Progress
@@ -275,7 +275,7 @@ const Tickets = () => {
             className={`flex-1 px-6 py-4 font-medium text-sm transition-colors relative ${
               activeTab === 'resolved'
                 ? 'text-green-600 bg-green-50 border-b-2 border-green-600'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-blue-100'
             }`}
           >
             Resolved
@@ -285,8 +285,8 @@ const Tickets = () => {
             onClick={() => setActiveTab('closed')}
             className={`flex-1 px-6 py-4 font-medium text-sm transition-colors relative ${
               activeTab === 'closed'
-                ? 'text-gray-700 bg-gray-100 border-b-2 border-gray-600'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                ? 'text-gray-700 bg-blue-100 border-b-2 border-gray-600'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-blue-100'
             }`}
           >
             Closed
@@ -295,7 +295,7 @@ const Tickets = () => {
         </div>
 
         {/* Priority Filter */}
-        <div className="p-4 bg-gray-50 border-b border-gray-200">
+        <div className="p-4 bg-blue-100 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700">Filter by Priority:</label>
             <CustomSelect
@@ -382,7 +382,7 @@ const Tickets = () => {
 
             <div className="p-6 space-y-6">
               {/* Admin Controls */}
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 grid grid-cols-2 gap-4">
+              <div className="bg-blue-100 rounded-lg p-4 border border-gray-200 grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
                   <select

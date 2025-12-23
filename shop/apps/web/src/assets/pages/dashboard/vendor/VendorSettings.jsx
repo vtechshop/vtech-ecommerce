@@ -328,15 +328,15 @@ const VendorSettings = () => {
                   <img
                     src={profileData.logo}
                     alt="Store Logo"
-                    className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                    className="w-20 h-20 rounded-lg object-contain border border-gray-200"
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                  <div className="w-20 h-20 rounded-lg bg-blue-100 flex items-center justify-center border border-gray-200">
                     <Store className="w-8 h-8 text-gray-400" />
                   </div>
                 )}
                 <div>
-                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-100">
                     <Upload className="w-4 h-4" />
                     {uploading ? 'Uploading...' : 'Upload Logo'}
                     <input
@@ -612,7 +612,7 @@ const VendorSettings = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200">
                 <div>
                   <p className="font-medium text-gray-900">Change Password</p>
                   <p className="text-sm text-gray-700 mt-1">
@@ -624,7 +624,7 @@ const VendorSettings = () => {
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200">
                 <div>
                   <p className="font-medium text-gray-900">Login Activity</p>
                   <p className="text-sm text-gray-700 mt-1">
@@ -635,6 +635,21 @@ const VendorSettings = () => {
                   View Activity
                 </Button>
               </div>
+<<<<<<< HEAD
+=======
+
+              <div className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200">
+                <div>
+                  <p className="font-medium text-gray-900">API Keys</p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    Manage API keys for third-party integrations
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleManageKeys}>
+                  Manage Keys
+                </Button>
+              </div>
+>>>>>>> c438e4881f14c1421ed0b0b5c63b1dacba6c6a55
             </div>
           </div>
         )}
@@ -709,7 +724,7 @@ const VendorSettings = () => {
           ) : loginActivities && loginActivities.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-blue-100">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Type
@@ -730,12 +745,12 @@ const VendorSettings = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {loginActivities.map((activity) => (
-                    <tr key={activity._id} className="hover:bg-gray-50">
+                    <tr key={activity._id} className="hover:bg-blue-100">
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           activity.type === 'login' ? 'bg-green-100 text-green-800' :
                           activity.type === 'failed_login' ? 'bg-red-100 text-red-800' :
-                          activity.type === 'logout' ? 'bg-gray-100 text-gray-800' :
+                          activity.type === 'logout' ? 'bg-blue-100 text-gray-800' :
                           'bg-blue-100 text-blue-800'
                         }`}>
                           {activity.type.replace('_', ' ')}
@@ -776,6 +791,197 @@ const VendorSettings = () => {
           </div>
         </div>
       </Modal>
+<<<<<<< HEAD
+=======
+
+      {/* API Keys Management Modal */}
+      <Modal
+        isOpen={showAPIKeysModal}
+        onClose={() => setShowAPIKeysModal(false)}
+        title="API Keys"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-600">
+              Manage your API keys for third-party integrations
+            </p>
+            <Button
+              size="sm"
+              onClick={() => {
+                setShowAPIKeysModal(false);
+                setShowCreateKeyModal(true);
+              }}
+            >
+              Create New Key
+            </Button>
+          </div>
+
+          {apiKeysLoading ? (
+            <div className="flex justify-center py-8">
+              <Spinner size="lg" />
+            </div>
+          ) : apiKeys && apiKeys.length > 0 ? (
+            <div className="space-y-3">
+              {apiKeys.map((key) => (
+                <div
+                  key={key._id}
+                  className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <h4 className="font-medium text-gray-900">{key.name}</h4>
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        key.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-gray-800'
+                      }`}>
+                        {key.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {key.prefix}••••••••••••••••
+                    </p>
+                    {key.description && (
+                      <p className="text-xs text-gray-500 mt-1">{key.description}</p>
+                    )}
+                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                      <span>Created: {new Date(key.createdAt).toLocaleDateString()}</span>
+                      {key.lastUsedAt && (
+                        <span>Last used: {new Date(key.lastUsedAt).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteAPIKey(key._id)}
+                    className="text-red-600 hover:bg-red-50"
+                  >
+                    Delete
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-blue-100 rounded-lg">
+              <p className="text-gray-500 mb-4">No API keys found</p>
+              <Button
+                onClick={() => {
+                  setShowAPIKeysModal(false);
+                  setShowCreateKeyModal(true);
+                }}
+              >
+                Create Your First API Key
+              </Button>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-4 border-t">
+            <Button variant="outline" onClick={() => setShowAPIKeysModal(false)}>
+              Close
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Create API Key Modal */}
+      <Modal
+        isOpen={showCreateKeyModal}
+        onClose={() => setShowCreateKeyModal(false)}
+        title="Create API Key"
+        size="md"
+      >
+        <form onSubmit={handleCreateAPIKey} className="space-y-4">
+          <Input
+            label="Key Name"
+            value={newKeyData.name}
+            onChange={(e) => setNewKeyData({ ...newKeyData, name: e.target.value })}
+            required
+            placeholder="e.g., Production API Key"
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description (Optional)
+            </label>
+            <textarea
+              value={newKeyData.description}
+              onChange={(e) => setNewKeyData({ ...newKeyData, description: e.target.value })}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              placeholder="What will this key be used for?"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowCreateKeyModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" loading={createAPIKeyMutation.isPending}>
+              Create API Key
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Created API Key Display Modal */}
+      {createdKey && (
+        <Modal
+          isOpen={!!createdKey}
+          onClose={() => setCreatedKey(null)}
+          title="API Key Created"
+          size="md"
+        >
+          <div className="space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-yellow-900 mb-2">
+                ⚠️ Save this key securely
+              </p>
+              <p className="text-sm text-yellow-700">
+                This is the only time you'll see this key. Store it somewhere safe.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                API Key
+              </label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 px-4 py-3 bg-blue-100 border border-gray-300 rounded-lg text-sm font-mono break-all">
+                  {createdKey.key}
+                </code>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(createdKey.key);
+                    toast.success('API key copied to clipboard');
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+
+            <div className="text-sm text-gray-600 space-y-1">
+              <p><strong>Name:</strong> {createdKey.name}</p>
+              <p><strong>Created:</strong> {new Date(createdKey.createdAt).toLocaleString()}</p>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button onClick={() => {
+                setCreatedKey(null);
+                setShowAPIKeysModal(true);
+              }}>
+                Done
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+>>>>>>> c438e4881f14c1421ed0b0b5c63b1dacba6c6a55
     </div>
   );
 };
