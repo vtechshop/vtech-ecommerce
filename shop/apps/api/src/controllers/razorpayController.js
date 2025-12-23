@@ -43,7 +43,8 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    if (order.userId.toString() !== req.user._id.toString()) {
+    // Verify order ownership (skip for guest orders)
+    if (!order.isGuest && order.userId && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: {
@@ -173,8 +174,8 @@ exports.verifyPayment = async (req, res, next) => {
       });
     }
 
-    // Verify order belongs to user
-    if (order.userId.toString() !== req.user._id.toString()) {
+    // Verify order belongs to user (skip for guest orders)
+    if (!order.isGuest && order.userId && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: {
@@ -316,8 +317,8 @@ exports.paymentFailure = async (req, res, next) => {
       });
     }
 
-    // Verify order belongs to user
-    if (order.userId.toString() !== req.user._id.toString()) {
+    // Verify order belongs to user (skip for guest orders)
+    if (!order.isGuest && order.userId && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: {
