@@ -703,7 +703,7 @@ const VendorSettings = () => {
             </Button>
           </div>
         </form>
-      </Modal>
+      </Modal> 
 
       {/* Login Activity Modal */}
       <Modal
