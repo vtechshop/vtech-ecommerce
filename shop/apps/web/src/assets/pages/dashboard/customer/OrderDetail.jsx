@@ -87,7 +87,8 @@ const OrderDetail = () => {
     );
   }
 
-  const canCancel = ['placed', 'paid'].includes(order.status);
+  // Allow cancellation for pending_payment, placed, and paid orders (before shipping)
+  const canCancel = ['pending_payment', 'placed', 'paid'].includes(order.status);
 
   return (
     <div>
