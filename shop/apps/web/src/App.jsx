@@ -138,6 +138,7 @@ const Payments = lazy(() => import('./assets/pages/dashboard/admin/Payments'));
 const AdminVendors = lazy(() => import('./assets/pages/dashboard/admin/Vendors'));
 const AdminAffiliates = lazy(() => import('./assets/pages/dashboard/admin/Affiliates'));
 const AdminAds = lazy(() => import('./assets/pages/dashboard/admin/AdsManagement'));
+const AdCampaignApprovals = lazy(() => import('./assets/pages/dashboard/admin/AdCampaignApprovals'));
 const AdminCMS = lazy(() => import('./assets/pages/dashboard/admin/CMSManagement'));
 const AdminSettings = lazy(() => import('./assets/pages/dashboard/admin/Settings'));
 const AdminCommunications = lazy(() => import('./assets/pages/dashboard/admin/Communications'));
@@ -363,6 +364,7 @@ function App() {
             <Route path="affiliate-commissions" element={<AffiliateCommissions />} />
             <Route path="tickets" element={<Tickets />} />
             <Route path="ads" element={<AdminAds />} />
+            <Route path="ads/approvals" element={<AdCampaignApprovals />} />
             <Route path="cms" element={<AdminCMS />} />
             <Route path="blog" element={<BlogManagement />} />
             <Route path="communications" element={<AdminCommunications />} />

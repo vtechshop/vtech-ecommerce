@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Eye, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, X, CheckCircle } from 'lucide-react';
 import api from '../../../utils/api';
 import CustomSelect from '../../../components/common/CustomSelect';
 import { useToast } from '../../../components/common/ToastContainer';
@@ -237,13 +238,22 @@ const AdsManagement = () => {
           <h1 className="text-2xl font-bold text-gray-900">Sponsored Ads</h1>
           <p className="text-gray-700 mt-1">Manage advertising campaigns</p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Create Campaign
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/admin-dashboard/ads/approvals"
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+          >
+            <CheckCircle className="w-4 h-4" />
+            Campaign Approvals
+          </Link>
+          <button
+            onClick={handleCreate}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Create Campaign
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

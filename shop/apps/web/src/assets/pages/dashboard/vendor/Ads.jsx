@@ -35,7 +35,7 @@ const Ads = () => {
   const { data: pricingSettings } = useQuery({
     queryKey: ['ad-pricing-settings', campaignForm.placement],
     queryFn: async () => {
-      const response = await api.get(`/admin/ads/pricing-settings/${campaignForm.placement}`);
+      const response = await api.get(`/ads/pricing-settings/${campaignForm.placement}`);
       return response.data.data;
     },
     enabled: !!campaignForm.placement && isCreateModalOpen,

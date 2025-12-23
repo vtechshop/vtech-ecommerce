@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const adController = require('../controllers/adController');
 const adPlacementController = require('../controllers/adPlacementController');
+const adminAdsController = require('../controllers/adminAdsController');
 const { authenticate, authorize } = require('../middleware/auth');
 const { catalogTrackingLimiter } = require('../middleware/rateLimiter');
 
@@ -37,5 +38,9 @@ router.post('/wallet/recharge/create-order', adController.createWalletRechargeOr
 router.post('/wallet/recharge/verify', adController.verifyWalletRechargePayment);
 router.post('/wallet/recharge', adController.rechargeWallet); // DEPRECATED
 router.get('/wallet/transactions', adController.getWalletTransactions);
+
+// Pricing settings (vendors need to see these when creating campaigns)
+router.get('/pricing-settings', adminAdsController.getPricingSettings);
+router.get('/pricing-settings/:placement', adminAdsController.getPricingSettingByPlacement);
 
 module.exports = router;
