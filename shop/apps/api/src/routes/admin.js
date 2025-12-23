@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const admin = require('../controllers/adminController');
+const adminAds = require('../controllers/adminAdsController');
 const crm = require('../controllers/crmController');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validate');
@@ -78,6 +79,19 @@ router.post('/ads/campaigns', admin.createAdCampaign);
 router.put('/ads/campaigns/:id', validateObjectId('id'), admin.updateAdCampaign);
 router.delete('/ads/campaigns/:id', validateObjectId('id'), admin.deleteAdCampaign);
 router.put('/ads/campaigns/:id/status', validateObjectId('id'), admin.updateAdCampaignStatus);
+
+// Ads - New Amazon-style management
+router.get('/ads/pricing-settings', adminAds.getPricingSettings);
+router.get('/ads/pricing-settings/:placement', adminAds.getPricingSettingByPlacement);
+router.post('/ads/pricing-settings', adminAds.upsertPricingSettings);
+router.post('/ads/pricing-settings/initialize', adminAds.initializeDefaultPricingSettings);
+
+router.get('/ads/campaigns/all', adminAds.getAllCampaigns);
+router.get('/ads/campaigns/pending', adminAds.getPendingCampaigns);
+router.get('/ads/campaigns/stats', adminAds.getCampaignStatsSummary);
+router.put('/ads/campaigns/:id/approve', validateObjectId('id'), adminAds.approveCampaign);
+router.put('/ads/campaigns/:id/reject', validateObjectId('id'), adminAds.rejectCampaign);
+router.put('/ads/campaigns/:id/pause', validateObjectId('id'), adminAds.pauseCampaign);
 
 // Blog / CMS - SECURITY: Added ObjectId validation
 router.get('/posts', admin.getPosts);

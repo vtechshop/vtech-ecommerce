@@ -1,8 +1,61 @@
 // FILE: apps/api/src/controllers/adPlacementController.js
 const AdCampaign = require('../models/AdCampaign');
+const AdPricingSettings = require('../models/AdPricingSettings');
 const Setting = require('../models/Setting');
 const AppError = require('../utils/AppError');
 const mongoose = require('mongoose');
+
+/**
+ * Run auction to select winning ads based on auction score (bid × quality score)
+ * @param {Array} campaigns - Array of eligible campaigns
+ * @param {Object} pricingSettings - Pricing settings for the placement
+ * @param {Number} limit - Number of ads to return
+ * @returns {Array} Winning campaigns with calculated actual CPC/CPM
+ */
+function runAdAuction(campaigns, pricingSettings, limit = 1) {
+  if (!campaigns || campaigns.length === 0) return [];
+
+  // Calculate auction score for each campaign
+  const scoredCampaigns = campaigns.map(campaign => {
+    // Ensure auction score is calculated
+    if (!campaign.auctionScore) {
+      campaign.auctionScore = campaign.bid * ((campaign.qualityScore?.overall || 5) / 10);
+    }
+    return campaign;
+  });
+
+  // Sort by auction score (descending)
+  scoredCampaigns.sort((a, b) => b.auctionScore - a.auctionScore);
+
+  // Select winners
+  const winners = scoredCampaigns.slice(0, limit);
+
+  // Apply second-price auction logic (if enabled)
+  const auctionType = pricingSettings?.auctionType || 'second_price';
+
+  if (auctionType === 'second_price' && winners.length > 0) {
+    winners.forEach((winner, index) => {
+      if (index < scoredCampaigns.length - 1) {
+        // Winner pays slightly more than the next highest bid
+        const nextBid = scoredCampaigns[index + 1]?.bid || winner.bid * 0.9;
+        winner.actualCPC = Math.min(winner.bid, nextBid + 0.01);
+        winner.actualCPM = Math.min(winner.bid, nextBid + 0.01);
+      } else {
+        // Last ad pays their full bid
+        winner.actualCPC = winner.bid;
+        winner.actualCPM = winner.bid;
+      }
+    });
+  } else {
+    // First-price auction - pay your bid
+    winners.forEach(winner => {
+      winner.actualCPC = winner.bid;
+      winner.actualCPM = winner.bid;
+    });
+  }
+
+  return winners;
+}
 
 /**
  * GET /ads/sponsored
@@ -19,11 +72,15 @@ exports.getSponsoredAds = async (req, res) => {
       });
     }
 
-    // Build query - now filter directly by placement field
+    // Get pricing settings for this placement
+    const pricingSettings = await AdPricingSettings.findOne({ placement, status: 'active' });
+
+    // Build query - filter for active and approved campaigns
     const now = new Date();
     const query = {
       status: 'active',
-      placement: placement, // Direct placement matching
+      'approval.status': 'approved', // Only approved campaigns
+      placement: placement,
       startAt: { $lte: now },
       $or: [
         { endAt: { $gte: now } },
@@ -31,14 +88,23 @@ exports.getSponsoredAds = async (req, res) => {
       ]
     };
 
-    // Find active campaigns matching placement
-    const campaigns = await AdCampaign.find(query)
-      .sort({ bid: -1, createdAt: -1 })
-      .limit(parseInt(limit))
-      .lean();
+    // Find eligible campaigns
+    let campaigns = await AdCampaign.find(query).lean();
+
+    // Filter campaigns that can actually serve (budget check)
+    campaigns = campaigns.filter(campaign => {
+      // Check daily budget
+      if (campaign.dailySpend?.amount >= campaign.dailyBudget) return false;
+      // Check total budget
+      if (campaign.totalBudget && campaign.stats?.spend >= campaign.totalBudget) return false;
+      return true;
+    });
+
+    // Run auction to select winners
+    const winners = runAdAuction(campaigns, pricingSettings, parseInt(limit));
 
     // Format ads data
-    const ads = campaigns.map(campaign => ({
+    const ads = winners.map(campaign => ({
       _id: campaign._id,
       name: campaign.name,
       type: campaign.type,
@@ -48,7 +114,9 @@ exports.getSponsoredAds = async (req, res) => {
       bannerSize: campaign.bannerSize,
       targeting: campaign.targeting,
       bid: campaign.bid,
-      pricing: campaign.pricing
+      pricing: campaign.pricing,
+      qualityScore: campaign.qualityScore?.overall,
+      auctionScore: campaign.auctionScore,
     }));
 
     res.json({
@@ -67,7 +135,7 @@ exports.getSponsoredAds = async (req, res) => {
 
 /**
  * GET /ads/placement/:placement
- * Get active ad for specific placement
+ * Get active ad for specific placement (uses auction algorithm)
  */
 exports.getAdForPlacement = async (req, res) => {
   try {
@@ -85,25 +153,43 @@ exports.getAdForPlacement = async (req, res) => {
       return res.json({ success: true, data: null, message: 'Ads disabled for this placement' });
     }
 
-    // Find active campaigns for this placement
+    // Get pricing settings for this placement
+    const pricingSettings = await AdPricingSettings.findOne({ placement, status: 'active' });
+
+    // Find active and approved campaigns for this placement
     const now = new Date();
-    const campaigns = await AdCampaign.find({
+    let campaigns = await AdCampaign.find({
       status: 'active',
+      'approval.status': 'approved', // Only approved campaigns
       placement: placement,
       startAt: { $lte: now },
       $or: [
         { endAt: { $gte: now } },
         { endAt: null }
       ]
-    })
-      .sort({ bid: -1, createdAt: -1 })
-      .limit(1);
+    }).lean();
+
+    // Filter campaigns that can actually serve (budget check)
+    campaigns = campaigns.filter(campaign => {
+      // Check daily budget
+      if (campaign.dailySpend?.amount >= campaign.dailyBudget) return false;
+      // Check total budget
+      if (campaign.totalBudget && campaign.stats?.spend >= campaign.totalBudget) return false;
+      return true;
+    });
 
     if (campaigns.length === 0) {
       return res.json({ success: true, data: null, message: 'No active campaigns for this placement' });
     }
 
-    const campaign = campaigns[0];
+    // Run auction to select winner
+    const winners = runAdAuction(campaigns, pricingSettings, 1);
+
+    if (winners.length === 0) {
+      return res.json({ success: true, data: null, message: 'No winning campaign in auction' });
+    }
+
+    const campaign = winners[0];
 
     // Format response with correct AdCampaign fields
     const adData = {
@@ -116,6 +202,10 @@ exports.getAdForPlacement = async (req, res) => {
       bannerImage: campaign.bannerImage,
       dimensions: campaign.dimensions,
       bid: campaign.bid,
+      actualCPC: campaign.actualCPC,
+      actualCPM: campaign.actualCPM,
+      qualityScore: campaign.qualityScore?.overall,
+      auctionScore: campaign.auctionScore,
       status: campaign.status,
       campaignId: campaign._id,
     };

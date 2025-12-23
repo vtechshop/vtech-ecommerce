@@ -145,8 +145,44 @@ const adCampaignSchema = new mongoose.Schema({
   // Status
   status: {
     type: String,
-    enum: ['draft', 'active', 'paused', 'completed', 'budget_exhausted'],
+    enum: ['draft', 'pending_approval', 'approved', 'rejected', 'active', 'paused', 'completed', 'budget_exhausted'],
     default: 'draft',
+  },
+  // Admin Approval
+  approval: {
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending',
+    },
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    reviewedAt: Date,
+    rejectionReason: String,
+    adminNotes: String,
+  },
+  // Quality Score (calculated by system)
+  qualityScore: {
+    overall: { type: Number, min: 0, max: 10, default: 5 },
+    ctr: { type: Number, min: 0, max: 1, default: 0 }, // Click-through rate
+    conversionRate: { type: Number, min: 0, max: 1, default: 0 },
+    productRating: { type: Number, min: 0, max: 5, default: 0 },
+    lastCalculated: Date,
+  },
+  // Auction info
+  actualCPC: {
+    type: Number,
+    comment: 'Actual amount charged per click (may differ from bid in second-price auction)',
+  },
+  actualCPM: {
+    type: Number,
+    comment: 'Actual amount charged per 1000 impressions',
+  },
+  auctionScore: {
+    type: Number,
+    comment: 'Bid × Quality Score - used for auction ranking',
   },
   // Stats
   stats: {
@@ -177,19 +213,55 @@ adCampaignSchema.index({ startAt: 1, endAt: 1 });
 // Methods
 adCampaignSchema.methods.canServe = function() {
   const now = new Date();
-  
+
   // Check status
   if (this.status !== 'active') return false;
-  
+
+  // Check approval
+  if (this.approval.status !== 'approved') return false;
+
   // Check dates
   if (this.startAt > now) return false;
   if (this.endAt && this.endAt < now) return false;
-  
+
   // Check budget
   if (this.dailySpend.amount >= this.dailyBudget) return false;
   if (this.totalBudget && this.stats.spend >= this.totalBudget) return false;
-  
+
   return true;
+};
+
+// Calculate quality score
+adCampaignSchema.methods.calculateQualityScore = function(weights) {
+  // Default weights if not provided
+  const w = weights || { ctr: 0.4, conversionRate: 0.3, productRating: 0.3 };
+
+  // Normalize CTR (assume 5% is excellent)
+  const normalizedCTR = Math.min(this.qualityScore.ctr / 0.05, 1);
+
+  // Normalize conversion rate (assume 2% is excellent)
+  const normalizedConversion = Math.min(this.qualityScore.conversionRate / 0.02, 1);
+
+  // Normalize product rating (0-5 scale to 0-1 scale)
+  const normalizedRating = this.qualityScore.productRating / 5;
+
+  // Calculate weighted score (0-10 scale)
+  const score = (
+    normalizedCTR * w.ctr +
+    normalizedConversion * w.conversionRate +
+    normalizedRating * w.productRating
+  ) * 10;
+
+  this.qualityScore.overall = Math.round(score * 10) / 10; // Round to 1 decimal
+  this.qualityScore.lastCalculated = new Date();
+
+  return this.qualityScore.overall;
+};
+
+// Calculate auction score (bid × quality score)
+adCampaignSchema.methods.calculateAuctionScore = function() {
+  this.auctionScore = this.bid * (this.qualityScore.overall / 10);
+  return this.auctionScore;
 };
 
 module.exports = mongoose.model('AdCampaign', adCampaignSchema);

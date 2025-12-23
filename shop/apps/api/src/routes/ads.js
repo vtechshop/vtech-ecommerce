@@ -33,7 +33,9 @@ router.post('/campaigns/:campaignId/creatives', adController.createCreative);
 router.get('/campaigns/:id/report', adController.getCampaignReport);
 
 router.get('/wallet', adController.getWallet);
-router.post('/wallet/recharge', adController.rechargeWallet);
+router.post('/wallet/recharge/create-order', adController.createWalletRechargeOrder);
+router.post('/wallet/recharge/verify', adController.verifyWalletRechargePayment);
+router.post('/wallet/recharge', adController.rechargeWallet); // DEPRECATED
 router.get('/wallet/transactions', adController.getWalletTransactions);
 
 module.exports = router;

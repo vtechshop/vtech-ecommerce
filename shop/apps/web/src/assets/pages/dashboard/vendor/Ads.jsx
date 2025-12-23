@@ -9,6 +9,7 @@ import Spinner from '@/components/common/Spinner';
 import Input from '@/components/common/Input';
 import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { loadRazorpayScript } from '@/utils/razorpay';
 
 const Ads = () => {
   const queryClient = useQueryClient();
@@ -28,6 +29,16 @@ const Ads = () => {
     endAt: '',
     placement: 'homepage_banner',
     productIds: [],
+  });
+
+  // Fetch pricing settings for selected placement
+  const { data: pricingSettings } = useQuery({
+    queryKey: ['ad-pricing-settings', campaignForm.placement],
+    queryFn: async () => {
+      const response = await api.get(`/admin/ads/pricing-settings/${campaignForm.placement}`);
+      return response.data.data;
+    },
+    enabled: !!campaignForm.placement && isCreateModalOpen,
   });
 
   const { data: campaigns, isLoading } = useQuery({
@@ -148,21 +159,137 @@ const Ads = () => {
     createCampaignMutation.mutate(data);
   };
 
-  const rechargeWalletMutation = useMutation({
-    mutationFn: async (amount) => {
-      const response = await api.post('/ads/wallet/recharge', { amount });
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
-      toast.success('Wallet recharged successfully');
-      setIsModalOpen(false);
-      setRechargeAmount('');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to recharge wallet');
-    },
-  });
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  // Helper to get bid recommendation
+  const getBidRecommendation = () => {
+    if (!pricingSettings || !campaignForm.bid) return null;
+
+    const bid = parseFloat(campaignForm.bid);
+    const { minBid, maxBid, recommendedBid, floorPrice } = pricingSettings;
+
+    if (bid < minBid) {
+      return {
+        valid: false,
+        level: 'error',
+        message: `Minimum bid is ₹${minBid}`,
+      };
+    }
+    if (bid > maxBid) {
+      return {
+        valid: false,
+        level: 'error',
+        message: `Maximum bid is ₹${maxBid}`,
+      };
+    }
+    if (bid < floorPrice) {
+      return {
+        valid: false,
+        level: 'error',
+        message: `Minimum bid to participate in auction is ₹${floorPrice}`,
+      };
+    }
+    if (bid < recommendedBid) {
+      return {
+        valid: true,
+        level: 'warning',
+        message: `Your bid is below recommended. Consider bidding ₹${recommendedBid} for better visibility.`,
+      };
+    }
+    return {
+      valid: true,
+      level: 'success',
+      message: 'Your bid is competitive!',
+    };
+  };
+
+  const initiateWalletRecharge = async (amount) => {
+    try {
+      setIsProcessingPayment(true);
+
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Failed to load Razorpay SDK');
+      }
+
+      // Create Razorpay order
+      const orderResponse = await api.post('/ads/wallet/recharge/create-order', { amount });
+      const orderData = orderResponse.data.data;
+
+      // Get user data
+      const userResponse = await api.get('/user/profile');
+      const userData = userResponse.data.data;
+
+      // Razorpay options
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'V-Tech Ad Wallet',
+        description: `Recharge Ad Wallet - ₹${amount}`,
+        image: '/logo.png',
+        order_id: orderData.orderId,
+        prefill: {
+          name: userData.name || '',
+          email: userData.email || '',
+          contact: userData.phone || '',
+        },
+        notes: {
+          type: 'ad_wallet_recharge',
+          amount: amount.toString(),
+        },
+        theme: {
+          color: '#3b82f6',
+        },
+        handler: async function (response) {
+          try {
+            // Verify payment
+            const verificationData = {
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            };
+
+            const verifyResponse = await api.post('/ads/wallet/recharge/verify', verificationData);
+
+            if (verifyResponse.data.success) {
+              queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
+              toast.success('Wallet recharged successfully');
+              setIsModalOpen(false);
+              setRechargeAmount('');
+            }
+          } catch (error) {
+            console.error('Payment verification failed:', error);
+            toast.error(error.response?.data?.error?.message || 'Payment verification failed');
+          } finally {
+            setIsProcessingPayment(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessingPayment(false);
+            toast.error('Payment cancelled');
+          },
+        },
+      };
+
+      // Create Razorpay instance and open payment modal
+      const razorpay = new window.Razorpay(options);
+
+      razorpay.on('payment.failed', function (response) {
+        console.error('Payment failed:', response.error);
+        setIsProcessingPayment(false);
+        toast.error(response.error.description || 'Payment failed');
+      });
+
+      razorpay.open();
+    } catch (error) {
+      setIsProcessingPayment(false);
+      console.error('Error initiating payment:', error);
+      toast.error(error.response?.data?.error?.message || 'Failed to initiate payment');
+    }
+  };
 
   const handleRechargeWallet = (e) => {
     e.preventDefault();
@@ -173,7 +300,7 @@ const Ads = () => {
       return;
     }
 
-    rechargeWalletMutation.mutate(amount);
+    initiateWalletRecharge(amount);
   };
 
   if (isLoading) {
@@ -259,24 +386,49 @@ const Ads = () => {
             <div key={campaign._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <h3 className="text-lg font-semibold">{campaign.name}</h3>
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                       campaign.status === 'active' ? 'bg-green-100 text-green-800' :
+                      campaign.status === 'pending_approval' ? 'bg-blue-100 text-blue-800' :
+                      campaign.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      campaign.status === 'rejected' ? 'bg-red-100 text-red-800' :
                       campaign.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                       campaign.status === 'budget_exhausted' ? 'bg-red-100 text-red-800' :
                       'bg-gray-100 text-gray-900'
                     }`}>
-                      {campaign.status}
+                      {campaign.status.replace('_', ' ')}
                     </span>
+                    {campaign.approval?.status && (
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        campaign.approval.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        campaign.approval.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {campaign.approval.status === 'approved' ? '✓ Approved' :
+                         campaign.approval.status === 'rejected' ? '✗ Rejected' :
+                         '⏳ Pending Review'}
+                      </span>
+                    )}
+                    {campaign.qualityScore?.overall && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                        Quality: {campaign.qualityScore.overall}/10
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-gray-700">
                     {campaign.type} • {campaign.pricing} • Bid: {formatCurrency(campaign.bid)}
+                    {campaign.auctionScore && ` • Score: ${campaign.auctionScore.toFixed(2)}`}
                   </p>
                   <p className="text-sm text-gray-700">
-                    Daily Budget: {formatCurrency(campaign.dailyBudget)} • 
+                    Daily Budget: {formatCurrency(campaign.dailyBudget)} •
                     Spent Today: {formatCurrency(campaign.dailySpend?.amount || 0)}
                   </p>
+                  {campaign.approval?.rejectionReason && (
+                    <p className="text-sm text-red-600 mt-2">
+                      <strong>Rejection Reason:</strong> {campaign.approval.rejectionReason}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   {campaign.status === 'active' ? (
@@ -357,10 +509,10 @@ const Ads = () => {
             required
           />
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={isProcessingPayment}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" loading={rechargeWalletMutation.isPending}>
+            <Button type="submit" variant="primary" loading={isProcessingPayment}>
               Proceed to Payment
             </Button>
           </div>
@@ -476,17 +628,60 @@ const Ads = () => {
               </div>
             )}
 
+            {/* Pricing Guidelines */}
+            {pricingSettings && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Bid Guidelines for {pricingSettings.displayName}</h4>
+                <div className="grid grid-cols-3 gap-3 text-sm">
+                  <div>
+                    <p className="text-blue-700 font-medium">Minimum Bid</p>
+                    <p className="text-lg font-bold text-blue-900">{formatCurrency(pricingSettings.minBid)}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700 font-medium">Recommended Bid</p>
+                    <p className="text-lg font-bold text-green-600">{formatCurrency(pricingSettings.recommendedBid)}</p>
+                  </div>
+                  <div>
+                    <p className="text-blue-700 font-medium">Maximum Bid</p>
+                    <p className="text-lg font-bold text-blue-900">{formatCurrency(pricingSettings.maxBid)}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-blue-700 mt-2">
+                  Minimum daily budget: {formatCurrency(pricingSettings.dailyBudgetMin)}
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
-              <Input
-                label={`Bid Amount (₹) - ${campaignForm.pricing === 'CPC' ? 'per click' : 'per 1000 views'}`}
-                type="number"
-                step="0.01"
-                min="0"
-                value={campaignForm.bid}
-                onChange={(e) => setCampaignForm({ ...campaignForm, bid: e.target.value })}
-                required
-                placeholder={campaignForm.pricing === 'CPC' ? '5.00 - 20.00' : '100.00 - 300.00'}
-              />
+              <div>
+                <Input
+                  label={`Bid Amount (₹) - ${campaignForm.pricing === 'CPC' ? 'per click' : 'per 1000 views'}`}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={campaignForm.bid}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, bid: e.target.value })}
+                  required
+                  placeholder={pricingSettings ? `${pricingSettings.minBid} - ${pricingSettings.maxBid}` : '0.00'}
+                />
+                {/* Bid Validation Feedback */}
+                {(() => {
+                  const recommendation = getBidRecommendation();
+                  if (!recommendation) return null;
+
+                  const colors = {
+                    error: 'bg-red-50 border-red-200 text-red-800',
+                    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                    success: 'bg-green-50 border-green-200 text-green-800',
+                  };
+
+                  return (
+                    <div className={`mt-2 p-2 rounded border text-xs ${colors[recommendation.level]}`}>
+                      {recommendation.message}
+                    </div>
+                  );
+                })()}
+              </div>
 
               <Input
                 label="Daily Budget (₹)"
@@ -496,7 +691,7 @@ const Ads = () => {
                 value={campaignForm.dailyBudget}
                 onChange={(e) => setCampaignForm({ ...campaignForm, dailyBudget: e.target.value })}
                 required
-                placeholder="Minimum ₹500"
+                placeholder={pricingSettings ? `Minimum ₹${pricingSettings.dailyBudgetMin}` : 'Minimum ₹500'}
               />
             </div>
 

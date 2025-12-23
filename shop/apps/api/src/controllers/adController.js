@@ -3,11 +3,17 @@ const AdCampaign = require('../models/AdCampaign');
 const AdCreative = require('../models/AdCreative');
 const AdEvent = require('../models/AdEvent');
 const AdWallet = require('../models/AdWallet');
+const AdPricingSettings = require('../models/AdPricingSettings');
 const Product = require('../models/Product');
 const Vendor = require('../models/Vendor');
 const { getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
 const crypto = require('crypto');
+const {
+  createOrder: createRazorpayOrder,
+  verifyPaymentSignature,
+  fetchPayment,
+} = require('../utils/razorpay');
 
 // Get campaigns
 exports.getCampaigns = async (req, res, next) => {
@@ -63,6 +69,7 @@ exports.getCampaigns = async (req, res, next) => {
 // Create campaign
 exports.createCampaign = async (req, res, next) => {
   try {
+    const { placement, bid, dailyBudget, pricing } = req.body;
     let vendorId;
 
     // Admin can create campaign for any vendor
@@ -108,19 +115,109 @@ exports.createCampaign = async (req, res, next) => {
           },
         });
       }
+
+      // Validate against admin pricing settings (vendors only, admin can bypass)
+      const pricingSettings = await AdPricingSettings.findOne({ placement, status: 'active' });
+
+      if (pricingSettings) {
+        // Validate bid amount
+        const bidValidation = pricingSettings.isValidBid(bid);
+        if (!bidValidation) {
+          const recommendation = pricingSettings.getBidRecommendation(bid);
+          return res.status(400).json({
+            success: false,
+            error: {
+              code: 'INVALID_BID',
+              message: recommendation.message,
+              suggestion: recommendation.suggestion,
+            },
+          });
+        }
+
+        // Validate daily budget
+        if (dailyBudget < pricingSettings.dailyBudgetMin) {
+          return res.status(400).json({
+            success: false,
+            error: {
+              code: 'INVALID_BUDGET',
+              message: `Minimum daily budget for this placement is ₹${pricingSettings.dailyBudgetMin}`,
+            },
+          });
+        }
+
+        // Validate pricing type matches
+        if (pricing !== pricingSettings.pricingType) {
+          return res.status(400).json({
+            success: false,
+            error: {
+              code: 'INVALID_PRICING_TYPE',
+              message: `This placement only supports ${pricingSettings.pricingType} pricing`,
+            },
+          });
+        }
+      }
+    }
+
+    // Calculate initial quality score based on products
+    let qualityScore = {
+      overall: 5, // Default neutral score
+      ctr: 0,
+      conversionRate: 0,
+      productRating: 0,
+    };
+
+    if (req.body.targeting && req.body.targeting.products && req.body.targeting.products.length > 0) {
+      const products = await Product.find({ _id: { $in: req.body.targeting.products } })
+        .select('rating reviewCount')
+        .lean();
+
+      if (products.length > 0) {
+        // Calculate average product rating
+        const totalRating = products.reduce((sum, p) => sum + (p.rating || 0), 0);
+        const avgRating = totalRating / products.length;
+        qualityScore.productRating = avgRating;
+      }
+    }
+
+    // Set status based on user role and settings
+    let status = 'draft';
+    let approvalStatus = 'pending';
+
+    if (req.user.role === 'admin') {
+      // Admin can set status directly
+      status = req.body.status || 'approved';
+      approvalStatus = 'approved';
+    } else {
+      // Vendors: check if requires approval
+      const pricingSettings = await AdPricingSettings.findOne({ placement });
+      if (pricingSettings && pricingSettings.requiresApproval) {
+        status = 'pending_approval';
+      } else {
+        status = 'approved';
+        approvalStatus = 'approved';
+      }
     }
 
     const campaign = await AdCampaign.create({
       ...req.body,
       vendorId: vendorId,
-      status: req.body.status || 'draft', // Admin can set status directly
+      status,
+      approval: {
+        status: approvalStatus,
+      },
+      qualityScore,
     });
 
-    logger.info(`Ad campaign created: ${campaign.name}`);
+    // Calculate auction score
+    campaign.calculateAuctionScore();
+    await campaign.save();
+
+    logger.info(`Ad campaign created: ${campaign.name} (${status})`);
 
     res.status(201).json({
       success: true,
       data: campaign,
+      message: status === 'pending_approval' ? 'Campaign created and submitted for admin approval' : 'Campaign created successfully',
     });
   } catch (error) {
     next(error);
@@ -690,7 +787,227 @@ res.json({
 next(error);
 }
 };
-// Recharge wallet
+// Create Razorpay order for wallet recharge
+exports.createWalletRechargeOrder = async (req, res, next) => {
+  try {
+    const { amount } = req.body;
+
+    // Validate input
+    if (!amount || amount < 100) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'Minimum recharge amount is ₹100',
+        },
+      });
+    }
+
+    // Find vendor
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Vendor profile not found',
+        },
+      });
+    }
+
+    // Create a unique reference for this recharge
+    const rechargeRef = 'WALLET-' + Date.now();
+
+    // Create Razorpay order
+    const result = await createRazorpayOrder(amount, 'INR', {
+      receipt: rechargeRef,
+      notes: {
+        type: 'ad_wallet_recharge',
+        vendorId: vendor._id.toString(),
+        userId: req.user._id.toString(),
+        userEmail: req.user.email,
+        userName: req.user.name,
+        amount: amount.toString(),
+      },
+    });
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: 'RAZORPAY_ERROR',
+          message: result.error || 'Failed to create Razorpay order',
+        },
+      });
+    }
+
+    logger.info(`Razorpay order created for wallet recharge: ${vendor.storeName} - ₹${amount}`);
+
+    res.json({
+      success: true,
+      data: {
+        orderId: result.order.id,
+        amount: result.order.amount,
+        currency: result.order.currency,
+        keyId: process.env.RAZORPAY_KEY_ID,
+        rechargeRef,
+      },
+    });
+  } catch (error) {
+    console.error('Create wallet recharge order error:', error);
+    next(error);
+  }
+};
+
+// Verify wallet recharge payment
+exports.verifyWalletRechargePayment = async (req, res, next) => {
+  try {
+    const {
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
+    } = req.body;
+
+    // Validate input
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_INPUT',
+          message: 'All payment details are required',
+        },
+      });
+    }
+
+    // Verify signature
+    const isValid = verifyPaymentSignature(
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature
+    );
+
+    if (!isValid) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_SIGNATURE',
+          message: 'Payment signature verification failed',
+        },
+      });
+    }
+
+    // Fetch payment details from Razorpay
+    const paymentResult = await fetchPayment(razorpayPaymentId);
+    if (!paymentResult.success) {
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: 'PAYMENT_FETCH_ERROR',
+          message: 'Failed to fetch payment details',
+        },
+      });
+    }
+
+    const payment = paymentResult.payment;
+
+    // Verify payment belongs to user
+    if (payment.notes?.userId !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN',
+          message: 'Unauthorized access to payment',
+        },
+      });
+    }
+
+    // Verify payment type
+    if (payment.notes?.type !== 'ad_wallet_recharge') {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_PAYMENT',
+          message: 'Invalid payment type',
+        },
+      });
+    }
+
+    // Find vendor
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Vendor profile not found',
+        },
+      });
+    }
+
+    // Get or create wallet
+    let wallet = await AdWallet.findOne({ vendorId: vendor._id });
+    if (!wallet) {
+      wallet = await AdWallet.create({ vendorId: vendor._id });
+    }
+
+    // Check if this payment was already processed (prevent double recharge)
+    const existingTransaction = wallet.transactions.find(
+      t => t.paymentReference === razorpayPaymentId
+    );
+
+    if (existingTransaction) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'ALREADY_PROCESSED',
+          message: 'This payment has already been processed',
+        },
+      });
+    }
+
+    // Only process if payment is captured
+    if (payment.status === 'captured') {
+      const amount = payment.amount / 100; // Convert from paise to rupees
+
+      // Add recharge transaction
+      wallet.addTransaction(
+        'recharge',
+        amount,
+        `Wallet recharge via Razorpay (${payment.method})`,
+        razorpayPaymentId
+      );
+      await wallet.save();
+
+      logger.info(`Ad wallet recharged successfully: ${vendor.storeName} - ₹${amount} - Payment ID: ${razorpayPaymentId}`);
+
+      res.json({
+        success: true,
+        data: {
+          wallet,
+          payment: {
+            id: razorpayPaymentId,
+            amount,
+            status: payment.status,
+            method: payment.method,
+          },
+        },
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 'PAYMENT_NOT_CAPTURED',
+          message: 'Payment not captured yet',
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Verify wallet recharge payment error:', error);
+    next(error);
+  }
+};
+
+// Recharge wallet (DEPRECATED - Use Razorpay flow instead)
 exports.rechargeWallet = async (req, res, next) => {
 try {
 const { amount } = req.body;
