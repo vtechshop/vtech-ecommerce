@@ -45,7 +45,7 @@ const Cart = () => {
       <div className="bg-blue-50 min-h-screen">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-12">
           <div className="max-w-xl mx-auto text-center bg-white rounded-lg border p-12">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <ShoppingBag className="w-10 h-10 text-gray-400" />
             </div>
             <h1 className="text-2xl font-bold mb-3 text-gray-900">Your cart is empty</h1>
@@ -85,7 +85,7 @@ const Cart = () => {
                 <div className="p-4 flex gap-3">
                   {/* Image */}
                   <Link to={`/product/${item.productSlug}`} className="flex-shrink-0">
-                    <div className="w-20 h-20 bg-gray-50 rounded overflow-hidden border">
+                    <div className="w-20 h-20 bg-blue-100 rounded overflow-hidden border">
                       <img
                         src={item.image || PLACEHOLDER_IMAGE_SM}
                         alt={item.name}
@@ -105,7 +105,7 @@ const Cart = () => {
                     </Link>
 
                     {item.variant && (
-                      <p className="text-xs text-gray-700 mt-1 bg-gray-100 inline-block px-2 py-1 rounded">
+                      <p className="text-xs text-gray-700 mt-1 bg-blue-100 inline-block px-2 py-1 rounded">
                         {typeof item.variant === 'string'
                           ? JSON.parse(item.variant).join(', ')
                           : Object.values(item.variant).join(', ')}
@@ -117,7 +117,7 @@ const Cart = () => {
                       <div className="flex items-center border border-gray-300 rounded">
                         <button
                           onClick={() => handleUpdateQuantity(item._id, item.qty - 1)}
-                          className="px-2 py-1 hover:bg-gray-50"
+                          className="px-2 py-1 hover:bg-blue-100"
                           disabled={item.qty <= 1}
                         >
                           <Minus className="w-4 h-4 text-gray-700" />
@@ -137,7 +137,7 @@ const Cart = () => {
                         />
                         <button
                           onClick={() => handleUpdateQuantity(item._id, item.qty + 1)}
-                          className="px-2 py-1 hover:bg-gray-50"
+                          className="px-2 py-1 hover:bg-blue-100"
                         >
                           <Plus className="w-4 h-4 text-gray-700" />
                         </button>
@@ -227,7 +227,7 @@ const Cart = () => {
               </button>
 
               <Link to="/search">
-                <button className="w-full bg-gray-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors" data-testid="continue-shopping-btn">
+                <button className="w-full bg-blue-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors" data-testid="continue-shopping-btn">
                   Continue Shopping
                 </button>
               </Link>

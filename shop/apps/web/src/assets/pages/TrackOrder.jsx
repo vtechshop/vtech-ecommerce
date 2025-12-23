@@ -102,7 +102,7 @@ const TrackOrder = () => {
 
               {/* Shipping Info */}
               {order.shipment?.carrier && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <div className="bg-blue-100 rounded-lg p-4 mb-6">
                   <h3 className="font-semibold mb-2">Shipping Information</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>

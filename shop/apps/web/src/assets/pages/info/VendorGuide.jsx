@@ -14,7 +14,7 @@ const VendorGuide = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-[10%] py-[50px]">
+    <div className="min-h-screen bg-blue-100 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         {/* Header */}
         <div className="text-center mb-12">
@@ -31,27 +31,27 @@ const VendorGuide = () => {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <h2 className="text-lg font-semibold mb-4">Quick Navigation</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <a href="#commission" className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="#commission" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-100 transition-colors">
               <DollarSign className="w-5 h-5 text-blue-600" />
               <span className="font-medium">Commission System</span>
             </a>
-            <a href="#sponsor-ads" className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="#sponsor-ads" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-100 transition-colors">
               <Target className="w-5 h-5 text-blue-600" />
               <span className="font-medium">Sponsored Ads</span>
             </a>
-            <a href="#getting-started" className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="#getting-started" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-100 transition-colors">
               <Package className="w-5 h-5 text-blue-600" />
               <span className="font-medium">Getting Started</span>
             </a>
-            <a href="#orders" className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="#orders" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-100 transition-colors">
               <ShoppingCart className="w-5 h-5 text-blue-600" />
               <span className="font-medium">Order Management</span>
             </a>
-            <a href="#payments" className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="#payments" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-100 transition-colors">
               <CreditCard className="w-5 h-5 text-blue-600" />
               <span className="font-medium">Payments & Settlements</span>
             </a>
-            <a href="#best-practices" className="flex items-center gap-2 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+            <a href="#best-practices" className="flex items-center gap-2 p-3 rounded-lg hover:bg-blue-100 transition-colors">
               <TrendingUp className="w-5 h-5 text-blue-600" />
               <span className="font-medium">Best Practices</span>
             </a>
@@ -115,7 +115,7 @@ const VendorGuide = () => {
                   How Commission is Calculated
                 </h3>
                 <div className="space-y-4">
-                  <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="bg-blue-100 rounded-lg p-4">
                     <h4 className="font-semibold mb-3">Example Calculation:</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -266,28 +266,28 @@ const VendorGuide = () => {
               <div>
                 <h3 className="text-xl font-semibold mb-4">Where Your Ads Appear</h3>
                 <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-start gap-3 p-3 bg-blue-100 rounded-lg">
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-semibold">Homepage Banner</h4>
                       <p className="text-sm text-gray-700">Prime real estate at the top of homepage - highest visibility</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-start gap-3 p-3 bg-blue-100 rounded-lg">
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-semibold">Category Pages</h4>
                       <p className="text-sm text-gray-700">Top positions in relevant category listings</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-start gap-3 p-3 bg-blue-100 rounded-lg">
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-semibold">Search Results</h4>
                       <p className="text-sm text-gray-700">Appear at top of search results for targeted keywords</p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-start gap-3 p-3 bg-blue-100 rounded-lg">
                     <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                     <div>
                       <h4 className="font-semibold">Product Pages</h4>
@@ -309,7 +309,7 @@ const VendorGuide = () => {
                       <h4 className="font-bold text-lg">Cost Per Click</h4>
                     </div>
                     <p className="text-sm text-gray-700 mb-3">Pay only when someone clicks on your ad</p>
-                    <div className="bg-gray-50 rounded p-3">
+                    <div className="bg-blue-100 rounded p-3">
                       <p className="text-xs text-gray-700 mb-1">Starting bid:</p>
                       <p className="text-2xl font-bold text-blue-600">₹5-₹20</p>
                       <p className="text-xs text-gray-700 mt-1">per click</p>
@@ -328,7 +328,7 @@ const VendorGuide = () => {
                       <h4 className="font-bold text-lg">Cost Per 1000 Impressions</h4>
                     </div>
                     <p className="text-sm text-gray-700 mb-3">Pay for every 1000 times your ad is shown</p>
-                    <div className="bg-gray-50 rounded p-3">
+                    <div className="bg-blue-100 rounded p-3">
                       <p className="text-xs text-gray-700 mb-1">Starting bid:</p>
                       <p className="text-2xl font-bold text-green-600">₹100-₹300</p>
                       <p className="text-xs text-gray-700 mt-1">per 1000 views</p>
@@ -347,7 +347,7 @@ const VendorGuide = () => {
                       <h4 className="font-bold text-lg">Cost Per Acquisition</h4>
                     </div>
                     <p className="text-sm text-gray-700 mb-3">Pay only when a sale is made</p>
-                    <div className="bg-gray-50 rounded p-3">
+                    <div className="bg-blue-100 rounded p-3">
                       <p className="text-xs text-gray-700 mb-1">Rate:</p>
                       <p className="text-2xl font-bold text-purple-600">5-10%</p>
                       <p className="text-xs text-gray-700 mt-1">of sale price</p>
@@ -433,19 +433,19 @@ const VendorGuide = () => {
               <div>
                 <h3 className="text-xl font-semibold mb-4">Track Your Performance</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <div className="bg-blue-100 rounded-lg p-3 text-center">
                     <p className="text-xs text-gray-700 mb-1">Impressions</p>
                     <p className="text-sm font-semibold">How many times ad was shown</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <div className="bg-blue-100 rounded-lg p-3 text-center">
                     <p className="text-xs text-gray-700 mb-1">Clicks</p>
                     <p className="text-sm font-semibold">Number of ad clicks</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <div className="bg-blue-100 rounded-lg p-3 text-center">
                     <p className="text-xs text-gray-700 mb-1">CTR</p>
                     <p className="text-sm font-semibold">Click-through rate %</p>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <div className="bg-blue-100 rounded-lg p-3 text-center">
                     <p className="text-xs text-gray-700 mb-1">Conversions</p>
                     <p className="text-sm font-semibold">Sales from ads</p>
                   </div>

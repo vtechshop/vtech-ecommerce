@@ -188,7 +188,7 @@ const KYCReview = () => {
             className={`px-4 py-2 rounded-lg font-medium ${
               filter === 'all'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-blue-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             All ({stats.total || 0})
@@ -198,7 +198,7 @@ const KYCReview = () => {
             className={`px-4 py-2 rounded-lg font-medium ${
               filter === 'vendor'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-blue-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             Vendors ({stats.totalVendors || 0})
@@ -208,7 +208,7 @@ const KYCReview = () => {
             className={`px-4 py-2 rounded-lg font-medium ${
               filter === 'affiliate'
                 ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-blue-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             Affiliates ({stats.totalAffiliates || 0})
@@ -225,7 +225,7 @@ const KYCReview = () => {
           </div>
         ) : (
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-blue-100 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Type
@@ -249,7 +249,7 @@ const KYCReview = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {submissions.map((submission) => (
-                <tr key={submission._id} className="hover:bg-gray-50">
+                <tr key={submission._id} className="hover:bg-blue-100">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -329,7 +329,7 @@ const KYCReview = () => {
               {/* User Info */}
               <div>
                 <h3 className="font-semibold text-gray-900 mb-3">User Information</h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="bg-blue-100 rounded-lg p-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-700">Name:</span>
                     <span className="font-medium">{selectedKYC.userId?.name}</span>
@@ -350,7 +350,7 @@ const KYCReview = () => {
                 <h3 className="font-semibold text-gray-900 mb-3">
                   {selectedKYC.type === 'vendor' ? 'Business Information' : 'Personal Information'}
                 </h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="bg-blue-100 rounded-lg p-4 space-y-2">
                   {selectedKYC.type === 'vendor' ? (
                     <>
                       <div className="flex justify-between">
@@ -410,7 +410,7 @@ const KYCReview = () => {
                 {selectedKYC.kyc?.documents?.length > 0 ? (
                   <div className="space-y-2">
                     {selectedKYC.kyc.documents.map((doc, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={index} className="flex items-center justify-between p-3 bg-blue-100 rounded-lg">
                         <div className="flex items-center gap-3">
                           <FileText className="w-5 h-5 text-gray-700" />
                           <div>
@@ -483,7 +483,7 @@ const KYCReview = () => {
                     setRejectModalOpen(false);
                     setRejectReason('');
                   }}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  className="px-4 py-2 bg-blue-100 text-gray-700 rounded-lg hover:bg-gray-200"
                 >
                   Cancel
                 </button>

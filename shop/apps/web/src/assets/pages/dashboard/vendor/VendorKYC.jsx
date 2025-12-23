@@ -225,7 +225,7 @@ const VendorKYC = () => {
           <button
             onClick={() => refreshUserSession(true)}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Refresh approval status"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -349,7 +349,7 @@ const VendorKYC = () => {
             <p className="text-sm text-gray-700 mb-3">Upload a copy of your business license or registration</p>
 
             {kyc.documents?.filter(doc => doc.type === 'business_license').map((doc) => (
-              <div key={doc._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+              <div key={doc._id} className="flex items-center justify-between p-3 bg-blue-100 rounded-lg mb-2">
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-gray-700" />
                   <span className="text-sm font-medium text-gray-900">{doc.filename}</span>
@@ -371,7 +371,7 @@ const VendorKYC = () => {
                 className="hidden"
                 disabled={uploadingDoc}
               />
-              <div className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-flex items-center gap-2">
+              <div className="px-4 py-2 bg-blue-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-flex items-center gap-2">
                 <Upload className="w-4 h-4" />
                 Upload Document
               </div>
@@ -384,7 +384,7 @@ const VendorKYC = () => {
             <p className="text-sm text-gray-700 mb-3">Upload your tax identification certificate</p>
 
             {kyc.documents?.filter(doc => doc.type === 'tax_certificate').map((doc) => (
-              <div key={doc._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+              <div key={doc._id} className="flex items-center justify-between p-3 bg-blue-100 rounded-lg mb-2">
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-gray-700" />
                   <span className="text-sm font-medium text-gray-900">{doc.filename}</span>
@@ -406,7 +406,7 @@ const VendorKYC = () => {
                 className="hidden"
                 disabled={uploadingDoc}
               />
-              <div className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-flex items-center gap-2">
+              <div className="px-4 py-2 bg-blue-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-flex items-center gap-2">
                 <Upload className="w-4 h-4" />
                 Upload Document
               </div>
@@ -419,7 +419,7 @@ const VendorKYC = () => {
             <p className="text-sm text-gray-700 mb-3">Upload a government-issued ID of the business owner</p>
 
             {kyc.documents?.filter(doc => doc.type === 'id_proof').map((doc) => (
-              <div key={doc._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+              <div key={doc._id} className="flex items-center justify-between p-3 bg-blue-100 rounded-lg mb-2">
                 <div className="flex items-center gap-3">
                   <FileText className="w-5 h-5 text-gray-700" />
                   <span className="text-sm font-medium text-gray-900">{doc.filename}</span>
@@ -441,7 +441,7 @@ const VendorKYC = () => {
                 className="hidden"
                 disabled={uploadingDoc}
               />
-              <div className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-flex items-center gap-2">
+              <div className="px-4 py-2 bg-blue-100 text-gray-700 rounded-lg hover:bg-gray-200 inline-flex items-center gap-2">
                 <Upload className="w-4 h-4" />
                 Upload Document
               </div>

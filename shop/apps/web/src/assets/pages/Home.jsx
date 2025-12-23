@@ -96,7 +96,7 @@ const Home = React.memo(() => {
             <div className="flex gap-4 animate-fade-in-up stagger-delay-2">
               <Link
                 to="/search"
-                className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-gray-100 hover:scale-105 transition-all duration-300 shadow-lg transform"
+                className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-100 hover:scale-105 transition-all duration-300 shadow-lg transform"
               >
                 {t('home.startShopping')}
               </Link>

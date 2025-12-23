@@ -135,7 +135,7 @@ const Users = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-blue-100 border-b">
               <tr>
                 <th className="text-left py-3 px-4 font-semibold text-sm">User</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Email</th>
@@ -185,7 +185,7 @@ const Users = () => {
                           ? 'bg-primary-100 text-primary-800'
                           : user.role === 'affiliate'
                           ? 'bg-secondary-100 text-secondary-800'
-                          : 'bg-gray-100 text-gray-900'
+                          : 'bg-blue-100 text-gray-900'
                       }`}
                     >
                       {user.role?.charAt(0).toUpperCase() + user.role?.slice(1) || 'Customer'}
@@ -196,7 +196,7 @@ const Users = () => {
                       className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                         user.isActive
                           ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-900'
+                          : 'bg-blue-100 text-gray-900'
                       }`}
                     >
                       {user.isActive ? 'Active' : 'Inactive'}
@@ -414,7 +414,7 @@ const UserDetailsModal = ({ user, onClose, onUpdate }) => {
                           className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                             user.isActive
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-900'
+                              : 'bg-blue-100 text-gray-900'
                           }`}
                         >
                           {user.isActive ? 'Active' : 'Inactive'}
@@ -446,7 +446,7 @@ const UserDetailsModal = ({ user, onClose, onUpdate }) => {
                           className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                             user.emailVerified
                               ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-900'
+                              : 'bg-blue-100 text-gray-900'
                           }`}
                         >
                           {user.emailVerified ? 'Verified' : 'Not Verified'}

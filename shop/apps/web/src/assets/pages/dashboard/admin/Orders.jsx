@@ -65,9 +65,9 @@ const Orders = () => {
       case 'cancelled':
         return 'bg-red-100 text-red-800';
       case 'refunded':
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
       default:
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
     }
   };
 
@@ -161,7 +161,7 @@ const Orders = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-blue-100 border-b">
               <tr>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Order</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Customer</th>
@@ -302,9 +302,9 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, isLoading }) => {
       case 'cancelled':
         return 'bg-red-100 text-red-800';
       case 'refunded':
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
       default:
-        return 'bg-gray-100 text-gray-900';
+        return 'bg-blue-100 text-gray-900';
     }
   };
 
@@ -393,7 +393,7 @@ const OrderDetailsModal = ({ order, onClose, onStatusUpdate, isLoading }) => {
           {/* Order Items */}
           <div className="mt-6">
             <h3 className="text-lg font-semibold mb-4">Order Items</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-blue-100 rounded-lg p-4">
               <div className="space-y-3">
                 {order.items?.map((item, index) => (
                   <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">

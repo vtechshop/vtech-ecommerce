@@ -50,7 +50,7 @@ const TrackOrder = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-blue-100 py-12">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Track Your Order</h1>

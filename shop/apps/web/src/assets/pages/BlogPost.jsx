@@ -182,7 +182,7 @@ const BlogPost = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-100 flex items-center justify-center">
         <Spinner size="lg" />
       </div>
     );
@@ -190,7 +190,7 @@ const BlogPost = () => {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-100 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Blog post not found</h2>
           <Link to="/blog" className="text-blue-600 hover:text-blue-700">
@@ -204,7 +204,7 @@ const BlogPost = () => {
   const isVideo = data.type === 'video';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-blue-100">
       {/* Hero Section */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-6">
@@ -276,7 +276,7 @@ const BlogPost = () => {
                 <img
                   src={data.featuredImage}
                   alt={data.title}
-                  className="w-full h-96 object-contain bg-gray-100"
+                  className="w-full h-96 object-contain bg-blue-100"
                 />
               )}
 
@@ -310,7 +310,7 @@ const BlogPost = () => {
                       {data.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
+                          className="bg-blue-100 text-gray-700 px-3 py-1 rounded-full text-sm"
                         >
                           {tag}
                         </span>
@@ -333,7 +333,7 @@ const BlogPost = () => {
                     <button
                       onClick={handleShare}
                       disabled={shareMutation.isPending}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                     >
                       <Share2 className="w-5 h-5" />
                       Share
@@ -595,7 +595,7 @@ const BlogPost = () => {
                   placeholder="Enter your email"
                   className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 mb-3 focus:outline-none focus:ring-2 focus:ring-white/50"
                 />
-                <button className="w-full px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors font-medium">
+                <button className="w-full px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-blue-100 transition-colors font-medium">
                   Subscribe
                 </button>
               </div>
@@ -609,7 +609,7 @@ const BlogPost = () => {
                       <Link
                         key={product._id}
                         to={`/product/${product.slug}`}
-                        className="flex gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                        className="flex gap-3 hover:bg-blue-100 p-2 rounded-lg transition-colors"
                       >
                         <img
                           src={product.images?.[0] || PLACEHOLDER_IMAGE_MD}

@@ -158,7 +158,7 @@ const VendorCommissions = () => {
       case 'approved': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'paid': return 'bg-green-100 text-green-800 border-green-200';
       case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-900 border-gray-200';
+      default: return 'bg-blue-100 text-gray-900 border-gray-200';
     }
   };
 
@@ -283,7 +283,7 @@ const VendorCommissions = () => {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   statusFilter === status
                     ? 'bg-primary-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-blue-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
                 {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -297,7 +297,7 @@ const VendorCommissions = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-blue-100 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px]">
                   Vendor
@@ -442,7 +442,7 @@ const VendorCommissions = () => {
 
         {/* Pagination */}
         {data?.meta?.pages > 1 && (
-          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+          <div className="bg-blue-100 px-6 py-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-700">
                 Showing page {data.meta.page} of {data.meta.pages}

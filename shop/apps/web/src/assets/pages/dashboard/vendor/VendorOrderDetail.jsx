@@ -410,7 +410,7 @@ const VendorOrderDetail = () => {
               {order.payment?.transactionId && (
                 <div>
                   <span className="text-gray-700 text-sm">Transaction ID:</span>
-                  <p className="text-sm font-mono bg-gray-50 p-2 rounded mt-1 break-all">
+                  <p className="text-sm font-mono bg-blue-100 p-2 rounded mt-1 break-all">
                     {order.payment.transactionId}
                   </p>
                 </div>

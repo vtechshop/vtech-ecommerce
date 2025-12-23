@@ -310,7 +310,7 @@ const BlogManagement = () => {
         <>
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+              <thead className="bg-blue-100">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Blog Post
@@ -334,7 +334,7 @@ const BlogManagement = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {blogs.map((blog) => (
-                  <tr key={blog._id} className="hover:bg-gray-50">
+                  <tr key={blog._id} className="hover:bg-blue-100">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img
@@ -371,7 +371,7 @@ const BlogManagement = () => {
                             ? 'bg-green-100 text-green-700'
                             : blog.status === 'draft'
                             ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-700'
+                            : 'bg-blue-100 text-gray-700'
                         }`}
                       >
                         {blog.status}
@@ -578,7 +578,7 @@ const BlogManagement = () => {
                     setShowCreateModal(false);
                     resetForm();
                   }}
-                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  className="px-6 py-2 bg-blue-100 text-gray-700 rounded-lg hover:bg-gray-200"
                 >
                   Cancel
                 </button>
@@ -608,7 +608,7 @@ const BlogManagement = () => {
             <div className="flex gap-3 justify-end">
               <button
                 onClick={cancelDelete}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-4 py-2 bg-blue-100 text-gray-700 rounded-lg hover:bg-gray-200"
               >
                 Cancel
               </button>

@@ -118,7 +118,7 @@ const CMS = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           {activeTab === 'posts' ? (
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-blue-100 border-b">
                 <tr>
                   <th className="text-left py-3 px-4 font-semibold text-sm">Title</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm">Author</th>
@@ -146,7 +146,7 @@ const CMS = () => {
                         className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                           post.published
                             ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-900'
+                            : 'bg-blue-100 text-gray-900'
                         }`}
                       >
                         {post.published ? 'Published' : 'Draft'}
@@ -185,7 +185,7 @@ const CMS = () => {
             </table>
           ) : (
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-blue-100 border-b">
                 <tr>
                   <th className="text-left py-3 px-4 font-semibold text-sm">Title</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm">Slug</th>
@@ -204,7 +204,7 @@ const CMS = () => {
                         className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                           page.published
                             ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-900'
+                            : 'bg-blue-100 text-gray-900'
                         }`}
                       >
                         {page.published ? 'Published' : 'Draft'}

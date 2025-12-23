@@ -94,7 +94,7 @@ const ContactSubmissions = () => {
   const getStatusBadge = (status) => {
     const styles = {
       new: 'bg-primary-100 text-primary-800',
-      read: 'bg-gray-100 text-gray-900',
+      read: 'bg-blue-100 text-gray-900',
       replied: 'bg-green-100 text-green-800',
       resolved: 'bg-secondary-100 text-secondary-800',
       spam: 'bg-red-100 text-red-800',
@@ -172,7 +172,7 @@ const ContactSubmissions = () => {
             className={`flex-1 min-w-fit px-6 py-4 font-medium text-sm transition-colors relative ${
               activeTab === 'new'
                 ? 'text-blue-600 bg-primary-50 border-b-2 border-primary-600'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-blue-100'
             }`}
           >
             New
@@ -182,8 +182,8 @@ const ContactSubmissions = () => {
             onClick={() => setActiveTab('read')}
             className={`flex-1 min-w-fit px-6 py-4 font-medium text-sm transition-colors relative ${
               activeTab === 'read'
-                ? 'text-gray-700 bg-gray-100 border-b-2 border-gray-600'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                ? 'text-gray-700 bg-blue-100 border-b-2 border-gray-600'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-blue-100'
             }`}
           >
             Read
@@ -194,7 +194,7 @@ const ContactSubmissions = () => {
             className={`flex-1 min-w-fit px-6 py-4 font-medium text-sm transition-colors relative ${
               activeTab === 'replied'
                 ? 'text-green-600 bg-green-50 border-b-2 border-green-600'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-blue-100'
             }`}
           >
             Replied
@@ -205,7 +205,7 @@ const ContactSubmissions = () => {
             className={`flex-1 min-w-fit px-6 py-4 font-medium text-sm transition-colors relative ${
               activeTab === 'resolved'
                 ? 'text-secondary-600 bg-secondary-50 border-b-2 border-secondary-600'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-blue-100'
             }`}
           >
             Resolved
@@ -216,7 +216,7 @@ const ContactSubmissions = () => {
             className={`flex-1 min-w-fit px-6 py-4 font-medium text-sm transition-colors relative ${
               activeTab === 'spam'
                 ? 'text-red-600 bg-red-50 border-b-2 border-red-600'
-                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-blue-100'
             }`}
           >
             Spam
@@ -225,7 +225,7 @@ const ContactSubmissions = () => {
         </div>
 
         {/* Search Filter */}
-        <div className="p-4 bg-gray-50 border-b border-gray-200">
+        <div className="p-4 bg-blue-100 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <Search className="w-4 h-4 text-gray-500" />
             <input
@@ -254,7 +254,7 @@ const ContactSubmissions = () => {
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-blue-100 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
@@ -350,7 +350,7 @@ const ContactSubmissions = () => {
                       className={`px-4 py-2 rounded-md text-sm font-medium ${
                         viewingSubmission.status === status
                           ? 'bg-primary-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          : 'bg-blue-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
                       {status.charAt(0).toUpperCase() + status.slice(1)}

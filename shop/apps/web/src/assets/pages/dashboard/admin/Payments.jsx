@@ -93,9 +93,9 @@ const Payments = () => {
       case 'failed':
         return 'bg-red-100 text-red-800';
       case 'refunded':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-blue-100 text-gray-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-blue-100 text-gray-800';
     }
   };
 
@@ -203,7 +203,7 @@ const Payments = () => {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Methods</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {stats.paymentMethods?.map((method) => (
-            <div key={method._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div key={method._id} className="flex items-center justify-between p-4 bg-blue-100 rounded-lg">
               <div className="flex items-center gap-3">
                 <CreditCard className="w-5 h-5 text-gray-600" />
                 <div>
@@ -277,7 +277,7 @@ const Payments = () => {
               setStatusFilter('');
               setPage(1);
             }}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-blue-100 transition-colors"
           >
             Clear Filters
           </button>
@@ -298,7 +298,7 @@ const Payments = () => {
             </div>
           ) : (
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-blue-100 border-b">
                 <tr>
                   <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Order ID</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm text-gray-700">Customer</th>
@@ -312,7 +312,7 @@ const Payments = () => {
                 {transactions.map((transaction) => (
                   <tr
                     key={transaction._id}
-                    className="border-b last:border-b-0 hover:bg-gray-50 transition-colors"
+                    className="border-b last:border-b-0 hover:bg-blue-100 transition-colors"
                   >
                     <td className="py-3 px-4">
                       <p className="font-medium text-gray-900">#{transaction.orderId}</p>

@@ -290,7 +290,7 @@ const BlogPost = () => {
   }
 
   return (
-    <div className="min-h-screen pt-[50px] pb-[50px] bg-gray-50">
+    <div className="min-h-screen pt-[50px] pb-[50px] bg-blue-100">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-7xl">
         <div className="flex flex-col lg:flex-row" style={{ gap: '150px' }}>
           {/* Main Content */}
@@ -363,7 +363,7 @@ const BlogPost = () => {
               {post.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                  className="px-3 py-1 bg-blue-100 text-gray-700 rounded-full text-sm"
                 >
                   {tag}
                 </span>
@@ -380,7 +380,7 @@ const BlogPost = () => {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
               hasLiked
                 ? 'bg-red-50 text-red-600'
-                : 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600'
+                : 'bg-blue-100 text-gray-700 hover:bg-red-50 hover:text-red-600'
             } disabled:opacity-50`}
           >
             <Heart className={`w-5 h-5 ${hasLiked ? 'fill-current' : ''}`} />
@@ -391,7 +391,7 @@ const BlogPost = () => {
 
           <button
             onClick={handleShare}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-blue-50 hover:text-gray-600 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 text-gray-700 hover:bg-blue-50 hover:text-gray-600 transition-colors"
           >
             <Share2 className="w-5 h-5" />
             <span className="font-medium">{post.shares || 0} Shares</span>
@@ -734,7 +734,7 @@ const BlogPost = () => {
               placeholder="Enter your email"
               className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 mb-3 focus:outline-none focus:ring-2 focus:ring-white/50"
             />
-            <button className="w-full px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors font-medium">
+            <button className="w-full px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-blue-100 transition-colors font-medium">
               Subscribe
             </button>
           </div>

@@ -317,7 +317,7 @@ const AdminQuickReference = () => {
                         <span className="text-gray-700">🥉 Bronze (₹10K+/mo)</span>
                         <span className="font-bold text-amber-700">5%</span>
                       </div>
-                      <div className="flex justify-between items-center p-2 bg-gray-100 rounded">
+                      <div className="flex justify-between items-center p-2 bg-blue-100 rounded">
                         <span className="text-gray-700">🥈 Silver (₹25K+/mo)</span>
                         <span className="font-bold text-gray-700">6%</span>
                       </div>
@@ -404,7 +404,7 @@ const AdminQuickReference = () => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 border border-gray-300 rounded-lg p-5">
+              <div className="bg-blue-100 border border-gray-300 rounded-lg p-5">
                 <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <Settings className="w-5 h-5" />
                   Admin Controls

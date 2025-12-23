@@ -394,15 +394,15 @@ const VendorSettings = () => {
                   <img
                     src={profileData.logo}
                     alt="Store Logo"
-                    className="w-20 h-20 rounded-lg object-cover border border-gray-200"
+                    className="w-20 h-20 rounded-lg object-contain border border-gray-200"
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
+                  <div className="w-20 h-20 rounded-lg bg-blue-100 flex items-center justify-center border border-gray-200">
                     <Store className="w-8 h-8 text-gray-400" />
                   </div>
                 )}
                 <div>
-                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                  <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-blue-100">
                     <Upload className="w-4 h-4" />
                     {uploading ? 'Uploading...' : 'Upload Logo'}
                     <input
@@ -678,7 +678,7 @@ const VendorSettings = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200">
                 <div>
                   <p className="font-medium text-gray-900">Change Password</p>
                   <p className="text-sm text-gray-700 mt-1">
@@ -690,7 +690,7 @@ const VendorSettings = () => {
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200">
                 <div>
                   <p className="font-medium text-gray-900">Login Activity</p>
                   <p className="text-sm text-gray-700 mt-1">
@@ -702,7 +702,7 @@ const VendorSettings = () => {
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200">
                 <div>
                   <p className="font-medium text-gray-900">API Keys</p>
                   <p className="text-sm text-gray-700 mt-1">
@@ -787,7 +787,7 @@ const VendorSettings = () => {
           ) : loginActivities && loginActivities.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+                <thead className="bg-blue-100">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Type
@@ -808,12 +808,12 @@ const VendorSettings = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {loginActivities.map((activity) => (
-                    <tr key={activity._id} className="hover:bg-gray-50">
+                    <tr key={activity._id} className="hover:bg-blue-100">
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           activity.type === 'login' ? 'bg-green-100 text-green-800' :
                           activity.type === 'failed_login' ? 'bg-red-100 text-red-800' :
-                          activity.type === 'logout' ? 'bg-gray-100 text-gray-800' :
+                          activity.type === 'logout' ? 'bg-blue-100 text-gray-800' :
                           'bg-blue-100 text-blue-800'
                         }`}>
                           {activity.type.replace('_', ' ')}
@@ -887,13 +887,13 @@ const VendorSettings = () => {
               {apiKeys.map((key) => (
                 <div
                   key={key._id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200"
+                  className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-3">
                       <h4 className="font-medium text-gray-900">{key.name}</h4>
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        key.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        key.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-gray-800'
                       }`}>
                         {key.status}
                       </span>
@@ -923,7 +923,7 @@ const VendorSettings = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <div className="text-center py-12 bg-blue-100 rounded-lg">
               <p className="text-gray-500 mb-4">No API keys found</p>
               <Button
                 onClick={() => {
@@ -1011,7 +1011,7 @@ const VendorSettings = () => {
                 API Key
               </label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-sm font-mono break-all">
+                <code className="flex-1 px-4 py-3 bg-blue-100 border border-gray-300 rounded-lg text-sm font-mono break-all">
                   {createdKey.key}
                 </code>
                 <Button

@@ -272,7 +272,7 @@ const AdsManagement = () => {
           </div>
         ) : (
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-blue-100 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Campaign
@@ -302,7 +302,7 @@ const AdsManagement = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {campaigns.map((ad) => (
-                <tr key={ad._id} className="hover:bg-gray-50">
+                <tr key={ad._id} className="hover:bg-blue-100">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{ad.name}</div>
                   </td>
@@ -346,7 +346,7 @@ const AdsManagement = () => {
                           : ad.status === 'paused'
                           ? 'bg-yellow-100 text-yellow-800'
                           : ad.status === 'draft'
-                          ? 'bg-gray-100 text-gray-900'
+                          ? 'bg-blue-100 text-gray-900'
                           : 'bg-red-100 text-red-800'
                       }`}
                     >
@@ -797,7 +797,7 @@ const AdsManagement = () => {
                     setModalOpen(false);
                     resetForm();
                   }}
-                  className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  className="px-6 py-2 bg-blue-100 text-gray-700 rounded-lg hover:bg-gray-200"
                 >
                   Cancel
                 </button>
@@ -867,7 +867,7 @@ const AdsManagement = () => {
               {selectedAd.stats && (
                 <div>
                   <p className="text-sm text-gray-700 mb-2">Statistics</p>
-                  <div className="bg-gray-50 rounded-lg p-4 grid grid-cols-3 gap-4">
+                  <div className="bg-blue-100 rounded-lg p-4 grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs text-gray-700">Clicks</p>
                       <p className="font-bold text-lg">{selectedAd.stats.clicks || 0}</p>

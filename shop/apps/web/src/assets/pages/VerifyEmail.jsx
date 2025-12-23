@@ -111,7 +111,7 @@ export default function VerifyEmail() {
               </Link>
               <Link
                 to="/register"
-                className="block w-full px-4 py-1.5 sm:px-6 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-center text-sm sm:text-base"
+                className="block w-full px-4 py-1.5 sm:px-6 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-blue-100 transition text-center text-sm sm:text-base"
               >
                 Create New Account
               </Link>

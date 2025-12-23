@@ -522,7 +522,7 @@ const Product = () => {
               </button>
               <button
                 onClick={handleShare}
-                className="p-2 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all"
+                className="p-2 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-blue-100 transition-all"
                 title="Share product"
               >
                 <Share2 className="w-5 h-5" />
@@ -530,7 +530,7 @@ const Product = () => {
             </div>
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="bg-blue-100 p-4 rounded-lg border border-gray-200">
             <div className="flex flex-wrap items-baseline gap-3">
               <span className="text-3xl font-bold text-gray-900">
                 {formatCurrency(product.price)}
@@ -618,7 +618,7 @@ const Product = () => {
             <div className="flex items-center border border-gray-300 rounded">
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="px-3 py-2 hover:bg-gray-50"
+                className="px-3 py-2 hover:bg-blue-100"
               >
                 <Minus className="w-4 h-4" />
               </button>
@@ -646,7 +646,7 @@ const Product = () => {
               />
               <button
                 onClick={() => setQuantity(quantity + 1)}
-                className="px-3 py-2 hover:bg-gray-50"
+                className="px-3 py-2 hover:bg-blue-100"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -738,7 +738,7 @@ const Product = () => {
                       Product Video
                     </h2>
                   </div>
-                  <div className="p-6 bg-gray-50">
+                  <div className="p-6 bg-blue-100">
                     <div className="w-full" style={{height: '300px'}}>
                       <iframe
                         width="100%"

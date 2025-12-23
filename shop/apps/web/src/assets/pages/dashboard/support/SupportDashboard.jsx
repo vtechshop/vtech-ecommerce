@@ -64,7 +64,7 @@ const SupportDashboard = () => {
         )}
 
         {orderResult && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+          <div className="mt-6 p-4 bg-blue-100 rounded-lg">
             <h3 className="font-semibold mb-2">Order: {orderResult.orderId || 'N/A'}</h3>
             <p className="text-sm text-gray-700">Status: {orderResult.status || 'Unknown'}</p>
             <p className="text-sm text-gray-700">Customer: {orderResult.userId?.email || orderResult.guestEmail || 'N/A'}</p>

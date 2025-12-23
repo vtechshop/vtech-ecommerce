@@ -583,7 +583,7 @@ const About = () => {
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Link
                 to="/register?role=vendor"
-                className="inline-flex items-center justify-center bg-white text-blue-600 px-8 py-4 rounded-xl hover:bg-gray-100 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                className="inline-flex items-center justify-center bg-white text-blue-600 px-8 py-4 rounded-xl hover:bg-blue-100 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 <Users className="w-5 h-5 mr-2" />
                 Become a Vendor

@@ -81,7 +81,7 @@ const Links = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Your Affiliate Code</h2>
         <div className="flex items-center gap-3">
-          <code className="flex-1 bg-gray-100 px-4 py-3 rounded font-mono text-lg font-bold">
+          <code className="flex-1 bg-blue-100 px-4 py-3 rounded font-mono text-lg font-bold">
             {linksData?.code}
           </code>
           <Button
@@ -125,7 +125,7 @@ const Links = () => {
                 )}
               </Button>
             </div>
-            <code className="block bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+            <code className="block bg-blue-100 p-3 rounded text-sm overflow-x-auto">
               {link.url}
             </code>
           </div>

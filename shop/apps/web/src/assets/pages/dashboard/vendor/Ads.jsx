@@ -265,7 +265,7 @@ const Ads = () => {
                       campaign.status === 'active' ? 'bg-green-100 text-green-800' :
                       campaign.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                       campaign.status === 'budget_exhausted' ? 'bg-red-100 text-red-800' :
-                      'bg-gray-100 text-gray-900'
+                      'bg-blue-100 text-gray-900'
                     }`}>
                       {campaign.status}
                     </span>
@@ -447,7 +447,7 @@ const Ads = () => {
                 </label>
                 <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
                   {products?.map((product) => (
-                    <label key={product._id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <label key={product._id} className="flex items-center gap-2 cursor-pointer hover:bg-blue-100 p-2 rounded">
                       <input
                         type="checkbox"
                         checked={campaignForm.productIds.includes(product._id)}

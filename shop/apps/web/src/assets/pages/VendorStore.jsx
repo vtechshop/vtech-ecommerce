@@ -208,7 +208,7 @@ const VendorStore = () => {
             className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
               activeSection === 'items'
                 ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
             }`}
           >
             Items
@@ -218,7 +218,7 @@ const VendorStore = () => {
             className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
               activeSection === 'reviews'
                 ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
             }`}
           >
             Reviews
@@ -228,7 +228,7 @@ const VendorStore = () => {
             className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
               activeSection === 'about'
                 ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
             }`}
           >
             About
@@ -238,7 +238,7 @@ const VendorStore = () => {
             className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
               activeSection === 'policies'
                 ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
             }`}
           >
             Shop Policies
@@ -295,7 +295,7 @@ const VendorStore = () => {
               className={`px-6 py-2.5 rounded-lg font-medium transition-all whitespace-nowrap ${
                 selectedCategory === 'all'
                   ? 'bg-primary-600 text-white shadow-md'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-blue-100'
               }`}
             >
               All Products
@@ -315,7 +315,7 @@ const VendorStore = () => {
                   className={`px-6 py-2.5 rounded-lg font-medium transition-all whitespace-nowrap ${
                     selectedCategory === category.slug
                       ? 'bg-primary-600 text-white shadow-md'
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-blue-100'
                   }`}
                 >
                   {category.name}
@@ -504,7 +504,7 @@ const VendorStore = () => {
                     )}
 
                     {review.vendorResponse && (
-                      <div className="mt-4 ml-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="mt-4 ml-6 p-4 bg-blue-100 rounded-lg border border-gray-200">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="font-medium text-sm">Response from {vendor.storeName}</span>
                           <span className="text-xs text-gray-600">

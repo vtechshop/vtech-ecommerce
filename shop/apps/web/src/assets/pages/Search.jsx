@@ -256,7 +256,7 @@ const Search = () => {
             <>
               {/* Development: Ads Debug Info */}
               {import.meta.env.DEV && (adsError || adsLoading || (query && sponsoredAds.length === 0)) && (
-                <div className="mb-4 p-3 bg-gray-100 border border-gray-300 rounded-lg text-xs">
+                <div className="mb-4 p-3 bg-blue-100 border border-gray-300 rounded-lg text-xs">
                   <div className="font-semibold mb-2">Sponsored Ads Debug Info:</div>
                   {adsLoading && <div className="text-blue-600">⏳ Loading ads...</div>}
                   {adsError && <div className="text-red-600">❌ Error: {adsError}</div>}

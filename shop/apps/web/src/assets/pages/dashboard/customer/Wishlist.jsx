@@ -62,7 +62,7 @@ const Wishlist = () => {
           {wishlist.map((product) => (
             <div key={product._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               <Link to={`/product/${product.slug}`}>
-                <div className="aspect-square bg-gray-100">
+                <div className="aspect-square bg-blue-100">
                   {product.images && product.images.length > 0 ? (
                     <img
                       src={product.images[0]}

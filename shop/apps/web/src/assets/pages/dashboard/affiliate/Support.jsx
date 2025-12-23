@@ -90,7 +90,7 @@ const Support = () => {
       open: 'bg-blue-100 text-blue-800',
       in_progress: 'bg-yellow-100 text-yellow-800',
       resolved: 'bg-green-100 text-green-800',
-      closed: 'bg-gray-100 text-gray-900',
+      closed: 'bg-blue-100 text-gray-900',
     };
     return (
       <span className={`px-3 py-1 text-xs font-semibold rounded-full ${styles[status]}`}>
@@ -101,7 +101,7 @@ const Support = () => {
 
   const getPriorityBadge = (priority) => {
     const styles = {
-      low: 'bg-gray-100 text-gray-900',
+      low: 'bg-blue-100 text-gray-900',
       medium: 'bg-blue-100 text-blue-800',
       high: 'bg-orange-100 text-orange-800',
       urgent: 'bg-red-100 text-red-800',
@@ -233,7 +233,7 @@ const Support = () => {
                   View
                 </Button>
               </div>
-              <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded border border-gray-100">
+              <div className="text-sm text-gray-700 bg-blue-100 p-3 rounded border border-gray-100">
                 {ticket.description.substring(0, 150)}
                 {ticket.description.length > 150 && '...'}
               </div>
@@ -358,7 +358,7 @@ const Support = () => {
               </div>
 
               {/* Original Description */}
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="bg-blue-100 rounded-lg p-4 border border-gray-200">
                 <p className="text-sm font-medium text-gray-700 mb-2">Original Request:</p>
                 <p className="text-gray-900">{ticketDetail.description}</p>
                 <p className="text-xs text-gray-500 mt-2">

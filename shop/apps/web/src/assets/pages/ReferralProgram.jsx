@@ -188,7 +188,7 @@ const ReferralProgram = () => {
             </div>
             <button
               onClick={() => handleCopy(referralData.referralCode)}
-              className="px-6 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold flex items-center gap-2"
+              className="px-6 py-4 bg-white text-blue-600 rounded-lg hover:bg-blue-100 transition-colors font-semibold flex items-center gap-2"
             >
               {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
               {copied ? 'Copied!' : 'Copy'}
@@ -257,7 +257,7 @@ const ReferralProgram = () => {
                 {referralData.referredUsers.map((ref) => (
                   <div
                     key={ref._id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                    className="flex items-center justify-between p-3 bg-blue-100 dark:bg-gray-900 rounded-lg"
                   >
                     <div>
                       <div className="font-medium text-gray-900 dark:text-gray-100">
@@ -300,7 +300,7 @@ const ReferralProgram = () => {
                 {leaderboard.map((entry) => (
                   <div
                     key={entry.rank}
-                    className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg"
+                    className="flex items-center gap-4 p-3 bg-blue-100 dark:bg-gray-900 rounded-lg"
                   >
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${

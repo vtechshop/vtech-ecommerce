@@ -102,7 +102,7 @@ const AffiliateGuide = () => {
                 </div>
               </div>
 
-              <div className="bg-gray-50 border border-gray-300 rounded-lg p-6">
+              <div className="bg-blue-100 border border-gray-300 rounded-lg p-6">
                 <h4 className="font-semibold text-gray-900 mb-3">Example Calculation</h4>
                 <div className="space-y-2 text-gray-700">
                   <p className="flex justify-between"><span>Customer Purchase:</span><span className="font-semibold">₹10,000</span></p>
@@ -540,15 +540,15 @@ const AffiliateGuide = () => {
               Our affiliate support team is here to help you succeed
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-blue-100 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2">Email Support</h4>
                 <p className="text-sm text-gray-700">vtechshop.customercare@gmail.com</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-blue-100 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2">Phone Support</h4>
                 <p className="text-sm text-gray-700">+91 99445 56683</p>
               </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <div className="text-center p-4 bg-blue-100 rounded-lg">
                 <h4 className="font-semibold text-gray-900 mb-2">FAQ</h4>
                 <Link to="/page/faq" className="text-sm text-blue-600 hover:text-blue-700">
                   Visit FAQ Page →
