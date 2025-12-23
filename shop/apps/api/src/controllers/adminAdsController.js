@@ -238,8 +238,8 @@ exports.getPendingCampaigns = async (req, res, next) => {
   try {
     const { page = 1, limit = 20 } = req.query;
 
+    // Get all campaigns with approval.status === 'pending' regardless of campaign status
     const query = {
-      status: 'pending_approval',
       'approval.status': 'pending',
     };
 
@@ -419,7 +419,7 @@ exports.getCampaignStatsSummary = async (req, res, next) => {
     ] = await Promise.all([
       AdCampaign.countDocuments(),
       AdCampaign.countDocuments({ status: 'active' }),
-      AdCampaign.countDocuments({ status: 'pending_approval' }),
+      AdCampaign.countDocuments({ 'approval.status': 'pending' }),
       AdCampaign.countDocuments({ 'approval.status': 'approved' }),
       AdCampaign.countDocuments({ 'approval.status': 'rejected' }),
       AdCampaign.aggregate([

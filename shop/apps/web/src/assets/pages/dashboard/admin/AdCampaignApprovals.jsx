@@ -1,7 +1,8 @@
 // FILE: apps/web/src/pages/dashboard/admin/AdCampaignApprovals.jsx
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, X, Pause, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tantml:react-query';
+import { Check, X, Pause, Eye, ArrowLeft } from 'lucide-react';
 import api from '../../../utils/api';
 import Button from '../../../components/common/Button';
 import Modal from '../../../components/common/Modal';
@@ -212,7 +213,7 @@ const AdCampaignApprovals = () => {
           <Button variant="outline" size="sm" onClick={() => handleView(campaign)}>
             <Eye className="w-4 h-4" />
           </Button>
-          {campaign.status === 'pending_approval' && (
+          {(campaign.status === 'pending_approval' || campaign.approval?.status === 'pending') && (
             <>
               <Button
                 variant="primary"
@@ -234,7 +235,7 @@ const AdCampaignApprovals = () => {
               </Button>
             </>
           )}
-          {campaign.status === 'active' && (
+          {campaign.status === 'active' && campaign.approval?.status === 'approved' && (
             <Button
               variant="outline"
               size="sm"
@@ -284,6 +285,13 @@ const AdCampaignApprovals = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
+        <Link
+          to="/admin-dashboard/ads"
+          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Sponsored Ads
+        </Link>
         <h1 className="text-2xl font-bold mb-2">Ad Campaign Approvals</h1>
         <p className="text-gray-600">Review and approve vendor ad campaigns</p>
       </div>
