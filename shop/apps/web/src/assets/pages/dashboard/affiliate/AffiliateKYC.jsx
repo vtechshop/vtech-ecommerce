@@ -18,6 +18,13 @@ const AffiliateKYC = () => {
     idType: '',
     idNumber: '',
   });
+  const [paymentData, setPaymentData] = useState({
+    accountHolderName: '',
+    bankName: '',
+    accountNumber: '',
+    ifscCode: '',
+    upiId: '',
+  });
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
   // Fetch KYC data
@@ -39,6 +46,15 @@ const AffiliateKYC = () => {
           phoneNumber: data.kyc.phoneNumber || '',
           idType: data.kyc.idType || '',
           idNumber: data.kyc.idNumber || '',
+        });
+      }
+      if (data.paymentDetails) {
+        setPaymentData({
+          accountHolderName: data.paymentDetails.accountHolderName || '',
+          bankName: data.paymentDetails.bankName || '',
+          accountNumber: data.paymentDetails.accountNumber || '',
+          ifscCode: data.paymentDetails.ifscCode || '',
+          upiId: data.paymentDetails.upiId || '',
         });
       }
     },
@@ -503,12 +519,125 @@ const AffiliateKYC = () => {
         )}
       </div>
 
+      {/* Bank Account Details Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          Bank Account Details (For Payouts)
+        </h2>
+        <p className="text-sm text-gray-700 mb-6">
+          Add your bank details to receive commission payouts
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Account Holder Name *
+            </label>
+            <input
+              type="text"
+              value={paymentData.accountHolderName}
+              onChange={(e) => setPaymentData({ ...paymentData, accountHolderName: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Full name as per bank account"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bank Name *
+            </label>
+            <input
+              type="text"
+              value={paymentData.bankName}
+              onChange={(e) => setPaymentData({ ...paymentData, bankName: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="e.g., State Bank of India"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Account Number *
+              </label>
+              <input
+                type="text"
+                value={paymentData.accountNumber}
+                onChange={(e) => setPaymentData({ ...paymentData, accountNumber: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="Enter account number"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                IFSC Code *
+              </label>
+              <input
+                type="text"
+                value={paymentData.ifscCode}
+                onChange={(e) => setPaymentData({ ...paymentData, ifscCode: e.target.value.toUpperCase() })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="e.g., SBIN0001234"
+                maxLength={11}
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              UPI ID (Optional)
+            </label>
+            <input
+              type="text"
+              value={paymentData.upiId}
+              onChange={(e) => setPaymentData({ ...paymentData, upiId: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="e.g., yourname@paytm"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={async () => {
+              if (!paymentData.accountHolderName || !paymentData.bankName ||
+                  !paymentData.accountNumber || !paymentData.ifscCode) {
+                toast.error('Please fill all required bank details');
+                return;
+              }
+
+              try {
+                await api.put('/affiliates/payment-details', {
+                  paymentMethod: 'bank',
+                  paymentDetails: paymentData,
+                });
+                queryClient.invalidateQueries({ queryKey: ['affiliate-kyc'] });
+                toast.success('Bank details saved successfully');
+              } catch (error) {
+                toast.error(error.response?.data?.error?.message || 'Failed to save bank details');
+              }
+            }}
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Save Bank Details
+          </button>
+        </div>
+      </div>
+
       {/* Info Box */}
       <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
         <h3 className="font-semibold text-gray-900 mb-2">Verification Process</h3>
         <ul className="text-sm text-primary-800 space-y-1 list-disc list-inside">
           <li>Fill out all required personal information</li>
           <li>Upload all required documents (ID Proof and Address Proof)</li>
+          <li><strong>Add your bank account details for receiving payouts</strong></li>
           <li>Our team will review your application within 2-3 business days</li>
           <li>You will be notified via email once your application is approved</li>
           <li>After approval, you can start earning commissions and receiving payouts</li>
