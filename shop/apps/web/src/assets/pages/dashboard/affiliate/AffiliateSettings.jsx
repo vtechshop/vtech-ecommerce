@@ -1,23 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings, CreditCard, DollarSign, Save } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Settings, DollarSign, Shield, CreditCard } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
-import { useToast } from '../../../components/common/ToastContainer';
-import Button from '../../../components/common/Button';
-import Input from '../../../components/common/Input';
 
 const AffiliateSettings = () => {
-  const toast = useToast();
-  const queryClient = useQueryClient();
-
-  const [paymentData, setPaymentData] = useState({
-    paymentMethod: 'bank',
-    accountHolderName: '',
-    bankName: '',
-    accountNumber: '',
-    ifscCode: '',
-    upiId: '',
-  });
+  const navigate = useNavigate();
 
   // Fetch affiliate data
   const { data: affiliateData, isLoading } = useQuery({
@@ -27,59 +15,6 @@ const AffiliateSettings = () => {
       return response.data.data;
     },
   });
-
-  // Update payment details when data is loaded
-  useEffect(() => {
-    if (affiliateData?.paymentDetails) {
-      setPaymentData({
-        paymentMethod: affiliateData.paymentMethod || 'bank',
-        accountHolderName: affiliateData.paymentDetails.accountHolderName || '',
-        bankName: affiliateData.paymentDetails.bankName || '',
-        accountNumber: affiliateData.paymentDetails.accountNumber || '',
-        ifscCode: affiliateData.paymentDetails.ifscCode || '',
-        upiId: affiliateData.paymentDetails.upiId || '',
-      });
-    }
-  }, [affiliateData]);
-
-  // Update payment details mutation
-  const updatePaymentMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await api.put('/affiliates/payment-details', data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['affiliate-settings'] });
-      toast.success('Payment details updated successfully');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to update payment details');
-    },
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    // Validation
-    if (paymentData.paymentMethod === 'bank') {
-      if (!paymentData.accountHolderName || !paymentData.bankName ||
-          !paymentData.accountNumber || !paymentData.ifscCode) {
-        toast.error('Please fill all bank details');
-        return;
-      }
-    }
-
-    updatePaymentMutation.mutate({
-      paymentMethod: paymentData.paymentMethod,
-      paymentDetails: {
-        accountHolderName: paymentData.accountHolderName,
-        bankName: paymentData.bankName,
-        accountNumber: paymentData.accountNumber,
-        ifscCode: paymentData.ifscCode,
-        upiId: paymentData.upiId,
-      },
-    });
-  };
 
   if (isLoading) {
     return (
@@ -145,81 +80,123 @@ const AffiliateSettings = () => {
         </div>
       </div>
 
-      {/* Payment Details Form */}
+      {/* Quick Settings Links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* KYC & Bank Details */}
+        <div
+          onClick={() => navigate('/dashboard/affiliate/kyc')}
+          className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:border-primary-500 cursor-pointer transition-colors"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Shield className="w-6 h-6 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">KYC & Bank Details</h3>
+              <p className="text-sm text-gray-700 mb-3">
+                Complete your verification and add bank account details for receiving payouts
+              </p>
+              <div className="inline-flex items-center gap-2 text-blue-600 text-sm font-medium">
+                <span>Manage KYC & Bank Details</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment History */}
+        <div
+          onClick={() => navigate('/dashboard/affiliate/commissions')}
+          className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:border-primary-500 cursor-pointer transition-colors"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Commission History</h3>
+              <p className="text-sm text-gray-700 mb-3">
+                View your commission earnings, pending payouts, and transaction history
+              </p>
+              <div className="inline-flex items-center gap-2 text-green-600 text-sm font-medium">
+                <span>View Commissions</span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Account Information */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-blue-600" />
-              Bank Account Details
-            </h2>
-            <p className="text-sm text-gray-700 mb-6">
-              Add your bank details to receive commission payments
-            </p>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Settings className="w-5 h-5 text-gray-700" />
+          Account Information
+        </h2>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Affiliate Code</label>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                <span className="font-mono text-lg font-semibold text-primary-600">
+                  {affiliateData?.code || 'N/A'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+                  affiliateData?.status === 'active' ? 'bg-green-100 text-green-800' :
+                  affiliateData?.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {affiliateData?.status?.toUpperCase() || 'PENDING'}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate</label>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                <span className="text-lg font-semibold text-gray-900">
+                  {affiliateData?.commissionPercentage || 5}%
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Total Conversions</label>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                <span className="text-lg font-semibold text-gray-900">
+                  {affiliateData?.totalConversions || 0}
+                </span>
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
 
-          <div className="space-y-4">
-            <Input
-              label="Account Holder Name"
-              value={paymentData.accountHolderName}
-              onChange={(e) => setPaymentData({ ...paymentData, accountHolderName: e.target.value })}
-              required
-              placeholder="Enter full name as per bank account"
-            />
-
-            <Input
-              label="Bank Name"
-              value={paymentData.bankName}
-              onChange={(e) => setPaymentData({ ...paymentData, bankName: e.target.value })}
-              required
-              placeholder="e.g., State Bank of India"
-            />
-
-            <Input
-              label="Account Number"
-              value={paymentData.accountNumber}
-              onChange={(e) => setPaymentData({ ...paymentData, accountNumber: e.target.value })}
-              required
-              placeholder="Enter bank account number"
-              type="text"
-            />
-
-            <Input
-              label="IFSC Code"
-              value={paymentData.ifscCode}
-              onChange={(e) => setPaymentData({ ...paymentData, ifscCode: e.target.value.toUpperCase() })}
-              required
-              placeholder="e.g., SBIN0001234"
-              maxLength={11}
-            />
-
-            <Input
-              label="UPI ID (Optional)"
-              value={paymentData.upiId}
-              onChange={(e) => setPaymentData({ ...paymentData, upiId: e.target.value })}
-              placeholder="e.g., yourname@paytm"
-            />
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              <strong>Note:</strong> Commissions are typically paid out weekly/monthly once they reach the minimum threshold.
-              Ensure your bank details are correct to avoid payment delays.
-            </p>
-          </div>
-
-          <div className="flex justify-end pt-4 border-t">
-            <Button
-              type="submit"
-              variant="primary"
-              loading={updatePaymentMutation.isPending}
-              className="flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              Save Payment Details
-            </Button>
-          </div>
-        </form>
+      {/* Help Section */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Important Information
+        </h3>
+        <ul className="text-sm text-blue-900 space-y-2 list-disc list-inside">
+          <li>Update your bank details in the <strong>KYC Verification</strong> page</li>
+          <li>Commissions are paid out weekly/monthly once they reach the minimum threshold</li>
+          <li>Ensure your KYC is approved to receive payouts</li>
+          <li>Contact support if you have any payment-related issues</li>
+        </ul>
       </div>
     </div>
   );
