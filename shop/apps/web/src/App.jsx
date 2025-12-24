@@ -124,6 +124,7 @@ const AffiliateDashboard = lazy(() => import('./assets/pages/dashboard/affiliate
 const Links = lazy(() => import('./assets/pages/dashboard/affiliate/Links'));
 const AllProductLinks = lazy(() => import('./assets/pages/dashboard/affiliate/AllProductLinks'));
 const Commissions = lazy(() => import('./assets/pages/dashboard/affiliate/Commissions'));
+const AffiliateSettings = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateSettings'));
 const AffiliateSupport = lazy(() => import('./assets/pages/dashboard/affiliate/Support'));
 
 const SupportDashboard = lazy(() => import('./assets/pages/dashboard/support/SupportDashboard'));
@@ -327,6 +328,7 @@ function App() {
             <Route path="links" element={<Links />} />
             <Route path="all-product-links" element={<AllProductLinks />} />
             <Route path="commissions" element={<Commissions />} />
+            <Route path="settings" element={<AffiliateSettings />} />
             <Route path="kyc" element={<AffiliateKYC />} />
             <Route path="support" element={<AffiliateSupport />} />
           </Route>
