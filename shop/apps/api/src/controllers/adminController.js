@@ -2027,3 +2027,54 @@ exports.getPayments = async (req, res, next) => {
     next(error);
   }
 };
+
+// Record affiliate payout
+exports.recordAffiliatePayout = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { amount, reference } = req.body;
+
+    const affiliate = await Affiliate.findById(id);
+    if (!affiliate) {
+      return next(new AppError('Affiliate not found', 404, 'NOT_FOUND'));
+    }
+
+    // Validate amount
+    if (!amount || amount <= 0) {
+      return next(new AppError('Invalid payout amount', 400, 'INVALID_AMOUNT'));
+    }
+
+    if (amount > affiliate.pendingEarnings) {
+      return next(new AppError('Payout amount exceeds pending earnings', 400, 'AMOUNT_EXCEEDS_PENDING'));
+    }
+
+    // Update earnings
+    affiliate.pendingEarnings -= amount;
+    affiliate.paidEarnings = (affiliate.paidEarnings || 0) + amount;
+
+    await affiliate.save();
+
+    // Create payout record in Commission model
+    await Commission.create({
+      affiliateId: affiliate._id,
+      type: 'payout',
+      amount: -amount, // Negative amount for payout
+      status: 'paid',
+      paidAt: new Date(),
+      paymentReference: reference,
+      metadata: {
+        processedBy: req.user._id,
+        processedAt: new Date(),
+      },
+    });
+
+    logger.info(`Affiliate payout recorded: ${affiliate.code} - ₹${amount} - ${reference}`);
+
+    res.json({
+      success: true,
+      data: { message: 'Payout recorded successfully' },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

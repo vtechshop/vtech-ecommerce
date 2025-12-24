@@ -211,7 +211,7 @@ async function updateProduct(req, res, next) {
       'title', 'description', 'price', 'compareAt', 'cost', 'stock',
       'sku', 'barcode', 'brand', 'images', 'categoryIds', 'tags',
       'variants', 'specifications', 'shippingInfo', 'published',
-      'featured', 'taxable', 'taxRate', 'seo', 'hasWarranty', 'warranty', 'structuredData', 'youtubeLink'
+      'featured', 'taxable', 'taxRate', 'taxIncluded', 'seo', 'hasWarranty', 'warranty', 'structuredData', 'youtubeLink'
     ];
 
     allowedFields.forEach(field => {

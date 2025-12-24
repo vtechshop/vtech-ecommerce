@@ -304,6 +304,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
     featured: product?.featured || false,
     taxable: product?.taxable !== undefined ? product.taxable : true,
     taxRate: product?.taxRate || '',
+    taxIncluded: product?.taxIncluded || false,
     categoryIds: product?.categoryIds || [],
     hasWarranty: product?.hasWarranty || false,
     warrantyDuration: product?.warranty?.duration || '',
@@ -415,6 +416,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
       featured: formData.featured,
       taxable: formData.taxable,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
+      taxIncluded: formData.taxIncluded,
       categoryIds: formData.categoryIds,
       hasWarranty: formData.hasWarranty,
       warranty: warranty,
@@ -608,7 +610,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
             {/* GST/Tax Settings */}
             <div className="md:col-span-2 bg-blue-100 p-4 rounded-lg border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">GST/Tax Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center">
                   <label className="flex items-center cursor-pointer">
                     <input
@@ -622,29 +624,45 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                 </div>
 
                 {formData.taxable && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      GST/Tax Rate (%)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={formData.taxRate}
-                      onChange={(e) => setFormData({ ...formData, taxRate: e.target.value })}
-                      className="input w-full"
-                      placeholder="e.g., 18 for 18% GST"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Common GST rates: 5%, 12%, 18%, 28%
-                    </p>
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        GST/Tax Rate (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={formData.taxRate}
+                        onChange={(e) => setFormData({ ...formData, taxRate: e.target.value })}
+                        className="input w-full"
+                        placeholder="e.g., 18 for 18% GST"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Common GST rates: 5%, 12%, 18%, 28%
+                      </p>
+                    </div>
+
+                    <div className="flex items-center">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.taxIncluded}
+                          onChange={(e) => setFormData({ ...formData, taxIncluded: e.target.checked })}
+                          className="mr-2 h-4 w-4 text-blue-600 focus:ring-primary-500 border-gray-300 rounded"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Tax included in price</span>
+                      </label>
+                    </div>
+                  </>
                 )}
               </div>
               <p className="text-xs text-gray-700 mt-2">
-                {formData.taxable
-                  ? 'GST will be shown on product page as "Inclusive of all taxes"'
+                {formData.taxable && formData.taxIncluded
+                  ? '✓ Tax is already included in the displayed price'
+                  : formData.taxable
+                  ? 'Tax will be added at checkout'
                   : 'Product price is considered tax-free'}
               </p>
             </div>

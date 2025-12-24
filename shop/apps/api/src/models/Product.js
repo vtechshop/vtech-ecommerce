@@ -46,6 +46,7 @@ const productSchema = new mongoose.Schema({
   },
   taxable: { type: Boolean, default: true },
   taxRate: { type: Number, default: 0 },
+  taxIncluded: { type: Boolean, default: false }, // If true, tax is already included in the price
   stock: { type: Number, default: 0, min: 0 },
   lowStockThreshold: { type: Number, default: 10 },
   trackInventory: { type: Boolean, default: true },

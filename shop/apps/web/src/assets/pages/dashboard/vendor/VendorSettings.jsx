@@ -22,6 +22,10 @@ const VendorSettings = () => {
     confirmPassword: '',
   });
   const [showLoginActivityModal, setShowLoginActivityModal] = useState(false);
+  const [showAPIKeysModal, setShowAPIKeysModal] = useState(false);
+  const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
+  const [createdKey, setCreatedKey] = useState(null);
+  const [keyFormData, setKeyFormData] = useState({ name: '', description: '' });
 
   // Fetch vendor settings
   const { data: vendorData, isLoading } = useQuery({
@@ -40,6 +44,16 @@ const VendorSettings = () => {
       return response.data.data;
     },
     enabled: showLoginActivityModal,
+  });
+
+  // Fetch API keys
+  const { data: apiKeys, isLoading: apiKeysLoading } = useQuery({
+    queryKey: ['vendor-api-keys'],
+    queryFn: async () => {
+      const response = await api.get('/vendors/api-keys');
+      return response.data.data;
+    },
+    enabled: showAPIKeysModal,
   });
 
   // Store Profile State
@@ -233,6 +247,39 @@ const VendorSettings = () => {
     },
   });
 
+  // Create API Key Mutation
+  const createAPIKeyMutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await api.post('/vendors/api-keys', data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-api-keys'] });
+      toast.success('API key created successfully');
+      setShowCreateKeyModal(false);
+      setCreatedKey(data.data);
+      setKeyFormData({ name: '', description: '' });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to create API key');
+    },
+  });
+
+  // Delete API Key Mutation
+  const deleteAPIKeyMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await api.delete(`/vendors/api-keys/${id}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-api-keys'] });
+      toast.success('API key deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to delete API key');
+    },
+  });
+
   // Handle password change
   const handlePasswordChange = (e) => {
     e.preventDefault();
@@ -256,6 +303,26 @@ const VendorSettings = () => {
   // Security button handlers
   const handleViewActivity = () => {
     setShowLoginActivityModal(true);
+  };
+
+  // API Key handlers
+  const handleManageKeys = () => {
+    setShowAPIKeysModal(true);
+  };
+
+  const handleCreateAPIKey = (e) => {
+    e.preventDefault();
+    if (!keyFormData.name.trim()) {
+      toast.error('API key name is required');
+      return;
+    }
+    createAPIKeyMutation.mutate(keyFormData);
+  };
+
+  const handleDeleteAPIKey = (id, name) => {
+    if (window.confirm(`Are you sure you want to delete the API key "${name}"? This action cannot be undone.`)) {
+      deleteAPIKeyMutation.mutate(id);
+    }
   };
 
   if (isLoading) {
@@ -635,8 +702,6 @@ const VendorSettings = () => {
                   View Activity
                 </Button>
               </div>
-<<<<<<< HEAD
-=======
 
               <div className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200">
                 <div>
@@ -649,7 +714,6 @@ const VendorSettings = () => {
                   Manage Keys
                 </Button>
               </div>
->>>>>>> c438e4881f14c1421ed0b0b5c63b1dacba6c6a55
             </div>
           </div>
         )}
@@ -791,8 +855,6 @@ const VendorSettings = () => {
           </div>
         </div>
       </Modal>
-<<<<<<< HEAD
-=======
 
       {/* API Keys Management Modal */}
       <Modal
@@ -853,7 +915,7 @@ const VendorSettings = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDeleteAPIKey(key._id)}
+                    onClick={() => handleDeleteAPIKey(key._id, key.name)}
                     className="text-red-600 hover:bg-red-50"
                   >
                     Delete
@@ -893,8 +955,8 @@ const VendorSettings = () => {
         <form onSubmit={handleCreateAPIKey} className="space-y-4">
           <Input
             label="Key Name"
-            value={newKeyData.name}
-            onChange={(e) => setNewKeyData({ ...newKeyData, name: e.target.value })}
+            value={keyFormData.name}
+            onChange={(e) => setKeyFormData({ ...keyFormData, name: e.target.value })}
             required
             placeholder="e.g., Production API Key"
           />
@@ -904,8 +966,8 @@ const VendorSettings = () => {
               Description (Optional)
             </label>
             <textarea
-              value={newKeyData.description}
-              onChange={(e) => setNewKeyData({ ...newKeyData, description: e.target.value })}
+              value={keyFormData.description}
+              onChange={(e) => setKeyFormData({ ...keyFormData, description: e.target.value })}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="What will this key be used for?"
@@ -916,7 +978,10 @@ const VendorSettings = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowCreateKeyModal(false)}
+              onClick={() => {
+                setShowCreateKeyModal(false);
+                setKeyFormData({ name: '', description: '' });
+              }}
             >
               Cancel
             </Button>
@@ -981,7 +1046,6 @@ const VendorSettings = () => {
           </div>
         </Modal>
       )}
->>>>>>> c438e4881f14c1421ed0b0b5c63b1dacba6c6a55
     </div>
   );
 };

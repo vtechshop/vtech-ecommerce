@@ -95,7 +95,7 @@ exports.addItem = async (req, res, next) => {
 
     // Single query: Try to increment existing item OR add new item
     // Use lean product lookup for speed (no Mongoose document overhead)
-    const product = await Product.findById(productId).select('title price images slug stock').lean();
+    const product = await Product.findById(productId).select('title price images slug stock taxIncluded taxable taxRate').lean();
 
     if (!product) {
       return res.status(404).json({
@@ -144,6 +144,9 @@ exports.addItem = async (req, res, next) => {
               name: product.title,
               image: product.images?.[0] || null,
               productSlug: product.slug,
+              taxIncluded: product.taxIncluded || false,
+              taxable: product.taxable || false,
+              taxRate: product.taxRate || 0,
             },
           },
         },

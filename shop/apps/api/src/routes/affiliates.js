@@ -14,6 +14,8 @@ router.post('/apply', authenticate, affiliateController.apply);
 // Affiliate-only routes
 router.use(authenticate);
 
+router.get('/me', affiliateController.getAffiliateProfile);
+router.put('/payment-details', affiliateController.updatePaymentDetails);
 router.get('/dashboard/stats', affiliateController.getDashboardStats);
 router.get('/links', affiliateController.getLinks);
 router.get('/commissions', affiliateController.getCommissions);

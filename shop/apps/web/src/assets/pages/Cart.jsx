@@ -151,6 +151,15 @@ const Cart = () => {
                         <p className="text-xs text-gray-500" data-cy="item-price">
                           {formatCurrency(item.priceSnapshot || item.price || 0)} each
                         </p>
+                        {item.taxIncluded ? (
+                          <p className="text-xs text-green-600 font-medium mt-0.5">
+                            Tax Included
+                          </p>
+                        ) : item.taxable && item.taxRate > 0 ? (
+                          <p className="text-xs text-blue-600 font-medium mt-0.5">
+                            +{item.taxRate}% Tax
+                          </p>
+                        ) : null}
                       </div>
                     </div>
 

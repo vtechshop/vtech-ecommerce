@@ -694,3 +694,53 @@ exports.deleteAffiliateLink = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get affiliate profile
+exports.getAffiliateProfile = async (req, res, next) => {
+  try {
+    const affiliate = await Affiliate.findOne({ userId: req.user._id })
+      .populate('userId', 'name email')
+      .lean();
+
+    if (!affiliate) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Affiliate profile not found' },
+      });
+    }
+
+    res.json({ success: true, data: affiliate });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update payment details
+exports.updatePaymentDetails = async (req, res, next) => {
+  try {
+    const { paymentMethod, paymentDetails } = req.body;
+
+    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+    if (!affiliate) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Affiliate profile not found' },
+      });
+    }
+
+    // Update payment information
+    affiliate.paymentMethod = paymentMethod;
+    affiliate.paymentDetails = paymentDetails;
+
+    await affiliate.save();
+
+    logger.info(`Payment details updated for affiliate: ${affiliate.code}`);
+
+    res.json({
+      success: true,
+      data: { message: 'Payment details updated successfully' },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

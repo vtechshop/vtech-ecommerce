@@ -26,6 +26,9 @@ const cartSchema = new mongoose.Schema({
     image: String,
     productSlug: String,
     variantName: String,
+    taxIncluded: { type: Boolean, default: false },
+    taxable: { type: Boolean, default: false },
+    taxRate: { type: Number, default: 0 },
   }],
   totals: {
     subtotal: {
@@ -76,9 +79,22 @@ cartSchema.methods.calculateTotals = function() {
     return sum + (item.priceSnapshot * item.qty);
   }, 0);
 
-  // Get tax rate from environment or default to 18% GST (India)
-  const taxRate = parseFloat(process.env.DEFAULT_TAX_RATE || '0.18');
-  this.totals.tax = this.totals.subtotal * taxRate;
+  // Calculate tax only for items where tax is NOT included
+  this.totals.tax = this.items.reduce((sum, item) => {
+    // Skip if tax is already included in price
+    if (item.taxIncluded) {
+      return sum;
+    }
+
+    // Calculate tax based on snapshot values
+    if (item.taxable && item.taxRate > 0) {
+      const itemTax = (item.priceSnapshot * item.qty) * (item.taxRate / 100);
+      return sum + itemTax;
+    }
+
+    return sum;
+  }, 0);
+
   this.totals.discount = this.coupons.reduce((sum, coupon) => sum + coupon.discount, 0);
   this.totals.total = this.totals.subtotal + this.totals.tax + this.totals.shipping - this.totals.discount;
 

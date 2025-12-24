@@ -552,12 +552,25 @@ const Product = () => {
             {/* GST/Tax Information */}
             {product.taxable && product.taxRate > 0 ? (
               <div className="mt-2 flex items-center gap-2 text-sm">
-                <span className="text-gray-700">
-                  (Inclusive of all taxes)
-                </span>
-                <span className="text-gray-500">
-                  • GST {product.taxRate}%
-                </span>
+                {product.taxIncluded ? (
+                  <>
+                    <span className="text-green-700 font-medium">
+                      Tax Included in Price
+                    </span>
+                    <span className="text-gray-500">
+                      • GST {product.taxRate}%
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-gray-700">
+                      Tax will be added at checkout
+                    </span>
+                    <span className="text-gray-500">
+                      • GST {product.taxRate}%
+                    </span>
+                  </>
+                )}
               </div>
             ) : (
               <p className="text-sm text-gray-700 mt-2">

@@ -55,6 +55,7 @@ router.put('/affiliates/:id/approve', validateObjectId('id'), admin.approveAffil
 router.put('/affiliates/:id/reject', validateObjectId('id'), admin.rejectAffiliate);
 router.put('/affiliates/:id/suspend', validateObjectId('id'), admin.suspendAffiliate);
 router.put('/affiliates/:id/commission-rules', validateObjectId('id'), admin.updateAffiliateCommissionRules);
+router.post('/affiliates/:id/payout', validateObjectId('id'), admin.recordAffiliatePayout);
 
 // Commissions / Payouts - SECURITY: Added ObjectId validation
 router.get('/commissions', admin.getCommissions);

@@ -15,7 +15,11 @@ const VendorStore = () => {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [reviewSort, setReviewSort] = useState('recent');
-  const [activeSection, setActiveSection] = useState('items');
+  // Initialize activeSection from URL hash or default to 'items'
+  const [activeSection, setActiveSection] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    return ['items', 'reviews', 'about', 'policies'].includes(hash) ? hash : 'items';
+  });
 
   const { data: vendor, isLoading: vendorLoading } = useQuery({
     queryKey: ['vendor', slug],
@@ -90,42 +94,51 @@ const VendorStore = () => {
 
   // Scroll spy to highlight active section
   useEffect(() => {
+    if (!vendor) return;
+
+    let observerCleanup = null;
     const sections = ['items', 'reviews', 'about', 'policies'];
 
-    const observer = new IntersectionObserver(
-      (entries) => {
+    const timeoutId = setTimeout(() => {
+      const observerOptions = {
+        root: null,
+        rootMargin: '-80px 0px -80% 0px',
+        threshold: 0,
+      };
+
+      const observerCallback = (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const sectionId = entry.target.id;
-            if (sections.includes(sectionId)) {
-              setActiveSection(sectionId);
-            }
+            setActiveSection(entry.target.id);
           }
         });
-      },
-      {
-        root: null,
-        rootMargin: '-100px 0px -60% 0px',
-        threshold: 0,
-      }
-    );
+      };
 
-    sections.forEach((sectionId) => {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        observer.observe(element);
-      }
-    });
+      const observer = new IntersectionObserver(observerCallback, observerOptions);
 
-    return () => {
       sections.forEach((sectionId) => {
         const element = document.getElementById(sectionId);
         if (element) {
-          observer.unobserve(element);
+          observer.observe(element);
         }
       });
+
+      observerCleanup = () => {
+        sections.forEach((sectionId) => {
+          const element = document.getElementById(sectionId);
+          if (element) {
+            observer.unobserve(element);
+          }
+        });
+        observer.disconnect();
+      };
+    }, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (observerCleanup) observerCleanup();
     };
-  }, []);
+  }, [vendor]);
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
