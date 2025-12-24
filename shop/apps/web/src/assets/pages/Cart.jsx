@@ -42,7 +42,7 @@ const Cart = () => {
 
   if (items.length === 0) {
     return (
-      <div className="bg-blue-50 min-h-screen">
+      <div className="bg-white min-h-screen">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-12">
           <div className="max-w-xl mx-auto text-center bg-white rounded-lg border p-12">
             <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -63,7 +63,7 @@ const Cart = () => {
   }
 
   return (
-    <div className="bg-blue-50 min-h-screen">
+    <div className="bg-white min-h-screen">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         {/* Header */}
         <div className="mb-6 md:mb-8">

@@ -2,6 +2,9 @@
 const ShippingZone = require('../models/ShippingZone');
 const Tax = require('../models/Tax');
 const AppError = require('../utils/AppError');
+const ShippingService = require('../services/shippingService');
+
+const shippingService = new ShippingService();
 
 // Get shipping quotes
 exports.getShippingQuotes = async (req, res, next) => {
@@ -18,59 +21,102 @@ exports.getShippingQuotes = async (req, res, next) => {
       return next(new AppError('Address must be an object', 400, 'INVALID_ADDRESS'));
     }
 
-    // In a real app, you'd get the address and calculate shipping
-    // For now, return mock quotes (prices in INR)
-    const quotes = [
-      {
-        id: 'free-shipping',
-        name: 'Free Standard Shipping',
-        description: '7-10 business days',
-        cost: 0,
-        estimatedDays: 10,
-      },
-      {
-        id: 'standard',
-        name: 'Standard Shipping',
-        description: '5-7 business days',
-        cost: 499,
-        estimatedDays: 7,
-      },
-      {
-        id: 'priority',
-        name: 'Priority Shipping',
-        description: '3-5 business days',
-        cost: 799,
-        estimatedDays: 5,
-      },
-      {
-        id: 'express',
-        name: 'Express Shipping',
-        description: '2-3 business days',
-        cost: 1199,
-        estimatedDays: 3,
-      },
-      {
-        id: 'two-day',
-        name: 'Two-Day Shipping',
-        description: 'Guaranteed 2 business days',
-        cost: 1599,
-        estimatedDays: 2,
-      },
-      {
-        id: 'overnight',
-        name: 'Overnight Shipping',
-        description: 'Next business day delivery',
-        cost: 2399,
-        estimatedDays: 1,
-      },
-      {
-        id: 'same-day',
-        name: 'Same Day Delivery',
-        description: 'Order before 2 PM for same-day delivery',
-        cost: 3199,
-        estimatedDays: 0,
-      },
-    ];
+    let shippingAddress = address;
+
+    // If addressId provided, fetch the address from the user's addresses
+    if (addressId && req.user) {
+      const User = require('../models/User');
+      const user = await User.findById(req.user._id);
+      if (user && user.addresses) {
+        shippingAddress = user.addresses.id(addressId);
+        if (!shippingAddress) {
+          return next(new AppError('Address not found', 404, 'ADDRESS_NOT_FOUND'));
+        }
+      }
+    }
+
+    // Calculate total weight of items (default 500g per item if not specified)
+    const totalWeight = items?.reduce((sum, item) => sum + ((item.weight || 500) * (item.qty || 1)), 0) || 500;
+    const orderValue = items?.reduce((sum, item) => sum + ((item.price || 0) * (item.qty || 1)), 0) || 0;
+
+    // Try to get real shipping rates from carriers
+    let quotes = [];
+
+    try {
+      // Default origin (can be configured per vendor later)
+      const origin = {
+        zipCode: process.env.DEFAULT_ORIGIN_ZIP || '110001', // Delhi
+      };
+
+      const destination = {
+        zipCode: shippingAddress.zipCode,
+        state: shippingAddress.state,
+        country: shippingAddress.country || 'IN',
+      };
+
+      const packages = {
+        weight: totalWeight,
+        length: 20, // Default dimensions in cm
+        breadth: 15,
+        height: 10,
+      };
+
+      // Get rates from all available carriers
+      const carrierRates = await shippingService.calculateShippingRates(origin, destination, packages, orderValue);
+
+      // Transform carrier rates to quote format
+      quotes = carrierRates.map((rate, index) => ({
+        id: `${rate.carrier}-${index}`,
+        name: `${rate.carrierName} Shipping`,
+        description: rate.serviceName || `Delivered via ${rate.carrierName}`,
+        cost: Math.round(rate.rate || 0),
+        estimatedDays: rate.estimatedDays || 7,
+        carrier: rate.carrier,
+        cod_available: rate.cod_available || false,
+      }));
+
+      // Add free shipping option if order value is high enough
+      const freeShippingThreshold = 2000; // INR 2000
+      if (orderValue >= freeShippingThreshold && quotes.length > 0) {
+        quotes.unshift({
+          id: 'free-shipping',
+          name: 'Free Standard Shipping',
+          description: `Orders above ₹${freeShippingThreshold}`,
+          cost: 0,
+          estimatedDays: 7,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch real shipping rates:', error);
+      // Fallback to mock quotes if real rates fail
+      quotes = [
+        {
+          id: 'standard',
+          name: 'Standard Shipping',
+          description: '5-7 business days',
+          cost: 499,
+          estimatedDays: 7,
+        },
+        {
+          id: 'express',
+          name: 'Express Shipping',
+          description: '2-3 business days',
+          cost: 1199,
+          estimatedDays: 3,
+        },
+      ];
+
+      // Add free shipping for high-value orders
+      if (orderValue >= 2000) {
+        quotes.unshift({
+          id: 'free-shipping',
+          name: 'Free Standard Shipping',
+          description: 'Orders above ₹2000',
+          cost: 0,
+          estimatedDays: 7,
+        });
+      }
+    }
 
     res.json({
       success: true,
@@ -84,7 +130,7 @@ exports.getShippingQuotes = async (req, res, next) => {
 // Calculate taxes
 exports.calculateTaxes = async (req, res, next) => {
   try {
-    const { subtotal, address } = req.body;
+    const { subtotal, address, items } = req.body;
 
     // SECURITY: Validate subtotal is provided and is a positive number
     if (!subtotal || typeof subtotal !== 'number' || subtotal < 0) {
@@ -101,9 +147,64 @@ exports.calculateTaxes = async (req, res, next) => {
       return next(new AppError('Address must be an object', 400, 'INVALID_ADDRESS'));
     }
 
-    // In a real app, calculate based on address and tax rules
-    // For now, return 18% GST (standard rate in India)
-    const taxRate = 0.18;
+    // Try to find applicable tax rules based on location
+    let taxRate = 0.18; // Default 18% GST for India
+    let taxBreakdown = {
+      cgst: 0.09, // 9% CGST
+      sgst: 0.09, // 9% SGST
+      igst: 0,    // 0% IGST (used for inter-state)
+    };
+
+    if (address) {
+      try {
+        // Find tax rules for the given location
+        const taxRules = await Tax.find({
+          isActive: true,
+          $or: [
+            { countries: address.country },
+            { countries: { $size: 0 } }, // Global tax rules
+          ],
+        });
+
+        // Apply most specific tax rule
+        for (const rule of taxRules) {
+          // Check if state-specific rule exists
+          if (rule.states && rule.states.length > 0 && rule.states.includes(address.state)) {
+            taxRate = rule.rate / 100;
+
+            // Use GST components if available
+            if (rule.gstComponents) {
+              const gst = rule.gstComponents;
+              taxBreakdown = {
+                cgst: (gst.cgst || 0) / 100,
+                sgst: (gst.sgst || 0) / 100,
+                utgst: (gst.utgst || 0) / 100,
+                igst: (gst.igst || 0) / 100,
+              };
+            }
+            break;
+          }
+          // Check if country-specific rule exists (but no state restriction)
+          else if (rule.countries && rule.countries.includes(address.country) && (!rule.states || rule.states.length === 0)) {
+            taxRate = rule.rate / 100;
+
+            if (rule.gstComponents) {
+              const gst = rule.gstComponents;
+              taxBreakdown = {
+                cgst: (gst.cgst || 0) / 100,
+                sgst: (gst.sgst || 0) / 100,
+                utgst: (gst.utgst || 0) / 100,
+                igst: (gst.igst || 0) / 100,
+              };
+            }
+          }
+        }
+      } catch (error) {
+        // If tax lookup fails, continue with default rate
+        console.error('Tax lookup error:', error);
+      }
+    }
+
     const taxAmount = subtotal * taxRate;
 
     res.json({
@@ -111,6 +212,7 @@ exports.calculateTaxes = async (req, res, next) => {
       data: {
         taxRate,
         taxAmount,
+        breakdown: taxBreakdown,
       },
     });
   } catch (error) {

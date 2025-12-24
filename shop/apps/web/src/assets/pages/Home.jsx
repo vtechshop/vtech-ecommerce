@@ -84,7 +84,7 @@ const Home = React.memo(() => {
 
 
   return (
-    <div className="min-h-screen bg-blue-50">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary-600 to-primary-200 animate-fade-in">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-16 max-w-screen-2xl">

@@ -182,7 +182,7 @@ const BlogPost = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-blue-100 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <Spinner size="lg" />
       </div>
     );
@@ -190,7 +190,7 @@ const BlogPost = () => {
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-blue-100 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Blog post not found</h2>
           <Link to="/blog" className="text-blue-600 hover:text-blue-700">
@@ -204,7 +204,7 @@ const BlogPost = () => {
   const isVideo = data.type === 'video';
 
   return (
-    <div className="min-h-screen bg-blue-100">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-6">

@@ -290,7 +290,7 @@ const BlogPost = () => {
   }
 
   return (
-    <div className="min-h-screen pt-[50px] pb-[50px] bg-blue-100">
+    <div className="min-h-screen pt-[50px] pb-[50px] bg-white">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-7xl">
         <div className="flex flex-col lg:flex-row" style={{ gap: '150px' }}>
           {/* Main Content */}

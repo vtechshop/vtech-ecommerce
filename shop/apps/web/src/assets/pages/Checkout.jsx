@@ -38,6 +38,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState('razorpay'); // Default to Razorpay
   const [saveAddress, setSaveAddress] = useState(true); // Save address to account by default
   const [orderPlaced, setOrderPlaced] = useState(false); // Flag to prevent redirect after order success
+  const [guestEmail, setGuestEmail] = useState(''); // Email for guest checkout
 
   useEffect(() => {
     // Don't redirect if order was just placed (cart will be empty but that's expected)
@@ -45,12 +46,8 @@ const Checkout = () => {
       return;
     }
 
-    // Require login to checkout
-    if (!user) {
-      toast.info('Please login to continue with checkout');
-      navigate('/login?redirect=/checkout');
-      return;
-    }
+    // Allow guest checkout - don't force login
+    // User can checkout as guest or choose to login
 
     if (items.length === 0) {
       navigate('/cart');
@@ -58,7 +55,7 @@ const Checkout = () => {
     }
 
     trackBeginCheckout({ items, totals });
-  }, [items, totals, user, navigate, toast, orderPlaced]);
+  }, [items, totals, navigate, orderPlaced]);
 
   // Dynamically get states based on selected country
   const availableStates = useMemo(() => {
@@ -133,6 +130,13 @@ const Checkout = () => {
 
   const validateAddress = () => {
     const errors = {};
+
+    // For guest checkout, email is required
+    if (!user && !guestEmail?.trim()) {
+      errors.guestEmail = 'Email is required for order confirmation';
+    } else if (!user && guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())) {
+      errors.guestEmail = 'Please enter a valid email address';
+    }
 
     if (!newAddress.fullName?.trim()) {
       errors.fullName = 'Full name is required';
@@ -251,6 +255,8 @@ const Checkout = () => {
       shippingMethod: shippingMethod.id,
       paymentMethod,
       paymentDetails: {},
+      // Include guest email if not logged in
+      ...((!user && guestEmail) && { guestEmail: guestEmail.trim() }),
     };
 
     console.log('📦 Final orderData:', orderData);
@@ -368,7 +374,7 @@ const Checkout = () => {
   }
 
   return (
-    <div className="bg-blue-100 min-h-screen">
+    <div className="bg-white min-h-screen">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 max-w-screen-2xl">
         {/* Header */}
         <div className="mb-6 md:mb-8">
@@ -451,9 +457,47 @@ const Checkout = () => {
                 </div>
               )}
 
+              {/* Guest Checkout Notice */}
+              {!user && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="font-medium text-blue-900">Checking out as Guest</p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Already have an account?{' '}
+                        <button
+                          type="button"
+                          onClick={() => navigate('/login?redirect=/checkout')}
+                          className="underline font-medium hover:text-blue-900"
+                        >
+                          Login here
+                        </button>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* New Address Form */}
               <form onSubmit={handleAddressSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Guest Email Field */}
+                  {!user && (
+                    <Input
+                      label="Email"
+                      name="email"
+                      type="email"
+                      required
+                      placeholder="For order confirmation"
+                      className="md:col-span-2"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                    />
+                  )}
+
                   <Input
                     label="Full Name"
                     name="fullName"
@@ -544,18 +588,20 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                {/* Save Address Checkbox */}
-                <div className="mt-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={saveAddress}
-                      onChange={(e) => setSaveAddress(e.target.checked)}
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-sm text-gray-700">Save this address for future orders</span>
-                  </label>
-                </div>
+                {/* Save Address Checkbox - Only for logged-in users */}
+                {user && (
+                  <div className="mt-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={saveAddress}
+                        onChange={(e) => setSaveAddress(e.target.checked)}
+                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700">Save this address for future orders</span>
+                    </label>
+                  </div>
+                )}
 
                 <Button type="submit" variant="primary" size="lg" className="mt-6">
                   Continue to Shipping

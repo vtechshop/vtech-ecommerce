@@ -1,6 +1,6 @@
 const AffiliateTerms = () => {
   return (
-    <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
+    <div className="min-h-screen bg-white px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Affiliate Program Terms & Conditions</h1>

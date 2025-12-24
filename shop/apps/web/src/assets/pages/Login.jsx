@@ -62,7 +62,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-100 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <Link to="/" className="text-3xl font-bold text-blue-600">
