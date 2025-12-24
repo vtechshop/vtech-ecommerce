@@ -2,9 +2,7 @@
 const ShippingZone = require('../models/ShippingZone');
 const Tax = require('../models/Tax');
 const AppError = require('../utils/AppError');
-const ShippingService = require('../services/shippingService');
-
-const shippingService = new ShippingService();
+const shippingService = require('../services/shippingService');
 
 // Get shipping quotes
 exports.getShippingQuotes = async (req, res, next) => {
