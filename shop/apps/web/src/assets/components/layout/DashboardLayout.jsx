@@ -67,6 +67,7 @@ const DashboardLayout = () => {
         { path: '/affiliate-dashboard/links', label: 'Links', icon: 'link' },
         { path: '/affiliate-dashboard/all-product-links', label: 'All Product Links', icon: 'list' },
         { path: '/affiliate-dashboard/commissions', label: 'Commissions', icon: 'dollar' },
+        { path: '/affiliate-dashboard/settings', label: 'Settings', icon: 'settings' },
         { path: '/affiliate-dashboard/kyc', label: 'KYC Verification', icon: 'shield' },
         { path: '/affiliate-dashboard/support', label: 'Support', icon: 'message-square' },
       ];
