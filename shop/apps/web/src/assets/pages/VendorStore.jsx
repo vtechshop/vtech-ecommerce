@@ -15,6 +15,7 @@ const VendorStore = () => {
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [searchQuery, setSearchQuery] = useState('');
   const [reviewSort, setReviewSort] = useState('recent');
+  const [showAllReviews, setShowAllReviews] = useState(false);
   // Initialize activeSection from URL hash or default to 'items'
   const [activeSection, setActiveSection] = useState(() => {
     const hash = window.location.hash.replace('#', '');
@@ -455,7 +456,7 @@ const VendorStore = () => {
 
               {/* Reviews List */}
               <div className="space-y-6">
-                {reviewsData.reviews.map((review) => (
+                {(showAllReviews ? reviewsData.reviews : reviewsData.reviews.slice(0, 3)).map((review) => (
                   <div key={review._id} className="border-b border-gray-200 pb-6 last:border-0">
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -536,6 +537,32 @@ const VendorStore = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Show More / Show Less Button */}
+              {reviewsData.reviews.length > 3 && (
+                <div className="mt-6 pt-6 border-t text-center">
+                  <button
+                    onClick={() => setShowAllReviews(!showAllReviews)}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all"
+                  >
+                    {showAllReviews ? (
+                      <>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                        </svg>
+                        Show Less
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                        See More Reviews ({reviewsData.reviews.length - 3} more)
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center py-12">
