@@ -30,6 +30,7 @@ router.delete('/campaigns/:id', adController.deleteCampaign);
 
 router.get('/campaigns/:campaignId/creatives', adController.getCreatives);
 router.post('/campaigns/:campaignId/creatives', adController.createCreative);
+router.delete('/campaigns/:campaignId/creatives/:creativeId', adController.deleteCreative);
 
 router.get('/campaigns/:id/report', adController.getCampaignReport);
 

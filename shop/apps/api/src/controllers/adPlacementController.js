@@ -1,5 +1,6 @@
 // FILE: apps/api/src/controllers/adPlacementController.js
 const AdCampaign = require('../models/AdCampaign');
+const AdCreative = require('../models/AdCreative');
 const AdPricingSettings = require('../models/AdPricingSettings');
 const Setting = require('../models/Setting');
 const AppError = require('../utils/AppError');
@@ -103,20 +104,37 @@ exports.getSponsoredAds = async (req, res) => {
     // Run auction to select winners
     const winners = runAdAuction(campaigns, pricingSettings, parseInt(limit));
 
-    // Format ads data
-    const ads = winners.map(campaign => ({
-      _id: campaign._id,
-      name: campaign.name,
-      type: campaign.type,
-      bannerImage: campaign.bannerImage,
-      targetUrl: campaign.targetUrl || '#',
-      position: campaign.position,
-      bannerSize: campaign.bannerSize,
-      targeting: campaign.targeting,
-      bid: campaign.bid,
-      pricing: campaign.pricing,
-      qualityScore: campaign.qualityScore?.overall,
-      auctionScore: campaign.auctionScore,
+    // Fetch creatives for all winners and format ads data
+    const ads = await Promise.all(winners.map(async (campaign) => {
+      let bannerImage = campaign.bannerImage;
+
+      try {
+        const creative = await AdCreative.findOne({
+          campaignId: campaign._id,
+          status: 'active'
+        }).sort({ createdAt: -1 }).lean();
+
+        if (creative && creative.bannerAsset && creative.bannerAsset.imageUrl) {
+          bannerImage = creative.bannerAsset.imageUrl;
+        }
+      } catch (err) {
+        console.error('Error fetching creative:', err);
+      }
+
+      return {
+        _id: campaign._id,
+        name: campaign.name,
+        type: campaign.type,
+        bannerImage: bannerImage,
+        targetUrl: campaign.targetUrl || '#',
+        position: campaign.position,
+        bannerSize: campaign.bannerSize,
+        targeting: campaign.targeting,
+        bid: campaign.bid,
+        pricing: campaign.pricing,
+        qualityScore: campaign.qualityScore?.overall,
+        auctionScore: campaign.auctionScore,
+      };
     }));
 
     res.json({
@@ -191,6 +209,22 @@ exports.getAdForPlacement = async (req, res) => {
 
     const campaign = winners[0];
 
+    // Get the first active creative for this campaign if exists
+    let bannerImage = campaign.bannerImage;
+    try {
+      const creative = await AdCreative.findOne({
+        campaignId: campaign._id,
+        status: 'active'
+      }).sort({ createdAt: -1 }).lean();
+
+      if (creative && creative.bannerAsset && creative.bannerAsset.imageUrl) {
+        bannerImage = creative.bannerAsset.imageUrl;
+      }
+    } catch (err) {
+      console.error('Error fetching creative:', err);
+      // Continue with campaign.bannerImage if creative fetch fails
+    }
+
     // Format response with correct AdCampaign fields
     const adData = {
       _id: campaign._id,
@@ -199,7 +233,7 @@ exports.getAdForPlacement = async (req, res) => {
       placement: campaign.placement,
       position: campaign.position,
       bannerSize: campaign.bannerSize,
-      bannerImage: campaign.bannerImage,
+      bannerImage: bannerImage,
       dimensions: campaign.dimensions,
       bid: campaign.bid,
       actualCPC: campaign.actualCPC,

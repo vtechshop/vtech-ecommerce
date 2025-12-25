@@ -363,7 +363,10 @@ exports.deleteCampaign = async (req, res, next) => {
     const campaign = await AdCampaign.findOneAndDelete({
       _id: id,
       vendorId: vendor._id,
-      status: 'draft', // Vendors can only delete draft campaigns
+      $or: [
+        { status: { $in: ['draft', 'rejected'] } }, // Vendors can delete draft and rejected campaigns
+        { 'approval.status': 'rejected' }, // Also allow deletion if rejected by admin
+      ],
     });
 
     if (!campaign) {
@@ -371,7 +374,7 @@ exports.deleteCampaign = async (req, res, next) => {
         success: false,
         error: {
           code: 'NOT_FOUND',
-          message: 'Campaign not found or cannot be deleted (only draft campaigns can be deleted)',
+          message: 'Campaign not found or cannot be deleted (only draft and rejected campaigns can be deleted)',
         },
       });
     }
@@ -392,21 +395,45 @@ exports.getCreatives = async (req, res, next) => {
   try {
     const { campaignId } = req.params;
 
-    const vendor = await Vendor.findOne({ userId: req.user._id });
+    // For vendors, check ownership
+    if (req.user.role === 'vendor') {
+      const vendor = await Vendor.findOne({ userId: req.user._id });
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Vendor profile not found',
+          },
+        });
+      }
 
-    const campaign = await AdCampaign.findOne({
-      _id: campaignId,
-      vendorId: vendor._id,
-    });
-
-    if (!campaign) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: 'Campaign not found',
-        },
+      const campaign = await AdCampaign.findOne({
+        _id: campaignId,
+        vendorId: vendor._id,
       });
+
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Campaign not found',
+          },
+        });
+      }
+    } else {
+      // For admin, just check if campaign exists
+      const campaign = await AdCampaign.findById(campaignId);
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Campaign not found',
+          },
+        });
+      }
     }
 
     const creatives = await AdCreative.find({ campaignId })
@@ -426,30 +453,144 @@ exports.getCreatives = async (req, res, next) => {
 exports.createCreative = async (req, res, next) => {
   try {
     const { campaignId } = req.params;
+    const { imageUrl, title } = req.body;
 
-    const vendor = await Vendor.findOne({ userId: req.user._id });
-
-    const campaign = await AdCampaign.findOne({
-      _id: campaignId,
-      vendorId: vendor._id,
-    });
-
-    if (!campaign) {
-      return res.status(404).json({
+    // Validate required fields
+    if (!imageUrl) {
+      return res.status(400).json({
         success: false,
         error: {
-          code: 'NOT_FOUND',
-          message: 'Campaign not found',
+          code: 'VALIDATION_ERROR',
+          message: 'imageUrl is required',
         },
       });
     }
 
+    let campaign;
+
+    // For vendors, check ownership
+    if (req.user.role === 'vendor') {
+      const vendor = await Vendor.findOne({ userId: req.user._id });
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Vendor profile not found',
+          },
+        });
+      }
+
+      campaign = await AdCampaign.findOne({
+        _id: campaignId,
+        vendorId: vendor._id,
+      });
+
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Campaign not found',
+          },
+        });
+      }
+    } else {
+      // For admin, just check if campaign exists
+      campaign = await AdCampaign.findById(campaignId);
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Campaign not found',
+          },
+        });
+      }
+    }
+
+    // Use campaign's placement for the creative
     const creative = await AdCreative.create({
-      ...req.body,
       campaignId,
+      placement: campaign.placement || 'homepage_banner',
+      bannerAsset: {
+        imageUrl,
+        imageAlt: title || 'Ad Creative',
+      },
+      headline: title || 'Ad Creative',
     });
 
     res.status(201).json({
+      success: true,
+      data: creative,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete creative
+exports.deleteCreative = async (req, res, next) => {
+  try {
+    const { campaignId, creativeId } = req.params;
+
+    // For vendors, check ownership
+    if (req.user.role === 'vendor') {
+      const vendor = await Vendor.findOne({ userId: req.user._id });
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Vendor profile not found',
+          },
+        });
+      }
+
+      const campaign = await AdCampaign.findOne({
+        _id: campaignId,
+        vendorId: vendor._id,
+      });
+
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Campaign not found',
+          },
+        });
+      }
+    } else {
+      // For admin, just check if campaign exists
+      const campaign = await AdCampaign.findById(campaignId);
+      if (!campaign) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'Campaign not found',
+          },
+        });
+      }
+    }
+
+    const creative = await AdCreative.findOneAndDelete({
+      _id: creativeId,
+      campaignId,
+    });
+
+    if (!creative) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Creative not found',
+        },
+      });
+    }
+
+    res.json({
       success: true,
       data: creative,
     });

@@ -22,10 +22,6 @@ const VendorSettings = () => {
     confirmPassword: '',
   });
   const [showLoginActivityModal, setShowLoginActivityModal] = useState(false);
-  const [showAPIKeysModal, setShowAPIKeysModal] = useState(false);
-  const [showCreateKeyModal, setShowCreateKeyModal] = useState(false);
-  const [createdKey, setCreatedKey] = useState(null);
-  const [keyFormData, setKeyFormData] = useState({ name: '', description: '' });
 
   // Fetch vendor settings
   const { data: vendorData, isLoading } = useQuery({
@@ -44,16 +40,6 @@ const VendorSettings = () => {
       return response.data.data;
     },
     enabled: showLoginActivityModal,
-  });
-
-  // Fetch API keys
-  const { data: apiKeys, isLoading: apiKeysLoading } = useQuery({
-    queryKey: ['vendor-api-keys'],
-    queryFn: async () => {
-      const response = await api.get('/vendors/api-keys');
-      return response.data.data;
-    },
-    enabled: showAPIKeysModal,
   });
 
   // Store Profile State
@@ -247,38 +233,6 @@ const VendorSettings = () => {
     },
   });
 
-  // Create API Key Mutation
-  const createAPIKeyMutation = useMutation({
-    mutationFn: async (data) => {
-      const response = await api.post('/vendors/api-keys', data);
-      return response.data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['vendor-api-keys'] });
-      toast.success('API key created successfully');
-      setShowCreateKeyModal(false);
-      setCreatedKey(data.data);
-      setKeyFormData({ name: '', description: '' });
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to create API key');
-    },
-  });
-
-  // Delete API Key Mutation
-  const deleteAPIKeyMutation = useMutation({
-    mutationFn: async (id) => {
-      const response = await api.delete(`/vendors/api-keys/${id}`);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vendor-api-keys'] });
-      toast.success('API key deleted successfully');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to delete API key');
-    },
-  });
 
   // Handle password change
   const handlePasswordChange = (e) => {
@@ -303,26 +257,6 @@ const VendorSettings = () => {
   // Security button handlers
   const handleViewActivity = () => {
     setShowLoginActivityModal(true);
-  };
-
-  // API Key handlers
-  const handleManageKeys = () => {
-    setShowAPIKeysModal(true);
-  };
-
-  const handleCreateAPIKey = (e) => {
-    e.preventDefault();
-    if (!keyFormData.name.trim()) {
-      toast.error('API key name is required');
-      return;
-    }
-    createAPIKeyMutation.mutate(keyFormData);
-  };
-
-  const handleDeleteAPIKey = (id, name) => {
-    if (window.confirm(`Are you sure you want to delete the API key "${name}"? This action cannot be undone.`)) {
-      deleteAPIKeyMutation.mutate(id);
-    }
   };
 
   if (isLoading) {
@@ -703,17 +637,6 @@ const VendorSettings = () => {
                 </Button>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200">
-                <div>
-                  <p className="font-medium text-gray-900">API Keys</p>
-                  <p className="text-sm text-gray-700 mt-1">
-                    Manage API keys for third-party integrations
-                  </p>
-                </div>
-                <Button variant="outline" size="sm" onClick={handleManageKeys}>
-                  Manage Keys
-                </Button>
-              </div>
             </div>
           </div>
         )}
@@ -856,196 +779,6 @@ const VendorSettings = () => {
         </div>
       </Modal>
 
-      {/* API Keys Management Modal */}
-      <Modal
-        isOpen={showAPIKeysModal}
-        onClose={() => setShowAPIKeysModal(false)}
-        title="API Keys"
-        size="lg"
-      >
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Manage your API keys for third-party integrations
-            </p>
-            <Button
-              size="sm"
-              onClick={() => {
-                setShowAPIKeysModal(false);
-                setShowCreateKeyModal(true);
-              }}
-            >
-              Create New Key
-            </Button>
-          </div>
-
-          {apiKeysLoading ? (
-            <div className="flex justify-center py-8">
-              <Spinner size="lg" />
-            </div>
-          ) : apiKeys && apiKeys.length > 0 ? (
-            <div className="space-y-3">
-              {apiKeys.map((key) => (
-                <div
-                  key={key._id}
-                  className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h4 className="font-medium text-gray-900">{key.name}</h4>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        key.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-gray-800'
-                      }`}>
-                        {key.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {key.prefix}••••••••••••••••
-                    </p>
-                    {key.description && (
-                      <p className="text-xs text-gray-500 mt-1">{key.description}</p>
-                    )}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                      <span>Created: {new Date(key.createdAt).toLocaleDateString()}</span>
-                      {key.lastUsedAt && (
-                        <span>Last used: {new Date(key.lastUsedAt).toLocaleDateString()}</span>
-                      )}
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteAPIKey(key._id, key.name)}
-                    className="text-red-600 hover:bg-red-50"
-                  >
-                    Delete
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-blue-100 rounded-lg">
-              <p className="text-gray-500 mb-4">No API keys found</p>
-              <Button
-                onClick={() => {
-                  setShowAPIKeysModal(false);
-                  setShowCreateKeyModal(true);
-                }}
-              >
-                Create Your First API Key
-              </Button>
-            </div>
-          )}
-
-          <div className="flex justify-end pt-4 border-t">
-            <Button variant="outline" onClick={() => setShowAPIKeysModal(false)}>
-              Close
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Create API Key Modal */}
-      <Modal
-        isOpen={showCreateKeyModal}
-        onClose={() => setShowCreateKeyModal(false)}
-        title="Create API Key"
-        size="md"
-      >
-        <form onSubmit={handleCreateAPIKey} className="space-y-4">
-          <Input
-            label="Key Name"
-            value={keyFormData.name}
-            onChange={(e) => setKeyFormData({ ...keyFormData, name: e.target.value })}
-            required
-            placeholder="e.g., Production API Key"
-          />
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description (Optional)
-            </label>
-            <textarea
-              value={keyFormData.description}
-              onChange={(e) => setKeyFormData({ ...keyFormData, description: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="What will this key be used for?"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowCreateKeyModal(false);
-                setKeyFormData({ name: '', description: '' });
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" loading={createAPIKeyMutation.isPending}>
-              Create API Key
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Created API Key Display Modal */}
-      {createdKey && (
-        <Modal
-          isOpen={!!createdKey}
-          onClose={() => setCreatedKey(null)}
-          title="API Key Created"
-          size="md"
-        >
-          <div className="space-y-4">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-yellow-900 mb-2">
-                ⚠️ Save this key securely
-              </p>
-              <p className="text-sm text-yellow-700">
-                This is the only time you'll see this key. Store it somewhere safe.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                API Key
-              </label>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 px-4 py-3 bg-blue-100 border border-gray-300 rounded-lg text-sm font-mono break-all">
-                  {createdKey.key}
-                </code>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(createdKey.key);
-                    toast.success('API key copied to clipboard');
-                  }}
-                >
-                  Copy
-                </Button>
-              </div>
-            </div>
-
-            <div className="text-sm text-gray-600 space-y-1">
-              <p><strong>Name:</strong> {createdKey.name}</p>
-              <p><strong>Created:</strong> {new Date(createdKey.createdAt).toLocaleString()}</p>
-            </div>
-
-            <div className="flex justify-end pt-4">
-              <Button onClick={() => {
-                setCreatedKey(null);
-                setShowAPIKeysModal(true);
-              }}>
-                Done
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

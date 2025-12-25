@@ -25,22 +25,60 @@ const adCreativeSchema = new mongoose.Schema({
   placement: {
     type: String,
     enum: [
-      'search_top',
-      'search_grid',
-      'category_top',
-      'category_grid',
-      'product_page',
+      // Homepage
       'homepage_banner',
       'homepage_sidebar_left',
       'homepage_sidebar_right',
+      'homepage_top',
+      'homepage_middle',
+      'homepage_bottom',
+      // Product Pages
+      'product_sidebar',
+      'product_top',
+      'product_bottom',
+      'product_related',
+      'product_page',
+      'product_page_side',
+      // Category Pages
+      'category_top_banner',
+      'category_sidebar',
+      'category_grid',
+      'category_top',
+      'category_header',
+      // Search & Results
+      'search_sponsored_products',
+      'search_top',
+      'search_sidebar',
+      'search_grid',
+      // Cart & Checkout
+      'cart_sidebar',
+      'cart_bottom',
+      'cart_page',
+      'checkout_top',
+      // Generic
       'left_sidebar',
       'right_sidebar',
       'top_banner',
       'bottom_banner',
-      'category_header',
-      'product_page_side',
       'product_list',
-      'cart_page'
+      // Blog
+      'blog_sidebar',
+      'blog_top',
+      'blog_in_content',
+      'blog_bottom',
+      // User Account
+      'account_dashboard',
+      'account_orders',
+      'account_profile',
+      // Vendor Pages
+      'vendor_store',
+      'vendor_list',
+      // Other Pages
+      'about_us',
+      'contact_us',
+      'faq',
+      'terms',
+      'privacy'
     ],
     required: true,
   },

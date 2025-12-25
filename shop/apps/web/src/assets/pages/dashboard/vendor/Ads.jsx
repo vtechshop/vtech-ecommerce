@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/dashboard/vendor/Ads.jsx
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/utils/api';
@@ -7,9 +7,11 @@ import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
 import Spinner from '@/components/common/Spinner';
 import Input from '@/components/common/Input';
+import ImageCropUpload from '@/components/common/ImageCropUpload';
 import { useToast } from '@/components/common/ToastContainer';
-import { formatCurrency, formatDate } from '@/utils/format';
+import { formatCurrency } from '@/utils/format';
 import { loadRazorpayScript } from '@/utils/razorpay';
+import { Search, Filter, Download, Copy } from 'lucide-react';
 
 const Ads = () => {
   const queryClient = useQueryClient();
@@ -19,6 +21,20 @@ const Ads = () => {
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [selectedCampaignForReport, setSelectedCampaignForReport] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState(null);
+
+  // NEW: Search, Filter, Sort states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date'); // date, spend, ctr, clicks, impressions
+  const [productSearch, setProductSearch] = useState('');
+
+  // NEW: Ad Creative management state
+  const [creativesModalOpen, setCreativesModalOpen] = useState(false);
+  const [selectedCampaignForCreatives, setSelectedCampaignForCreatives] = useState(null);
+  const [uploadingCreative, setUploadingCreative] = useState(false);
+  const creativeUploadRef = useRef(null);
 
   // Campaign form state
   const [campaignForm, setCampaignForm] = useState({
@@ -43,7 +59,7 @@ const Ads = () => {
       const response = await api.get(`/ads/pricing-settings/${campaignForm.placement}`);
       return response.data.data;
     },
-    enabled: !!campaignForm.placement && isCreateModalOpen,
+    enabled: !!campaignForm.placement && (isCreateModalOpen || isEditMode),
   });
 
   const { data: campaigns, isLoading } = useQuery({
@@ -70,12 +86,23 @@ const Ads = () => {
     },
   });
 
+  // Fetch creatives for a campaign
+  const { data: creatives } = useQuery({
+    queryKey: ['ad-creatives', selectedCampaignForCreatives?._id],
+    queryFn: async () => {
+      const response = await api.get(`/ads/campaigns/${selectedCampaignForCreatives._id}/creatives`);
+      return response.data.data;
+    },
+    enabled: !!selectedCampaignForCreatives && creativesModalOpen,
+  });
+
   const pauseMutation = useMutation({
     mutationFn: async (id) => {
       await api.put(`/ads/campaigns/${id}`, { status: 'paused' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      toast.success('Campaign paused successfully');
     },
   });
 
@@ -85,6 +112,75 @@ const Ads = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      toast.success('Campaign resumed successfully');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      await api.delete(`/ads/campaigns/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
+      toast.success('Campaign deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to delete campaign');
+    },
+  });
+
+  // NEW: Duplicate campaign mutation
+  const duplicateMutation = useMutation({
+    mutationFn: async (campaign) => {
+      const data = {
+        name: `${campaign.name} (Copy)`,
+        type: campaign.type,
+        pricing: campaign.pricing,
+        bid: campaign.bid,
+        dailyBudget: campaign.dailyBudget,
+        startAt: new Date(),
+        placement: campaign.placement,
+        position: campaign.position,
+        bannerSize: campaign.bannerSize,
+        dimensions: campaign.dimensions,
+        status: 'draft',
+      };
+
+      if (campaign.targeting?.products) {
+        data.targeting = { products: campaign.targeting.products };
+      }
+
+      const response = await api.post('/ads/campaigns', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
+      toast.success('Campaign duplicated successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to duplicate campaign');
+    },
+  });
+
+  // NEW: Update campaign mutation (for edit)
+  const updateCampaignMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const response = await api.put(`/ads/campaigns/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
+      toast.success('Campaign updated successfully!');
+      setIsCreateModalOpen(false);
+      setIsEditMode(false);
+      setEditingCampaign(null);
+      resetForm();
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to update campaign');
     },
   });
 
@@ -98,25 +194,135 @@ const Ads = () => {
       queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
       toast.success('Campaign created successfully! Waiting for admin approval.');
       setIsCreateModalOpen(false);
-      setCampaignForm({
-        name: '',
-        type: 'SponsoredProduct',
-        pricing: 'CPC',
-        bid: '',
-        dailyBudget: '',
-        startAt: new Date().toISOString().split('T')[0],
-        endAt: '',
-        placement: 'homepage_banner',
-        position: 'top',
-        bannerSize: 'hero',
-        dimensions: { width: '', height: '' },
-        productIds: [],
-      });
+      resetForm();
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to create campaign');
     },
   });
+
+  // NEW: Upload creative mutation
+  const uploadCreativeMutation = useMutation({
+    mutationFn: async ({ campaignId, file }) => {
+      // Validate file
+      if (!file) {
+        throw new Error('Please select a file');
+      }
+
+      // Validate file type
+      const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml', 'image/tiff', 'image/x-icon'];
+      if (!validTypes.includes(file.type)) {
+        throw new Error('Invalid file type. Please upload an image file (PNG, JPG, GIF, WebP, BMP, SVG, TIFF, ICO)');
+      }
+
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File size must be less than 10MB');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'ad-creatives');
+
+      const uploadResponse = await api.post('/upload/single', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (!uploadResponse.data?.data?.url) {
+        throw new Error('Failed to get upload URL from server');
+      }
+
+      const creativeData = {
+        imageUrl: uploadResponse.data.data.url,
+        title: file.name,
+      };
+
+      const response = await api.post(`/ads/campaigns/${campaignId}/creatives`, creativeData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-creatives'] });
+      toast.success('Creative uploaded successfully!');
+      // Reset file input
+      if (creativeUploadRef.current) {
+        creativeUploadRef.current.value = '';
+      }
+    },
+    onError: (error) => {
+      console.error('Creative upload error:', error);
+      const errorMessage = error.message || error.response?.data?.error?.message || 'Failed to upload creative';
+      toast.error(errorMessage);
+      // Reset file input on error too
+      if (creativeUploadRef.current) {
+        creativeUploadRef.current.value = '';
+      }
+    },
+  });
+
+  // NEW: Delete creative mutation
+  const deleteCreativeMutation = useMutation({
+    mutationFn: async ({ campaignId, creativeId }) => {
+      if (!campaignId || !creativeId) {
+        throw new Error('Campaign ID and Creative ID are required');
+      }
+      const response = await api.delete(`/ads/campaigns/${campaignId}/creatives/${creativeId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-creatives'] });
+      toast.success('Creative deleted successfully!');
+    },
+    onError: (error) => {
+      console.error('Creative delete error:', error);
+      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to delete creative';
+      toast.error(errorMessage);
+    },
+  });
+
+  const resetForm = () => {
+    setCampaignForm({
+      name: '',
+      type: 'SponsoredProduct',
+      pricing: 'CPC',
+      bid: '',
+      dailyBudget: '',
+      startAt: new Date().toISOString().split('T')[0],
+      endAt: '',
+      placement: 'homepage_banner',
+      position: 'top',
+      bannerSize: 'hero',
+      dimensions: { width: '', height: '' },
+      productIds: [],
+    });
+  };
+
+  // NEW: Handle edit campaign
+  const handleEditCampaign = (campaign) => {
+    setIsEditMode(true);
+    setEditingCampaign(campaign);
+    setCampaignForm({
+      name: campaign.name || '',
+      type: campaign.type || 'SponsoredProduct',
+      pricing: campaign.pricing || 'CPC',
+      bid: campaign.bid || '',
+      dailyBudget: campaign.dailyBudget || '',
+      startAt: campaign.startAt ? new Date(campaign.startAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      endAt: campaign.endAt ? new Date(campaign.endAt).toISOString().split('T')[0] : '',
+      placement: campaign.placement || 'homepage_banner',
+      position: campaign.position || 'top',
+      bannerSize: campaign.bannerSize || 'hero',
+      dimensions: campaign.dimensions || { width: '', height: '' },
+      productIds: campaign.targeting?.products || [],
+    });
+    setIsCreateModalOpen(true);
+  };
+
+  // NEW: Handle duplicate campaign
+  const handleDuplicateCampaign = (campaign) => {
+    if (window.confirm(`Duplicate campaign "${campaign.name}"? This will create a copy in draft status.`)) {
+      duplicateMutation.mutate(campaign);
+    }
+  };
 
   const handleCreateCampaign = (e) => {
     e.preventDefault();
@@ -156,7 +362,7 @@ const Ads = () => {
       dimensions: campaignForm.bannerSize === 'custom' && campaignForm.dimensions.width && campaignForm.dimensions.height
         ? { width: parseInt(campaignForm.dimensions.width), height: parseInt(campaignForm.dimensions.height) }
         : undefined,
-      status: 'draft', // Changed from 'active' to 'draft' - requires admin approval
+      status: isEditMode ? undefined : 'draft',
     };
 
     if (campaignForm.endAt) {
@@ -169,7 +375,11 @@ const Ads = () => {
       };
     }
 
-    createCampaignMutation.mutate(data);
+    if (isEditMode && editingCampaign) {
+      updateCampaignMutation.mutate({ id: editingCampaign._id, data });
+    } else {
+      createCampaignMutation.mutate(data);
+    }
   };
 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -316,6 +526,101 @@ const Ads = () => {
     initiateWalletRecharge(amount);
   };
 
+  // NEW: Download report as CSV
+  const downloadReportCSV = (campaign) => {
+    const impressions = campaign.stats?.impressions || 0;
+    const clicks = campaign.stats?.clicks || 0;
+    const conversions = campaign.stats?.conversions || 0;
+    const spend = campaign.stats?.spend || 0;
+    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : 0;
+    const conversionRate = clicks > 0 ? ((conversions / clicks) * 100).toFixed(2) : 0;
+    const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : 0;
+    const cpa = conversions > 0 ? (spend / conversions).toFixed(2) : 0;
+
+    const csvContent = [
+      ['Campaign Report', campaign.name],
+      ['Generated on', new Date().toLocaleString()],
+      [''],
+      ['Metric', 'Value'],
+      ['Campaign Type', campaign.type],
+      ['Pricing Model', campaign.pricing],
+      ['Current Bid', `₹${campaign.bid}`],
+      ['Daily Budget', `₹${campaign.dailyBudget}`],
+      ['Status', campaign.status],
+      [''],
+      ['Performance Metrics', ''],
+      ['Impressions', impressions],
+      ['Clicks', clicks],
+      ['CTR', `${ctr}%`],
+      ['Conversions', conversions],
+      ['Conversion Rate', `${conversionRate}%`],
+      ['Avg CPC', `₹${cpc}`],
+      ['CPA', `₹${cpa}`],
+      ['Total Spend', `₹${spend}`],
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${campaign.name.replace(/[^a-z0-9]/gi, '_')}_report_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success('Report downloaded successfully!');
+  };
+
+  // NEW: Filter and sort campaigns
+  const filteredAndSortedCampaigns = useMemo(() => {
+    if (!campaigns) return [];
+
+    let filtered = campaigns;
+
+    // Search filter
+    if (searchQuery) {
+      filtered = filtered.filter(campaign =>
+        campaign.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(campaign => campaign.status === statusFilter);
+    }
+
+    // Sort
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        case 'spend':
+          return (b.stats?.spend || 0) - (a.stats?.spend || 0);
+        case 'ctr':
+          const ctrA = (a.stats?.impressions || 0) > 0 ? ((a.stats?.clicks || 0) / (a.stats?.impressions || 0)) * 100 : 0;
+          const ctrB = (b.stats?.impressions || 0) > 0 ? ((b.stats?.clicks || 0) / (b.stats?.impressions || 0)) * 100 : 0;
+          return ctrB - ctrA;
+        case 'clicks':
+          return (b.stats?.clicks || 0) - (a.stats?.clicks || 0);
+        case 'impressions':
+          return (b.stats?.impressions || 0) - (a.stats?.impressions || 0);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  }, [campaigns, searchQuery, statusFilter, sortBy]);
+
+  // NEW: Filter products in modal
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    if (!productSearch) return products;
+    return products.filter(product =>
+      product.title.toLowerCase().includes(productSearch.toLowerCase())
+    );
+  }, [products, productSearch]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -326,19 +631,24 @@ const Ads = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Sponsored Ads</h1>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-sm text-gray-700">Wallet Balance</p>
-            <p className="text-2xl font-bold text-green-600">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Sponsored Ads</h1>
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+          <div className="text-left sm:text-right">
+            <p className="text-xs sm:text-sm text-gray-700">Wallet Balance</p>
+            <p className="text-xl sm:text-2xl font-bold text-green-600">
               {formatCurrency(wallet?.balance || 0)}
             </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} variant="outline">
+          <Button onClick={() => setIsModalOpen(true)} variant="outline" className="text-sm">
             Recharge Wallet
           </Button>
-          <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
+          <Button variant="primary" onClick={() => {
+            setIsEditMode(false);
+            setEditingCampaign(null);
+            resetForm();
+            setIsCreateModalOpen(true);
+          }} className="text-sm">
             Create Campaign
           </Button>
         </div>
@@ -382,20 +692,80 @@ const Ads = () => {
         </div>
       </div>
 
-      {campaigns?.length === 0 ? (
+      {/* NEW: Search, Filter, Sort Bar */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Search */}
+          <div className="flex-1 min-w-[200px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search campaigns..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-5 h-5 text-gray-600" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="all">All Status</option>
+              <option value="draft">Draft</option>
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="budget_exhausted">Budget Exhausted</option>
+            </select>
+          </div>
+
+          {/* Sort By */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="date">Latest</option>
+              <option value="spend">Highest Spend</option>
+              <option value="ctr">Highest CTR</option>
+              <option value="clicks">Most Clicks</option>
+              <option value="impressions">Most Impressions</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {filteredAndSortedCampaigns?.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
-          <h3 className="text-xl font-semibold mb-2">No campaigns yet</h3>
-          <p className="text-gray-700 mb-6">Start promoting your products with sponsored ads</p>
-          <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
+          <h3 className="text-xl font-semibold mb-2">No campaigns found</h3>
+          <p className="text-gray-700 mb-6">
+            {searchQuery || statusFilter !== 'all' ? 'Try adjusting your search or filters' : 'Start promoting your products with sponsored ads'}
+          </p>
+          <Button variant="primary" onClick={() => {
+            setIsEditMode(false);
+            setEditingCampaign(null);
+            resetForm();
+            setIsCreateModalOpen(true);
+          }}>
             Create Your First Campaign
           </Button>
         </div>
       ) : (
         <div className="space-y-4">
-          {campaigns.map((campaign) => {
+          {filteredAndSortedCampaigns.map((campaign) => {
             const impressions = campaign.stats?.impressions || 0;
             const clicks = campaign.stats?.clicks || 0;
             const conversions = campaign.stats?.conversions || 0;
@@ -407,88 +777,81 @@ const Ads = () => {
 
             return (
               <div key={campaign._id} className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-md border-2 border-gray-200 hover:border-primary-400 hover:shadow-xl transition-all duration-300 overflow-hidden">
+                {/* Status Bar - Always Visible at Top */}
+                <div className={`px-4 py-2 flex items-center justify-between border-b-2 ${
+                  campaign.status === 'active' ? 'bg-green-50 border-green-500' :
+                  campaign.status === 'paused' ? 'bg-yellow-50 border-yellow-500' :
+                  campaign.status === 'pending_approval' ? 'bg-blue-50 border-blue-500' :
+                  campaign.status === 'approved' ? 'bg-green-50 border-green-500' :
+                  campaign.status === 'rejected' ? 'bg-red-50 border-red-500' :
+                  campaign.status === 'budget_exhausted' ? 'bg-red-50 border-red-600' :
+                  campaign.status === 'draft' ? 'bg-gray-50 border-gray-400' :
+                  'bg-gray-50 border-gray-400'
+                }`}>
+                  <span className="text-xs sm:text-sm font-semibold text-gray-700">Campaign Status</span>
+                  <span className={`px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-extrabold rounded-full ${
+                    campaign.status === 'active' ? 'bg-green-600 text-white animate-pulse' :
+                    campaign.status === 'pending_approval' ? 'bg-blue-600 text-white' :
+                    campaign.status === 'approved' ? 'bg-green-600 text-white' :
+                    campaign.status === 'rejected' ? 'bg-red-600 text-white' :
+                    campaign.status === 'paused' ? 'bg-yellow-500 text-black font-black' :
+                    campaign.status === 'budget_exhausted' ? 'bg-red-700 text-white' :
+                    campaign.status === 'draft' ? 'bg-gray-500 text-white' :
+                    'bg-gray-600 text-white'
+                  }`}>
+                    {campaign.status === 'active' ? '🟢 ACTIVE' :
+                     campaign.status === 'paused' ? '⏸️ PAUSED' :
+                     campaign.status === 'pending_approval' ? '🕐 PENDING' :
+                     campaign.status === 'approved' ? '✅ APPROVED' :
+                     campaign.status === 'rejected' ? '❌ REJECTED' :
+                     campaign.status === 'budget_exhausted' ? '💰 BUDGET EXHAUSTED' :
+                     campaign.status === 'draft' ? '📝 DRAFT' :
+                     campaign.status.replace('_', ' ').toUpperCase()}
+                  </span>
+                </div>
+
                 {/* Header Section - Amazon Style */}
-                <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold text-white">{campaign.name}</h3>
-                        <span className={`px-3 py-1 text-xs font-bold rounded-full shadow-sm ${
-                          campaign.status === 'active' ? 'bg-green-500 text-white' :
-                          campaign.status === 'pending_approval' ? 'bg-blue-500 text-white' :
-                          campaign.status === 'approved' ? 'bg-green-500 text-white' :
-                          campaign.status === 'rejected' ? 'bg-red-500 text-white' :
-                          campaign.status === 'paused' ? 'bg-yellow-500 text-white' :
-                          campaign.status === 'budget_exhausted' ? 'bg-red-600 text-white' :
-                          'bg-gray-500 text-white'
-                        }`}>
-                          {campaign.status === 'active' ? '🟢 ACTIVE' :
-                           campaign.status === 'paused' ? '⏸️ PAUSED' :
-                           campaign.status === 'budget_exhausted' ? '💰 BUDGET EXHAUSTED' :
-                           campaign.status.replace('_', ' ').toUpperCase()}
-                        </span>
+                <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-4 sm:px-6 py-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex-1 w-full">
+                      <div className="flex flex-col gap-2 mb-2">
+                        <h3 className="text-lg sm:text-xl font-bold text-white">{campaign.name}</h3>
                       </div>
-                      <div className="flex items-center gap-4 text-white text-sm">
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-white text-xs sm:text-sm">
+                        <span className="flex items-center gap-1 shrink-0">
+                          <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
                             <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd"/>
                           </svg>
-                          {campaign.type}
+                          <span className="truncate max-w-[120px] sm:max-w-none">{campaign.type}</span>
                         </span>
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <span className="flex items-center gap-1 shrink-0">
+                          <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
                           </svg>
-                          {campaign.pricing} - Bid: {formatCurrency(campaign.bid)}
+                          <span className="whitespace-nowrap">{campaign.pricing} - Bid: {formatCurrency(campaign.bid)}</span>
                         </span>
                         {campaign.placement && (
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <span className="flex items-center gap-1 min-w-0">
+                            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
                             </svg>
-                            {campaign.placement.replace(/_/g, ' ')}
+                            <span className="truncate">{campaign.placement.replace(/_/g, ' ')}</span>
                           </span>
                         )}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {campaign.status === 'active' ? (
-                        <button
-                          onClick={() => pauseMutation.mutate(campaign._id)}
-                          className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-colors backdrop-blur-sm border border-white/30"
-                        >
-                          ⏸️ Pause
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => resumeMutation.mutate(campaign._id)}
-                          className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-colors backdrop-blur-sm border border-white/30"
-                        >
-                          ▶️ Resume
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setSelectedCampaignForReport(campaign);
-                          setReportModalOpen(true);
-                        }}
-                        className="px-4 py-2 bg-white text-primary-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors shadow-md"
-                      >
-                        📊 Report
-                      </button>
                     </div>
                   </div>
                 </div>
 
                 {/* Campaign Details - Amazon Style */}
-                <div className="px-6 py-4 bg-white border-b border-gray-200">
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="flex items-center gap-6">
+                <div className="px-4 sm:px-6 py-4 bg-white border-b border-gray-200">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full sm:w-auto">
                       {campaign.approval?.status && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-700">Approval Status:</span>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
+                          <span className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Approval Status:</span>
                           <span className={`px-3 py-1 text-xs font-bold rounded-full ${
                             campaign.approval.status === 'approved' ? 'bg-green-100 text-green-800 border border-green-300' :
                             campaign.approval.status === 'rejected' ? 'bg-red-100 text-red-800 border border-red-300' :
@@ -501,14 +864,14 @@ const Ads = () => {
                         </div>
                       )}
                       {campaign.qualityScore?.overall && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-700">Quality Score:</span>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
+                          <span className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Quality Score:</span>
                           <div className="flex items-center gap-1">
                             <div className="flex">
                               {[...Array(10)].map((_, i) => (
                                 <svg
                                   key={i}
-                                  className={`w-4 h-4 ${i < campaign.qualityScore.overall ? 'text-yellow-400' : 'text-gray-300'}`}
+                                  className={`w-3 h-3 sm:w-4 sm:h-4 ${i < campaign.qualityScore.overall ? 'text-yellow-400' : 'text-gray-300'}`}
                                   fill="currentColor"
                                   viewBox="0 0 20 20"
                                 >
@@ -516,27 +879,27 @@ const Ads = () => {
                                 </svg>
                               ))}
                             </div>
-                            <span className="text-sm font-bold text-purple-600">{campaign.qualityScore.overall}/10</span>
+                            <span className="text-xs sm:text-sm font-bold text-purple-600">{campaign.qualityScore.overall}/10</span>
                           </div>
                         </div>
                       )}
                       {campaign.auctionScore && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-700">Auction Score:</span>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded font-bold text-sm">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
+                          <span className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Auction Score:</span>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded font-bold text-xs sm:text-sm">
                             {campaign.auctionScore.toFixed(2)}
                           </span>
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
+                      <div className="w-full sm:w-auto">
                         <p className="text-xs text-gray-600">Daily Budget</p>
-                        <p className="text-lg font-bold text-gray-900">{formatCurrency(campaign.dailyBudget)}</p>
+                        <p className="text-base sm:text-lg font-bold text-gray-900">{formatCurrency(campaign.dailyBudget)}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="w-full sm:w-auto">
                         <p className="text-xs text-gray-600">Spent Today</p>
-                        <p className={`text-lg font-bold ${budgetUsed > 90 ? 'text-red-600' : budgetUsed > 70 ? 'text-yellow-600' : 'text-green-600'}`}>
+                        <p className={`text-base sm:text-lg font-bold ${budgetUsed > 90 ? 'text-red-600' : budgetUsed > 70 ? 'text-yellow-600' : 'text-green-600'}`}>
                           {formatCurrency(campaign.dailySpend?.amount || 0)}
                           <span className="text-xs ml-1">({budgetUsed}%)</span>
                         </p>
@@ -649,6 +1012,101 @@ const Ads = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Action Buttons Footer */}
+                <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200">
+                  {/* All buttons in a clean responsive grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                    <button
+                      onClick={() => handleEditCampaign(campaign)}
+                      className="px-3 sm:px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
+                      title="Edit Campaign"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span className="hidden sm:inline">Edit</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDuplicateCampaign(campaign)}
+                      disabled={duplicateMutation.isPending}
+                      className="px-3 sm:px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-50"
+                      title="Duplicate Campaign"
+                    >
+                      <Copy className="w-4 h-4" />
+                      <span className="hidden sm:inline">Duplicate</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setSelectedCampaignForCreatives(campaign);
+                        setCreativesModalOpen(true);
+                      }}
+                      className="px-3 sm:px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
+                      title="Manage Creatives"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="hidden sm:inline">Creatives</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setSelectedCampaignForReport(campaign);
+                        setReportModalOpen(true);
+                      }}
+                      className="px-3 sm:px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
+                      title="View Report"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span className="hidden sm:inline">Report</span>
+                    </button>
+
+                    {campaign.status === 'active' ? (
+                      <button
+                        onClick={() => pauseMutation.mutate(campaign._id)}
+                        className="px-3 sm:px-4 py-2.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
+                        title="Pause Campaign"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <span className="hidden sm:inline">Pause</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => resumeMutation.mutate(campaign._id)}
+                        className="px-3 sm:px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
+                        title="Resume Campaign"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                        </svg>
+                        <span className="hidden sm:inline">Resume</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete the campaign "${campaign.name}"?\n\nThis action cannot be undone.`)) {
+                          deleteMutation.mutate(campaign._id);
+                        }
+                      }}
+                      disabled={deleteMutation.isPending}
+                      className="px-3 sm:px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-50"
+                      title="Delete Campaign"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span className="hidden sm:inline">Delete</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           })}
@@ -689,24 +1147,33 @@ const Ads = () => {
       {/* Campaign Report Modal */}
       {reportModalOpen && selectedCampaignForReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="bg-white rounded-xl max-w-[95vw] sm:max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl mx-4">
             {/* Report Header */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-5 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-1">📊 Campaign Performance Report</h2>
                 <p className="text-white/90 text-sm">{selectedCampaignForReport.name}</p>
               </div>
-              <button
-                onClick={() => {
-                  setReportModalOpen(false);
-                  setSelectedCampaignForReport(null);
-                }}
-                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => downloadReportCSV(selectedCampaignForReport)}
+                  className="px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Download CSV
+                </button>
+                <button
+                  onClick={() => {
+                    setReportModalOpen(false);
+                    setSelectedCampaignForReport(null);
+                  }}
+                  className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div className="p-6 space-y-6">
@@ -812,7 +1279,6 @@ const Ads = () => {
                     const conversionRate = clicks > 0 ? ((conversions / clicks) * 100).toFixed(2) : 0;
                     const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : 0;
                     const cpa = conversions > 0 ? (spend / conversions).toFixed(2) : 0;
-                    const roas = conversions > 0 && spend > 0 ? ((conversions * selectedCampaignForReport.bid * 10) / spend).toFixed(2) : 0;
 
                     return (
                       <>
@@ -850,7 +1316,7 @@ const Ads = () => {
                   </svg>
                   Budget & Spending
                 </h3>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-sm text-gray-600 mb-1">Daily Budget</p>
                     <p className="text-2xl font-bold text-gray-900">{formatCurrency(selectedCampaignForReport.dailyBudget)}</p>
@@ -885,11 +1351,118 @@ const Ads = () => {
         </div>
       )}
 
-      {/* Create Campaign Modal */}
+      {/* NEW: Ad Creatives Modal */}
+      {creativesModalOpen && selectedCampaignForCreatives && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-[95vw] sm:max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl mx-4">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-1">🎨 Ad Creatives</h2>
+                <p className="text-white/90 text-sm">{selectedCampaignForCreatives.name}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setCreativesModalOpen(false);
+                  setSelectedCampaignForCreatives(null);
+                }}
+                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Upload Creative - Amazon Style with Preview & Crop */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Creative</h3>
+                {uploadingCreative ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <p className="text-blue-600 font-medium">Uploading creative...</p>
+                  </div>
+                ) : (
+                  <ImageCropUpload
+                    onImageCropped={(file, preview) => {
+                      setUploadingCreative(true);
+                      uploadCreativeMutation.mutate(
+                        {
+                          campaignId: selectedCampaignForCreatives._id,
+                          file: file,
+                        },
+                        {
+                          onSettled: () => setUploadingCreative(false),
+                        }
+                      );
+                    }}
+                    accept="image/*"
+                    maxSize={10}
+                  />
+                )}
+              </div>
+
+              {/* Creatives List */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Uploaded Creatives</h3>
+                {!creatives || creatives.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">No creatives uploaded yet</p>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {creatives.map((creative) => (
+                      <div key={creative._id} className="relative group">
+                        <img
+                          src={creative.bannerAsset?.imageUrl || creative.imageUrl}
+                          alt={creative.bannerAsset?.imageAlt || creative.headline || 'Creative'}
+                          className="w-full h-40 object-cover rounded-lg border-2 border-gray-200"
+                        />
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Delete this creative?')) {
+                              deleteCreativeMutation.mutate({
+                                campaignId: selectedCampaignForCreatives._id,
+                                creativeId: creative._id,
+                              });
+                            }
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          ×
+                        </button>
+                        <p className="text-xs text-gray-600 mt-1 truncate">{creative.title}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-4 border-t">
+                <button
+                  onClick={() => {
+                    setCreativesModalOpen(false);
+                    setSelectedCampaignForCreatives(null);
+                  }}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create/Edit Campaign Modal */}
       <Modal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        title="Create Ad Campaign"
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setIsEditMode(false);
+          setEditingCampaign(null);
+          resetForm();
+        }}
+        title={isEditMode ? 'Edit Ad Campaign' : 'Create Ad Campaign'}
         size="lg"
       >
         <form onSubmit={handleCreateCampaign} className="space-y-6">
@@ -1086,8 +1659,18 @@ const Ads = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Products to Promote
                 </label>
+                {/* NEW: Product Search */}
+                <div className="mb-2">
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  />
+                </div>
                 <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
-                  {products?.map((product) => (
+                  {filteredProducts?.map((product) => (
                     <label key={product._id} className="flex items-center gap-2 cursor-pointer hover:bg-blue-100 p-2 rounded">
                       <input
                         type="checkbox"
@@ -1205,8 +1788,8 @@ const Ads = () => {
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
-                <strong>Note:</strong> Campaign will start automatically on the selected date.
-                Make sure you have sufficient balance in your ad wallet before creating the campaign.
+                <strong>Note:</strong> {isEditMode ? 'Changes will be applied to the campaign immediately.' : 'Campaign will be submitted for admin approval before it goes live.'}
+                Make sure you have sufficient balance in your ad wallet.
               </p>
             </div>
           </div>
@@ -1215,12 +1798,21 @@ const Ads = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => setIsCreateModalOpen(false)}
+              onClick={() => {
+                setIsCreateModalOpen(false);
+                setIsEditMode(false);
+                setEditingCampaign(null);
+                resetForm();
+              }}
             >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" loading={createCampaignMutation.isPending}>
-              Create Campaign
+            <Button
+              type="submit"
+              variant="primary"
+              loading={isEditMode ? updateCampaignMutation.isPending : createCampaignMutation.isPending}
+            >
+              {isEditMode ? 'Update Campaign' : 'Create Campaign'}
             </Button>
           </div>
         </form>
