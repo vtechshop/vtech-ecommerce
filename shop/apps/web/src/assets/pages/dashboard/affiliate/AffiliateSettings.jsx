@@ -84,7 +84,7 @@ const AffiliateSettings = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* KYC & Bank Details */}
         <div
-          onClick={() => navigate('/dashboard/affiliate/kyc')}
+          onClick={() => navigate('/affiliate-dashboard/kyc')}
           className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:border-primary-500 cursor-pointer transition-colors"
         >
           <div className="flex items-start gap-4">
@@ -108,7 +108,7 @@ const AffiliateSettings = () => {
 
         {/* Payment History */}
         <div
-          onClick={() => navigate('/dashboard/affiliate/commissions')}
+          onClick={() => navigate('/affiliate-dashboard/commissions')}
           className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:border-primary-500 cursor-pointer transition-colors"
         >
           <div className="flex items-start gap-4">
