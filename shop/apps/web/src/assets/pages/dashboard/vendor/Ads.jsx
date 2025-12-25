@@ -28,6 +28,9 @@ const Ads = () => {
     startAt: new Date().toISOString().split('T')[0],
     endAt: '',
     placement: 'homepage_banner',
+    position: 'top',
+    bannerSize: 'hero',
+    dimensions: { width: '', height: '' },
     productIds: [],
   });
 
@@ -102,6 +105,9 @@ const Ads = () => {
         startAt: new Date().toISOString().split('T')[0],
         endAt: '',
         placement: 'homepage_banner',
+        position: 'top',
+        bannerSize: 'hero',
+        dimensions: { width: '', height: '' },
         productIds: [],
       });
     },
@@ -143,6 +149,11 @@ const Ads = () => {
       dailyBudget: parseFloat(campaignForm.dailyBudget),
       startAt: new Date(campaignForm.startAt),
       placement: campaignForm.placement,
+      position: campaignForm.position,
+      bannerSize: campaignForm.bannerSize,
+      dimensions: campaignForm.bannerSize === 'custom' && campaignForm.dimensions.width && campaignForm.dimensions.height
+        ? { width: parseInt(campaignForm.dimensions.width), height: parseInt(campaignForm.dimensions.height) }
+        : undefined,
       status: 'draft', // Changed from 'active' to 'draft' - requires admin approval
     };
 
@@ -567,7 +578,9 @@ const Ads = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Placement</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Placement (Page/Location)
+              </label>
               <select
                 value={campaignForm.placement}
                 onChange={(e) => setCampaignForm({ ...campaignForm, placement: e.target.value })}
@@ -575,22 +588,143 @@ const Ads = () => {
                 required
               >
                 <optgroup label="Homepage">
-                  <option value="homepage_banner">Homepage Banner</option>
-                  <option value="homepage_top">Homepage Top</option>
-                  <option value="homepage_sidebar_left">Homepage Sidebar Left</option>
-                  <option value="homepage_sidebar_right">Homepage Sidebar Right</option>
+                  <option value="homepage_banner">Homepage - Banner (Hero Section)</option>
+                  <option value="homepage_top">Homepage - Top Section</option>
+                  <option value="homepage_sidebar_left">Homepage - Left Sidebar</option>
+                  <option value="homepage_sidebar_right">Homepage - Right Sidebar</option>
+                  <option value="homepage_middle">Homepage - Middle Section</option>
+                  <option value="homepage_bottom">Homepage - Bottom Section</option>
                 </optgroup>
                 <optgroup label="Search & Category">
-                  <option value="search_sponsored_products">Search Sponsored Products</option>
-                  <option value="category_top_banner">Category Top Banner</option>
-                  <option value="category_grid">Category Grid</option>
+                  <option value="search_sponsored_products">Search Results - Sponsored Products</option>
+                  <option value="search_top">Search Results - Top Banner</option>
+                  <option value="search_sidebar">Search Results - Sidebar</option>
+                  <option value="category_top_banner">Category Page - Top Banner</option>
+                  <option value="category_grid">Category Page - In Product Grid</option>
+                  <option value="category_sidebar">Category Page - Sidebar</option>
                 </optgroup>
                 <optgroup label="Product Pages">
-                  <option value="product_sidebar">Product Sidebar</option>
-                  <option value="product_related">Product Related</option>
+                  <option value="product_sidebar">Product Page - Sidebar</option>
+                  <option value="product_top">Product Page - Top Banner</option>
+                  <option value="product_bottom">Product Page - Bottom Banner</option>
+                  <option value="product_related">Product Page - Related Products Section</option>
+                </optgroup>
+                <optgroup label="Cart & Checkout">
+                  <option value="cart_sidebar">Cart Page - Sidebar</option>
+                  <option value="cart_bottom">Cart Page - Bottom Banner</option>
+                  <option value="checkout_top">Checkout Page - Top Banner</option>
                 </optgroup>
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                🎯 Select which page and section your ad will appear on
+              </p>
             </div>
+
+            {/* Banner Position */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Banner Position
+              </label>
+              <select
+                value={campaignForm.position}
+                onChange={(e) => setCampaignForm({ ...campaignForm, position: e.target.value })}
+                className="w-full px-5 py-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 border-3 border-blue-400 rounded-xl text-gray-900 font-semibold text-base shadow-md focus:ring-4 focus:ring-blue-300 focus:border-blue-600 hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                style={{
+                  appearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563eb'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 1rem center',
+                  backgroundSize: '1.5em 1.5em',
+                  paddingRight: '3rem'
+                }}
+                required
+              >
+                <option value="" style={{ background: '#f9fafb', color: '#6b7280', padding: '12px' }}>Select position...</option>
+                <option value="top" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top - Full Width</option>
+                <option value="right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Right - Sidebar</option>
+                <option value="bottom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom - Full Width</option>
+                <option value="left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Left - Sidebar</option>
+                <option value="center" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Center - Overlay</option>
+                <option value="top-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top-Right - Corner</option>
+                <option value="top-left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top-Left - Corner</option>
+                <option value="bottom-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom-Right - Corner</option>
+                <option value="bottom-left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom-Left - Corner</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Choose where the banner ad will be displayed on the page
+              </p>
+            </div>
+
+            {/* Banner Size/Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Banner Size/Type
+              </label>
+              <select
+                value={campaignForm.bannerSize}
+                onChange={(e) => setCampaignForm({ ...campaignForm, bannerSize: e.target.value })}
+                className="w-full px-5 py-3.5 bg-gradient-to-r from-purple-50 to-pink-50 border-3 border-purple-400 rounded-xl text-gray-900 font-semibold text-base shadow-md focus:ring-4 focus:ring-purple-300 focus:border-purple-600 hover:border-purple-500 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                style={{
+                  appearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239333ea'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 1rem center',
+                  backgroundSize: '1.5em 1.5em',
+                  paddingRight: '3rem'
+                }}
+                required
+              >
+                <option value="hero" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>🎯 Hero Banner - Full Width Header (1920x600px)</option>
+                <option value="leaderboard" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📏 Leaderboard - Top Banner (728x90px)</option>
+                <option value="side-large" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📱 Large Sidebar Banner (300x600px)</option>
+                <option value="side-small" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📦 Small Sidebar Banner (300x250px)</option>
+                <option value="rectangle" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>⬛ Medium Rectangle (300x250px)</option>
+                <option value="skyscraper" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>🏢 Skyscraper - Tall Sidebar (160x600px)</option>
+                <option value="square" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>◼️ Square Banner (250x250px)</option>
+                <option value="custom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>✏️ Custom Size (Specify Dimensions)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Choose banner size based on placement. Hero for homepage, sidebar for product pages.
+              </p>
+            </div>
+
+            {/* Custom Dimensions */}
+            {campaignForm.bannerSize === 'custom' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Width (px) *
+                  </label>
+                  <input
+                    type="number"
+                    value={campaignForm.dimensions.width}
+                    onChange={(e) => setCampaignForm({
+                      ...campaignForm,
+                      dimensions: { ...campaignForm.dimensions, width: e.target.value }
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="e.g., 300"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Height (px) *
+                  </label>
+                  <input
+                    type="number"
+                    value={campaignForm.dimensions.height}
+                    onChange={(e) => setCampaignForm({
+                      ...campaignForm,
+                      dimensions: { ...campaignForm.dimensions, height: e.target.value }
+                    })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="e.g., 250"
+                    required
+                  />
+                </div>
+              </div>
+            )}
 
             {campaignForm.type === 'SponsoredProduct' && (
               <div>
