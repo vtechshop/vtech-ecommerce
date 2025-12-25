@@ -113,50 +113,11 @@ const Footer = () => {
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row items-center justify-center gap-4">
           <p className="text-sm">
             © {currentYear} V-Tech Shop. All rights reserved.
           </p>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs text-gray-400 mr-2">We Accept:</span>
-
-            {/* RuPay */}
-            <div className="bg-white rounded px-3 py-2 h-10 flex items-center justify-center min-w-[60px]">
-              <svg className="h-6" viewBox="0 0 60 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="60" height="20" rx="3" fill="#097939"/>
-                <text x="30" y="13" fontFamily="Arial, sans-serif" fontSize="10" fontWeight="bold" fill="white" textAnchor="middle">RuPay</text>
-              </svg>
-            </div>
-
-            {/* Visa */}
-            <div className="bg-white rounded px-3 py-2 h-10 flex items-center justify-center min-w-[60px]">
-              <svg className="h-6" viewBox="0 0 48 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17.925 1.382L14.328 14.618H10.897L14.494 1.382H17.925ZM31.102 9.454L32.832 4.575L33.876 9.454H31.102ZM34.982 14.618H38.142L35.367 1.382H32.582C31.862 1.382 31.254 1.828 30.988 2.478L25.814 14.618H29.604L30.414 12.482H35.039L35.518 14.618H34.982ZM26.982 10.036C26.998 6.482 22.154 6.282 22.194 4.691C22.206 4.201 22.682 3.683 23.726 3.551C24.244 3.487 25.692 3.439 27.368 4.219L28.05 1.659C27.126 1.315 25.918 1 24.41 1C20.866 1 18.358 2.891 18.334 5.583C18.31 7.539 20.074 8.635 21.406 9.271C22.77 9.923 23.238 10.343 23.238 10.915C23.222 11.811 22.114 12.211 21.094 12.227C19.302 12.251 18.254 11.747 17.414 11.371L16.714 13.995C17.558 14.367 19.126 14.691 20.754 14.707C24.51 14.707 26.974 12.835 26.982 10.036ZM12.054 1.382L6.542 14.618H2.734L0.054 3.723C-0.114 3.083 -0.266 2.891 -0.818 2.591C-1.678 2.123 -3.13 1.683 -4.378 1.415L-4.314 1.382H1.126C1.966 1.382 2.726 1.955 2.93 3.011L4.574 11.419L8.262 1.382H12.054Z" fill="#1434CB" transform="translate(6, 0)"/>
-              </svg>
-            </div>
-
-            {/* Mastercard */}
-            <div className="bg-white rounded px-3 py-2 h-10 flex items-center justify-center min-w-[60px]">
-              <svg className="h-6" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="18" cy="16" r="14" fill="#EB001B"/>
-                <circle cx="30" cy="16" r="14" fill="#F79E1B"/>
-                <path d="M24 6.5C21.5 8.5 20 11.5 20 16C20 20.5 21.5 23.5 24 25.5C26.5 23.5 28 20.5 28 16C28 11.5 26.5 8.5 24 6.5Z" fill="#FF5F00"/>
-              </svg>
-            </div>
-
-            {/* Google Pay */}
-            <div className="bg-white rounded px-3 py-2 h-10 flex items-center justify-center min-w-[60px]">
-              <svg className="h-6" viewBox="0 0 50 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M23.8 10.4V16H21.6V2H26.7C27.9 2 29 2.4 29.8 3.1C30.6 3.8 31 4.8 31 5.9C31 7 30.6 8 29.8 8.7C29 9.4 27.9 9.8 26.7 9.8H23.8V10.4ZM23.8 4.1V7.7H26.8C27.5 7.7 28.1 7.5 28.5 7.1C28.9 6.7 29.1 6.2 29.1 5.6C29.1 5 28.9 4.5 28.5 4.1C28.1 3.7 27.5 3.5 26.8 3.5H23.8V4.1Z" fill="#5F6368"/>
-                <path d="M35.8 9C37 9 37.9 9.4 38.6 10.1C39.3 10.8 39.7 11.8 39.7 13V16H37.7V15.2H37.6C37 15.8 36.3 16.1 35.4 16.1C34.6 16.1 34 15.9 33.4 15.4C32.8 14.9 32.5 14.3 32.5 13.6C32.5 12.9 32.8 12.3 33.3 11.9C33.8 11.5 34.5 11.3 35.5 11.3C36.3 11.3 37 11.4 37.5 11.7V11.4C37.5 10.9 37.3 10.5 37 10.2C36.7 9.9 36.2 9.7 35.7 9.7C35 9.7 34.4 10 34 10.5L32.3 9.4C33 8.5 34.2 8 35.8 8V9ZM34.5 13.6C34.5 13.9 34.6 14.2 34.9 14.4C35.2 14.6 35.5 14.7 35.9 14.7C36.4 14.7 36.9 14.5 37.3 14.2C37.7 13.9 37.9 13.5 37.9 13C37.5 12.7 37 12.5 36.3 12.5C35.8 12.5 35.4 12.6 35.1 12.8C34.7 13 34.5 13.3 34.5 13.6Z" fill="#5F6368"/>
-                <path d="M47.2 9.2L42.1 18.5H39.8L41.7 14.8L38.2 9.2H40.6L42.9 13.1H42.9L45.1 9.2H47.2Z" fill="#5F6368"/>
-                <path d="M18 8.6C17.4 8.1 16.6 7.9 15.7 7.9C14.8 7.9 14 8.1 13.4 8.6V2H11.2V16H13.4V15.2H13.5C14.1 15.8 14.9 16.1 15.7 16.1C17 16.1 18.1 15.6 18.9 14.7C19.7 13.8 20.1 12.6 20.1 11.2C20.1 9.8 19.7 8.6 18.9 7.7C18.1 6.8 17 6.3 15.7 6.3C14.9 6.3 14.1 6.5 13.5 7V8.6C14.1 8.1 14.8 7.9 15.7 7.9C16.6 7.9 17.4 8.1 18 8.6Z" fill="#4285F4"/>
-                <circle cx="9" cy="11" r="5" fill="#EA4335"/>
-                <circle cx="16" cy="11" r="5" fill="#FBBC04"/>
-                <circle cx="9" cy="11" r="5" fill="#34A853" opacity="0.8"/>
-              </svg>
-            </div>
-          </div>
+         
         </div>
       </div>
     </footer>
