@@ -1,11 +1,17 @@
 // FILE: apps/web/src/components/products/ProductReviews.jsx
 import { useState } from 'react';
-import { Star, Edit2, Trash2 } from 'lucide-react';
+import { Star, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { formatDate } from '@/utils/format';
 
 const ProductReviews = ({ reviews = [], rating, reviewCount, onEdit, onDelete }) => {
   const { user } = useSelector((state) => state.auth);
+  const [showAll, setShowAll] = useState(false);
+
+  // Show only 3 reviews initially, like Amazon
+  const INITIAL_REVIEWS_COUNT = 3;
+  const displayedReviews = showAll ? reviews : reviews.slice(0, INITIAL_REVIEWS_COUNT);
+  const hasMoreReviews = reviews.length > INITIAL_REVIEWS_COUNT;
   const renderStars = (rating) => {
     return Array.from({ length: 5 }).map((_, index) => (
       <Star
@@ -58,7 +64,7 @@ const ProductReviews = ({ reviews = [], rating, reviewCount, onEdit, onDelete })
         {reviews.length === 0 ? (
           <p className="text-center text-gray-700 py-8">No reviews yet. Be the first to review!</p>
         ) : (
-          reviews.map((review) => {
+          displayedReviews.map((review) => {
             // Get user name from userId field (populated by API)
             const userName = review.userId?.name || review.userName || 'Anonymous';
 
@@ -130,6 +136,28 @@ const ProductReviews = ({ reviews = [], rating, reviewCount, onEdit, onDelete })
           })
         )}
       </div>
+
+      {/* Show More / Show Less Button */}
+      {hasMoreReviews && (
+        <div className="mt-6 pt-6 border-t text-center">
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all"
+          >
+            {showAll ? (
+              <>
+                <ChevronUp className="w-5 h-5" />
+                Show Less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="w-5 h-5" />
+                See More Reviews ({reviews.length - INITIAL_REVIEWS_COUNT} more)
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
