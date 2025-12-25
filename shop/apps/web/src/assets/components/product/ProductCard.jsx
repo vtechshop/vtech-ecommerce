@@ -1,6 +1,6 @@
 // FILE: apps/web/src/components/product/ProductCard.jsx
 import React, { useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, ShoppingCart } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
@@ -11,6 +11,7 @@ import { normalizeImageUrl } from '@/utils/placeholders';
 const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const dispatch = useDispatch();
   const toast = useToast();
+  const navigate = useNavigate();
 
   // Memoize discount calculation
   const hasDiscount = React.useMemo(() => product.compareAt && product.compareAt > product.price, [product.compareAt, product.price]);
@@ -117,13 +118,16 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
         {/* Vendor Name */}
         {product.vendorId && (
-          <Link
-            to={`/vendor/${product.vendorId.slug}`}
-            onClick={(e) => e.stopPropagation()}
-            className="text-xs text-gray-600 hover:text-primary-600 hover:underline block mb-1 sm:mb-2"
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(`/vendor/${product.vendorId.slug}`);
+            }}
+            className="text-xs text-gray-600 hover:text-primary-600 hover:underline block mb-1 sm:mb-2 text-left"
           >
             {product.vendorId.storeName}
-          </Link>
+          </button>
         )}
 
         {/* Rating - Hidden on mobile */}
