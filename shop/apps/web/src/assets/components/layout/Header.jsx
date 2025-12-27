@@ -7,6 +7,7 @@ import useAuth from '@/hooks/useAuth';
 import SearchAutocomplete from '@/components/common/SearchAutocomplete';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
 import useTranslation from '@/hooks/useTranslation';
+import AnimatedDiv from '@/components/common/AnimatedDiv';
 
 const Header = ({ onMobileMenuToggle }) => {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ const Header = ({ onMobileMenuToggle }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [cartBounce, setCartBounce] = useState(false);
 
   // Check if we're on a dashboard page
   const isDashboardPage = location.pathname.includes('/dashboard') ||
@@ -38,6 +40,15 @@ const Header = ({ onMobileMenuToggle }) => {
   };
 
   const cartItemCount = items.reduce((sum, item) => sum + item.qty, 0);
+
+  // Trigger cart bounce animation when items are added
+  useEffect(() => {
+    if (cartItemCount > 0) {
+      setCartBounce(true);
+      const timer = setTimeout(() => setCartBounce(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [cartItemCount]);
 
   // Handle scroll effect
   useEffect(() => {
@@ -110,7 +121,8 @@ const Header = ({ onMobileMenuToggle }) => {
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
+                  <AnimatedDiv animation="fadeInDown" duration={0.2}>
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
                     <Link
                       to={getDashboardPath()}
                       className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-200"
@@ -145,6 +157,7 @@ const Header = ({ onMobileMenuToggle }) => {
                       Sign Out
                     </button>
                   </div>
+                  </AnimatedDiv>
                 )}
               </div>
             ) : (
@@ -167,7 +180,7 @@ const Header = ({ onMobileMenuToggle }) => {
               data-testid="cart-button"
               data-cy="cart-button"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className={`w-6 h-6 ${cartBounce ? 'cart-bounce' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -178,7 +191,7 @@ const Header = ({ onMobileMenuToggle }) => {
               {cartItemCount > 0 && (
                 <span
                   key={`cart-badge-${cartItemCount}`}
-                  className="cart-count absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+                  className={`cart-count absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ${cartBounce ? 'cart-badge-pulse' : ''}`}
                   data-testid="cart-count"
                   data-cy="cart-count"
                   data-cart-count={cartItemCount}
@@ -253,8 +266,9 @@ const Header = ({ onMobileMenuToggle }) => {
 
       {/* Mobile menu - only show on non-dashboard pages */}
       {mobileMenuOpen && !isDashboardPage && (
-        <div className="md:hidden border-t dark:border-gray-700 bg-white dark:bg-gray-900">
-          <nav className="container mx-auto px-4 py-4 flex flex-col gap-2">
+        <AnimatedDiv animation="slideLeft" duration={0.3}>
+          <div className="md:hidden border-t dark:border-gray-700 bg-white dark:bg-gray-900">
+            <nav className="container mx-auto px-4 py-4 flex flex-col gap-2">
             <Link
               to="/"
               className="py-2 hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
@@ -326,6 +340,7 @@ const Header = ({ onMobileMenuToggle }) => {
             )}
           </nav>
         </div>
+        </AnimatedDiv>
       )}
     </header>
   );

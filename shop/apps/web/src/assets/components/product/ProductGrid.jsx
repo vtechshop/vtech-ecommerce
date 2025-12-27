@@ -6,6 +6,7 @@ import ProductSnippet from './ProductSnippet';
 import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import AdBanner from '@/components/common/AdBanner';
+import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { Grid, List, Filter, SortAsc } from 'lucide-react';
 
 const ProductGrid = React.memo(({
@@ -195,21 +196,28 @@ const ProductGrid = React.memo(({
         </div>
       </div>
 
-      {/* Products Grid */}
+      {/* Products Grid with Stagger Animation */}
       {products.length > 0 ? (
         <div className={
-          viewMode === 'grid' 
+          viewMode === 'grid'
             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
             : 'space-y-4'
         }>
-          {products.map((product) => (
-            <ProductSnippet
+          {products.map((product, index) => (
+            <AnimatedDiv
               key={product._id}
-              product={product}
-              onAddToCart={onAddToCart}
-              onToggleWishlist={onToggleWishlist}
-              onViewDetails={onViewDetails}
-            />
+              animation="fadeInUp"
+              delay={index * 0.05}
+              duration={0.4}
+              className="product-card"
+            >
+              <ProductSnippet
+                product={product}
+                onAddToCart={onAddToCart}
+                onToggleWishlist={onToggleWishlist}
+                onViewDetails={onViewDetails}
+              />
+            </AnimatedDiv>
           ))}
         </div>
       ) : (
