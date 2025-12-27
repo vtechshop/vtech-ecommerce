@@ -2,9 +2,35 @@
 const AdCampaign = require('../models/AdCampaign');
 const AdCreative = require('../models/AdCreative');
 const AdPricingSettings = require('../models/AdPricingSettings');
+const AdWallet = require('../models/AdWallet');
 const Setting = require('../models/Setting');
 const AppError = require('../utils/AppError');
 const mongoose = require('mongoose');
+
+/**
+ * Check if daily spend should be reset (new day)
+ * @param {Object} campaign - Campaign object
+ * @returns {number} Current daily spend (0 if new day, existing amount if same day)
+ */
+function getDailySpendAmount(campaign) {
+  if (!campaign.dailySpend || !campaign.dailySpend.date) {
+    return 0;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+
+  const spendDate = new Date(campaign.dailySpend.date);
+  spendDate.setHours(0, 0, 0, 0); // Start of spend date
+
+  // If spend date is before today, reset to 0
+  if (spendDate < today) {
+    return 0;
+  }
+
+  // Same day, return existing amount
+  return campaign.dailySpend.amount || 0;
+}
 
 /**
  * Run auction to select winning ads based on auction score (bid × quality score)
@@ -92,14 +118,32 @@ exports.getSponsoredAds = async (req, res) => {
     // Find eligible campaigns
     let campaigns = await AdCampaign.find(query).lean();
 
-    // Filter campaigns that can actually serve (budget check)
-    campaigns = campaigns.filter(campaign => {
-      // Check daily budget
-      if (campaign.dailySpend?.amount >= campaign.dailyBudget) return false;
+    // Filter campaigns that can actually serve (budget check + wallet balance check)
+    const campaignsWithWallet = await Promise.all(campaigns.map(async (campaign) => {
+      // Check daily budget (with automatic daily reset)
+      const currentDailySpend = getDailySpendAmount(campaign);
+      if (currentDailySpend >= campaign.dailyBudget) return null;
       // Check total budget
-      if (campaign.totalBudget && campaign.stats?.spend >= campaign.totalBudget) return false;
-      return true;
-    });
+      if (campaign.totalBudget && campaign.stats?.spend >= campaign.totalBudget) return null;
+
+      // 💰 CHECK WALLET BALANCE (Amazon-style)
+      const wallet = await AdWallet.findOne({ vendorId: campaign.vendorId }).lean();
+      if (!wallet || wallet.balance <= 0) {
+        console.warn(`Campaign ${campaign._id} skipped - no wallet or zero balance`);
+        return null;
+      }
+
+      // Check if wallet has enough for at least one impression/click
+      const minCost = campaign.pricing === 'CPM' ? campaign.bid / 1000 : campaign.bid;
+      if (wallet.balance < minCost) {
+        console.warn(`Campaign ${campaign._id} skipped - insufficient wallet balance`);
+        return null;
+      }
+
+      return campaign;
+    }));
+
+    campaigns = campaignsWithWallet.filter(c => c !== null);
 
     // Run auction to select winners
     const winners = runAdAuction(campaigns, pricingSettings, parseInt(limit));
@@ -187,14 +231,32 @@ exports.getAdForPlacement = async (req, res) => {
       ]
     }).lean();
 
-    // Filter campaigns that can actually serve (budget check)
-    campaigns = campaigns.filter(campaign => {
-      // Check daily budget
-      if (campaign.dailySpend?.amount >= campaign.dailyBudget) return false;
+    // Filter campaigns that can actually serve (budget check + wallet balance check)
+    const campaignsWithWallet = await Promise.all(campaigns.map(async (campaign) => {
+      // Check daily budget (with automatic daily reset)
+      const currentDailySpend = getDailySpendAmount(campaign);
+      if (currentDailySpend >= campaign.dailyBudget) return null;
       // Check total budget
-      if (campaign.totalBudget && campaign.stats?.spend >= campaign.totalBudget) return false;
-      return true;
-    });
+      if (campaign.totalBudget && campaign.stats?.spend >= campaign.totalBudget) return null;
+
+      // 💰 CHECK WALLET BALANCE (Amazon-style)
+      const wallet = await AdWallet.findOne({ vendorId: campaign.vendorId }).lean();
+      if (!wallet || wallet.balance <= 0) {
+        console.warn(`Campaign ${campaign._id} skipped - no wallet or zero balance`);
+        return null;
+      }
+
+      // Check if wallet has enough for at least one impression/click
+      const minCost = campaign.pricing === 'CPM' ? campaign.bid / 1000 : campaign.bid;
+      if (wallet.balance < minCost) {
+        console.warn(`Campaign ${campaign._id} skipped - insufficient wallet balance`);
+        return null;
+      }
+
+      return campaign;
+    }));
+
+    campaigns = campaignsWithWallet.filter(c => c !== null);
 
     if (campaigns.length === 0) {
       return res.json({ success: true, data: null, message: 'No active campaigns for this placement' });
@@ -287,7 +349,35 @@ exports.trackImpression = async (req, res, next) => {
       const cost = costPerImpression;
 
       campaign.stats.spend = (campaign.stats.spend || 0) + cost;
-      campaign.dailySpend.amount = (campaign.dailySpend.amount || 0) + cost;
+
+      // Daily spend with automatic reset
+      const currentDailySpend = getDailySpendAmount(campaign);
+      const today = new Date();
+      campaign.dailySpend = {
+        date: today,
+        amount: currentDailySpend + cost
+      };
+
+      // 💰 DEDUCT FROM VENDOR'S AD WALLET (Amazon-style)
+      const wallet = await AdWallet.findOne({ vendorId: campaign.vendorId });
+      if (wallet) {
+        // Check if wallet has sufficient balance
+        if (wallet.balance >= cost) {
+          // Deduct from wallet and record transaction
+          wallet.addTransaction(
+            'spend',
+            cost,
+            `CPM impression - ${campaign.name}`,
+            `impression_${campaign._id}_${Date.now()}`,
+            campaign._id
+          );
+          await wallet.save();
+        } else {
+          // Insufficient balance - pause campaign
+          campaign.status = 'budget_exhausted';
+          console.warn(`Campaign ${campaign._id} paused - insufficient wallet balance`);
+        }
+      }
 
       // Deactivate if budget exhausted
       if (campaign.dailySpend.amount >= campaign.dailyBudget ||
@@ -337,7 +427,35 @@ exports.trackClick = async (req, res, next) => {
       const cost = campaign.bid; // Bid is the cost per click
 
       campaign.stats.spend = (campaign.stats.spend || 0) + cost;
-      campaign.dailySpend.amount = (campaign.dailySpend.amount || 0) + cost;
+
+      // Daily spend with automatic reset
+      const currentDailySpend = getDailySpendAmount(campaign);
+      const today = new Date();
+      campaign.dailySpend = {
+        date: today,
+        amount: currentDailySpend + cost
+      };
+
+      // 💰 DEDUCT FROM VENDOR'S AD WALLET (Amazon-style)
+      const wallet = await AdWallet.findOne({ vendorId: campaign.vendorId });
+      if (wallet) {
+        // Check if wallet has sufficient balance
+        if (wallet.balance >= cost) {
+          // Deduct from wallet and record transaction
+          wallet.addTransaction(
+            'spend',
+            cost,
+            `CPC click - ${campaign.name}`,
+            `click_${campaign._id}_${Date.now()}`,
+            campaign._id
+          );
+          await wallet.save();
+        } else {
+          // Insufficient balance - pause campaign
+          campaign.status = 'budget_exhausted';
+          console.warn(`Campaign ${campaign._id} paused - insufficient wallet balance`);
+        }
+      }
 
       // Deactivate if budget exhausted
       if (campaign.dailySpend.amount >= campaign.dailyBudget ||

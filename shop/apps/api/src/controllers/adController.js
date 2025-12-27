@@ -306,12 +306,35 @@ exports.updateCampaign = async (req, res, next) => {
       campaign.vendorId = req.body.vendorId;
     }
 
+    // 🔒 SECURITY: If vendor edits APPROVED campaign, reset to pending approval
+    const wasApproved = campaign.approval?.status === 'approved';
+    const isVendorEdit = req.user.role !== 'admin';
+
+    if (isVendorEdit && wasApproved) {
+      // Reset approval status - must be reviewed again!
+      req.body.approval = {
+        status: 'pending',
+        reviewedBy: undefined,
+        reviewedAt: undefined,
+        rejectionReason: undefined,
+        adminNotes: 'Campaign edited by vendor - requires re-approval'
+      };
+
+      // Change campaign status to pending_approval
+      req.body.status = 'pending_approval';
+
+      console.log(`Campaign ${campaign._id} edited by vendor - reset to pending approval`);
+    }
+
     Object.assign(campaign, req.body);
     await campaign.save();
 
     res.json({
       success: true,
       data: campaign,
+      message: isVendorEdit && wasApproved
+        ? 'Campaign updated. Changes require admin approval before going live.'
+        : 'Campaign updated successfully'
     });
   } catch (error) {
     next(error);

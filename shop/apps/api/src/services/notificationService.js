@@ -137,12 +137,14 @@ class NotificationService {
               </table>
             </div>
 
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0;">Shipping Address</h3>
-              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName}</strong></p>
-              <p style="margin: 5px 0;">${order.shipTo?.address}</p>
-              <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zip || ''}</p>
-              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone}</p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2EC4B6;">
+              <h3 style="margin-top: 0; color: #2EC4B6;">📍 Shipping Address</h3>
+              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName || 'N/A'}</strong></p>
+              <p style="margin: 5px 0;">${order.shipTo?.addressLine1 || ''}</p>
+              ${order.shipTo?.addressLine2 ? `<p style="margin: 5px 0;">${order.shipTo.addressLine2}</p>` : ''}
+              <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zipCode || ''}</p>
+              ${order.shipTo?.country ? `<p style="margin: 5px 0;">${order.shipTo.country}</p>` : ''}
+              <p style="margin: 5px 0;"><strong>Phone:</strong> ${order.shipTo?.phone || 'N/A'}</p>
             </div>
 
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
@@ -266,10 +268,12 @@ class NotificationService {
 
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
               <h3 style="margin-top: 0;">Shipping Address</h3>
-              <p style="margin: 5px 0;"><strong>${vendorOrders[0]?.shipTo?.fullName}</strong></p>
-              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.address}</p>
-              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.city}, ${vendorOrders[0]?.shipTo?.state} ${vendorOrders[0]?.shipTo?.zip}</p>
-              <p style="margin: 5px 0;">Phone: ${vendorOrders[0]?.shipTo?.phone}</p>
+              <p style="margin: 5px 0;"><strong>${vendorOrders[0]?.shipTo?.fullName || 'N/A'}</strong></p>
+              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.addressLine1 || ''}</p>
+              ${vendorOrders[0]?.shipTo?.addressLine2 ? `<p style="margin: 5px 0;">${vendorOrders[0].shipTo.addressLine2}</p>` : ''}
+              <p style="margin: 5px 0;">${vendorOrders[0]?.shipTo?.city || ''}, ${vendorOrders[0]?.shipTo?.state || ''} ${vendorOrders[0]?.shipTo?.zipCode || ''}</p>
+              ${vendorOrders[0]?.shipTo?.country ? `<p style="margin: 5px 0;">${vendorOrders[0].shipTo.country}</p>` : ''}
+              <p style="margin: 5px 0;"><strong>Phone:</strong> ${vendorOrders[0]?.shipTo?.phone || 'N/A'}</p>
             </div>
 
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
@@ -376,12 +380,14 @@ class NotificationService {
               </table>
             </div>
 
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0;">Delivery Address</h3>
-              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName}</strong></p>
-              <p style="margin: 5px 0;">${order.shipTo?.address}</p>
-              <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zip || ''}</p>
-              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone}</p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2EC4B6;">
+              <h3 style="margin-top: 0; color: #2EC4B6;">📍 Delivery Address</h3>
+              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName || 'N/A'}</strong></p>
+              <p style="margin: 5px 0;">${order.shipTo?.addressLine1 || ''}</p>
+              ${order.shipTo?.addressLine2 ? `<p style="margin: 5px 0;">${order.shipTo.addressLine2}</p>` : ''}
+              <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zipCode || ''}</p>
+              ${order.shipTo?.country ? `<p style="margin: 5px 0;">${order.shipTo.country}</p>` : ''}
+              <p style="margin: 5px 0;"><strong>Phone:</strong> ${order.shipTo?.phone || 'N/A'}</p>
             </div>
 
             <div class="alert">
@@ -477,12 +483,14 @@ class NotificationService {
               </table>
             </div>
 
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="margin-top: 0;">Shipping Address</h3>
-              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName}</strong></p>
-              <p style="margin: 5px 0;">${order.shipTo?.address}</p>
-              <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zip || ''}</p>
-              <p style="margin: 5px 0;">Phone: ${order.shipTo?.phone}</p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #2EC4B6;">
+              <h3 style="margin-top: 0; color: #2EC4B6;">📍 Shipping Address</h3>
+              <p style="margin: 5px 0;"><strong>${order.shipTo?.fullName || 'N/A'}</strong></p>
+              <p style="margin: 5px 0;">${order.shipTo?.addressLine1 || ''}</p>
+              ${order.shipTo?.addressLine2 ? `<p style="margin: 5px 0;">${order.shipTo.addressLine2}</p>` : ''}
+              <p style="margin: 5px 0;">${order.shipTo?.city || ''}, ${order.shipTo?.state || ''} ${order.shipTo?.zipCode || ''}</p>
+              ${order.shipTo?.country ? `<p style="margin: 5px 0;">${order.shipTo.country}</p>` : ''}
+              <p style="margin: 5px 0;"><strong>Phone:</strong> ${order.shipTo?.phone || 'N/A'}</p>
             </div>
 
             <p style="text-align: center;">

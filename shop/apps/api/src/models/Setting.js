@@ -9,6 +9,7 @@ const settingSchema = new mongoose.Schema(
       type: String,
       enum: [
         'general',      // Site name, logo, timezone, language
+        'website',      // Homepage, header, footer, pages
         'payment',      // Payment gateway settings
         'shipping',     // Shipping methods and rates
         'email',        // Email/SMTP configuration

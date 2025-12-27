@@ -116,6 +116,25 @@ const Ads = () => {
     },
   });
 
+  // Amazon-style status update mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }) => {
+      await api.put(`/ads/campaigns/${id}`, { status });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      const statusMessages = {
+        active: 'Campaign activated successfully',
+        paused: 'Campaign paused successfully',
+        draft: 'Campaign moved to draft successfully',
+      };
+      toast.success(statusMessages[variables.status] || 'Campaign status updated');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to update campaign status');
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
       await api.delete(`/ads/campaigns/${id}`);
@@ -1066,45 +1085,54 @@ const Ads = () => {
                       <span className="hidden sm:inline">Report</span>
                     </button>
 
-                    {campaign.status === 'active' ? (
-                      <button
-                        onClick={() => pauseMutation.mutate(campaign._id)}
-                        className="px-3 sm:px-4 py-2.5 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
-                        title="Pause Campaign"
+                    {/* Status Control - Vendors can only Draft/Delete */}
+                    <div className="relative inline-block min-w-[120px]">
+                      <select
+                        value={campaign.status}
+                        onChange={(e) => {
+                          const newStatus = e.target.value;
+                          if (newStatus === 'delete') {
+                            if (window.confirm(`Are you sure you want to delete "${campaign.name}"?\n\nThis cannot be undone.`)) {
+                              deleteMutation.mutate(campaign._id);
+                            }
+                            e.target.value = campaign.status;
+                          } else if (newStatus !== campaign.status) {
+                            updateStatusMutation.mutate({ id: campaign._id, status: newStatus });
+                          }
+                        }}
+                        className={`w-full px-3 py-2 pr-8 text-sm font-medium rounded-lg border cursor-pointer transition-colors [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
+                          campaign.status === 'active' ? 'bg-green-100 text-green-800 border-green-300' :
+                          campaign.status === 'paused' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
+                          campaign.status === 'draft' ? 'bg-gray-100 text-gray-800 border-gray-300' :
+                          campaign.status === 'pending_approval' ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                          'bg-gray-100 text-gray-800 border-gray-300'
+                        }`}
+                        style={{
+                          appearance: 'none',
+                          WebkitAppearance: 'none',
+                          MozAppearance: 'none',
+                          backgroundImage: 'none'
+                        }}
                       >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        <span className="hidden sm:inline">Pause</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => resumeMutation.mutate(campaign._id)}
-                        className="px-3 sm:px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
-                        title="Resume Campaign"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                        </svg>
-                        <span className="hidden sm:inline">Resume</span>
-                      </button>
-                    )}
+                        {/* Show current status (read-only) */}
+                        {(campaign.status === 'active' || campaign.status === 'paused' || campaign.status === 'pending_approval') && (
+                          <option value={campaign.status} disabled>
+                            {campaign.status === 'active' && '🟢 Active (Admin Controlled)'}
+                            {campaign.status === 'paused' && '⏸️ Paused (Admin Controlled)'}
+                            {campaign.status === 'pending_approval' && '🕐 Pending Approval'}
+                          </option>
+                        )}
 
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Are you sure you want to delete the campaign "${campaign.name}"?\n\nThis action cannot be undone.`)) {
-                          deleteMutation.mutate(campaign._id);
-                        }
-                      }}
-                      disabled={deleteMutation.isPending}
-                      className="px-3 sm:px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-50"
-                      title="Delete Campaign"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      <span className="hidden sm:inline">Delete</span>
-                    </button>
+                        {/* Vendor can only move to Draft or Delete */}
+                        <option value="draft">📝 Move to Draft</option>
+                        <option value="delete">🗑️ Delete Forever</option>
+                      </select>
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
