@@ -17,6 +17,8 @@ import ProductRecommendations from '@/components/product/ProductRecommendations'
 import ReviewForm from '@/components/product/ReviewForm';
 import EditReviewModal from '@/components/product/EditReviewModal';
 import AdBanner from '@/components/common/AdBanner';
+import Confetti from '@/components/common/Confetti';
+import AnimatedDiv from '@/components/common/AnimatedDiv';
 
 // Customer Reviews Carousel Component
 const CustomerReviewsCarousel = ({ reviews, renderStars, onEdit, onDelete, currentUser }) => {
@@ -161,6 +163,7 @@ const Product = () => {
   const [addedToCart, setAddedToCart] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // Capture affiliate code from URL on page load
   useEffect(() => {
@@ -306,6 +309,9 @@ const Product = () => {
       // Show message - same for all users (3 seconds)
       toast.success('Added to cart!', 3000);
 
+      // Trigger confetti animation
+      setShowConfetti(true);
+
       // Reset after 2 seconds
       setTimeout(() => setAddedToCart(false), 2000);
     } catch (error) {
@@ -425,6 +431,9 @@ const Product = () => {
 
   return (
     <div className="min-h-screen bg-blue-50 pt-12">
+      {/* Confetti Animation on Add to Cart */}
+      <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
+
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 lg:gap-6">
           {/* Product Images - Smaller size */}
@@ -672,7 +681,7 @@ const Product = () => {
               disabled={product.stock === 0}
               data-testid="add-to-cart-btn"
               data-cy="add-to-cart-btn"
-              className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
+              className={`btn-add-to-cart flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
                 addedToCart
                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-400'
                   : product.stock === 0
@@ -682,7 +691,7 @@ const Product = () => {
             >
               {addedToCart ? (
                 <>
-                  <Check className="w-6 h-6" />
+                  <Check className="w-6 h-6 checkmark" />
                   Added to Cart
                 </>
               ) : (

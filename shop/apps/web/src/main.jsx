@@ -11,6 +11,7 @@ import App from './App';
 import store from './assets/store';
 import ErrorBoundary from './assets/components/common/ErrorBoundary';
 import './index.css';
+import './assets/styles/animations.css';
 
 // ---- Axios defaults (so every request uses the API URL + sends cookies if needed) ----
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
