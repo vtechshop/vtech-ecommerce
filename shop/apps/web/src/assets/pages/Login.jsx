@@ -15,6 +15,7 @@ const Login = () => {
     email: '',
     password: '',
   });
+  const [shake, setShake] = useState(false);
 
   const redirect = searchParams.get('redirect');
 
@@ -37,6 +38,15 @@ const Login = () => {
       navigate(destination, { replace: true });
     }
   }, [user, navigate, redirect]);
+
+  // Trigger shake animation on error
+  useEffect(() => {
+    if (error) {
+      setShake(true);
+      const timer = setTimeout(() => setShake(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,7 +87,7 @@ const Login = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-8 ${shake ? 'form-error' : ''}`}>
           <form onSubmit={handleSubmit} className="space-y-6" data-testid="login-form">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">

@@ -159,7 +159,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
   return (
     <div ref={wrapperRef} className={`relative ${className}`}>
-      <form onSubmit={handleSubmit} className="relative">
+      <form onSubmit={handleSubmit} className="relative search-bar">
         <input
           ref={inputRef}
           type="text"
@@ -181,7 +181,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
       {/* Dropdown */}
       {shouldShowDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-h-[500px] overflow-y-auto z-50">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-h-[500px] overflow-y-auto z-50 dropdown-fade">
           {/* Loading State */}
           {isLoading && query.length >= 2 && (
             <div className="p-4 text-center text-gray-500 dark:text-gray-400">
@@ -199,7 +199,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                 <button
                   key={product._id}
                   onClick={() => handleSelectProduct(product)}
-                  className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                  className={`search-result-item w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                     selectedIndex === index ? 'bg-gray-50 dark:bg-gray-700' : ''
                   }`}
                 >

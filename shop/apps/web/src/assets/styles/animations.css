@@ -441,3 +441,483 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
+
+/* ====== FORM VALIDATION ANIMATIONS ====== */
+
+/* Error state animation - shake */
+.form-error {
+  animation: shake 0.5s;
+}
+
+/* Success checkmark circular fill */
+@keyframes checkmarkCircle {
+  0% {
+    stroke-dashoffset: 166;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.checkmark-circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  animation: checkmarkCircle 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+@keyframes checkmarkCheck {
+  0% {
+    stroke-dashoffset: 48;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.checkmark-check {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: checkmarkCheck 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+}
+
+/* Password strength meter animation */
+@keyframes strengthFill {
+  from {
+    width: 0%;
+  }
+}
+
+.strength-meter {
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strength-weak {
+  width: 33%;
+  background-color: #ef4444;
+  animation: strengthFill 0.3s ease-out;
+}
+
+.strength-medium {
+  width: 66%;
+  background-color: #f59e0b;
+  animation: strengthFill 0.3s ease-out;
+}
+
+.strength-strong {
+  width: 100%;
+  background-color: #10b981;
+  animation: strengthFill 0.3s ease-out;
+}
+
+/* ====== WISHLIST HEART ANIMATION ====== */
+
+@keyframes heartBeat {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.3);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(1.2);
+  }
+}
+
+.heart-fill {
+  animation: heartBeat 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.heart-icon {
+  transition: all 0.3s ease;
+}
+
+.heart-icon.active {
+  fill: #ef4444;
+  stroke: #ef4444;
+}
+
+/* ====== STAR RATING ANIMATION ====== */
+
+@keyframes starFill {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.star-fill {
+  animation: starFill 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.star-rating {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.star-icon {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.star-icon:hover {
+  transform: scale(1.2);
+}
+
+/* ====== CART ITEM ANIMATIONS ====== */
+
+/* Item removal slide out */
+@keyframes slideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+.cart-item-remove {
+  animation: slideOutLeft 0.3s ease-out forwards;
+}
+
+/* Quantity change animation */
+@keyframes numberRoll {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.number-roll {
+  animation: numberRoll 0.3s ease-out;
+}
+
+/* Cart total flash */
+@keyframes flashHighlight {
+  0%, 100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+}
+
+.total-flash {
+  animation: flashHighlight 0.6s ease-out;
+}
+
+/* ====== EMPTY STATE ANIMATIONS ====== */
+
+@keyframes floatUp {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.empty-state-icon {
+  animation: floatUp 3s ease-in-out infinite;
+}
+
+/* ====== BACK TO TOP BUTTON ====== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.back-to-top {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Circular progress ring */
+@keyframes progressRing {
+  from {
+    stroke-dashoffset: 283;
+  }
+}
+
+.progress-ring {
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+/* ====== IMAGE ANIMATIONS ====== */
+
+/* Product image zoom on hover (enhanced) */
+.product-image-zoom {
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.product-image-zoom img {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.product-image-zoom:hover img {
+  transform: scale(1.5);
+}
+
+/* Image lazy load blur up */
+.image-blur-up {
+  filter: blur(20px);
+  transition: filter 0.3s ease;
+}
+
+.image-blur-up.loaded {
+  filter: blur(0);
+}
+
+/* ====== SEARCH BAR ANIMATIONS ====== */
+
+.search-bar {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-bar:focus-within {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Search results stagger */
+.search-result-item {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.3s ease-out forwards;
+}
+
+.search-result-item:nth-child(1) { animation-delay: 0.05s; }
+.search-result-item:nth-child(2) { animation-delay: 0.1s; }
+.search-result-item:nth-child(3) { animation-delay: 0.15s; }
+.search-result-item:nth-child(4) { animation-delay: 0.2s; }
+.search-result-item:nth-child(5) { animation-delay: 0.25s; }
+
+/* ====== FILTER ANIMATIONS ====== */
+
+/* Filter sidebar slide in */
+@keyframes filterSlideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.filter-sidebar {
+  animation: filterSlideIn 0.3s ease-out;
+}
+
+/* Filter tag animations */
+@keyframes tagBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.filter-tag {
+  animation: tagBounce 0.3s ease-out;
+}
+
+.filter-tag-remove {
+  transition: transform 0.2s ease;
+}
+
+.filter-tag-remove:hover {
+  transform: rotate(90deg) scale(1.2);
+}
+
+/* ====== ORDER TRACKING ANIMATIONS ====== */
+
+/* Progress timeline animation */
+@keyframes timelineFill {
+  from {
+    width: 0%;
+  }
+}
+
+.timeline-fill {
+  animation: timelineFill 1s ease-out forwards;
+}
+
+/* Status pulse */
+.status-pulse {
+  position: relative;
+}
+
+.status-pulse::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: inherit;
+  animation: pulse 2s ease-out infinite;
+}
+
+/* ====== LOADING SPINNER ====== */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Dots loading */
+@keyframes dotFlashing {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.dot-flashing {
+  animation: dotFlashing 1s infinite;
+}
+
+.dot-flashing:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.dot-flashing:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* ====== 3D CARD TILT ====== */
+
+.card-tilt {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transform-style: preserve-3d;
+}
+
+.card-tilt:hover {
+  transform: perspective(1000px) rotateX(2deg) rotateY(2deg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* ====== SOCIAL ICON FLIP ====== */
+
+@keyframes flipIcon {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+.social-icon-flip:hover {
+  animation: flipIcon 0.6s ease-in-out;
+}
+
+/* ====== COUNT UP ANIMATION ====== */
+
+.count-up {
+  display: inline-block;
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.count-up.animate {
+  animation: countUp 0.5s ease-out;
+}
+
+/* ====== BADGE ANIMATIONS ====== */
+
+@keyframes badgeBounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.badge-bounce {
+  animation: badgeBounce 0.5s ease-out;
+}
+
+/* ====== NOTIFICATION BELL ====== */
+
+@keyframes bellRing {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: rotate(-10deg);
+  }
+  20%, 40%, 60%, 80% {
+    transform: rotate(10deg);
+  }
+}
+
+.bell-ring {
+  animation: bellRing 1s ease-in-out;
+}
+
+/* ====== PARALLAX EFFECT ====== */
+
+.parallax-layer {
+  transition: transform 0.3s ease-out;
+}
+
+/* ====== SCROLL REVEAL ====== */
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.scroll-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
