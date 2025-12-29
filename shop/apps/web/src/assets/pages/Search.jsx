@@ -67,20 +67,14 @@ const Search = () => {
 
   // Sponsored Ads with enhanced error handling
   useEffect(() => {
-    if (!query) {
-      setSponsoredAds([]);
-      setAdsError(null);
-      return;
-    }
-
     const fetchAds = async () => {
       setAdsLoading(true);
       setAdsError(null);
 
       try {
         const response = await api.post('/ads/auction', {
-          placement: 'search_grid',
-          keywords: [query],
+          placement: 'product_top', // Match admin placement setting
+          keywords: query ? [query] : ['all'], // Use 'all' for no search query
           limit: 3,
           _ts: Date.now(), // Cache busting parameter
         });
