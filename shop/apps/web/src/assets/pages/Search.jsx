@@ -79,7 +79,14 @@ const Search = () => {
           _ts: Date.now(), // Cache busting parameter
         });
 
+        // DEBUG: Log full response structure
+        console.log('[Sponsored Ads DEBUG] Full response:', response);
+        console.log('[Sponsored Ads DEBUG] response.data:', response.data);
+        console.log('[Sponsored Ads DEBUG] response.data.data:', response.data.data);
+        console.log('[Sponsored Ads DEBUG] response.data.data.ads:', response.data.data?.ads);
+
         if (response.data.data?.ads && response.data.data.ads.length > 0) {
+          console.log('[Sponsored Ads DEBUG] ✅ Setting ads:', response.data.data.ads);
           setSponsoredAds(response.data.data.ads);
 
           // Track impressions
@@ -92,6 +99,12 @@ const Search = () => {
             }).catch(() => {}); // Silent fail for impression tracking
           });
         } else {
+          console.log('[Sponsored Ads DEBUG] ❌ No ads to display');
+          console.log('[Sponsored Ads DEBUG] Reason:', {
+            hasDataProperty: !!response.data.data,
+            hasAdsProperty: !!response.data.data?.ads,
+            adsLength: response.data.data?.ads?.length || 0,
+          });
           setSponsoredAds([]);
         }
       } catch (error) {
@@ -249,16 +262,24 @@ const Search = () => {
           ) : (
             <>
               {/* Development: Ads Debug Info */}
-              {import.meta.env.DEV && (adsError || adsLoading || (query && sponsoredAds.length === 0)) && (
+              {import.meta.env.DEV && (
                 <div className="mb-4 p-3 bg-blue-100 border border-gray-300 rounded-lg text-xs">
                   <div className="font-semibold mb-2">Sponsored Ads Debug Info:</div>
-                  {adsLoading && <div className="text-blue-600">⏳ Loading ads...</div>}
-                  {adsError && <div className="text-red-600">❌ Error: {adsError}</div>}
-                  {!adsLoading && !adsError && query && sponsoredAds.length === 0 && (
-                    <div className="text-yellow-600">⚠️ No sponsored ads available for query: "{query}"</div>
-                  )}
-                  <div className="mt-2 text-gray-700">
-                    Check browser console for detailed logs (search for "[Sponsored Ads]")
+                  <div className="space-y-1">
+                    <div>Placement: <span className="font-mono">product_top</span></div>
+                    <div>Keywords: <span className="font-mono">{query ? `["${query}"]` : '["all"]'}</span></div>
+                    <div>Ads in state: <span className="font-mono font-bold">{sponsoredAds.length}</span></div>
+                    {adsLoading && <div className="text-blue-600">⏳ Loading ads...</div>}
+                    {adsError && <div className="text-red-600">❌ Error: {adsError}</div>}
+                    {!adsLoading && !adsError && sponsoredAds.length === 0 && (
+                      <div className="text-yellow-600">⚠️ No sponsored ads loaded</div>
+                    )}
+                    {sponsoredAds.length > 0 && (
+                      <div className="text-green-600">✅ {sponsoredAds.length} ad(s) loaded and displaying below</div>
+                    )}
+                  </div>
+                  <div className="mt-2 text-gray-700 border-t pt-2">
+                    🔍 Check browser console for detailed logs - search for: <span className="font-mono bg-white px-1">[Sponsored Ads DEBUG]</span>
                   </div>
                 </div>
               )}
