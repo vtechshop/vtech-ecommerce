@@ -73,7 +73,7 @@ const Search = () => {
 
       try {
         const response = await api.post('/ads/auction', {
-          placement: 'product_top', // Match admin placement setting
+          placement: 'search_top', // For search page sponsored ads
           keywords: query ? [query] : ['all'], // Use 'all' for no search query
           limit: 3,
           _ts: Date.now(), // Cache busting parameter
@@ -266,7 +266,7 @@ const Search = () => {
                 <div className="mb-4 p-3 bg-blue-100 border border-gray-300 rounded-lg text-xs">
                   <div className="font-semibold mb-2">Sponsored Ads Debug Info:</div>
                   <div className="space-y-1">
-                    <div>Placement: <span className="font-mono">product_top</span></div>
+                    <div>Placement: <span className="font-mono">search_top</span></div>
                     <div>Keywords: <span className="font-mono">{query ? `["${query}"]` : '["all"]'}</span></div>
                     <div>Ads in state: <span className="font-mono font-bold">{sponsoredAds.length}</span></div>
                     {adsLoading && <div className="text-blue-600">⏳ Loading ads...</div>}
