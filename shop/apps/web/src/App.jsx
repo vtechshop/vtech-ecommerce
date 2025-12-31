@@ -135,6 +135,7 @@ const AdminUsers = lazy(() => import('./assets/pages/dashboard/admin/Users'));
 const AdminProducts = lazy(() => import('./assets/pages/dashboard/admin/Products'));
 const AdminCategories = lazy(() => import('./assets/pages/dashboard/admin/Categories'));
 const AdminOrders = lazy(() => import('./assets/pages/dashboard/admin/Orders'));
+const AdminOrderDetail = lazy(() => import('./assets/pages/dashboard/admin/OrderDetail'));
 const Payments = lazy(() => import('./assets/pages/dashboard/admin/Payments'));
 const AdminVendors = lazy(() => import('./assets/pages/dashboard/admin/Vendors'));
 const AdminAffiliates = lazy(() => import('./assets/pages/dashboard/admin/Affiliates'));
@@ -360,6 +361,7 @@ function App() {
             <Route path="products" element={<AdminProducts />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="orders/:id" element={<AdminOrderDetail />} />
             <Route path="payments" element={<Payments />} />
             <Route path="vendors" element={<AdminVendors />} />
             <Route path="affiliates" element={<AdminAffiliates />} />

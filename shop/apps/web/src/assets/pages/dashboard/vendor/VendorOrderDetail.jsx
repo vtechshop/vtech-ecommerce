@@ -17,8 +17,6 @@ const VendorOrderDetail = () => {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [newStatus, setNewStatus] = useState('');
-  const [awbNumber, setAwbNumber] = useState('');
-  const [carrier, setCarrier] = useState('Delhivery');
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['vendor-order', id],
@@ -40,25 +38,7 @@ const VendorOrderDetail = () => {
     staleTime: 3 * 60 * 1000, // Consider data stale after 3 minutes
   });
 
-  // Mutation for adding/updating AWB
-  const addAwbMutation = useMutation({
-    mutationFn: async ({ awb, carrier }) => {
-      const response = await api.post(`/shipping/orders/${order.orderId}/carrier`, {
-        awb,
-        carrier,
-      });
-      return response.data;
-    },
-    onSuccess: () => {
-      toast.success('Tracking number added successfully');
-      queryClient.invalidateQueries({ queryKey: ['vendor-order', id] });
-      queryClient.invalidateQueries({ queryKey: ['tracking', order?.orderId] });
-      setAwbNumber('');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to add tracking number');
-    },
-  });
+  // Carrier assignment removed - Only admin can assign carriers
 
   const updateStatusMutation = useMutation({
     mutationFn: async (status) => {
@@ -85,13 +65,6 @@ const VendorOrderDetail = () => {
     updateStatusMutation.mutate(newStatus);
   };
 
-  const handleAddAwb = () => {
-    if (!awbNumber.trim()) {
-      toast.error('Please enter AWB/tracking number');
-      return;
-    }
-    addAwbMutation.mutate({ awb: awbNumber.trim(), carrier });
-  };
 
   if (isLoading) {
     return (
@@ -232,56 +205,37 @@ const VendorOrderDetail = () => {
             )}
           </div>
 
-          {/* Add Tracking Number (AWB) */}
+          {/* Carrier Assignment Info - Admin Only */}
           {!order.shipment?.awb && order.status !== 'cancelled' && order.status !== 'pending' && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
-              <h2 className="text-xl font-bold mb-4 text-gray-900">Add Tracking Number</h2>
-              <p className="text-sm text-gray-700 mb-4">
-                Enter the AWB/tracking number from your shipping carrier to enable order tracking.
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-6">
+              <h2 className="text-xl font-bold mb-3 text-gray-900">⚠️ Awaiting Carrier Assignment</h2>
+              <p className="text-sm text-gray-700 mb-3">
+                The admin will assign a delivery carrier and tracking number for this order.
               </p>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Carrier
-                  </label>
-                  <select
-                    value={carrier}
-                    onChange={(e) => setCarrier(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="Delhivery">Delhivery</option>
-                    <option value="BlueDart">BlueDart</option>
-                    <option value="DTDC">DTDC</option>
-                    <option value="FedEx">FedEx</option>
-                    <option value="DHL">DHL</option>
-                    <option value="Other">Other</option>
-                  </select>
+              <p className="text-sm text-gray-600">
+                Once assigned, you'll be able to track the shipment and update the order status.
+              </p>
+            </div>
+          )}
+
+          {/* Show Tracking Info if AWB exists */}
+          {order.shipment?.awb && (
+            <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+              <h2 className="text-xl font-bold mb-4 text-gray-900">✅ Carrier Assigned</h2>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-700">Carrier:</span>
+                  <span className="text-sm font-semibold text-gray-900">{order.shipment.carrier}</span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    AWB / Tracking Number *
-                  </label>
-                  <input
-                    type="text"
-                    value={awbNumber}
-                    onChange={(e) => setAwbNumber(e.target.value)}
-                    placeholder="Enter tracking number"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-700">AWB Number:</span>
+                  <span className="text-sm font-mono font-semibold text-gray-900">{order.shipment.awb}</span>
                 </div>
-                <Button
-                  onClick={handleAddAwb}
-                  variant="primary"
-                  fullWidth
-                  disabled={addAwbMutation.isLoading}
-                >
-                  {addAwbMutation.isLoading ? 'Adding...' : 'Add Tracking Number'}
-                </Button>
               </div>
             </div>
           )}
 
-          {/* Shipment Tracking - Enhanced with Delhivery Integration */}
+          {/* Shipment Tracking */}
           {order.shipment?.awb && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-bold mb-4">Shipment Tracking</h2>

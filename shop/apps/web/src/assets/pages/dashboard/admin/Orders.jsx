@@ -1,5 +1,6 @@
 // FILE: apps/web/src/pages/dashboard/admin/Orders.jsx
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
@@ -12,11 +13,11 @@ import { getNewItemClasses, formatRelativeTime } from '@/utils/dateHelpers';
 import { Eye, Search, Filter, Package, Truck, CheckCircle, XCircle } from 'lucide-react';
 
 const Orders = () => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewingOrder, setViewingOrder] = useState(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-orders', page, statusFilter, searchTerm],
@@ -42,13 +43,6 @@ const Orders = () => {
     },
   });
 
-  const handleView = (order) => {
-    setViewingOrder(order);
-  };
-
-  const handleStatusUpdate = (id, status, description) => {
-    updateStatusMutation.mutate({ id, status, description });
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -224,11 +218,11 @@ const Orders = () => {
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => handleView(order)}
-                        className="text-blue-600 hover:text-blue-700 p-1"
-                        title="View Details"
+                        onClick={() => navigate(`/dashboard/admin/orders/${order._id}`)}
+                        className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded"
+                        title="View & Assign Carrier"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-5 h-5" />
                       </button>
                     </div>
                   </td>
