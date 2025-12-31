@@ -24,7 +24,7 @@ const TrackOrder = () => {
     }
 
     try {
-      // Use new Delhivery tracking endpoint
+      // Fetch tracking information
       const response = await api.get('/shipping/tracking', {
         params: {
           orderId: orderNumber,
@@ -119,7 +119,7 @@ const TrackOrder = () => {
               )}
             </div>
 
-            {/* Delhivery Tracking Timeline */}
+            {/* Tracking Timeline */}
             <TrackingTimeline
               tracking={tracking.tracking}
               order={tracking.order}

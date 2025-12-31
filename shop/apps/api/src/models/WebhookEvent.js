@@ -11,7 +11,7 @@ const webhookEventSchema = new mongoose.Schema({
   },
   provider: {
     type: String,
-    enum: ['phonepe'],
+    enum: ['razorpay'],
     required: true,
   },
   eventType: String,

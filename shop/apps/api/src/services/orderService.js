@@ -144,8 +144,8 @@ class OrderService {
       throw new Error('Order has not been paid');
     }
 
-    // Refund is processed via PhonePe payment controller
-    // This function just updates the order status - actual refund is done via /api/payments/phonepe/refund
+    // Refund is processed via Razorpay
+    // This function just updates the order status - actual refund is done via Razorpay API
 
     // Update order
     order.refund = {

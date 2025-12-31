@@ -6,8 +6,16 @@ const Badge = ({
   size = 'md',
   rounded = 'md',
   className,
-  ...props
+  id,
+  'aria-label': ariaLabel,
+  'data-testid': dataTestId,
+  onClick,
+  ...unsafeProps
 }) => {
+  // Security: Log warning if unsafe props are passed
+  if (Object.keys(unsafeProps).length > 0) {
+    console.warn('Badge: Ignoring unsafe props:', Object.keys(unsafeProps));
+  }
   const variants = {
     default: 'bg-gray-100 text-neutral-700 border border-gray-200',
     primary: 'bg-primary-100 text-blue-700 border border-blue-500',
@@ -47,7 +55,10 @@ const Badge = ({
         roundedSizes[rounded],
         className
       )}
-      {...props}
+      id={id}
+      aria-label={ariaLabel}
+      data-testid={dataTestId}
+      onClick={onClick}
     >
       {children}
     </span>

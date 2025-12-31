@@ -9,7 +9,7 @@ const { generateOrderId } = require('../utils/helpers');
 const { getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
 const env = require('../config/env');
-// Payment is now handled by PhonePe controller directly
+// Payment is now handled by Razorpay controller directly
 const warrantyService = require('../services/warrantyService');
 const notificationService = require('../services/notificationService');
 
@@ -1039,7 +1039,7 @@ exports.requestReturn = async (req, res, next) => {
   }
 };
 
-// SECURITY NOTE: Webhook handlers have been moved to paymentController.js
+// SECURITY NOTE: Webhook handlers are in razorpayController.js
 // The secure implementations with replay attack prevention, signature verification,
-// and WebhookEvent logging are in src/controllers/paymentController.js
-// These duplicate handlers have been removed to prevent security vulnerabilities
+// and WebhookEvent logging are in src/controllers/razorpayController.js
+// See src/routes/payment.js for webhook routes

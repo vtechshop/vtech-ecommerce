@@ -52,12 +52,7 @@ module.exports = {
   S3_REGION: process.env.S3_REGION,
   S3_KEY: process.env.S3_KEY,
   S3_SECRET: process.env.S3_SECRET,
-  
-  // PhonePe config
-  PHONEPE_MERCHANT_ID: process.env.PHONEPE_MERCHANT_ID,
-  PHONEPE_SALT_KEY: process.env.PHONEPE_SALT_KEY,
-  PHONEPE_SALT_INDEX: process.env.PHONEPE_SALT_INDEX || '1',
-  
+
   GA4_MEASUREMENT_ID: process.env.GA4_MEASUREMENT_ID,
   META_PIXEL_ID: process.env.META_PIXEL_ID,
   

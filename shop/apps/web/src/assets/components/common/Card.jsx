@@ -7,8 +7,16 @@ const Card = ({
   hover = false,
   className,
   onClick,
-  ...props
+  id,
+  role,
+  'aria-label': ariaLabel,
+  'data-testid': dataTestId,
+  ...unsafeProps
 }) => {
+  // Security: Log warning if unsafe props are passed
+  if (Object.keys(unsafeProps).length > 0) {
+    console.warn('Card: Ignoring unsafe props:', Object.keys(unsafeProps));
+  }
   const baseClasses = 'bg-white rounded-lg border border-gray-200';
 
   const variants = {
@@ -36,7 +44,10 @@ const Card = ({
         className
       )}
       onClick={onClick}
-      {...props}
+      id={id}
+      role={role}
+      aria-label={ariaLabel}
+      data-testid={dataTestId}
     >
       {children}
     </div>

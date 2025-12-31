@@ -146,7 +146,7 @@ async function generateRuleBasedResponse(message, userId) {
   }
   // Payment methods
   else if (lowerMessage.includes('payment') || lowerMessage.includes('pay')) {
-    reply = '💳 **Accepted Payment Methods:**\n\n• Credit/Debit Cards (Visa, Mastercard, RuPay)\n• UPI (GPay, PhonePe, Paytm)\n• Net Banking\n• Digital Wallets\n\n🔒 All payments are secured with 256-bit SSL encryption.';
+    reply = '💳 **Accepted Payment Methods:**\n\nWe use **Razorpay** for secure payments:\n• Credit/Debit Cards (Visa, Mastercard, RuPay, Amex)\n• UPI (GPay, Paytm, BHIM, etc.)\n• Net Banking (All major banks)\n• Digital Wallets (Paytm, Mobikwik, etc.)\n\n🔒 All payments are secured with 256-bit SSL encryption and PCI DSS compliance.';
   }
   // Contact support
   else if (lowerMessage.includes('contact') || lowerMessage.includes('support') || lowerMessage.includes('help')) {

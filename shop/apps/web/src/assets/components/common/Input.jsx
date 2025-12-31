@@ -11,8 +11,32 @@ const Input = ({
   fullWidth = false,
   className,
   type,
-  ...props
+  value,
+  onChange,
+  onBlur,
+  onFocus,
+  placeholder,
+  disabled,
+  readOnly,
+  name,
+  id,
+  autoComplete,
+  autoFocus,
+  maxLength,
+  minLength,
+  pattern,
+  min,
+  max,
+  step,
+  'aria-label': ariaLabel,
+  'aria-describedby': ariaDescribedBy,
+  'data-testid': dataTestId,
+  ...unsafeProps
 }) => {
+  // Security: Log warning if unsafe props are passed
+  if (Object.keys(unsafeProps).length > 0) {
+    console.warn('Input: Ignoring unsafe props:', Object.keys(unsafeProps));
+  }
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordField = type === 'password';
   const inputType = isPasswordField && showPassword ? 'text' : type;
@@ -34,8 +58,27 @@ const Input = ({
             className
           )}
           type={inputType}
+          value={value}
+          onChange={onChange}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          placeholder={placeholder}
+          disabled={disabled}
+          readOnly={readOnly}
+          name={name}
+          id={id}
+          autoComplete={autoComplete}
+          autoFocus={autoFocus}
+          maxLength={maxLength}
+          minLength={minLength}
+          pattern={pattern}
+          min={min}
+          max={max}
+          step={step}
           required={required}
-          {...props}
+          aria-label={ariaLabel}
+          aria-describedby={ariaDescribedBy}
+          data-testid={dataTestId}
         />
         {isPasswordField && (
           <button

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactPlayer from 'react-player';
+import DOMPurify from 'dompurify';
 import api from '@/utils/api';
 import Spinner from '@/components/common/Spinner';
 import AdBanner from '@/components/common/AdBanner';
@@ -298,7 +299,7 @@ const BlogPost = () => {
                 {!isVideo && (
                   <div
                     className="prose prose-lg max-w-none"
-                    dangerouslySetInnerHTML={{ __html: data.content }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.content || '') }}
                   />
                 )}
 

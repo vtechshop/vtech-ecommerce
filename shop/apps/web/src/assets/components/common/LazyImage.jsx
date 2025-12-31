@@ -24,8 +24,22 @@ const LazyImage = ({
   width,
   height,
   onLoad,
-  ...props
+  onError,
+  loading,
+  decoding,
+  crossOrigin,
+  referrerPolicy,
+  sizes,
+  srcSet,
+  useMap,
+  id,
+  'data-testid': dataTestId,
+  ...unsafeProps
 }) => {
+  // Security: Log warning if unsafe props are passed
+  if (Object.keys(unsafeProps).length > 0) {
+    console.warn('LazyImage: Ignoring unsafe props:', Object.keys(unsafeProps));
+  }
   const [imageSrc, setImageSrc] = useState(placeholder || null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
@@ -115,8 +129,16 @@ const LazyImage = ({
       <img
         src={imageSrc || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"%3E%3Crect width="100" height="100" fill="%23f0f0f0"/%3E%3C/svg%3E'}
         alt={alt}
-        loading="lazy"
-        decoding="async"
+        loading={loading || "lazy"}
+        decoding={decoding || "async"}
+        crossOrigin={crossOrigin}
+        referrerPolicy={referrerPolicy}
+        sizes={sizes}
+        srcSet={srcSet}
+        useMap={useMap}
+        onError={onError}
+        id={id}
+        data-testid={dataTestId}
         className={`lazy-image ${imageLoaded ? 'loaded' : 'loading'}`}
         style={{
           width: '100%',
@@ -128,7 +150,6 @@ const LazyImage = ({
         }}
         width={width}
         height={height}
-        {...props}
       />
 
       {/* Loading spinner overlay */}

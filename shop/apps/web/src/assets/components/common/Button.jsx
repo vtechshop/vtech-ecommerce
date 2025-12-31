@@ -11,8 +11,20 @@ const Button = ({
   type = 'button',
   onClick,
   className,
-  ...props
+  id,
+  name,
+  value,
+  'aria-label': ariaLabel,
+  'data-testid': dataTestId,
+  form,
+  autoFocus,
+  tabIndex,
+  ...unsafeProps
 }) => {
+  // Security: Log warning if unsafe props are passed
+  if (Object.keys(unsafeProps).length > 0) {
+    console.warn('Button: Ignoring unsafe props:', Object.keys(unsafeProps));
+  }
   const baseClasses = 'inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
@@ -37,6 +49,14 @@ const Button = ({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
+      id={id}
+      name={name}
+      value={value}
+      aria-label={ariaLabel}
+      data-testid={dataTestId}
+      form={form}
+      autoFocus={autoFocus}
+      tabIndex={tabIndex}
       className={clsx(
         baseClasses,
         variants[variant],
@@ -44,7 +64,6 @@ const Button = ({
         fullWidth && 'w-full',
         className
       )}
-      {...props}
     >
       {loading && (
         <svg

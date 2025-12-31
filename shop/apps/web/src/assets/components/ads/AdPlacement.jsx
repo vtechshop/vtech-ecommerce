@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
 import { useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { normalizeImageUrl } from '@/utils/placeholders';
 
 /**
@@ -117,7 +118,7 @@ const AdPlacement = ({ placement, className = '', fallback = null }) => {
       {ad.type === 'html' && (
         <div
           className="ad-html-content"
-          dangerouslySetInnerHTML={{ __html: ad.htmlContent }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ad.htmlContent || '') }}
           onClick={() => trackAdClick(ad._id, placement)}
         />
       )}

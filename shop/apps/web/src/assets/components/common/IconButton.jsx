@@ -31,8 +31,19 @@ const IconButton = ({
   disabled = false,
   title,
   type = 'button',
-  ...rest
+  id,
+  name,
+  value,
+  form,
+  autoFocus,
+  tabIndex,
+  'data-testid': dataTestId,
+  ...unsafeProps
 }) => {
+  // Security: Log warning if unsafe props are passed
+  if (Object.keys(unsafeProps).length > 0) {
+    console.warn('IconButton: Ignoring unsafe props:', Object.keys(unsafeProps));
+  }
   // Generate accessible label if not provided
   const ariaLabel = label || (iconName ? getIconButtonLabel(iconName, context) : 'Button');
 
@@ -76,7 +87,13 @@ const IconButton = ({
       aria-label={ariaLabel}
       title={title || ariaLabel}
       disabled={disabled}
-      {...rest}
+      id={id}
+      name={name}
+      value={value}
+      form={form}
+      autoFocus={autoFocus}
+      tabIndex={tabIndex}
+      data-testid={dataTestId}
     >
       {Icon && <Icon className={iconSizes[size]} aria-hidden="true" />}
     </button>
