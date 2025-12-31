@@ -282,11 +282,32 @@ const VendorOrderDetail = () => {
           {order.status !== 'cancelled' && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h2 className="text-xl font-bold mb-4">Update Status</h2>
+
+              {/* Show warning if no carrier assigned */}
+              {!order.shipment?.awb && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ Carrier not assigned. You can only update to "Paid" or "Cancelled" until admin assigns a delivery carrier.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-4">
                 <CustomSelect
                   value={newStatus}
                   onChange={setNewStatus}
-                  options={statusOptions.filter(opt => opt.value !== order.status)}
+                  options={statusOptions.filter(opt => {
+                    // Filter out current status
+                    if (opt.value === order.status) return false;
+
+                    // If no carrier assigned, only allow paid/cancelled
+                    if (!order.shipment?.awb) {
+                      return ['paid', 'cancelled'].includes(opt.value);
+                    }
+
+                    // Otherwise allow all statuses
+                    return true;
+                  })}
                   placeholder="Select new status"
                 />
                 <Button
