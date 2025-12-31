@@ -152,9 +152,33 @@ exports.getUserById = async (req, res, next) => {
 
 exports.updateUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // SECURITY: Whitelist allowed fields to prevent privilege escalation
+    const allowedFields = ['name', 'email', 'phone', 'addresses', 'isEmailVerified'];
+    const updates = {};
+
+    // Only copy whitelisted fields from request body
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
+    });
+
+    // SECURITY: Prevent modification of sensitive fields
+    // role, password, and other security-critical fields should use dedicated endpoints
+    if (req.body.role || req.body.password || req.body.refreshToken) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'FORBIDDEN_FIELD',
+          message: 'Cannot update role, password, or authentication fields through this endpoint. Use dedicated endpoints instead.'
+        }
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
     if (!user) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found' } });
-    logger.info(`User updated: ${user.email}`);
+
+    logger.info(`User updated by admin: ${user.email} (ID: ${user._id})`);
     res.json({ success: true, data: user });
   } catch (error) { next(error); }
 };

@@ -324,6 +324,32 @@ const publicReadLimiter = rateLimit({
   },
 });
 
+// SECURITY: Order creation rate limiter - prevent order spam and inventory abuse
+const orderCreationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 20, // Maximum 20 orders per hour per IP
+  message: {
+    success: false,
+    error: {
+      code: 'ORDER_RATE_LIMIT_EXCEEDED',
+      message: 'Too many orders created. Please try again later.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false, // Count all attempts
+  skip: (req) => {
+    // Lazy initialize Redis store on first request
+    if (!orderCreationLimiter.store) {
+      const redisStore = getOrCreateRedisStore();
+      if (redisStore) {
+        orderCreationLimiter.store = redisStore;
+      }
+    }
+    return false;
+  },
+});
+
 module.exports = {
   apiLimiter,
   authLimiter,
@@ -337,5 +363,6 @@ module.exports = {
   catalogTrackingLimiter,
   orderTrackingLimiter,
   publicReadLimiter,
+  orderCreationLimiter, // SECURITY: Prevent order spam
   getOrCreateRedisStore, // Export for testing if needed
 };

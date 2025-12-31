@@ -62,16 +62,33 @@ exports.getShippingQuotes = async (req, res, next) => {
       // Get rates from all available carriers
       const carrierRates = await shippingService.calculateShippingRates(origin, destination, packages, orderValue);
 
-      // Transform carrier rates to quote format
-      quotes = carrierRates.map((rate, index) => ({
-        id: `${rate.carrier}-${index}`,
-        name: `${rate.carrierName} Shipping`,
-        description: rate.serviceName || `Delivered via ${rate.carrierName}`,
-        cost: Math.round(rate.rate || 0),
-        estimatedDays: rate.estimatedDays || 7,
-        carrier: rate.carrier,
-        cod_available: rate.cod_available || false,
-      }));
+      // Transform carrier rates to quote format with generic names
+      quotes = carrierRates.map((rate, index) => {
+        // Create generic shipping method names based on delivery speed
+        let methodName = 'Standard Shipping';
+        let methodDescription = 'Delivery in 5-7 business days';
+
+        const days = rate.estimatedDays || 7;
+        if (days <= 2) {
+          methodName = 'Express Shipping';
+          methodDescription = `Delivery in ${days === 1 ? '1 business day' : '2 business days'}`;
+        } else if (days <= 4) {
+          methodName = 'Fast Shipping';
+          methodDescription = `Delivery in ${days} business days`;
+        } else {
+          methodDescription = `Delivery in ${days} business days`;
+        }
+
+        return {
+          id: `shipping-${index}`,
+          name: methodName,
+          description: methodDescription,
+          cost: Math.round(rate.rate || 0),
+          estimatedDays: days,
+          carrier: rate.carrier, // Keep internal carrier reference
+          cod_available: rate.cod_available || false,
+        };
+      });
 
       // Add free shipping option if order value is high enough
       const freeShippingThreshold = 2000; // INR 2000
@@ -221,43 +238,113 @@ exports.calculateTaxes = async (req, res, next) => {
 // Create payment intent (Stripe)
 exports.createPaymentIntent = async (req, res, next) => {
   try {
-    const { amount, currency = 'INR' } = req.body;
+    const { amount, currency = 'INR', orderId } = req.body;
 
-    // If Stripe is configured, use real payment intent
-    if (process.env.STRIPE_KEY) {
-      const stripe = require('stripe')(process.env.STRIPE_KEY);
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents/paise
-        currency: currency.toLowerCase(),
-        metadata: {
-          userId: req.user?._id?.toString() || 'guest',
-        },
-        automatic_payment_methods: {
-          enabled: true,
+    // SECURITY: Validate amount parameter exists
+    if (!amount || amount <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_AMOUNT',
+          message: 'Valid payment amount is required',
         },
       });
+    }
 
-      res.json({
-        success: true,
-        data: {
-          clientSecret: paymentIntent.client_secret,
-          paymentIntentId: paymentIntent.id,
-        },
-      });
+    // CRITICAL SECURITY: Verify amount matches actual order total
+    // This prevents users from manipulating payment amounts
+    if (orderId) {
+      const Order = require('../models/Order');
+      const order = await Order.findById(orderId);
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'ORDER_NOT_FOUND',
+            message: 'Order not found',
+          },
+        });
+      }
+
+      // Verify user owns this order (or is guest with correct email)
+      const isOwner = req.user && String(order.userId) === String(req.user._id);
+      const isGuest = !req.user && order.isGuest;
+
+      if (!isOwner && !isGuest) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Not authorized to create payment for this order',
+          },
+        });
+      }
+
+      // CRITICAL: Verify amount matches order total (with 1 rupee tolerance for rounding)
+      const expectedAmount = Math.round(order.totals.total * 100) / 100;
+      const providedAmount = Math.round(amount * 100) / 100;
+
+      if (Math.abs(providedAmount - expectedAmount) > 1) {
+        logger.warn(`Payment amount mismatch for order ${orderId}: expected ${expectedAmount}, got ${providedAmount}`);
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'AMOUNT_MISMATCH',
+            message: `Payment amount (₹${providedAmount}) does not match order total (₹${expectedAmount})`,
+          },
+        });
+      }
+
+      // Use the order's actual total (not the user-provided amount)
+      const verifiedAmount = order.totals.total;
+
+      // If Stripe is configured, use real payment intent
+      if (process.env.STRIPE_KEY) {
+        const stripe = require('stripe')(process.env.STRIPE_KEY);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(verifiedAmount * 100), // Use verified amount
+          currency: currency.toLowerCase(),
+          metadata: {
+            userId: req.user?._id?.toString() || 'guest',
+            orderId: orderId,
+          },
+          automatic_payment_methods: {
+            enabled: true,
+          },
+        });
+
+        res.json({
+          success: true,
+          data: {
+            clientSecret: paymentIntent.client_secret,
+            paymentIntentId: paymentIntent.id,
+          },
+        });
+      } else {
+        // Mock response for testing without Stripe
+        const paymentIntent = {
+          id: 'pi_mock_' + Date.now(),
+          client_secret: 'secret_mock_' + Date.now(),
+          amount: Math.round(verifiedAmount * 100), // Use verified amount
+          currency: currency.toLowerCase(),
+        };
+
+        res.json({
+          success: true,
+          data: {
+            clientSecret: paymentIntent.client_secret,
+            paymentIntentId: paymentIntent.id,
+          },
+        });
+      }
     } else {
-      // Mock response for testing without Stripe
-      const paymentIntent = {
-        id: 'pi_mock_' + Date.now(),
-        client_secret: 'secret_mock_' + Date.now(),
-        amount: Math.round(amount * 100),
-        currency: currency.toLowerCase(),
-      };
-
-      res.json({
-        success: true,
-        data: {
-          clientSecret: paymentIntent.client_secret,
-          paymentIntentId: paymentIntent.id,
+      // No orderId provided - reject for security
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'ORDER_ID_REQUIRED',
+          message: 'Order ID is required for payment intent creation',
         },
       });
     }

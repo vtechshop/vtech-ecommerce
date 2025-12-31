@@ -186,10 +186,13 @@ exports.phonePeCallback = async (req, res, next) => {
 
     // Handle payment status
     if (code === 'PAYMENT_SUCCESS' && state === 'COMPLETED') {
-      // Validate amount (amount in paise)
+      // SECURITY: Validate amount (amount in paise from PhonePe)
       const expectedAmount = Math.round(order.totals.total * 100);
-      if (amount !== expectedAmount) {
-        logger.error(`Payment amount mismatch for order ${order.orderId}: expected ${expectedAmount}, got ${amount}`);
+      const receivedAmount = parseInt(amount, 10); // Ensure integer comparison
+
+      // Allow 1 paise tolerance for rounding errors (₹0.01 tolerance)
+      if (Math.abs(receivedAmount - expectedAmount) > 1) {
+        logger.error(`Payment amount mismatch for order ${order.orderId}: expected ${expectedAmount} paise, got ${receivedAmount} paise`);
         return res.status(400).json({ error: 'Payment amount mismatch' });
       }
 

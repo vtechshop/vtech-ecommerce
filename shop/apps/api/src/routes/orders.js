@@ -3,13 +3,13 @@ const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
 const { authenticate, optionalAuth } = require('../middleware/auth');
-const { checkoutLimiter, orderTrackingLimiter } = require('../middleware/rateLimiter');
+const { checkoutLimiter, orderTrackingLimiter, orderCreationLimiter } = require('../middleware/rateLimiter');
 
 // Public - Stricter rate limiting to prevent email enumeration (10 attempts per 15 min)
 router.post('/track', orderTrackingLimiter, orderController.trackOrder);
 
-// Create order - supports both authenticated and guest checkout
-router.post('/', optionalAuth, orderController.createOrder);
+// SECURITY: Create order - supports both authenticated and guest checkout with strict rate limiting
+router.post('/', orderCreationLimiter, optionalAuth, orderController.createOrder);
 
 // Authenticated only
 router.get('/', authenticate, orderController.getOrders);
