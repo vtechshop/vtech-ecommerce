@@ -292,6 +292,9 @@ app.get('/api/csrf-token', csrfLimiter, getCsrfToken);
 // API Routes - Use centralized routes
 app.use('/api', require('./routes/index'));
 
+// SEO Routes - Sitemap and robots.txt
+app.use('/', require('./routes/sitemap'));
+
 // Static files (uploads)
 app.use('/uploads', express.static('uploads'));
 
