@@ -17,7 +17,6 @@ import ProductRecommendations from '@/components/product/ProductRecommendations'
 import ReviewForm from '@/components/product/ReviewForm';
 import EditReviewModal from '@/components/product/EditReviewModal';
 import AdBanner from '@/components/common/AdBanner';
-import Confetti from '@/components/common/Confetti';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
 
@@ -164,7 +163,6 @@ const Product = () => {
   const [addedToCart, setAddedToCart] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
 
   // Capture affiliate code from URL on page load
   useEffect(() => {
@@ -310,9 +308,6 @@ const Product = () => {
       // Show message - same for all users (3 seconds)
       toast.success('Added to cart!', 3000);
 
-      // Trigger confetti animation
-      setShowConfetti(true);
-
       // Reset after 2 seconds
       setTimeout(() => setAddedToCart(false), 2000);
     } catch (error) {
@@ -432,9 +427,6 @@ const Product = () => {
 
   return (
     <div className="min-h-screen bg-blue-50 pt-12">
-      {/* Confetti Animation on Add to Cart */}
-      <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
-
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 lg:gap-6">
           {/* Product Images - Smaller size */}
