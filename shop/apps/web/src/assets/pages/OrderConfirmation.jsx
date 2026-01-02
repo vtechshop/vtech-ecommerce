@@ -9,6 +9,7 @@ import { formatCurrency, formatDateTime } from '@/utils/format';
 import { trackPurchase } from '@/utils/analytics';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import { useToast } from '@/components/common/ToastContainer';
+import FloatingParticles from '@/components/animations/FloatingParticles';
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
@@ -66,8 +67,13 @@ const OrderConfirmation = () => {
   }
 
   return (
-    <div className="min-h-screen bg-blue-50 py-8">
-      <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-4xl">
+    <div className="min-h-screen bg-blue-50 py-8 relative overflow-hidden">
+      {/* Success Floating Particles - Only on order confirmation */}
+      {order.payment?.status === 'paid' && (
+        <FloatingParticles count={12} color="gray" />
+      )}
+
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-4xl relative z-10">
       <div className="py-4">
         {/* Success or Pending Message */}
         {order.payment?.status === 'paid' ? (
