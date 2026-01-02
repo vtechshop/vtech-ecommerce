@@ -59,17 +59,17 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
     <Link
       to={`/product/${product.slug}`}
       onClick={handleClick}
-      className="product-card group bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-xl hover:border-primary-500 transition-all duration-300 block h-full hover-lift"
+      className="etsy-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden block h-full group"
       data-testid="product-card"
       data-cy="product-card"
     >
       {/* Image Container */}
-      <div className="product-card-image relative aspect-square bg-gray-50 overflow-hidden">
+      <div className="relative aspect-square bg-gray-50 overflow-hidden">
         {product.images && product.images.length > 0 ? (
           <img
             src={normalizeImageUrl(product.images[0])}
             alt={product.title}
-            className="w-full h-full object-contain p-2 transition-transform duration-300"
+            className="etsy-image w-full h-full object-contain p-3"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
@@ -79,7 +79,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
         {/* Discount Badge */}
         {hasDiscount && (
-          <div className="badge-pulse absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
+          <div className="etsy-badge absolute top-2 right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
             -{discountPercent}%
           </div>
         )}
@@ -95,27 +95,24 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
         {/* Quick View - Desktop only */}
         {onQuickView && (
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onQuickView(product);
-            }}
-            className="absolute inset-x-0 bottom-0 bg-white/95 py-2 px-3 text-gray-900 font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:flex items-center justify-center gap-2 border-t border-gray-200 text-sm"
-          >
-            <Eye className="w-4 h-4" />
-            Quick View
-          </button>
+          <div className="etsy-actions absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent py-3 px-3">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onQuickView(product);
+              }}
+              className="etsy-btn w-full bg-white text-gray-900 font-semibold py-2 px-4 rounded-lg hidden sm:flex items-center justify-center gap-2 text-sm shadow-lg"
+            >
+              <Eye className="w-4 h-4" />
+              Quick View
+            </button>
+          </div>
         )}
       </div>
 
       {/* Content */}
-      <div className="p-2 sm:p-3">
-        {/* Title */}
-        <h3 className="font-medium text-gray-900 text-xs sm:text-sm line-clamp-2 mb-1 min-h-[2rem] sm:min-h-[2.5rem]">
-          {product.title}
-        </h3>
-
+      <div className="p-3 sm:p-4">
         {/* Vendor Name */}
         {product.vendorId && (
           <button
@@ -124,41 +121,57 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
               e.stopPropagation();
               navigate(`/vendor/${product.vendorId.slug}`);
             }}
-            className="text-xs text-gray-600 hover:text-primary-600 hover:underline block mb-1 sm:mb-2 text-left"
+            className="text-xs text-gray-500 hover:text-primary-600 transition-colors block mb-2 text-left font-medium"
           >
             {product.vendorId.storeName}
           </button>
         )}
 
-        {/* Rating - Hidden on mobile */}
-        <div className="hidden sm:block h-5 mb-2">
+        {/* Title */}
+        <h3 className="font-semibold text-gray-900 text-sm sm:text-base line-clamp-2 mb-2 leading-snug group-hover:text-primary-600 transition-colors">
+          {product.title}
+        </h3>
+
+        {/* Rating */}
+        <div className="flex items-center gap-1 mb-3">
           {ratingStars && (
-            <div className="flex items-center gap-1">
-              <div className="flex">{ratingStars}</div>
-              <span className="text-xs text-gray-500">({product.reviewCount || 0})</span>
-            </div>
+            <>
+              <div className="flex gap-0.5">{ratingStars}</div>
+              <span className="text-xs text-gray-500 ml-1">({product.reviewCount || 0})</span>
+            </>
           )}
         </div>
 
         {/* Price */}
-        <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
-          <span className={`text-sm sm:text-lg font-bold text-blue-600 ${hasDiscount ? 'price-highlight' : ''}`}>
+        <div className="flex items-baseline gap-2 mb-3">
+          <span className={`text-lg sm:text-xl font-bold text-gray-900 ${hasDiscount ? 'etsy-price-highlight' : ''}`}>
             {formatCurrency(product.price)}
           </span>
           {hasDiscount && (
-            <span className="text-[10px] sm:text-sm text-gray-400 line-through">
+            <span className="text-sm text-gray-400 line-through">
               {formatCurrency(product.compareAt)}
             </span>
           )}
         </div>
+
+        {/* Free Shipping Badge */}
+        {product.price > 500 && (
+          <div className="inline-flex items-center gap-1 bg-green-50 text-green-700 text-xs font-medium px-2 py-1 rounded-full mb-2">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+              <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
+            </svg>
+            FREE SHIPPING
+          </div>
+        )}
       </div>
 
       {/* Add to Cart - Desktop only */}
-      <div className="hidden sm:block px-3 pb-3">
+      <div className="px-3 sm:px-4 pb-3 sm:pb-4 hidden sm:block">
         <button
           onClick={handleAddToCart}
           disabled={product.stock <= 0}
-          className="btn-add-to-cart btn-scale w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm"
+          className="etsy-add-to-cart etsy-btn w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-md"
           data-testid="add-to-cart-btn"
         >
           <ShoppingCart className="w-4 h-4" />

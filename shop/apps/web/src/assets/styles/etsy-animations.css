@@ -1,0 +1,473 @@
+/* Etsy-Style Animations and UI Enhancements */
+
+/* ============ PRODUCT CARD ANIMATIONS ============ */
+
+/* Smooth card hover effect */
+.etsy-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.etsy-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.15),
+              0 6px 16px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Image zoom on hover */
+.etsy-image {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+.etsy-card:hover .etsy-image {
+  transform: scale(1.08);
+}
+
+/* Favorite button animation */
+.etsy-favorite {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.etsy-favorite:hover {
+  transform: scale(1.15);
+}
+
+.etsy-favorite:active {
+  transform: scale(0.95);
+}
+
+/* Badge pulse animation */
+@keyframes etsy-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+.etsy-badge {
+  animation: etsy-pulse 2s ease-in-out infinite;
+}
+
+/* Quick actions slide up */
+.etsy-actions {
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+}
+
+.etsy-card:hover .etsy-actions {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* ============ BUTTON ANIMATIONS ============ */
+
+.etsy-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.etsy-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.etsy-btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.etsy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.etsy-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ============ LOADING SKELETONS ============ */
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.etsy-skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+.etsy-skeleton-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.etsy-skeleton-image {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.etsy-skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+  border-radius: 4px;
+}
+
+.etsy-skeleton-text-short {
+  width: 60%;
+}
+
+/* ============ PAGE TRANSITIONS ============ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.etsy-fade-in {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.etsy-fade-in-delay-1 {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
+}
+
+.etsy-fade-in-delay-2 {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+}
+
+.etsy-fade-in-delay-3 {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
+}
+
+/* ============ STAGGER ANIMATIONS ============ */
+
+.etsy-stagger-1 {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.05s both;
+}
+
+.etsy-stagger-2 {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
+}
+
+.etsy-stagger-3 {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.15s both;
+}
+
+.etsy-stagger-4 {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+}
+
+.etsy-stagger-5 {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.25s both;
+}
+
+.etsy-stagger-6 {
+  animation: fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
+}
+
+/* ============ HOVER EFFECTS ============ */
+
+.etsy-hover-brighten {
+  transition: filter 0.3s ease;
+}
+
+.etsy-hover-brighten:hover {
+  filter: brightness(1.05);
+}
+
+.etsy-hover-shadow {
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.etsy-hover-shadow:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* ============ INPUT ANIMATIONS ============ */
+
+.etsy-input {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid #e5e7eb;
+}
+
+.etsy-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  transform: scale(1.01);
+}
+
+/* ============ CHIP/TAG ANIMATIONS ============ */
+
+.etsy-chip {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.etsy-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.etsy-chip:active {
+  transform: scale(0.98);
+}
+
+/* ============ RATING STARS ============ */
+
+@keyframes star-pop {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
+.etsy-star {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.etsy-star:hover {
+  animation: star-pop 0.4s ease;
+}
+
+/* ============ DROPDOWN ANIMATIONS ============ */
+
+@keyframes dropdown-slide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.etsy-dropdown {
+  animation: dropdown-slide 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============ MODAL ANIMATIONS ============ */
+
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.etsy-modal-backdrop {
+  animation: modal-fade-in 0.3s ease;
+}
+
+.etsy-modal-content {
+  animation: modal-slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============ TOAST/NOTIFICATION ANIMATIONS ============ */
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.etsy-toast-enter {
+  animation: toast-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.etsy-toast-exit {
+  animation: toast-slide-out 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============ SCROLL REVEAL ============ */
+
+.etsy-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.etsy-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============ PRICE HIGHLIGHT ============ */
+
+@keyframes price-glow {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  }
+}
+
+.etsy-price-highlight {
+  animation: price-glow 2s ease-in-out infinite;
+}
+
+/* ============ ADD TO CART BUTTON ============ */
+
+@keyframes cart-bounce {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.etsy-add-to-cart:active {
+  animation: cart-bounce 0.3s ease;
+}
+
+/* ============ SMOOTH SCROLLING ============ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* ============ FOCUS STYLES ============ */
+
+.etsy-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  border-radius: 4px;
+}
+
+/* ============ RESPONSIVE ANIMATIONS ============ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============ MICRO-INTERACTIONS ============ */
+
+.etsy-micro-bounce {
+  transition: transform 0.1s ease;
+}
+
+.etsy-micro-bounce:active {
+  transform: scale(0.95);
+}
+
+/* Icon hover rotate */
+.etsy-icon-rotate {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.etsy-icon-rotate:hover {
+  transform: rotate(15deg);
+}
+
+/* ============ GRADIENT ANIMATIONS ============ */
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.etsy-gradient-animated {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
