@@ -1,5 +1,16 @@
 {
   "rewrites": [
-    { "source": "/((?!assets|static).*)", "destination": "/index.html" }
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://vtech-ecommerce-api.onrender.com/sitemap.xml"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "https://vtech-ecommerce-api.onrender.com/robots.txt"
+    },
+    {
+      "source": "/((?!assets|static|sitemap.xml|robots.txt).*)",
+      "destination": "/index.html"
+    }
   ]
 }
