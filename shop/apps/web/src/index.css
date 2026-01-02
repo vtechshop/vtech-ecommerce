@@ -1,5 +1,6 @@
 /* Import custom animations */
 @import './styles/animations.css';
+@import './assets/styles/etsy-animations.css';
 
 @tailwind base;
 @tailwind components;
