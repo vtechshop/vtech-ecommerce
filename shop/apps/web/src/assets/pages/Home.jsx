@@ -25,23 +25,23 @@ const Home = React.memo(() => {
 
   // Use new sponsor ads hooks
   const { ad: bannerAd, loading: bannerLoading } = useSponsorAds('homepage_banner', {
-    refreshInterval: 2 * 60 * 1000, // Refresh every 2 minutes
+    refreshInterval: 5 * 60 * 1000, // Refresh every 5 minutes
   });
 
   const { ad: leftAd, loading: leftLoading } = useSponsorAds('homepage_sidebar_left', {
-    refreshInterval: 2 * 60 * 1000,
+    refreshInterval: 5 * 60 * 1000,
   });
 
   const { ad: rightAd, loading: rightLoading } = useSponsorAds('homepage_sidebar_right', {
-    refreshInterval: 2 * 60 * 1000,
+    refreshInterval: 5 * 60 * 1000,
   });
 
   const { ad: middleAd, loading: middleLoading } = useSponsorAds('homepage_middle', {
-    refreshInterval: 2 * 60 * 1000,
+    refreshInterval: 5 * 60 * 1000,
   });
 
   const { ad: bottomAd, loading: bottomLoading } = useSponsorAds('homepage_bottom', {
-    refreshInterval: 2 * 60 * 1000,
+    refreshInterval: 5 * 60 * 1000,
   });
 
   useEffect(() => {

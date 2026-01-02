@@ -1,0 +1,10 @@
+
+# Debug and utility scripts
+add-images-to-featured.js
+check-ads.js
+create-*.js
+fix-featured-products.js
+mark-featured.js
+unlock-admin.js
+update-campaign.js
+verifyAdSettings.js
