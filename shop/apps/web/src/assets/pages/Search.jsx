@@ -8,6 +8,7 @@ import QuickView from '@/components/product/QuickView';
 import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import SponsoredLabel from '@/components/ads/SponsoredLabel';
+import AdBanner from '@/components/common/AdBanner';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 
@@ -65,32 +66,54 @@ const Search = () => {
     enabled: view === 'products',
   });
 
-  // Sponsored Ads with enhanced error handling
+  // Fetch sponsored ads
   useEffect(() => {
     const fetchAds = async () => {
       setAdsLoading(true);
       setAdsError(null);
 
       try {
-        const response = await api.post('/ads/auction', {
-          placement: 'search_top', // For search page sponsored ads
+        const requestPayload = {
+          placement: 'search_sponsored_products', // For search page sponsored ads
           keywords: query ? [query] : ['all'], // Use 'all' for no search query
           limit: 3,
           _ts: Date.now(), // Cache busting parameter
-        });
+        };
 
-        // DEBUG: Log full response structure
-        console.log('[Sponsored Ads DEBUG] Full response:', response);
-        console.log('[Sponsored Ads DEBUG] response.data:', response.data);
-        console.log('[Sponsored Ads DEBUG] response.data.data:', response.data.data);
-        console.log('[Sponsored Ads DEBUG] response.data.data.ads:', response.data.data?.ads);
+        console.log('🔍 [AD DEBUG] Auction Request:', requestPayload);
+
+        const response = await api.post('/ads/auction', requestPayload);
+
+        console.log('🔍 [AD DEBUG] Auction Response:', response.data);
+        console.log('🔍 [AD DEBUG] Ads Array:', response.data.data?.ads);
+        console.log('🔍 [AD DEBUG] Ads Count:', response.data.data?.ads?.length || 0);
 
         if (response.data.data?.ads && response.data.data.ads.length > 0) {
-          console.log('[Sponsored Ads DEBUG] ✅ Setting ads:', response.data.data.ads);
-          setSponsoredAds(response.data.data.ads);
+          // Amazon-style: Filter out ads with invalid product data
+          const validAds = response.data.data.ads.filter(ad => {
+            const hasProduct = ad.product && (ad.product._id || ad.product.id);
+            const hasPrice = ad.product?.price != null && !isNaN(ad.product.price);
+            const hasName = ad.product?.name;
 
-          // Track impressions
-          response.data.data.ads.forEach((ad) => {
+            if (!hasProduct || !hasPrice || !hasName) {
+              console.warn('⚠️ [AD DEBUG] Filtering out invalid ad:', {
+                campaignId: ad.campaignId,
+                hasProduct,
+                hasPrice,
+                hasName,
+                productData: ad.product
+              });
+              return false;
+            }
+            return true;
+          });
+
+          console.log('✅ [AD DEBUG] Valid ads after filtering:', validAds.length);
+          console.log('✅ [AD DEBUG] Setting sponsored ads:', validAds);
+          setSponsoredAds(validAds);
+
+          // Track impressions only for valid ads
+          validAds.forEach((ad) => {
             api.post('/ads/events', {
               campaignId: ad.campaignId,
               creativeId: ad.creativeId,
@@ -99,15 +122,12 @@ const Search = () => {
             }).catch(() => {}); // Silent fail for impression tracking
           });
         } else {
-          console.log('[Sponsored Ads DEBUG] ❌ No ads to display');
-          console.log('[Sponsored Ads DEBUG] Reason:', {
-            hasDataProperty: !!response.data.data,
-            hasAdsProperty: !!response.data.data?.ads,
-            adsLength: response.data.data?.ads?.length || 0,
-          });
+          console.warn('⚠️ [AD DEBUG] No ads returned - setting empty array');
           setSponsoredAds([]);
         }
       } catch (error) {
+        console.error('❌ [AD DEBUG] Auction Error:', error);
+        console.error('❌ [AD DEBUG] Error Response:', error.response?.data);
         setAdsError(error.message);
         setSponsoredAds([]); // Clear ads on error
       } finally {
@@ -220,6 +240,9 @@ const Search = () => {
   return (
     <div className="min-h-screen bg-white pt-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl pb-12">
+      {/* Ad Banner - Top of Search */}
+      <AdBanner placement="search_top" position="top" className="mb-6 fade-in" />
+
       {/* Header with Sort */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -261,107 +284,80 @@ const Search = () => {
             </div>
           ) : (
             <>
-              {/* Development: Ads Debug Info */}
-              {import.meta.env.DEV && (
-                <div className="mb-4 p-3 bg-blue-100 border border-gray-300 rounded-lg text-xs">
-                  <div className="font-semibold mb-2">Sponsored Ads Debug Info:</div>
-                  <div className="space-y-1">
-                    <div>Placement: <span className="font-mono">search_top</span></div>
-                    <div>Keywords: <span className="font-mono">{query ? `["${query}"]` : '["all"]'}</span></div>
-                    <div>Ads in state: <span className="font-mono font-bold">{sponsoredAds.length}</span></div>
-                    {adsLoading && <div className="text-blue-600">⏳ Loading ads...</div>}
-                    {adsError && <div className="text-red-600">❌ Error: {adsError}</div>}
-                    {!adsLoading && !adsError && sponsoredAds.length === 0 && (
-                      <div className="text-yellow-600">⚠️ No sponsored ads loaded</div>
-                    )}
-                    {sponsoredAds.length > 0 && (
-                      <div className="text-green-600">✅ {sponsoredAds.length} ad(s) loaded and displaying below</div>
-                    )}
-                  </div>
-                  <div className="mt-2 text-gray-700 border-t pt-2">
-                    🔍 Check browser console for detailed logs - search for: <span className="font-mono bg-white px-1">[Sponsored Ads DEBUG]</span>
-                  </div>
-                </div>
-              )}
+              {/* Combined Products (Sponsored + Regular) - Amazon Style */}
+              {(() => {
+                // Combine sponsored ads and regular products in single array
+                const combinedProducts = [
+                  ...sponsoredAds.slice(0, 3).map((ad) => ({
+                    ...ad.product,
+                    title: ad.product?.name || ad.product?.title,
+                    images: ad.bannerImage
+                      ? [ad.bannerImage, ...(ad.product?.images || [])]
+                      : ad.bannerAsset?.imageUrl
+                      ? [ad.bannerAsset.imageUrl, ...(ad.product?.images || [])]
+                      : (ad.product?.images || []),
+                    _isSponsored: true,
+                    _adData: ad, // Keep ad data for click tracking
+                  })),
+                  ...products
+                ];
 
-              {/* Sponsored Ads - Top Row */}
-              {sponsoredAds.length > 0 && (
-                <div className="mb-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {sponsoredAds.slice(0, 3).map((ad) => {
-                      // Create product object with ad image if available, otherwise use product images
-                      const adProduct = {
-                        ...ad.product,
-                        images: ad.bannerImage
-                          ? [ad.bannerImage, ...(ad.product?.images || [])]
-                          : ad.bannerAsset?.imageUrl
-                          ? [ad.bannerAsset.imageUrl, ...(ad.product?.images || [])]
-                          : (ad.product?.images || [])
-                      };
+                if (combinedProducts.length === 0) {
+                  return (
+                    <div className="text-center py-12">
+                      <svg
+                        className="w-16 h-16 mx-auto text-gray-400 mb-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                      </svg>
+                      <h3 className="text-xl font-semibold mb-2">No products found</h3>
+                      <p className="text-gray-700">
+                        Try adjusting your filters or search query
+                      </p>
+                    </div>
+                  );
+                }
 
-                      return (
-                        <div key={ad.creativeId} className="relative">
+                return (
+                  <>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+                      {combinedProducts.map((product, index) => (
+                        <div key={product._isSponsored ? product._adData.creativeId : (product.id ?? product._id)} className={`relative fade-in stagger-${Math.min((index % 6) + 1, 6)}`}>
                           <ProductCard
-                            product={adProduct}
-                            onClick={() => handleAdClick(ad)}
+                            product={{ _id: product._id ?? product.id, ...product }}
+                            onClick={product._isSponsored ? () => handleAdClick(product._adData) : undefined}
                             onQuickView={handleQuickView}
                           />
-                          <div className="absolute top-2 left-2">
-                            <SponsoredLabel />
-                          </div>
+                          {product._isSponsored && (
+                            <div className="absolute top-2 left-2 z-10">
+                              <SponsoredLabel />
+                            </div>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                  <div className="border-b border-gray-200 my-6"></div>
-                </div>
-              )}
-
-              {/* Regular Products */}
-              {products.length === 0 ? (
-                <div className="text-center py-12">
-                  <svg
-                    className="w-16 h-16 mx-auto text-gray-400 mb-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                  <h3 className="text-xl font-semibold mb-2">No products found</h3>
-                  <p className="text-gray-700">
-                    Try adjusting your filters or search query
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
-                    {products.map((product) => (
-                      <ProductCard
-                        key={product.id ?? product._id}
-                        product={{ _id: product._id ?? product.id, ...product }}
-                        onQuickView={handleQuickView}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="mt-8">
-                      <Pagination
-                        currentPage={page}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                      />
+                      ))}
                     </div>
-                  )}
-                </>
-              )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="mt-8">
+                        <Pagination
+                          currentPage={page}
+                          totalPages={totalPages}
+                          onPageChange={handlePageChange}
+                        />
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
         </div>

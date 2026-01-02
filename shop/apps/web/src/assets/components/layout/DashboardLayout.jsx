@@ -143,6 +143,7 @@ const DashboardLayout = () => {
       if (path.includes('/tickets')) return counts.openTickets || 0;
       if (path.includes('/contact-submissions')) return counts.unreadMessages || 0;
       if (path.includes('/communications')) return counts.unreadCommunications || 0;
+      if (path.includes('/ads')) return counts.pendingAds || 0;
     }
 
     // Vendor notifications

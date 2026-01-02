@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/Cart.jsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateCartItem, removeCartItem, loadCart } from '@/store/slices/cartSlice';
@@ -44,14 +44,14 @@ const Cart = () => {
     return (
       <div className="bg-white min-h-screen">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-12">
-          <div className="max-w-xl mx-auto text-center bg-white rounded-lg border p-12">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="max-w-xl mx-auto text-center bg-white rounded-lg border p-12 fade-in scale-in">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 empty-state-icon">
               <ShoppingBag className="w-10 h-10 text-gray-400" />
             </div>
-            <h1 className="text-2xl font-bold mb-3 text-gray-900">Your cart is empty</h1>
-            <p className="text-gray-700 mb-6">Start shopping to add items to your cart!</p>
-            <Link to="/search">
-              <button className="px-4 py-2 sm:px-6 sm:py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors inline-flex items-center gap-2 text-sm sm:text-base">
+            <h1 className="text-2xl font-bold mb-3 text-gray-900 fade-in-down">Your cart is empty</h1>
+            <p className="text-gray-700 mb-6 fade-in stagger-1">Start shopping to add items to your cart!</p>
+            <Link to="/search" className="fade-in stagger-2">
+              <button className="px-4 py-2 sm:px-6 sm:py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors inline-flex items-center gap-2 text-sm sm:text-base btn-scale hover-lift">
                 Continue Shopping
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -65,8 +65,11 @@ const Cart = () => {
   return (
     <div className="bg-white min-h-screen">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
+        {/* Ad Banner - Top of Cart */}
+        <AdBanner placement="cart_top" position="top" className="mb-6 md:mb-8 fade-in" />
+
         {/* Header */}
-        <div className="mb-6 md:mb-8">
+        <div className="mb-6 md:mb-8 fade-in-down">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Shopping Cart</h1>
           <p className="text-gray-700 mt-1">
             {items.length} {items.length === 1 ? 'item' : 'items'}
@@ -76,10 +79,10 @@ const Cart = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-3">
-            {items.map((item) => (
+            {items.map((item, index) => (
               <div
                 key={item._id}
-                className="cart-item bg-white rounded-lg border overflow-hidden"
+                className={`cart-item bg-white rounded-lg border overflow-hidden hover-lift transition-all duration-300 fade-in stagger-${Math.min(index + 1, 6)}`}
                 data-cy="cart-item"
               >
                 <div className="p-4 flex gap-3">
@@ -182,8 +185,8 @@ const Cart = () => {
             {/* Ad Banner - Sidebar */}
             <AdBanner placement="cart_sidebar" position="right" className="sticky top-4" />
 
-            <div className="bg-white rounded-lg border p-5 sticky top-4">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">Order Summary</h2>
+            <div className="bg-white rounded-lg border p-5 sticky top-4 fade-in-right hover-lift">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 fade-in-down">Order Summary</h2>
 
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-sm text-gray-700">
@@ -217,10 +220,10 @@ const Cart = () => {
                 )}
               </div>
 
-              <div className="border-t pt-3 mb-4">
+              <div className="border-t pt-3 mb-4 fade-in stagger-1">
                 <div className="flex justify-between items-baseline">
                   <span className="text-base font-bold text-gray-900">Total</span>
-                  <span className="text-2xl font-bold text-gray-900">
+                  <span className="text-2xl font-bold text-gray-900 price-highlight">
                     {formatCurrency(totals.total)}
                   </span>
                 </div>
@@ -228,7 +231,7 @@ const Cart = () => {
 
               <button
                 onClick={handleCheckout}
-                className="w-full bg-primary-600 text-white py-2 sm:py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors mb-3 text-sm sm:text-base"
+                className="w-full bg-primary-600 text-white py-2 sm:py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors mb-3 text-sm sm:text-base btn-add-to-cart btn-scale hover-lift fade-in stagger-2"
                 data-testid="checkout-btn"
                 data-cy="checkout-btn"
               >
@@ -236,7 +239,7 @@ const Cart = () => {
               </button>
 
               <Link to="/search">
-                <button className="w-full bg-blue-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors" data-testid="continue-shopping-btn">
+                <button className="w-full bg-blue-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors btn-scale fade-in stagger-3" data-testid="continue-shopping-btn">
                   Continue Shopping
                 </button>
               </Link>

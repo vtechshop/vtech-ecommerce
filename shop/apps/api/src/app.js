@@ -192,6 +192,32 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+// ===========================
+// ADVANCED SECURITY (Amazon-Level Protection)
+// ===========================
+const {
+  ipBlockingMiddleware,
+  attackDetectionMiddleware,
+  requestSizeLimiter,
+} = require('./middleware/advancedSecurity');
+
+// Import OLD rate limiters from security.js
+const {
+  loginLimiter,
+  registerLimiter,
+  apiLimiter,
+} = require('./middleware/security');
+
+// Apply advanced security middleware globally
+app.use(ipBlockingMiddleware); // Block banned IPs automatically
+app.use(attackDetectionMiddleware); // Detect SQL injection, XSS, NoSQL injection, etc.
+app.use(requestSizeLimiter); // Prevent large payload attacks (max 15MB)
+
+// Apply OLD rate limiting ONLY to Login, Register, Order Creation (User's preference)
+app.use('/api/auth/login', loginLimiter); // 5 login attempts per 15min (OLD)
+app.use('/api/auth/register', registerLimiter); // 3 registrations per hour (OLD)
+// Order Creation - NO specific rate limiter (as per OLD configuration)
+
 // Simple request logging (No pino-http needed)
 app.use((req, res, next) => {
   const start = Date.now();

@@ -5,6 +5,7 @@ const Order = require('../models/Order');
 const Commission = require('../models/Commission');
 const { slugify, generateSKU, getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
+const notificationHelper = require('../services/notificationHelper');
 
 // ---------- CONTROLLERS ----------
 async function getVendorBySlug(req, res, next) {
@@ -58,6 +59,18 @@ async function onboard(req, res, next) {
 
     logger.info(`User role updated to vendor for: ${req.user._id}`);
     logger.info(`Vendor onboarded: ${vendor.storeName}`);
+
+    // Notify admin of new vendor registration
+    try {
+      await notificationHelper.notifyAdminNewVendor({
+        vendor,
+        userEmail: req.user.email || 'Unknown',
+      });
+      logger.info(`Admin notified of new vendor registration: ${vendor.storeName}`);
+    } catch (notifError) {
+      logger.error('Failed to notify admin of new vendor:', notifError);
+    }
+
     res.status(201).json({ success: true, data: vendor });
   } catch (error) {
     logger.error(`Vendor onboarding failed for user ${req.user._id}:`, error);

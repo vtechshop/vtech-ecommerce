@@ -19,6 +19,7 @@ import EditReviewModal from '@/components/product/EditReviewModal';
 import AdBanner from '@/components/common/AdBanner';
 import Confetti from '@/components/common/Confetti';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
+import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
 
 // Customer Reviews Carousel Component
 const CustomerReviewsCarousel = ({ reviews, renderStars, onEdit, onDelete, currentUser }) => {
@@ -437,19 +438,19 @@ const Product = () => {
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 lg:gap-6">
           {/* Product Images - Smaller size */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 fade-in-left">
             <div className="sticky top-4 space-y-3">
-              <div className="relative bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <div className="aspect-square">
+              <div className="relative bg-white border border-gray-200 rounded-lg overflow-hidden product-card hover-lift">
+                <div className="aspect-square product-card-image">
                   {product.images && product.images.length > 0 ? (
                     <img
                       src={normalizeImageUrl(product.images[selectedImage])}
                       alt={product.title}
-                      className="w-full h-full object-contain p-4"
+                      className="w-full h-full object-contain p-4 transition-transform duration-500"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      <div className="text-center">
+                      <div className="text-center fade-in">
                         <div className="text-3xl md:text-4xl lg:text-5xl mb-2">📦</div>
                         <p className="text-sm">No Image</p>
                       </div>
@@ -464,8 +465,8 @@ const Product = () => {
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
-                        index === selectedImage ? 'border-primary-500' : 'border-gray-200'
+                      className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden transition-all duration-300 hover-lift fade-in stagger-${Math.min(index + 1, 6)} ${
+                        index === selectedImage ? 'border-primary-500 scale-110' : 'border-gray-200'
                       }`}
                     >
                       <img
@@ -481,16 +482,16 @@ const Product = () => {
           </div>
 
         {/* Product Details */}
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-3 space-y-4 fade-in-right">
           <div className="space-y-2">
             {product.brand && (
-              <div className="inline-block">
+              <div className="inline-block fade-in stagger-1">
                 <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
                   {product.brand}
                 </span>
               </div>
             )}
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-snug">{product.title}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-snug fade-in-down">{product.title}</h1>
 
             {/* Vendor Name */}
             {product.vendorId && (
@@ -675,13 +676,13 @@ const Product = () => {
             </div>
           </div>
 
-          <div className="flex gap-4 pt-2">
+          <div className="flex gap-4 pt-2 fade-in stagger-3">
             <button
               onClick={handleAddToCart}
               disabled={product.stock === 0}
               data-testid="add-to-cart-btn"
               data-cy="add-to-cart-btn"
-              className={`btn-add-to-cart flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
+              className={`btn-add-to-cart btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
                 addedToCart
                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-400'
                   : product.stock === 0
@@ -704,7 +705,7 @@ const Product = () => {
             <button
               onClick={handleBuyNow}
               disabled={product.stock === 0}
-              className="flex-1 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white py-4 rounded-2xl font-bold text-lg hover:from-secondary-600 hover:to-secondary-700 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed border-2 border-secondary-400 disabled:border-gray-400"
+              className="btn-scale hover-lift flex-1 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white py-4 rounded-2xl font-bold text-lg hover:from-secondary-600 hover:to-secondary-700 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed border-2 border-secondary-400 disabled:border-gray-400"
             >
               Buy Now
             </button>

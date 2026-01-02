@@ -8,15 +8,28 @@ const adPricingSettingsSchema = new mongoose.Schema(
       required: true,
       unique: true,
       enum: [
+        // Homepage placements
         'homepage_banner',
-        'homepage_top',
         'homepage_sidebar_left',
         'homepage_sidebar_right',
+        'homepage_middle',
+        'homepage_bottom',
+        // Search & Category placements
         'search_sponsored_products',
+        'search_top',
         'category_top_banner',
         'category_grid',
+        'category_sidebar',
+        // Product page placements
         'product_sidebar',
+        'product_top',
+        'product_bottom',
         'product_related',
+        // Blog placements
+        'blog_top',
+        'blog_sidebar',
+        'blog_in_content',
+        'blog_bottom',
       ],
     },
     displayName: {

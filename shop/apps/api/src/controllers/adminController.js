@@ -15,6 +15,7 @@ const Review = require('../models/Review');
 const { getPaginationMeta, slugify, generateSKU } = require('../utils/helpers');
 const logger = require('../config/logger');
 const warrantyService = require('../services/warrantyService');
+const notificationHelper = require('../services/notificationHelper');
 
 // Helper function to activate warranties after payment
 const activateWarrantiesForOrder = async (order) => {
@@ -535,9 +536,22 @@ exports.approveVendor = async (req, res, next) => {
       req.params.id,
       { status: 'active', 'kyc.status': 'approved', 'kyc.verifiedAt': new Date() },
       { new: true }
-    );
+    ).populate('userId');
     if (!vendor) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Vendor not found' } });
     logger.info(`Vendor approved: ${vendor.storeName}`);
+
+    // Notify vendor of approval
+    try {
+      await notificationHelper.notifyVendorApprovalStatus({
+        vendorUserId: vendor.userId._id || vendor.userId,
+        vendor,
+        status: 'approved',
+      });
+      logger.info(`Vendor notified of approval: ${vendor.storeName}`);
+    } catch (notifError) {
+      logger.error('Failed to notify vendor of approval:', notifError);
+    }
+
     res.json({ success: true, data: vendor });
   } catch (error) { next(error); }
 };
@@ -553,9 +567,23 @@ exports.rejectVendor = async (req, res, next) => {
         'kyc.rejectedAt': new Date()
       },
       { new: true }
-    );
+    ).populate('userId');
     if (!vendor) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Vendor not found' } });
     logger.info(`Vendor rejected: ${vendor.storeName}, Reason: ${req.body.reason}`);
+
+    // Notify vendor of rejection
+    try {
+      await notificationHelper.notifyVendorApprovalStatus({
+        vendorUserId: vendor.userId._id || vendor.userId,
+        vendor,
+        status: 'rejected',
+        rejectionReason: req.body.reason,
+      });
+      logger.info(`Vendor notified of rejection: ${vendor.storeName}`);
+    } catch (notifError) {
+      logger.error('Failed to notify vendor of rejection:', notifError);
+    }
+
     res.json({ success: true, data: vendor });
   } catch (error) { next(error); }
 };
@@ -886,18 +914,43 @@ exports.getAffiliates = async (req, res, next) => {
 
 exports.approveAffiliate = async (req, res, next) => {
   try {
-    const aff = await Affiliate.findByIdAndUpdate(req.params.id, { status: 'active', approvedAt: new Date() }, { new: true });
+    const aff = await Affiliate.findByIdAndUpdate(req.params.id, { status: 'active', approvedAt: new Date() }, { new: true }).populate('userId');
     if (!aff) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Affiliate not found' } });
     logger.info(`Affiliate approved: ${aff.code}`);
+
+    // Notify affiliate of approval
+    try {
+      await notificationHelper.notifyAffiliateApprovalStatus({
+        affiliateUserId: aff.userId._id || aff.userId,
+        status: 'approved',
+      });
+      logger.info(`Affiliate notified of approval: ${aff.code}`);
+    } catch (notifError) {
+      logger.error('Failed to notify affiliate of approval:', notifError);
+    }
+
     res.json({ success: true, data: aff });
   } catch (error) { next(error); }
 };
 
 exports.rejectAffiliate = async (req, res, next) => {
   try {
-    const aff = await Affiliate.findByIdAndUpdate(req.params.id, { status: 'rejected', rejectionReason: req.body.reason }, { new: true });
+    const aff = await Affiliate.findByIdAndUpdate(req.params.id, { status: 'rejected', rejectionReason: req.body.reason }, { new: true }).populate('userId');
     if (!aff) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Affiliate not found' } });
     logger.info(`Affiliate rejected: ${aff.code}`);
+
+    // Notify affiliate of rejection
+    try {
+      await notificationHelper.notifyAffiliateApprovalStatus({
+        affiliateUserId: aff.userId._id || aff.userId,
+        status: 'rejected',
+        rejectionReason: req.body.reason,
+      });
+      logger.info(`Affiliate notified of rejection: ${aff.code}`);
+    } catch (notifError) {
+      logger.error('Failed to notify affiliate of rejection:', notifError);
+    }
+
     res.json({ success: true, data: aff });
   } catch (error) { next(error); }
 };
@@ -992,7 +1045,24 @@ exports.payCommission = async (req, res, next) => {
     );
     if (!row) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Commission not found' } });
     if (row.type === 'affiliate') {
-      await Affiliate.findByIdAndUpdate(row.subjectId, { $inc: { paidEarnings: row.amount, pendingEarnings: -row.amount } });
+      const affiliate = await Affiliate.findByIdAndUpdate(
+        row.subjectId,
+        { $inc: { paidEarnings: row.amount, pendingEarnings: -row.amount } }
+      ).populate('userId');
+
+      // Notify affiliate of payment
+      if (affiliate && affiliate.userId) {
+        try {
+          await notificationHelper.notifyAffiliateCommissionPaid({
+            affiliateUserId: affiliate.userId._id || affiliate.userId,
+            commission: row,
+            amount: row.amount,
+          });
+          logger.info(`Affiliate notified of commission payment: ${row._id}`);
+        } catch (notifError) {
+          logger.error('Failed to notify affiliate of commission payment:', notifError);
+        }
+      }
     }
     logger.info(`Commission paid: ${row._id}`);
     res.json({ success: true, data: row });

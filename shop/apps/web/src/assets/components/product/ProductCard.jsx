@@ -59,17 +59,17 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
     <Link
       to={`/product/${product.slug}`}
       onClick={handleClick}
-      className="group bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-xl hover:border-primary-500 transition-all duration-300 block h-full"
+      className="product-card group bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-xl hover:border-primary-500 transition-all duration-300 block h-full hover-lift"
       data-testid="product-card"
       data-cy="product-card"
     >
       {/* Image Container */}
-      <div className="relative aspect-square bg-gray-50 overflow-hidden">
+      <div className="product-card-image relative aspect-square bg-gray-50 overflow-hidden">
         {product.images && product.images.length > 0 ? (
           <img
             src={normalizeImageUrl(product.images[0])}
             alt={product.title}
-            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-contain p-2 transition-transform duration-300"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
@@ -79,7 +79,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
         {/* Discount Badge */}
         {hasDiscount && (
-          <div className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
+          <div className="badge-pulse absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-500 text-white text-[10px] sm:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
             -{discountPercent}%
           </div>
         )}
@@ -142,7 +142,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
         {/* Price */}
         <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
-          <span className="text-sm sm:text-lg font-bold text-blue-600">
+          <span className={`text-sm sm:text-lg font-bold text-blue-600 ${hasDiscount ? 'price-highlight' : ''}`}>
             {formatCurrency(product.price)}
           </span>
           {hasDiscount && (
@@ -158,7 +158,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         <button
           onClick={handleAddToCart}
           disabled={product.stock <= 0}
-          className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm"
+          className="btn-add-to-cart btn-scale w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm"
           data-testid="add-to-cart-btn"
         >
           <ShoppingCart className="w-4 h-4" />

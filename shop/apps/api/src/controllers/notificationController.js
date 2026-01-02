@@ -7,6 +7,8 @@ const Ticket = require('../models/Ticket');
 const Vendor = require('../models/Vendor');
 const Affiliate = require('../models/Affiliate');
 const Commission = require('../models/Commission');
+const AdCampaign = require('../models/AdCampaign');
+const Notification = require('../models/Notification');
 const logger = require('../config/logger');
 
 /**
@@ -25,6 +27,8 @@ exports.getNotificationCounts = async (req, res, next) => {
       pendingVendors: 0,
       pendingAffiliates: 0,
       pendingCommissions: 0,
+      pendingAds: 0,
+      unreadNotifications: 0,
       totalNotifications: 0,
     };
 
@@ -85,6 +89,18 @@ exports.getNotificationCounts = async (req, res, next) => {
         ]
       });
 
+      // Pending ad campaign approvals
+      counts.pendingAds = await AdCampaign.countDocuments({
+        status: 'pending_approval',
+        'approval.status': 'pending',
+      });
+
+      // Unread in-app notifications for admin
+      counts.unreadNotifications = await Notification.countDocuments({
+        userId: user._id,
+        read: false,
+      });
+
     } else if (user.role === 'vendor') {
       // Vendor notifications (only their own products)
       const vendor = await Vendor.findOne({ userId: user._id });
@@ -109,6 +125,12 @@ exports.getNotificationCounts = async (req, res, next) => {
           recipientModel: 'Vendor',
           read: false,
         });
+
+        // Unread in-app notifications for vendor
+        counts.unreadNotifications = await Notification.countDocuments({
+          userId: user._id,
+          read: false,
+        });
       }
     } else if (user.role === 'affiliate') {
       // Affiliate notifications
@@ -127,6 +149,12 @@ exports.getNotificationCounts = async (req, res, next) => {
           recipientModel: 'Affiliate',
           read: false,
         });
+
+        // Unread in-app notifications for affiliate
+        counts.unreadNotifications = await Notification.countDocuments({
+          userId: user._id,
+          read: false,
+        });
       }
     }
 
@@ -139,7 +167,9 @@ exports.getNotificationCounts = async (req, res, next) => {
       counts.openTickets +
       counts.pendingVendors +
       counts.pendingAffiliates +
-      counts.pendingCommissions;
+      counts.pendingCommissions +
+      counts.pendingAds +
+      counts.unreadNotifications;
 
     res.json({
       success: true,

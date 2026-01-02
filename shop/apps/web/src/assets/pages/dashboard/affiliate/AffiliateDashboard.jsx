@@ -126,7 +126,7 @@ const AffiliateDashboard = () => {
     <div className="space-y-6">
       {/* KYC Banner - Show if KYC not approved */}
       {needsKYC && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between flex-wrap gap-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between flex-wrap gap-4 fade-in badge-pulse">
           <div className="flex items-center gap-3">
             <div className="bg-amber-100 p-2 rounded-lg">
               <Award className="w-5 h-5 text-amber-600" />
@@ -152,7 +152,7 @@ const AffiliateDashboard = () => {
       )}
 
       {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 sm:p-8 text-white">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-lg p-6 sm:p-8 text-white fade-in-down hover-lift">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
@@ -175,7 +175,7 @@ const AffiliateDashboard = () => {
       </div>
 
       {/* Affiliate Code Card */}
-      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-6">
+      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-6 fade-in hover-lift">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
             <div className="bg-purple-600 p-3 rounded-lg">
@@ -210,7 +210,7 @@ const AffiliateDashboard = () => {
       {/* Key Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Total Clicks */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all fade-in stagger-1 hover-lift">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-blue-100 p-3 rounded-lg">
               <MousePointer className="w-6 h-6 text-blue-600" />
@@ -233,7 +233,7 @@ const AffiliateDashboard = () => {
         </div>
 
         {/* Total Conversions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all fade-in stagger-2 hover-lift">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-green-100 p-3 rounded-lg">
               <ShoppingCart className="w-6 h-6 text-green-600" />
@@ -256,7 +256,7 @@ const AffiliateDashboard = () => {
         </div>
 
         {/* Conversion Rate */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all fade-in stagger-3 hover-lift">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-purple-100 p-3 rounded-lg">
               <Percent className="w-6 h-6 text-purple-600" />
@@ -268,7 +268,7 @@ const AffiliateDashboard = () => {
         </div>
 
         {/* Total Earnings */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all fade-in stagger-4 hover-lift">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-amber-100 p-3 rounded-lg">
               <DollarSign className="w-6 h-6 text-amber-600" />
@@ -296,7 +296,7 @@ const AffiliateDashboard = () => {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Performance Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6 fade-in-up hover-lift">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl md:text-2xl font-bold text-gray-900">Weekly Performance</h2>

@@ -13,8 +13,8 @@ const Toast = ({ id, type = 'info', message, duration = 5000, onClose }) => {
   }, [id, duration, onClose]);
 
   const icons = {
-    success: <CheckCircle className="w-5 h-5" />,
-    error: <AlertCircle className="w-5 h-5" />,
+    success: <CheckCircle className="w-5 h-5 checkmark" />,
+    error: <AlertCircle className="w-5 h-5 shake" />,
     warning: <AlertTriangle className="w-5 h-5" />,
     info: <Info className="w-5 h-5" />,
   };
@@ -28,7 +28,7 @@ const Toast = ({ id, type = 'info', message, duration = 5000, onClose }) => {
 
   return (
     <div
-      className={`${styles[type]} rounded-lg shadow-2xl p-4 flex items-center gap-3 min-w-[320px] max-w-md animate-slide-in-right`}
+      className={`${styles[type]} rounded-lg shadow-2xl p-4 flex items-center gap-3 min-w-[320px] max-w-md toast-slide-in`}
       role="alert"
     >
       <div className="flex-shrink-0">{icons[type]}</div>
@@ -37,7 +37,7 @@ const Toast = ({ id, type = 'info', message, duration = 5000, onClose }) => {
       </div>
       <button
         onClick={() => onClose(id)}
-        className="flex-shrink-0 hover:bg-white/20 rounded-full p-1 transition-colors"
+        className="flex-shrink-0 hover:bg-white/20 rounded-full p-1 transition-colors btn-scale"
         aria-label="Close"
       >
         <X className="w-4 h-4" />

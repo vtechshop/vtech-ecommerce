@@ -37,11 +37,11 @@ const VendorDashboard = () => {
 
   return (
     <div>
-      <h1 className="text-3xl md:text-4xl font-bold mb-8">Vendor Dashboard</h1>
+      <h1 className="text-3xl md:text-4xl font-bold mb-8 fade-in-down">Vendor Dashboard</h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-1 hover-lift">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-700 text-sm font-medium">Total Products</h3>
             <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -52,7 +52,7 @@ const VendorDashboard = () => {
           <p className="text-sm text-green-600 mt-1">+{stats?.activeProducts || 0} active</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-2 hover-lift">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-700 text-sm font-medium">Total Orders</h3>
             <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,7 +63,7 @@ const VendorDashboard = () => {
           <p className="text-sm text-orange-600 mt-1">{stats?.pendingOrders || 0} pending</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-3 hover-lift">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-700 text-sm font-medium">Total Sales</h3>
             <svg className="w-8 h-8 text-secondary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -74,7 +74,7 @@ const VendorDashboard = () => {
           <p className="text-sm text-gray-700 mt-1">This month</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-4 hover-lift">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-700 text-sm font-medium">Earnings</h3>
             <svg className="w-8 h-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,8 +87,8 @@ const VendorDashboard = () => {
       </div>
 
       {/* Sales Chart */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <h2 className="text-xl md:text-2xl font-bold mb-4">Sales Overview</h2>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8 fade-in-up hover-lift">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 fade-in-down">Sales Overview</h2>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={mockData}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -102,17 +102,17 @@ const VendorDashboard = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link to="/vendor-dashboard/products" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <Link to="/vendor-dashboard/products" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all fade-in stagger-1 hover-lift">
           <h3 className="font-semibold text-lg mb-2">Manage Products</h3>
           <p className="text-gray-700 text-sm">Add, edit, or remove products from your store</p>
         </Link>
 
-        <Link to="/vendor-dashboard/orders" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <Link to="/vendor-dashboard/orders" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all fade-in stagger-2 hover-lift">
           <h3 className="font-semibold text-lg mb-2">Process Orders</h3>
           <p className="text-gray-700 text-sm">View and fulfill customer orders</p>
         </Link>
 
-        <Link to="/vendor-dashboard/ads" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <Link to="/vendor-dashboard/ads" className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all fade-in stagger-3 hover-lift">
           <h3 className="font-semibold text-lg mb-2">Sponsored Ads</h3>
           <p className="text-gray-700 text-sm">Create campaigns to promote your products</p>
         </Link>

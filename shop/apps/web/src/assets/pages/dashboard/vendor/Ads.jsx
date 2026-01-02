@@ -50,6 +50,7 @@ const Ads = () => {
     bannerSize: 'hero',
     dimensions: { width: '', height: '' },
     productIds: [],
+    keywords: '', // Amazon-style: Keywords for ad targeting
   });
 
   // Fetch pricing settings for selected placement
@@ -312,6 +313,7 @@ const Ads = () => {
       bannerSize: 'hero',
       dimensions: { width: '', height: '' },
       productIds: [],
+      keywords: '',
     });
   };
 
@@ -332,6 +334,7 @@ const Ads = () => {
       bannerSize: campaign.bannerSize || 'hero',
       dimensions: campaign.dimensions || { width: '', height: '' },
       productIds: campaign.targeting?.products || [],
+      keywords: campaign.targeting?.keywords?.map(k => k.keyword).join(', ') || '',
     });
     setIsCreateModalOpen(true);
   };
@@ -388,11 +391,25 @@ const Ads = () => {
       data.endAt = new Date(campaignForm.endAt);
     }
 
+    // Amazon-style: Add targeting with keywords and products
+    const keywords = campaignForm.keywords
+      ? campaignForm.keywords.split(',').map(k => k.trim()).filter(Boolean)
+      : [];
+
     if (campaignForm.type === 'SponsoredProduct' && campaignForm.productIds.length > 0) {
       data.targeting = {
         products: campaignForm.productIds,
+        keywords: keywords.map(k => ({ keyword: k, matchType: 'broad' })),
+      };
+    } else if (keywords.length > 0) {
+      // For non-product campaigns or search placements, still send keywords
+      data.targeting = {
+        keywords: keywords.map(k => ({ keyword: k, matchType: 'broad' })),
+        products: [],
       };
     }
+
+    console.log('🎯 [VENDOR DEBUG] Creating campaign with targeting:', data.targeting);
 
     if (isEditMode && editingCampaign) {
       updateCampaignMutation.mutate({ id: editingCampaign._id, data });
@@ -1545,7 +1562,6 @@ const Ads = () => {
               >
                 <optgroup label="Homepage">
                   <option value="homepage_banner">Homepage - Banner (Hero Section)</option>
-                  <option value="homepage_top">Homepage - Top Section</option>
                   <option value="homepage_sidebar_left">Homepage - Left Sidebar</option>
                   <option value="homepage_sidebar_right">Homepage - Right Sidebar</option>
                   <option value="homepage_middle">Homepage - Middle Section</option>
@@ -1554,21 +1570,15 @@ const Ads = () => {
                 <optgroup label="Search & Category">
                   <option value="search_sponsored_products">Search Results - Sponsored Products</option>
                   <option value="search_top">Search Results - Top Banner</option>
-                  <option value="search_sidebar">Search Results - Sidebar</option>
                   <option value="category_top_banner">Category Page - Top Banner</option>
                   <option value="category_grid">Category Page - In Product Grid</option>
                   <option value="category_sidebar">Category Page - Sidebar</option>
                 </optgroup>
-                <optgroup label="Product Pages">
-                  <option value="product_sidebar">Product Page - Sidebar</option>
-                  <option value="product_top">Product Page - Top Banner</option>
-                  <option value="product_bottom">Product Page - Bottom Banner</option>
-                  <option value="product_related">Product Page - Related Products Section</option>
-                </optgroup>
-                <optgroup label="Cart & Checkout">
-                  <option value="cart_sidebar">Cart Page - Sidebar</option>
-                  <option value="cart_bottom">Cart Page - Bottom Banner</option>
-                  <option value="checkout_top">Checkout Page - Top Banner</option>
+                <optgroup label="Blog Pages">
+                  <option value="blog_top">Blog - Top Banner</option>
+                  <option value="blog_sidebar">Blog - Sidebar</option>
+                  <option value="blog_in_content">Blog Post - In Content</option>
+                  <option value="blog_bottom">Blog Post - Bottom Banner</option>
                 </optgroup>
               </select>
               <p className="text-xs text-gray-500 mt-1">
@@ -1812,6 +1822,27 @@ const Ads = () => {
                 onChange={(e) => setCampaignForm({ ...campaignForm, endAt: e.target.value })}
                 min={campaignForm.startAt}
               />
+            </div>
+
+            {/* Amazon-style: Keywords Targeting */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Keywords (comma-separated) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={campaignForm.keywords}
+                onChange={(e) => setCampaignForm({ ...campaignForm, keywords: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                placeholder="e.g., yoga, fitness, mat, exercise, all"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                <strong>💡 Amazon-style Tips:</strong> Enter keywords that customers might search for. Use "all" to show for all searches on the search page. Separate multiple keywords with commas.
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Examples: "all" (shows for all searches) | "yoga, mat, fitness" (shows when users search for these terms)
+              </p>
             </div>
 
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">

@@ -31,14 +31,14 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md', showCloseButton 
       <div className="flex min-h-screen items-center justify-center p-4">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity modal-fade-in"
           onClick={onClose}
         />
 
         {/* Modal */}
         <div
           className={clsx(
-            'relative bg-white rounded-lg shadow-2xl w-full modal-content animate-fade-in',
+            'relative bg-white rounded-lg shadow-2xl w-full modal-slide-up',
             sizes[size]
           )}
         >

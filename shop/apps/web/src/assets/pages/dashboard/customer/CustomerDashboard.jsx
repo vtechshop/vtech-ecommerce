@@ -34,11 +34,11 @@ const CustomerDashboard = () => {
 
   return (
     <div>
-      <h1 className="text-3xl md:text-4xl font-bold mb-8">Dashboard</h1>
+      <h1 className="text-3xl md:text-4xl font-bold mb-8 fade-in-down">Dashboard</h1>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in hover-lift">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-700 text-sm font-medium">Total Spent</h3>
             <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -52,7 +52,7 @@ const CustomerDashboard = () => {
       {/* Upgrade Options - Only show for customers, not for admin/vendor/affiliate */}
       {user?.role === 'customer' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <Link to="/dashboard/become-vendor" className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-white">
+          <Link to="/dashboard/become-vendor" className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg shadow-sm p-6 hover:shadow-md transition-all text-white fade-in stagger-1 hover-lift">
             <div className="flex items-center gap-4">
               <div className="bg-white/20 rounded-full p-3">
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -66,7 +66,7 @@ const CustomerDashboard = () => {
             </div>
           </Link>
 
-          <Link to="/dashboard/become-affiliate" className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-white">
+          <Link to="/dashboard/become-affiliate" className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-sm p-6 hover:shadow-md transition-all text-white fade-in stagger-2 hover-lift">
             <div className="flex items-center gap-4">
               <div className="bg-white/20 rounded-full p-3">
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -83,9 +83,9 @@ const CustomerDashboard = () => {
       )}
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in-up hover-lift">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl md:text-2xl font-bold">Recent Orders</h2>
+          <h2 className="text-xl md:text-2xl font-bold fade-in-down">Recent Orders</h2>
           <Link to="/dashboard/orders" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
             View All →
           </Link>
@@ -104,8 +104,8 @@ const CustomerDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order) => (
-                  <tr key={order._id} className="border-b last:border-b-0">
+                {recentOrders.map((order, index) => (
+                  <tr key={order._id} className={`border-b last:border-b-0 fade-in stagger-${Math.min(index + 1, 6)}`}>
                     <td className="py-3 px-3 sm:px-4">
                       <span className="font-mono text-sm">{order.orderId}</span>
                     </td>

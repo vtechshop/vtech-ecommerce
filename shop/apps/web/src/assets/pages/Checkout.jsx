@@ -378,7 +378,7 @@ const Checkout = () => {
     <div className="bg-white min-h-screen">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 max-w-screen-2xl">
         {/* Header */}
-        <div className="mb-6 md:mb-8">
+        <div className="mb-6 md:mb-8 fade-in-down">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Checkout</h1>
           <p className="text-gray-700 text-sm mt-1">Complete your purchase securely</p>
         </div>
@@ -443,13 +443,13 @@ const Checkout = () => {
               {/* Existing Addresses */}
               {user && addresses && addresses.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="font-semibold mb-3">Your Addresses</h3>
+                  <h3 className="font-semibold mb-3 fade-in">Your Addresses</h3>
                   <div className="space-y-3">
-                    {addresses.map((addr) => (
+                    {addresses.map((addr, index) => (
                       <button
                         key={addr._id}
                         onClick={() => handleSelectExistingAddress(addr)}
-                        className="w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-primary-600 transition-colors"
+                        className={`w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-primary-600 transition-all hover-lift fade-in stagger-${Math.min(index + 1, 6)}`}
                       >
                         <p className="font-medium">{addr.fullName}</p>
                         <p className="text-sm text-gray-700">
@@ -469,7 +469,7 @@ const Checkout = () => {
 
               {/* Guest Checkout Notice */}
               {!user && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg fade-in">
                   <div className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -613,7 +613,7 @@ const Checkout = () => {
                   </div>
                 )}
 
-                <Button type="submit" variant="primary" size="lg" className="mt-6">
+                <Button type="submit" variant="primary" size="lg" className="mt-6 btn-scale hover-lift">
                   Continue to Shipping
                 </Button>
               </form>
@@ -633,11 +633,11 @@ const Checkout = () => {
                 </div>
               ) : shippingQuotes && shippingQuotes.length > 0 ? (
                 <div className="space-y-3">
-                  {shippingQuotes.map((quote) => (
+                  {shippingQuotes.map((quote, index) => (
                     <button
                       key={quote.id}
                       onClick={() => setShippingMethod(quote)}
-                      className={`w-full text-left p-4 border-2 rounded-lg transition-colors ${
+                      className={`w-full text-left p-4 border-2 rounded-lg transition-all hover-lift fade-in stagger-${Math.min(index + 1, 6)} ${
                         shippingMethod?.id === quote.id
                           ? 'border-primary-600 bg-primary-50'
                           : 'border-gray-200 hover:border-gray-300'
@@ -663,10 +663,10 @@ const Checkout = () => {
               )}
 
               <div className="flex gap-3 mt-6">
-                <Button onClick={() => setStep(1)} variant="outline">
+                <Button onClick={() => setStep(1)} variant="outline" className="btn-scale">
                   Back
                 </Button>
-                <Button onClick={handleShippingSubmit} variant="primary" fullWidth>
+                <Button onClick={handleShippingSubmit} variant="primary" fullWidth className="btn-scale hover-lift">
                   Continue to Payment
                 </Button>
               </div>
@@ -683,7 +683,7 @@ const Checkout = () => {
               <form onSubmit={handlePaymentSubmit}>
                 {/* Payment Method - Only Razorpay */}
                 <div className="mb-6">
-                  <div className="p-4 border-2 border-primary-600 bg-primary-50 rounded-lg">
+                  <div className="p-4 border-2 border-primary-600 bg-primary-50 rounded-lg fade-in hover-lift">
                     <div className="flex items-center gap-3">
                       <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -705,7 +705,7 @@ const Checkout = () => {
                 </div>
 
                 <div className="flex gap-3">
-                  <Button type="button" onClick={() => setStep(2)} variant="outline">
+                  <Button type="button" onClick={() => setStep(2)} variant="outline" className="btn-scale">
                     Back
                   </Button>
                   <Button
@@ -713,6 +713,7 @@ const Checkout = () => {
                     variant="primary"
                     fullWidth
                     loading={createOrderMutation.isPending}
+                    className="btn-add-to-cart btn-scale hover-lift"
                   >
                     Continue to Payment
                   </Button>
@@ -725,13 +726,16 @@ const Checkout = () => {
 
         {/* Order Summary Sidebar */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24">
-            <h2 className="text-xl md:text-2xl font-bold mb-4">Order Summary</h2>
+          {/* Ad Banner - Checkout Sidebar */}
+          <AdBanner placement="checkout_sidebar" position="right" className="mb-6 fade-in-right" />
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-24 fade-in-right hover-lift">
+            <h2 className="text-xl md:text-2xl font-bold mb-4 fade-in-down">Order Summary</h2>
 
             {/* Items */}
             <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-              {items.map((item) => (
-                <div key={item._id} className="flex gap-3">
+              {items.map((item, index) => (
+                <div key={item._id} className={`flex gap-3 fade-in stagger-${Math.min(index + 1, 6)}`}>
                   <img
                     src={item.image || PLACEHOLDER_IMAGE_SM}
                     alt={item.name}
@@ -782,7 +786,7 @@ const Checkout = () => {
               )}
               <div className="border-t pt-2 flex justify-between font-bold text-lg">
                 <span>Total:</span>
-                <span>
+                <span className="price-highlight">
                   {formatCurrency(
                     totals.total + (shippingMethod?.cost || 0)
                   )}

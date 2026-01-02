@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Vendor = require('../models/Vendor');
 const { getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
+const notificationHelper = require('../services/notificationHelper');
 
 // Generate unique ticket ID
 const generateTicketId = async () => {
@@ -48,6 +49,22 @@ exports.createTicket = async (req, res, next) => {
     await ticket.populate('userId', 'name email');
 
     logger.info(`Ticket created: ${ticketId} by user ${req.user._id}`);
+
+    // Notify admin of new ticket
+    try {
+      await notificationHelper.notifyAdminNewTicket({
+        ticket: {
+          _id: ticket._id,
+          ticketNumber: ticketId,
+          subject: ticket.subject,
+          priority: ticket.priority,
+        },
+        userEmail: ticket.userId.email || req.user.email || 'Unknown',
+      });
+      logger.info(`Admin notified of new ticket: ${ticketId}`);
+    } catch (notifError) {
+      logger.error('Failed to notify admin of new ticket:', notifError);
+    }
 
     res.status(201).json({
       success: true,
@@ -247,6 +264,23 @@ exports.addMessage = async (req, res, next) => {
 
     logger.info(`Message added to ticket ${ticket.ticketId} by user ${req.user._id}`);
 
+    // Notify user if admin replied
+    if (req.user.role === 'admin') {
+      try {
+        await notificationHelper.notifyUserTicketReply({
+          userId: ticket.userId,
+          ticket: {
+            _id: ticket._id,
+            ticketNumber: ticket.ticketId,
+          },
+          repliedBy: req.user.name || 'Support Team',
+        });
+        logger.info(`User notified of ticket reply: ${ticket.ticketId}`);
+      } catch (notifError) {
+        logger.error('Failed to notify user of ticket reply:', notifError);
+      }
+    }
+
     res.json({
       success: true,
       data: ticket,
@@ -290,6 +324,23 @@ exports.updateStatus = async (req, res, next) => {
     }
 
     logger.info(`Ticket ${ticket.ticketId} status updated to ${status} by admin ${req.user._id}`);
+
+    // Notify user of status change
+    try {
+      if (status !== 'open') {
+        await notificationHelper.notifyUserTicketStatusChange({
+          userId: ticket.userId._id || ticket.userId,
+          ticket: {
+            _id: ticket._id,
+            ticketNumber: ticket.ticketId,
+          },
+          status,
+        });
+        logger.info(`User notified of ticket status change: ${ticket.ticketId} -> ${status}`);
+      }
+    } catch (notifError) {
+      logger.error('Failed to notify user of ticket status change:', notifError);
+    }
 
     res.json({
       success: true,

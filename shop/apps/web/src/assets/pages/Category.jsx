@@ -45,7 +45,7 @@ const Category = () => {
     const fetchAds = async () => {
       try {
         const response = await api.post('/ads/auction', {
-          placement: 'category_page',
+          placement: 'category_grid',
           categories: [category.slug],
           limit: 4,
         }, { signal: abortController.signal });
@@ -141,45 +141,60 @@ const Category = () => {
           <p className="text-gray-500 mt-2">{products.length} products</p>
         </div>
 
-        {/* Sponsored Ads */}
-        {sponsoredAds.length > 0 && (
-          <div className="mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {sponsoredAds.map((ad) => (
-                <div key={ad.creativeId} className="relative">
-                  <ProductCard product={ad.product} onClick={() => handleAdClick(ad)} />
-                  <div className="absolute top-2 left-2">
-                    <SponsoredLabel />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="border-b border-gray-200 my-6"></div>
-          </div>
-        )}
-
         {/* Main Content with Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Products - Main Area */}
           <div className="lg:col-span-3">
-            {pageItems.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-700">No products found in this category.</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-                  {pageItems.map((p) => (
-                    <ProductCard key={p.id ?? p._id} product={{ _id: p._id ?? p.id, ...p }} />
-                  ))}
-                </div>
-                {totalPages > 1 && (
-                  <div className="mt-8">
-                    <Pagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
+            {(() => {
+              // Combine sponsored ads and regular products - Amazon Style
+              const combinedProducts = [
+                ...sponsoredAds.slice(0, 4).map((ad) => ({
+                  ...ad.product,
+                  title: ad.product?.name || ad.product?.title,
+                  images: ad.bannerImage
+                    ? [ad.bannerImage, ...(ad.product?.images || [])]
+                    : ad.bannerAsset?.imageUrl
+                    ? [ad.bannerAsset.imageUrl, ...(ad.product?.images || [])]
+                    : (ad.product?.images || []),
+                  _isSponsored: true,
+                  _adData: ad,
+                })),
+                ...pageItems
+              ];
+
+              if (combinedProducts.length === 0) {
+                return (
+                  <div className="text-center py-12">
+                    <p className="text-gray-700">No products found in this category.</p>
                   </div>
-                )}
-              </>
-            )}
+                );
+              }
+
+              return (
+                <>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+                    {combinedProducts.map((product, index) => (
+                      <div key={product._isSponsored ? product._adData.creativeId : (product.id ?? product._id)} className={`relative fade-in stagger-${Math.min((index % 6) + 1, 6)}`}>
+                        <ProductCard
+                          product={{ _id: product._id ?? product.id, ...product }}
+                          onClick={product._isSponsored ? () => handleAdClick(product._adData) : undefined}
+                        />
+                        {product._isSponsored && (
+                          <div className="absolute top-2 left-2 z-10">
+                            <SponsoredLabel />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {totalPages > 1 && (
+                    <div className="mt-8">
+                      <Pagination currentPage={page} totalPages={totalPages} onPageChange={handlePageChange} />
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
           {/* Sidebar - Ad Banner */}

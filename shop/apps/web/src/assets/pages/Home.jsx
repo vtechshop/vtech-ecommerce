@@ -36,6 +36,14 @@ const Home = React.memo(() => {
     refreshInterval: 2 * 60 * 1000,
   });
 
+  const { ad: middleAd, loading: middleLoading } = useSponsorAds('homepage_middle', {
+    refreshInterval: 2 * 60 * 1000,
+  });
+
+  const { ad: bottomAd, loading: bottomLoading } = useSponsorAds('homepage_bottom', {
+    refreshInterval: 2 * 60 * 1000,
+  });
+
   useEffect(() => {
     updateMetaTags({
       title: 'V-Tech Shop - Multi-Vendor Marketplace',
@@ -86,23 +94,23 @@ const Home = React.memo(() => {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-200 animate-fade-in">
+      <section className="bg-gradient-to-r from-primary-600 to-primary-200 fade-in">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-16 max-w-screen-2xl">
           <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white animate-fade-in-up">{t('home.heroTitle')}</h1>
-            <p className="text-lg md:text-xl mb-6 md:mb-8 text-white leading-relaxed animate-fade-in-up stagger-delay-1">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white fade-in-down">{t('home.heroTitle')}</h1>
+            <p className="text-lg md:text-xl mb-6 md:mb-8 text-white leading-relaxed fade-in-down stagger-1">
               {t('home.heroDesc')}
             </p>
-            <div className="flex gap-4 animate-fade-in-up stagger-delay-2">
+            <div className="flex gap-4 fade-in-down stagger-2">
               <Link
                 to="/search"
-                className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-100 hover:scale-105 transition-all duration-300 shadow-lg transform"
+                className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-100 transition-all duration-300 shadow-lg btn-scale"
               >
                 {t('home.startShopping')}
               </Link>
               <Link
                 to="/page/about"
-                className="inline-block bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 hover:scale-105 transition-all duration-300 shadow-lg transform"
+                className="inline-block bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-all duration-300 shadow-lg btn-scale"
               >
                 {t('home.learnMore')}
               </Link>
@@ -152,14 +160,14 @@ const Home = React.memo(() => {
 
             {/* Categories */}
             {categories?.length > 0 && (
-              <section className="mb-8 scroll-reveal">
-                <h2 className="text-xl md:text-2xl font-bold mb-8 animate-fade-in-left">{t('home.shopByCategory')}</h2>
+              <section className="mb-8">
+                <h2 className="text-xl md:text-2xl font-bold mb-8">{t('home.shopByCategory')}</h2>
                 <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 ${
                   leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
                 }`}>
                   {categories.map((category, index) => (
-                    <Link key={category.slug} to={`/category/${category.slug}`} className="group animate-scale-in" style={{animationDelay: `${index * 100}ms`}}>
-                      <div className="bg-white rounded-lg p-6 text-center hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border border-gray-200 transform">
+                    <Link key={category.slug} to={`/category/${category.slug}`} className={`group fade-in stagger-${Math.min(index + 1, 6)}`}>
+                      <div className="bg-white rounded-lg p-6 text-center hover:shadow-xl transition-all duration-300 border border-gray-200 hover-lift card-tilt">
                         <div className="w-16 h-16 mx-auto mb-3 bg-primary-100 rounded-full flex items-center justify-center group-hover:bg-primary-200 group-hover:scale-110 transition-all duration-300">
                           <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -174,39 +182,46 @@ const Home = React.memo(() => {
             )}
 
             {/* Featured Products */}
-            <section className="mb-8 scroll-reveal">
-              <div className="flex items-center justify-between mb-8 animate-fade-in-right">
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl md:text-2xl font-bold">{t('home.featuredProducts')}</h2>
-                <Link to="/search?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold hover:scale-105 transition-transform duration-300">
+                <Link to="/search?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold btn-scale transition-transform duration-300">
                   {t('home.viewAll')}
                 </Link>
               </div>
 
               {displayIsLoading ? (
-                <div className="flex justify-center py-12 animate-fade-in">
+                <div className="flex justify-center py-12 fade-in">
                   <Spinner size="lg" />
                 </div>
               ) : displayFeaturedProducts?.length > 0 ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                   {displayFeaturedProducts.map((p, index) => (
-                    <div key={p._id} className="animate-fade-in-up" style={{animationDelay: `${index * 100}ms`}}>
+                    <div key={p._id} className={`fade-in stagger-${Math.min(index + 1, 6)}`}>
                       <ProductCard product={p} />
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-gray-500 animate-fade-in">
+                <div className="text-center py-12 text-gray-500 fade-in">
                   <p>{t('home.noFeaturedProducts')}</p>
                 </div>
               )}
             </section>
+
+            {/* Sponsored Ad - Middle */}
+            {!middleLoading && middleAd && (
+              <section className="mb-8">
+                <SponsorAd ad={middleAd} variant="banner" />
+              </section>
+            )}
 
             {/* Join as Vendor or Affiliate */}
             <section className="mb-8">
               <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Become a Vendor */}
-                <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow">
+                <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow hover-lift card-tilt slide-in-left">
                   <div className="flex items-center mb-4">
                     <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-4">
                       <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -246,14 +261,14 @@ const Home = React.memo(() => {
                   </ul>
                   <Link
                     to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
-                    className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors shadow-md"
+                    className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors shadow-md btn-scale"
                   >
                     {t('home.startSelling')}
                   </Link>
                 </div>
 
                 {/* Become an Affiliate */}
-                <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow">
+                <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow hover-lift card-tilt slide-in-right">
                   <div className="flex items-center mb-4">
                     <div className="w-12 h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-4">
                       <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -293,7 +308,7 @@ const Home = React.memo(() => {
                   </ul>
                   <Link
                     to={user?.role === 'customer' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
-                    className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors shadow-md"
+                    className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors shadow-md btn-scale"
                   >
                     {t('home.joinAffiliate')}
                   </Link>
@@ -322,6 +337,13 @@ const Home = React.memo(() => {
                 viewAllLink="/search?sort=-sold"
               />
             </section>
+
+            {/* Sponsored Ad - Bottom */}
+            {!bottomLoading && bottomAd && (
+              <section className="mb-8">
+                <SponsorAd ad={bottomAd} variant="banner" />
+              </section>
+            )}
           </main>
 
           {/* Right Sidebar - Only show if ad exists */}

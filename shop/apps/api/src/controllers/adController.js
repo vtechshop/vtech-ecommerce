@@ -6,8 +6,10 @@ const AdWallet = require('../models/AdWallet');
 const AdPricingSettings = require('../models/AdPricingSettings');
 const Product = require('../models/Product');
 const Vendor = require('../models/Vendor');
+const User = require('../models/User');
 const { getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
+const notificationHelper = require('../services/notificationHelper');
 const crypto = require('crypto');
 const {
   createOrder: createRazorpayOrder,
@@ -188,14 +190,9 @@ exports.createCampaign = async (req, res, next) => {
       status = req.body.status || 'approved';
       approvalStatus = 'approved';
     } else {
-      // Vendors: check if requires approval
-      const pricingSettings = await AdPricingSettings.findOne({ placement });
-      if (pricingSettings && pricingSettings.requiresApproval) {
-        status = 'pending_approval';
-      } else {
-        status = 'approved';
-        approvalStatus = 'approved';
-      }
+      // Vendors: ALWAYS require admin approval
+      status = 'pending_approval';
+      approvalStatus = 'pending';
     }
 
     const campaign = await AdCampaign.create({
@@ -213,6 +210,23 @@ exports.createCampaign = async (req, res, next) => {
     await campaign.save();
 
     logger.info(`Ad campaign created: ${campaign.name} (${status})`);
+
+    // Send notification to admin when vendor creates ad (not when admin creates)
+    if (req.user.role !== 'admin') {
+      try {
+        const vendor = await Vendor.findById(vendorId).lean();
+        if (vendor) {
+          await notificationHelper.notifyAdminNewAdCampaign({
+            campaign: campaign.toObject(),
+            vendor,
+          });
+          logger.info(`Admin notified of new ad campaign: ${campaign.name}`);
+        }
+      } catch (notifError) {
+        logger.error('Failed to send admin notification for new ad campaign:', notifError);
+        // Don't fail the request if notification fails
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -309,6 +323,7 @@ exports.updateCampaign = async (req, res, next) => {
     // 🔒 SECURITY: If vendor edits APPROVED campaign, reset to pending approval
     const wasApproved = campaign.approval?.status === 'approved';
     const isVendorEdit = req.user.role !== 'admin';
+    const oldApprovalStatus = campaign.approval?.status;
 
     if (isVendorEdit && wasApproved) {
       // Reset approval status - must be reviewed again!
@@ -328,6 +343,28 @@ exports.updateCampaign = async (req, res, next) => {
 
     Object.assign(campaign, req.body);
     await campaign.save();
+
+    // Send notification to vendor if admin changed approval status
+    if (req.user.role === 'admin' && req.body.approval && req.body.approval.status !== oldApprovalStatus) {
+      try {
+        const vendor = await Vendor.findById(campaign.vendorId).populate('userId').lean();
+        if (vendor && vendor.userId) {
+          const newStatus = req.body.approval.status;
+          if (newStatus === 'approved' || newStatus === 'rejected') {
+            await notificationHelper.notifyVendorAdStatusChange({
+              vendorUserId: vendor.userId._id || vendor.userId,
+              campaign: campaign.toObject(),
+              status: newStatus,
+              rejectionReason: req.body.approval.rejectionReason,
+            });
+            logger.info(`Vendor notified of ad campaign ${newStatus}: ${campaign.name}`);
+          }
+        }
+      } catch (notifError) {
+        logger.error('Failed to send vendor notification for ad status change:', notifError);
+        // Don't fail the request if notification fails
+      }
+    }
 
     res.json({
       success: true,
@@ -633,15 +670,19 @@ exports.runAuction = async (req, res, next) => {
       limit = 3,
     } = req.body;
 
+    console.log('🎯 [AUCTION DEBUG] Received request:', { placement, keywords, limit });
+
     // Find eligible campaigns
     const now = new Date();
     const query = {
       status: 'active',
+      placement: placement, // ✅ Amazon-style: Filter by placement directly on campaign
+      'approval.status': 'approved', // ✅ Only approved campaigns
       startAt: { $lte: now },
       $or: [{ endAt: { $gte: now } }, { endAt: null }],
     };
 
-    // Match by targeting
+    // Match by targeting - Amazon-style keyword matching
     if (keywords.length > 0) {
       query['targeting.keywords.keyword'] = { $in: keywords };
     }
@@ -652,7 +693,21 @@ exports.runAuction = async (req, res, next) => {
       query['targeting.products'] = { $in: products };
     }
 
-    const campaigns = await AdCampaign.find(query).lean();
+    console.log('🎯 [AUCTION DEBUG] Campaign query:', JSON.stringify(query, null, 2));
+
+    // ✅ Populate campaign products during initial query
+    const campaigns = await AdCampaign.find(query)
+      .populate({
+        path: 'targeting.products',
+        select: '_id title slug price images description category rating reviewCount stock vendorId',
+        populate: {
+          path: 'vendorId',
+          select: '_id storeName slug email',
+        },
+      })
+      .lean();
+
+    console.log('🎯 [AUCTION DEBUG] Found campaigns:', campaigns.length);
 
     // Filter campaigns that can serve (budget check)
     const eligibleCampaigns = [];
@@ -660,10 +715,14 @@ exports.runAuction = async (req, res, next) => {
       const canServe = await AdCampaign.findById(campaign._id);
       if (canServe.canServe()) {
         eligibleCampaigns.push(campaign);
+        console.log('✅ [AUCTION DEBUG] Campaign eligible:', campaign.name, 'Products:', campaign.targeting?.products?.length || 0);
+      } else {
+        console.log('❌ [AUCTION DEBUG] Campaign NOT eligible:', campaign.name);
       }
     }
 
     if (eligibleCampaigns.length === 0) {
+      console.log('⚠️ [AUCTION DEBUG] No eligible campaigns found');
       return res.json({
         success: true,
         data: { ads: [] },
@@ -674,43 +733,96 @@ exports.runAuction = async (req, res, next) => {
     const creativePromises = eligibleCampaigns.map(c =>
       AdCreative.find({
         campaignId: c._id,
-        placement,
+        placement, // Match placement
         status: 'active',
       })
-        .populate('productId')
+        .populate({
+          path: 'productId',
+          select: '_id title slug price images description category rating reviewCount stock vendorId',
+          populate: {
+            path: 'vendorId',
+            select: '_id storeName slug email',
+          },
+        })
         .lean()
     );
 
     const creativesArrays = await Promise.all(creativePromises);
     const allCreatives = creativesArrays.flat();
 
+    console.log('🎯 [AUCTION DEBUG] Found creatives:', allCreatives.length);
+
     // Run auction: rank by bid × qualityScore
     const rankedCreatives = allCreatives.map(creative => {
       const campaign = eligibleCampaigns.find(c => c._id.toString() === creative.campaignId.toString());
       const score = campaign.bid * creative.qualityScore;
-      return { ...creative, campaign, auctionScore: score };
+
+      // ✅ Amazon-style: Use product from creative first, fallback to campaign's first product
+      let productData = creative.productId;
+      if (!productData && campaign.targeting?.products?.length > 0) {
+        productData = campaign.targeting.products[0];
+      }
+
+      console.log('🎯 [AUCTION DEBUG] Creative auction score:', {
+        campaignName: campaign.name,
+        creativeId: creative._id,
+        score,
+        hasProduct: !!productData,
+        productTitle: productData?.title
+      });
+
+      return { ...creative, campaign, auctionScore: score, resolvedProduct: productData };
     });
 
     rankedCreatives.sort((a, b) => b.auctionScore - a.auctionScore);
 
-    // Return top N
-    const winners = rankedCreatives.slice(0, limit).map(c => ({
-      campaignId: c.campaignId,
-      creativeId: c._id,
-      product: c.productId,
-      headline: c.headline,
-      description: c.description,
-      placement: c.placement,
-      bannerImage: c.campaign.bannerImage, // Campaign banner image
-      bannerAsset: c.bannerAsset, // Include banner asset for custom ad images
-      url: c.productId ? `/product/${c.productId.slug}?ad_campaign=${c.campaignId}&ad_creative=${c._id}` : c.bannerAsset?.clickUrl,
-    }));
+    // Return top N - Amazon-style with complete product data
+    const winners = rankedCreatives.slice(0, limit).map(c => {
+      const productData = c.resolvedProduct;
+
+      console.log('🏆 [AUCTION DEBUG] Winner:', {
+        campaignId: c.campaignId,
+        creativeId: c._id,
+        hasProduct: !!productData,
+        productId: productData?._id,
+        productTitle: productData?.title,
+        productPrice: productData?.price
+      });
+
+      return {
+        campaignId: c.campaignId,
+        creativeId: c._id,
+        product: productData ? {
+          _id: productData._id,
+          id: productData._id, // Also include as 'id' for frontend compatibility
+          name: productData.title, // ✅ Map 'title' to 'name' for frontend compatibility
+          slug: productData.slug,
+          price: productData.price,
+          images: productData.images || [],
+          description: productData.description,
+          category: productData.category,
+          rating: productData.rating || 0,
+          reviewCount: productData.reviewCount || 0,
+          stock: productData.stock,
+          vendorId: productData.vendorId,
+        } : null,
+        headline: c.headline,
+        description: c.description,
+        placement: c.placement,
+        bannerImage: c.campaign.bannerImage, // Campaign banner image
+        bannerAsset: c.bannerAsset, // Include banner asset for custom ad images
+        url: productData ? `/product/${productData.slug}?ad_campaign=${c.campaignId}&ad_creative=${c._id}` : c.bannerAsset?.clickUrl,
+      };
+    });
+
+    console.log('✅ [AUCTION DEBUG] Returning', winners.length, 'ads');
 
     res.json({
       success: true,
       data: { ads: winners },
     });
   } catch (error) {
+    console.error('❌ [AUCTION DEBUG] Error:', error);
     next(error);
   }
 };

@@ -12,6 +12,7 @@ const env = require('../config/env');
 // Payment is now handled by Razorpay controller directly
 const warrantyService = require('../services/warrantyService');
 const notificationService = require('../services/notificationService');
+const notificationHelper = require('../services/notificationHelper');
 
 // Helper function to activate warranties after payment
 const activateWarranties = async (order) => {
@@ -631,6 +632,18 @@ exports.createOrder = async (req, res, next) => {
         if (vendorUser && vendorUser.email) {
           await notificationService.sendVendorOrderNotification(vendorUser, vendorOrder, vendorOrder.items);
           logger.info(`Vendor notification sent to: ${vendorUser.email} for order ${vendorOrder.orderId}`);
+
+          // Create in-app notification for vendor
+          try {
+            await notificationHelper.notifyVendorNewOrder({
+              vendorUserId: vendorUser._id,
+              order: vendorOrder,
+              items: vendorOrder.items,
+            });
+            logger.info(`In-app notification created for vendor: ${vendorUser.email}`);
+          } catch (notifError) {
+            logger.error('Failed to create vendor in-app notification:', notifError);
+          }
         } else {
           logger.warn(`Skipping vendor notification for order ${vendorOrder.orderId}: vendor user not found or no email`);
         }
@@ -647,6 +660,17 @@ exports.createOrder = async (req, res, next) => {
           }
           await notificationService.sendAdminOrderNotification(orderForAdmin, vendorOrder.items, vendorUser, vendorProfile);
           logger.info(`Admin notification sent for order ${vendorOrder.orderId}`);
+
+          // Create in-app notification for admin
+          try {
+            await notificationHelper.notifyAdminNewOrder({
+              order: vendorOrder,
+              vendorName: vendorProfile.businessName || 'Unknown Vendor',
+            });
+            logger.info(`In-app notification created for admins about order ${vendorOrder.orderId}`);
+          } catch (notifError) {
+            logger.error('Failed to create admin in-app notification:', notifError);
+          }
         } catch (adminEmailError) {
           logger.error(`Failed to send admin notification for order ${vendorOrder.orderId}:`, adminEmailError);
         }

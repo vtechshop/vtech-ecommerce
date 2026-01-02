@@ -5,6 +5,7 @@ const adminAds = require('../controllers/adminAdsController');
 const crm = require('../controllers/crmController');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validate');
+const { getSecurityStats } = require('../middleware/advancedSecurity');
 
 // secure all admin endpoints
 router.use(authenticate);
@@ -12,6 +13,29 @@ router.use(authorize(['admin']));
 
 // Dashboard
 router.get('/dashboard/stats', admin.getDashboardStats);
+
+// Security Monitoring Dashboard (Amazon-Level)
+router.get('/security/stats', (req, res) => {
+  try {
+    const stats = getSecurityStats();
+    res.json({
+      success: true,
+      data: {
+        ...stats,
+        message: 'Security statistics retrieved successfully',
+        lastUpdated: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: {
+        message: 'Failed to retrieve security statistics',
+        code: 'SECURITY_STATS_ERROR',
+      },
+    });
+  }
+});
 
 // Users - SECURITY: Added ObjectId validation
 router.get('/users', admin.getUsers);

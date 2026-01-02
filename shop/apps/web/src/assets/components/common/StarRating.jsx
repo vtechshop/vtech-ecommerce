@@ -25,13 +25,14 @@ const StarRating = ({
 
   return (
     <div className="flex items-center gap-1">
-      <div className="flex">
+      <div className="star-rating flex">
         {Array.from({ length: maxStars }, (_, i) => (
           <Star
             key={i}
             className={clsx(
+              'star-icon',
               sizeClasses[size],
-              i < Math.floor(rating) ? 'text-yellow-400 fill-current' : 'text-gray-300',
+              i < Math.floor(rating) ? 'text-yellow-400 fill-current star-fill' : 'text-gray-300',
               interactive && 'cursor-pointer hover:text-yellow-500 transition-colors'
             )}
             onClick={() => handleClick(i)}

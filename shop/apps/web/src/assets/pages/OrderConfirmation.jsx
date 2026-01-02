@@ -71,8 +71,8 @@ const OrderConfirmation = () => {
       <div className="py-4">
         {/* Success or Pending Message */}
         {order.payment?.status === 'paid' ? (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 text-center">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6 text-center fade-in scale-in">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 checkmark">
               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
@@ -86,7 +86,7 @@ const OrderConfirmation = () => {
             </p>
           </div>
         ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-center">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6 text-center fade-in scale-in">
             <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -123,7 +123,7 @@ const OrderConfirmation = () => {
                   toast.error('Failed to load payment system. Please refresh and try again.');
                 }
               }}
-              className="btn btn-primary px-8"
+              className="btn btn-primary px-8 btn-add-to-cart btn-scale hover-lift"
             >
               Pay Now
             </button>
@@ -131,7 +131,7 @@ const OrderConfirmation = () => {
         )}
 
         {/* Order Details */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6 fade-in-up hover-lift">
           <h2 className="text-xl font-bold mb-4">Order Details</h2>
           
           <div className="grid grid-cols-2 gap-4 mb-4">

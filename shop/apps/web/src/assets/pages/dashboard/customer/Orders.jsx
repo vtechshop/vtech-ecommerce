@@ -101,7 +101,7 @@ const Orders = () => {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-8 fade-in-down">
         <h1 className="text-3xl font-bold">My Orders</h1>
         <CustomSelect
           value={statusFilter}
@@ -124,7 +124,7 @@ const Orders = () => {
       </div>
 
       {orders.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center fade-in scale-in">
           <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
@@ -139,8 +139,8 @@ const Orders = () => {
       ) : (
         <>
           <div className="space-y-4">
-            {orders.map((order) => (
-              <div key={order._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+            {orders.map((order, index) => (
+              <div key={order._id} className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-${Math.min(index + 1, 6)} hover-lift`}>
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="font-semibold text-lg">Order {order.orderId}</h3>
@@ -215,11 +215,11 @@ const Orders = () => {
                     )}
                     {order.shipment?.awb && (
                       <Link to={`/track-order?orderId=${order.orderId}`} className="flex-1 sm:flex-none">
-                        <button className="btn btn-outline w-full">Track</button>
+                        <button className="btn btn-outline w-full btn-scale">Track</button>
                       </Link>
                     )}
                     <Link to={`/dashboard/orders/${order._id}`} className="flex-1 sm:flex-none">
-                      <button className="btn btn-primary w-full whitespace-nowrap">View Details</button>
+                      <button className="btn btn-primary w-full whitespace-nowrap btn-scale hover-lift">View Details</button>
                     </Link>
                   </div>
                 </div>

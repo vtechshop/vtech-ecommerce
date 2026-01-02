@@ -10,6 +10,7 @@ import api from '../../../utils/api';
 import CustomSelect from '../../../components/common/CustomSelect';
 import { useToast } from '../../../components/common/ToastContainer';
 import { formatCurrency } from '../../../utils/format';
+import ImageCropUpload from '../../../components/common/ImageCropUpload';
 
 const AdsManagement = () => {
   const toast = useToast();
@@ -51,7 +52,6 @@ const AdsManagement = () => {
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingCreative, setUploadingCreative] = useState(false);
-  const creativeUploadRef = useRef(null);
 
   // Fetch ads
   const { data: adsData, isLoading } = useQuery({
@@ -167,7 +167,7 @@ const AdsManagement = () => {
 
   // Upload Creative mutation
   const uploadCreativeMutation = useMutation({
-    mutationFn: async ({ campaignId, file }) => {
+    mutationFn: async ({ campaignId, file, campaign }) => {
       // Validate file
       if (!file) {
         throw new Error('Please select a file');
@@ -196,10 +196,20 @@ const AdsManagement = () => {
         throw new Error('Failed to get upload URL from server');
       }
 
+      // Amazon-style: Automatically inherit campaign settings for seamless upload
+      const placementValue = campaign?.placement || 'search_sponsored_products';
+      console.log('🎨 [CREATIVE DEBUG] Campaign object:', campaign);
+      console.log('🎨 [CREATIVE DEBUG] Campaign placement:', campaign?.placement);
+      console.log('🎨 [CREATIVE DEBUG] Using placement:', placementValue);
+
       const creativeData = {
         imageUrl: uploadResponse.data.data.url,
         title: file.name,
+        placement: placementValue,
+        status: 'active', // Auto-activate creative
       };
+
+      console.log('🎨 [CREATIVE DEBUG] Creative data being sent:', creativeData);
 
       const response = await api.post(`/ads/campaigns/${campaignId}/creatives`, creativeData);
       return response.data;
@@ -207,19 +217,13 @@ const AdsManagement = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['campaign-creatives'] });
       toast.success('Creative uploaded successfully!');
-      // Reset file input
-      if (creativeUploadRef.current) {
-        creativeUploadRef.current.value = '';
-      }
+      setUploadingCreative(false);
     },
     onError: (error) => {
       console.error('Creative upload error:', error);
       const errorMessage = error.message || error.response?.data?.error?.message || 'Failed to upload creative';
       toast.error(errorMessage);
-      // Reset file input on error too
-      if (creativeUploadRef.current) {
-        creativeUploadRef.current.value = '';
-      }
+      setUploadingCreative(false);
     },
   });
 
@@ -347,13 +351,16 @@ const AdsManagement = () => {
     }
   };
 
-  const handleCreativeUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleCreativeUpload = async (file, preview) => {
     if (!file || !selectedAd) return;
 
     setUploadingCreative(true);
     try {
-      await uploadCreativeMutation.mutateAsync({ campaignId: selectedAd._id, file });
+      await uploadCreativeMutation.mutateAsync({
+        campaignId: selectedAd._id,
+        file,
+        campaign: selectedAd // Pass campaign to inherit placement
+      });
     } finally {
       setUploadingCreative(false);
     }
@@ -416,6 +423,11 @@ const AdsManagement = () => {
     e.preventDefault();
     const keywords = formData.targetKeywords.split(',').map(k => k.trim()).filter(Boolean);
 
+    // Parse target products if provided
+    const targetProducts = formData.targetProducts
+      ? formData.targetProducts.split(',').map(p => p.trim()).filter(Boolean)
+      : [];
+
     const dataToSend = {
       name: formData.name,
       type: formData.type,
@@ -436,8 +448,12 @@ const AdsManagement = () => {
         : undefined,
       targeting: {
         keywords: keywords.map(k => ({ keyword: k, matchType: 'broad' })),
+        // Include products array - empty for search placements, can be populated for product-specific ads
+        products: targetProducts.length > 0 ? targetProducts : [],
       },
     };
+
+    console.log('🎯 [ADMIN DEBUG] Submitting campaign with targeting:', dataToSend.targeting);
     saveMutation.mutate(dataToSend);
   };
 
@@ -969,60 +985,23 @@ const AdsManagement = () => {
                     <option value="homepage_banner">Homepage - Banner (Hero Section)</option>
                     <option value="homepage_sidebar_left">Homepage - Left Sidebar</option>
                     <option value="homepage_sidebar_right">Homepage - Right Sidebar</option>
-                    <option value="homepage_top">Homepage - Top Section</option>
                     <option value="homepage_middle">Homepage - Middle Section</option>
                     <option value="homepage_bottom">Homepage - Bottom Section</option>
                   </optgroup>
 
-                  <optgroup label="Product Pages">
-                    <option value="product_sidebar">Product Page - Sidebar</option>
-                    <option value="product_top">Product Page - Top Banner</option>
-                    <option value="product_bottom">Product Page - Bottom Banner</option>
-                    <option value="product_related">Product Page - Related Products Section</option>
-                  </optgroup>
-
-                  <optgroup label="Category Pages">
+                  <optgroup label="Search & Category">
+                    <option value="search_sponsored_products">Search Results - Sponsored Products</option>
+                    <option value="search_top">Search Results - Top Banner</option>
                     <option value="category_top_banner">Category Page - Top Banner</option>
                     <option value="category_sidebar">Category Page - Sidebar</option>
                     <option value="category_grid">Category Page - In Product Grid</option>
                   </optgroup>
 
-                  <optgroup label="Search & Results">
-                    <option value="search_sponsored_products">Search Results - Sponsored Products</option>
-                    <option value="search_top">Search Results - Top Banner</option>
-                    <option value="search_sidebar">Search Results - Sidebar</option>
-                  </optgroup>
-
-                  <optgroup label="Cart & Checkout">
-                    <option value="cart_sidebar">Cart Page - Sidebar</option>
-                    <option value="cart_bottom">Cart Page - Bottom Banner</option>
-                    <option value="checkout_top">Checkout Page - Top Banner</option>
-                  </optgroup>
-
-                  <optgroup label="Blog">
-                    <option value="blog_sidebar">Blog - Sidebar</option>
+                  <optgroup label="Blog Pages">
                     <option value="blog_top">Blog - Top Banner</option>
-                    <option value="blog_in_content">Blog - In Content</option>
-                    <option value="blog_bottom">Blog - Bottom Banner</option>
-                  </optgroup>
-
-                  <optgroup label="User Account">
-                    <option value="account_dashboard">Account Dashboard - Banner</option>
-                    <option value="account_orders">My Orders Page - Sidebar</option>
-                    <option value="account_profile">Profile Page - Banner</option>
-                  </optgroup>
-
-                  <optgroup label="Vendor Pages">
-                    <option value="vendor_store">Vendor Store Page - Banner</option>
-                    <option value="vendor_list">Vendor List Page - Sidebar</option>
-                  </optgroup>
-
-                  <optgroup label="Other Pages">
-                    <option value="about_us">About Us - Banner</option>
-                    <option value="contact_us">Contact Us - Sidebar</option>
-                    <option value="faq">FAQ Page - Sidebar</option>
-                    <option value="terms">Terms & Conditions - Sidebar</option>
-                    <option value="privacy">Privacy Policy - Sidebar</option>
+                    <option value="blog_sidebar">Blog - Sidebar</option>
+                    <option value="blog_in_content">Blog Post - In Content</option>
+                    <option value="blog_bottom">Blog Post - Bottom Banner</option>
                   </optgroup>
                 </select>
               </div>
@@ -1156,15 +1135,38 @@ const AdsManagement = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Target Keywords (comma-separated)
+                  Target Keywords (comma-separated) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.targetKeywords}
                   onChange={(e) => setFormData({ ...formData, targetKeywords: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="laptop, phone, headphones"
+                  placeholder="e.g., all, laptop, phone, headphones"
+                  required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  <strong>Required:</strong> Keywords for ad targeting. Use "all" to match all search queries, or enter specific keywords separated by commas.
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  💡 Examples: "all" (shows for all searches) | "laptop, computer, electronics" (shows for specific searches)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Target Products (comma-separated Product IDs)
+                </label>
+                <input
+                  type="text"
+                  value={formData.targetProducts}
+                  onChange={(e) => setFormData({ ...formData, targetProducts: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Leave empty for search placements"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Optional: Leave empty for keyword-based search ads. For product-specific placements, enter product IDs separated by commas.
+                </p>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
@@ -1274,63 +1276,73 @@ const AdsManagement = () => {
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-gray-600">Campaign: {selectedAd.name}</p>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                  <input
-                    type="file"
-                    ref={creativeUploadRef}
-                    accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.svg,.tiff,.ico,image/png,image/jpeg,image/jpg,image/gif,image/webp,image/bmp,image/svg+xml,image/tiff,image/x-icon"
-                    onChange={handleCreativeUpload}
-                    disabled={uploadingCreative}
-                    className="hidden"
-                    id="creativeUpload"
-                  />
-                  <label htmlFor="creativeUpload" className="cursor-pointer">
-                    {uploadingCreative ? (
-                      <p className="text-blue-600 font-medium">Uploading...</p>
-                    ) : (
-                      <>
-                        <Plus className="w-6 h-6 mx-auto mb-1 text-gray-400" />
-                        <p className="font-medium text-gray-700">Upload Creative</p>
-                        <p className="text-xs text-gray-500">Supports: PNG, JPG, JPEG, GIF, WebP, BMP, SVG, TIFF, ICO (Max 10MB)</p>
-                      </>
-                    )}
-                  </label>
-                </div>
+            <div className="p-6 space-y-6">
+              {/* Campaign Name */}
+              <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+                <p className="text-sm font-semibold text-gray-900">Campaign: <span className="text-blue-600">{selectedAd.name}</span></p>
               </div>
 
-              {creativesLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {(creativesData?.data || []).length === 0 ? (
-                    <div className="col-span-full text-center py-8 text-gray-500">
-                      No creatives uploaded yet
-                    </div>
-                  ) : (
-                    (creativesData?.data || []).map((creative) => (
-                      <div key={creative._id} className="relative group">
-                        <img
-                          src={creative.bannerAsset?.imageUrl || creative.imageUrl}
-                          alt={creative.bannerAsset?.imageAlt || creative.headline || 'Creative'}
-                          className="w-full h-48 object-cover rounded-lg border-2 border-gray-200"
-                        />
-                        <button
-                          onClick={() => handleDeleteCreative(creative._id)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <p className="text-sm text-gray-600 mt-2 truncate">{creative.title}</p>
+              {/* Upload Creative - Amazon Style with Preview & Crop */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Creative</h3>
+                {uploadingCreative ? (
+                  <div className="text-center py-12 bg-blue-50 rounded-lg border-2 border-blue-200">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                    <p className="text-blue-600 font-medium text-lg">Uploading creative...</p>
+                    <p className="text-blue-500 text-sm mt-2">Please wait while we process your image</p>
+                  </div>
+                ) : (
+                  <ImageCropUpload
+                    onImageCropped={handleCreativeUpload}
+                    accept="image/*"
+                    maxSize={10}
+                    recommendedDimensions="1920x1080px for best quality"
+                  />
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="border-t-2 border-gray-200"></div>
+
+              {/* Existing Creatives */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Existing Creatives</h3>
+
+                {creativesLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {(creativesData?.data || []).length === 0 ? (
+                      <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <ImageIcon className="w-16 h-16 mx-auto text-gray-400 mb-3" />
+                        <p className="text-gray-500 font-medium">No creatives uploaded yet</p>
+                        <p className="text-sm text-gray-400 mt-1">Upload your first creative above to get started</p>
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
+                    ) : (
+                      (creativesData?.data || []).map((creative) => (
+                        <div key={creative._id} className="relative group">
+                          <img
+                            src={creative.bannerAsset?.imageUrl || creative.imageUrl}
+                            alt={creative.bannerAsset?.imageAlt || creative.headline || 'Creative'}
+                            className="w-full h-48 object-cover rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-all"
+                          />
+                          <button
+                            onClick={() => handleDeleteCreative(creative._id)}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p className="text-sm text-white font-medium truncate">{creative.title}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

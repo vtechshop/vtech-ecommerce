@@ -33,11 +33,11 @@ const AdminDashboard = () => {
 
   return (
     <div>
-      <h1 className="text-3xl md:text-4xl font-bold mb-8">Admin Dashboard</h1>
+      <h1 className="text-3xl md:text-4xl font-bold mb-8 fade-in-down">Admin Dashboard</h1>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-1 hover-lift">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-700 text-sm font-medium">Total Users</h3>
             <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -47,7 +47,7 @@ const AdminDashboard = () => {
           <p className="text-3xl font-bold">{stats?.totalUsers || 0}</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-2 hover-lift">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-700 text-sm font-medium">Active Vendors</h3>
             <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -57,7 +57,7 @@ const AdminDashboard = () => {
           <p className="text-3xl font-bold">{stats?.totalVendors || 0}</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-3 hover-lift">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-700 text-sm font-medium">Total Products</h3>
             <svg className="w-8 h-8 text-secondary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -67,7 +67,7 @@ const AdminDashboard = () => {
           <p className="text-3xl font-bold">{stats?.totalProducts || 0}</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-4 hover-lift">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-gray-700 text-sm font-medium">Total Revenue</h3>
             <svg className="w-8 h-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -80,8 +80,8 @@ const AdminDashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-<h2 className="text-xl md:text-2xl font-bold mb-4">Revenue Trend</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-1 hover-lift">
+<h2 className="text-xl md:text-2xl font-bold mb-4 fade-in-down">Revenue Trend</h2>
 <ResponsiveContainer width="100%" height={300}>
 <LineChart data={revenueData}>
 <CartesianGrid strokeDasharray="3 3" />
@@ -92,8 +92,8 @@ const AdminDashboard = () => {
 </LineChart>
 </ResponsiveContainer>
 </div>
-<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-      <h2 className="text-xl md:text-2xl font-bold mb-4">Orders by Status</h2>
+<div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-2 hover-lift">
+      <h2 className="text-xl md:text-2xl font-bold mb-4 fade-in-down">Orders by Status</h2>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={[
           { status: 'Placed', count: 45 },
@@ -113,7 +113,7 @@ const AdminDashboard = () => {
 
   {/* Pending Approvals */}
   {stats?.pendingApprovals > 0 && (
-    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 fade-in pulse">
       <div className="flex items-start gap-3">
         <svg className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
