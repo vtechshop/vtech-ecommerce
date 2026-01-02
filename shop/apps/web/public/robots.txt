@@ -1,5 +1,19 @@
-# Block all search engines during development
-# REMOVE OR MODIFY THIS FILE WHEN READY TO GO LIVE
-
+# Allow all search engines to crawl the site
 User-agent: *
-Disallow: /
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /checkout/
+
+# Allow specific public pages
+Allow: /products/
+Allow: /categories/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+
+# Sitemap location
+Sitemap: https://vtechkitchen.com/sitemap.xml
