@@ -29,6 +29,7 @@ const warrantyRoutes = require('./warranties');
 const notificationRoutes = require('./notifications');
 const blogRoutes = require('./blog');
 const loyaltyRoutes = require('./loyalty');
+const newsletterRoutes = require('./newsletter');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -57,6 +58,7 @@ router.use('/warranties', warrantyRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/blog', blogRoutes);
 router.use('/loyalty', loyaltyRoutes);
+router.use('/newsletter', newsletterRoutes);
 
 // Chatbot routes - with optional authentication for personalized responses
 const { optionalAuth } = require('../middleware/auth');
