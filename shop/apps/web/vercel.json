@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/sitemap.xml",
-      "destination": "https://vtech-ecommerce-api.onrender.com/sitemap.xml"
+      "destination": "https://api.vtechkitchen.com/sitemap.xml"
     },
     {
       "source": "/robots.txt",
-      "destination": "https://vtech-ecommerce-api.onrender.com/robots.txt"
+      "destination": "https://api.vtechkitchen.com/robots.txt"
     },
     {
       "source": "/((?!assets|static|sitemap.xml|robots.txt).*)",
