@@ -100,16 +100,18 @@ export const generateProductSchema = (product) => {
     description: product.description,
     image: product.images || [],
     sku: product.sku || undefined,
+    brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined,
     offers: {
       '@type': 'Offer',
       url: window.location.href,
-      priceCurrency: 'USD',
+      priceCurrency: 'INR',
       price: product.price,
       priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
       availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      itemCondition: 'https://schema.org/NewCondition',
       seller: {
         '@type': 'Organization',
-        name: product.vendorId?.storeName || 'Unknown Vendor',
+        name: product.vendorId?.storeName || 'V-Tech Kitchen',
       },
     },
   };
@@ -120,7 +122,28 @@ export const generateProductSchema = (product) => {
       '@type': 'AggregateRating',
       ratingValue: product.rating,
       reviewCount: product.reviewCount,
+      bestRating: 5,
+      worstRating: 1,
     };
+  }
+
+  // Add individual reviews if available (up to 5 for schema)
+  if (product.reviews && product.reviews.length > 0) {
+    baseSchema.review = product.reviews.slice(0, 5).map(review => ({
+      '@type': 'Review',
+      reviewRating: {
+        '@type': 'Rating',
+        ratingValue: review.rating,
+        bestRating: 5,
+        worstRating: 1,
+      },
+      author: {
+        '@type': 'Person',
+        name: review.user?.name || 'Anonymous',
+      },
+      datePublished: review.createdAt ? new Date(review.createdAt).toISOString() : undefined,
+      reviewBody: review.comment,
+    })).filter(r => r.datePublished); // Only include reviews with dates
   }
 
   // Merge with custom structured data properties if available
