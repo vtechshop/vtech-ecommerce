@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const loyaltyController = require('../controllers/loyaltyController');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 const { contentInteractionLimiter } = require('../middleware/rateLimiter');
 
 // Public: Get points configuration
@@ -15,7 +15,7 @@ router.get('/statistics', authenticate, loyaltyController.getStatistics);
 router.post('/redeem', authenticate, contentInteractionLimiter, loyaltyController.redeemPoints);
 
 // Admin routes
-router.post('/admin/award', authenticate, requireRole(['admin']), loyaltyController.awardPointsAdmin);
-router.get('/admin/users', authenticate, requireRole(['admin']), loyaltyController.getAllUsersLoyalty);
+router.post('/admin/award', authenticate, authorize(['admin']), loyaltyController.awardPointsAdmin);
+router.get('/admin/users', authenticate, authorize(['admin']), loyaltyController.getAllUsersLoyalty);
 
 module.exports = router;
