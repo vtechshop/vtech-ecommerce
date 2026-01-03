@@ -55,9 +55,10 @@ exports.generateSitemap = async (req, res, next) => {
 
     // Categories - high priority
     categories.forEach(category => {
+      const lastmod = category.updatedAt ? new Date(category.updatedAt).toISOString() : now;
       xml += '  <url>\n';
       xml += `    <loc>${BASE_URL}/category/${category.slug}</loc>\n`;
-      xml += `    <lastmod>${category.updatedAt || now}</lastmod>\n`;
+      xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>weekly</changefreq>\n';
       xml += '    <priority>0.8</priority>\n';
       xml += '  </url>\n';
@@ -65,9 +66,10 @@ exports.generateSitemap = async (req, res, next) => {
 
     // Products - medium-high priority
     products.forEach(product => {
+      const lastmod = product.updatedAt ? new Date(product.updatedAt).toISOString() : now;
       xml += '  <url>\n';
       xml += `    <loc>${BASE_URL}/product/${product.slug}</loc>\n`;
-      xml += `    <lastmod>${product.updatedAt || now}</lastmod>\n`;
+      xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>weekly</changefreq>\n';
       xml += '    <priority>0.7</priority>\n';
       xml += '  </url>\n';
@@ -75,9 +77,10 @@ exports.generateSitemap = async (req, res, next) => {
 
     // Blog posts - medium priority
     posts.forEach(post => {
+      const lastmod = post.updatedAt ? new Date(post.updatedAt).toISOString() : now;
       xml += '  <url>\n';
       xml += `    <loc>${BASE_URL}/blog/${post.slug}</loc>\n`;
-      xml += `    <lastmod>${post.updatedAt || now}</lastmod>\n`;
+      xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>monthly</changefreq>\n';
       xml += '    <priority>0.6</priority>\n';
       xml += '  </url>\n';
@@ -85,9 +88,10 @@ exports.generateSitemap = async (req, res, next) => {
 
     // Custom pages - medium priority
     pages.forEach(page => {
+      const lastmod = page.updatedAt ? new Date(page.updatedAt).toISOString() : now;
       xml += '  <url>\n';
       xml += `    <loc>${BASE_URL}/${page.slug}</loc>\n`;
-      xml += `    <lastmod>${page.updatedAt || now}</lastmod>\n`;
+      xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>monthly</changefreq>\n';
       xml += '    <priority>0.6</priority>\n';
       xml += '  </url>\n';
