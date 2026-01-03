@@ -6,6 +6,8 @@ import { register } from '@/store/slices/authSlice';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import CustomSelect from '@/components/common/CustomSelect';
+import ShinyButton from '@/components/animations/ShinyButton';
+import ScrollReveal from '@/components/animations/ScrollReveal';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -83,20 +85,23 @@ const Register = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
       <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <Link to="/" className="text-3xl font-bold text-blue-600">
-            Shop
-          </Link>
-          <h2 className="mt-6 text-3xl md:text-4xl font-bold text-gray-900">Create your account</h2>
-          <p className="mt-2 text-sm text-gray-700">
-            Already have an account?{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-gray-600">
-              Sign in
+        <ScrollReveal direction="down" duration={0.5}>
+          <div className="text-center mb-8">
+            <Link to="/" className="text-3xl font-bold text-blue-600">
+              Shop
             </Link>
-          </p>
-        </div>
+            <h2 className="mt-6 text-3xl md:text-4xl font-bold text-gray-900">Create your account</h2>
+            <p className="mt-2 text-sm text-gray-700">
+              Already have an account?{' '}
+              <Link to="/login" className="font-medium text-blue-600 hover:text-gray-600">
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </ScrollReveal>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <ScrollReveal direction="up" delay={0.2}>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover-lift">
           <form onSubmit={handleSubmit} className="space-y-6" data-testid="register-form">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -211,11 +216,18 @@ const Register = () => {
               </label>
             </div>
 
-            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} data-testid="register-submit">
-              Create Account
-            </Button>
+            <ShinyButton
+              type="submit"
+              variant="primary"
+              size="md"
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </ShinyButton>
           </form>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

@@ -4,9 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
 import ProductCard from '@/components/product/ProductCard';
 import Pagination from '@/components/common/Pagination';
-import Spinner from '@/components/common/Spinner';
+import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
 import SponsoredLabel from '@/components/ads/SponsoredLabel';
 import AdBanner from '@/components/common/AdBanner';
+import ScrollReveal from '@/components/animations/ScrollReveal';
 import { updateMetaTags, injectJSONLD } from '@/utils/seo';
 
 const Category = () => {
@@ -114,8 +115,14 @@ const Category = () => {
 
   if (categoryLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Spinner size="lg" />
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl py-6">
+          <div className="mb-6">
+            <div className="h-10 w-64 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <ProductGridSkeleton count={12} />
+        </div>
       </div>
     );
   }
@@ -135,11 +142,13 @@ const Category = () => {
         {/* Ad Banner - Top of Category Page */}
         <AdBanner placement="category_top_banner" position="top" className="mb-6" />
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
-          {category.description && <p className="text-gray-700 text-lg">{category.description}</p>}
-          <p className="text-gray-500 mt-2">{products.length} products</p>
-        </div>
+        <ScrollReveal direction="down" duration={0.5}>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
+            {category.description && <p className="text-gray-700 text-lg">{category.description}</p>}
+            <p className="text-gray-500 mt-2">{products.length} products</p>
+          </div>
+        </ScrollReveal>
 
         {/* Main Content with Sidebar */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

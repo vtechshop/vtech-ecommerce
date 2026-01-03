@@ -9,6 +9,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import Spinner from '@/components/common/Spinner';
 import AdBanner from '@/components/common/AdBanner';
+import ShinyButton from '@/components/animations/ShinyButton';
 import { formatCurrency } from '@/utils/format';
 import { trackBeginCheckout } from '@/utils/analytics';
 import { COUNTRIES, DEFAULT_COUNTRY, getStatesForCountry } from '@/utils/locationData';
@@ -613,9 +614,9 @@ const Checkout = () => {
                   </div>
                 )}
 
-                <Button type="submit" variant="primary" size="lg" className="mt-6 btn-scale hover-lift">
+                <ShinyButton type="submit" variant="primary" size="md" className="mt-6 w-full">
                   Continue to Shipping
-                </Button>
+                </ShinyButton>
               </form>
             </div>
             </AnimatedDiv>
@@ -666,9 +667,9 @@ const Checkout = () => {
                 <Button onClick={() => setStep(1)} variant="outline" className="btn-scale">
                   Back
                 </Button>
-                <Button onClick={handleShippingSubmit} variant="primary" fullWidth className="btn-scale hover-lift">
+                <ShinyButton onClick={handleShippingSubmit} variant="primary" size="md" className="flex-1">
                   Continue to Payment
-                </Button>
+                </ShinyButton>
               </div>
             </div>
             </AnimatedDiv>
@@ -708,15 +709,15 @@ const Checkout = () => {
                   <Button type="button" onClick={() => setStep(2)} variant="outline" className="btn-scale">
                     Back
                   </Button>
-                  <Button
+                  <ShinyButton
                     type="submit"
                     variant="primary"
-                    fullWidth
-                    loading={createOrderMutation.isPending}
-                    className="btn-add-to-cart btn-scale hover-lift"
+                    size="md"
+                    disabled={createOrderMutation.isPending}
+                    className="flex-1"
                   >
-                    Continue to Payment
-                  </Button>
+                    {createOrderMutation.isPending ? 'Processing...' : 'Continue to Payment'}
+                  </ShinyButton>
                 </div>
               </form>
             </div>

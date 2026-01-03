@@ -5,8 +5,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { updateCartItem, removeCartItem, loadCart } from '@/store/slices/cartSlice';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import Button from '@/components/common/Button';
-import Spinner from '@/components/common/Spinner';
 import AdBanner from '@/components/common/AdBanner';
+import ShinyButton from '@/components/animations/ShinyButton';
 import { formatCurrency } from '@/utils/format';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
@@ -34,8 +34,39 @@ const Cart = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Spinner size="lg" />
+      <div className="bg-white min-h-screen">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl py-6">
+          <div className="mb-6">
+            <div className="h-10 w-48 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-lg border p-4 animate-pulse">
+                  <div className="flex gap-3">
+                    <div className="w-20 h-20 bg-gray-200 rounded"></div>
+                    <div className="flex-1">
+                      <div className="h-4 w-3/4 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-3 w-1/4 bg-gray-200 rounded mb-3"></div>
+                      <div className="h-8 w-32 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-lg border p-6 animate-pulse">
+                <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-4 w-full bg-gray-200 rounded"></div>
+                  <div className="h-4 w-full bg-gray-200 rounded"></div>
+                  <div className="h-10 w-full bg-gray-200 rounded mt-4"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -229,14 +260,14 @@ const Cart = () => {
                 </div>
               </div>
 
-              <button
+              <ShinyButton
                 onClick={handleCheckout}
-                className="w-full bg-primary-600 text-white py-2 sm:py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors mb-3 text-sm sm:text-base btn-add-to-cart btn-scale hover-lift fade-in stagger-2"
-                data-testid="checkout-btn"
-                data-cy="checkout-btn"
+                variant="primary"
+                size="md"
+                className="w-full mb-3 fade-in stagger-2"
               >
                 Proceed to Checkout
-              </button>
+              </ShinyButton>
 
               <Link to="/search">
                 <button className="w-full bg-blue-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors btn-scale fade-in stagger-3" data-testid="continue-shopping-btn">

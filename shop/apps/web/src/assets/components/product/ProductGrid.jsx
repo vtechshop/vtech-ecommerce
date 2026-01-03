@@ -8,6 +8,7 @@ import CustomSelect from '@/components/common/CustomSelect';
 import AdBanner from '@/components/common/AdBanner';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { Grid, List, Filter, SortAsc } from 'lucide-react';
+import { ProductGridSkeleton } from './ProductCardSkeleton';
 
 const ProductGrid = React.memo(({
   category,
@@ -59,11 +60,7 @@ const ProductGrid = React.memo(({
   const total = data?.meta?.total || 0;
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
-      </div>
-    );
+    return <ProductGridSkeleton count={8} />;
   }
 
   if (error) {

@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import api from '@/utils/api';
-import Spinner from '@/components/common/Spinner';
+import CountUp from '@/components/animations/CountUp';
+import ScrollReveal from '@/components/animations/ScrollReveal';
 import { formatCurrency, formatDate } from '@/utils/format';
 
 const CustomerDashboard = () => {
@@ -26,28 +27,48 @@ const CustomerDashboard = () => {
 
   if (statsLoading || ordersLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
+      <div>
+        <div className="h-10 w-48 bg-gray-200 rounded animate-pulse mb-8"></div>
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse">
+            <div className="h-4 w-24 bg-gray-200 rounded mb-4"></div>
+            <div className="h-8 w-32 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 animate-pulse">
+          <div className="h-6 w-32 bg-gray-200 rounded mb-6"></div>
+          <div className="space-y-4">
+            <div className="h-4 w-full bg-gray-200 rounded"></div>
+            <div className="h-4 w-full bg-gray-200 rounded"></div>
+            <div className="h-4 w-full bg-gray-200 rounded"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-3xl md:text-4xl font-bold mb-8 fade-in-down">Dashboard</h1>
+      <ScrollReveal direction="down" duration={0.5}>
+        <h1 className="text-3xl md:text-4xl font-bold mb-8">Dashboard</h1>
+      </ScrollReveal>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in hover-lift">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-gray-700 text-sm font-medium">Total Spent</h3>
-            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+      <ScrollReveal direction="up" delay={0.1}>
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mb-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in hover-lift">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-gray-700 text-sm font-medium">Total Spent</h3>
+              <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-3xl font-bold">
+              <CountUp end={stats?.totalSpent || 0} duration={2} prefix="₹" decimals={2} />
+            </p>
           </div>
-          <p className="text-3xl font-bold">{formatCurrency(stats?.totalSpent || 0)}</p>
         </div>
-      </div>
+      </ScrollReveal>
 
       {/* Upgrade Options - Only show for customers, not for admin/vendor/affiliate */}
       {user?.role === 'customer' && (

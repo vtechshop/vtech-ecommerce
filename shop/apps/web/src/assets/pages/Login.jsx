@@ -5,6 +5,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { login } from '@/store/slices/authSlice';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
+import ShinyButton from '@/components/animations/ShinyButton';
+import ScrollReveal from '@/components/animations/ScrollReveal';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -73,21 +75,24 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
-      <div className="max-w-md w-full fade-in">
-        <div className="text-center mb-8">
-          <Link to="/" className="text-3xl font-bold text-blue-600 btn-scale">
-            Shop
-          </Link>
-          <h2 className="mt-6 text-3xl md:text-4xl font-bold text-gray-900 fade-in-down">Sign in to your account</h2>
-          <p className="mt-2 text-sm text-gray-700 fade-in-down stagger-1">
-            Or{' '}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-gray-600 hover:underline">
-              create a new account
+      <div className="max-w-md w-full">
+        <ScrollReveal direction="down" duration={0.5}>
+          <div className="text-center mb-8">
+            <Link to="/" className="text-3xl font-bold text-blue-600 btn-scale">
+              Shop
             </Link>
-          </p>
-        </div>
+            <h2 className="mt-6 text-3xl md:text-4xl font-bold text-gray-900">Sign in to your account</h2>
+            <p className="mt-2 text-sm text-gray-700">
+              Or{' '}
+              <Link to="/register" className="font-medium text-blue-600 hover:text-gray-600 hover:underline">
+                create a new account
+              </Link>
+            </p>
+          </div>
+        </ScrollReveal>
 
-        <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-8 modal-slide-up hover-lift ${shake ? 'form-error' : ''}`}>
+        <ScrollReveal direction="up" delay={0.2}>
+          <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover-lift ${shake ? 'form-error' : ''}`}>
           <form onSubmit={handleSubmit} className="space-y-6" data-testid="login-form">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
@@ -143,11 +148,18 @@ const Login = () => {
               </div>
             </div>
 
-            <Button type="submit" variant="primary" size="lg" fullWidth loading={loading} data-testid="login-submit">
-              Sign in
-            </Button>
+            <ShinyButton
+              type="submit"
+              variant="primary"
+              size="md"
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? 'Signing in...' : 'Sign in'}
+            </ShinyButton>
           </form>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );
