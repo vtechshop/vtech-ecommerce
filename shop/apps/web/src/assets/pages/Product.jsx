@@ -14,6 +14,7 @@ import { captureAffiliateFromURL } from '@/utils/affiliateTracking';
 import RecentlyViewed from '@/components/product/RecentlyViewed';
 import SocialProof from '@/components/product/SocialProof';
 import ProductRecommendations from '@/components/product/ProductRecommendations';
+import ProductImageCarousel from '@/components/product/ProductImageCarousel';
 import ReviewForm from '@/components/product/ReviewForm';
 import EditReviewModal from '@/components/product/EditReviewModal';
 import AdBanner from '@/components/common/AdBanner';
@@ -156,7 +157,6 @@ const Product = () => {
   const toast = useToast();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [searchParams] = useSearchParams();
-  const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -246,12 +246,6 @@ const Product = () => {
       toast.error(error.response?.data?.error?.message || 'Failed to update review');
     },
   });
-
-  useEffect(() => {
-    if (product?.images) {
-      setSelectedImage(0);
-    }
-  }, [product]);
 
   useEffect(() => {
     if (product) {
@@ -429,47 +423,13 @@ const Product = () => {
     <div className="min-h-screen bg-blue-50 pt-12">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 lg:gap-6">
-          {/* Product Images - Smaller size */}
+          {/* Product Images */}
           <div className="lg:col-span-2 fade-in-left">
-            <div className="sticky top-4 space-y-3">
-              <div className="relative bg-white border border-gray-200 rounded-lg overflow-hidden product-card hover-lift">
-                <div className="aspect-square product-card-image">
-                  {product.images && product.images.length > 0 ? (
-                    <img
-                      src={normalizeImageUrl(product.images[selectedImage])}
-                      alt={product.title}
-                      className="w-full h-full object-contain p-4 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      <div className="text-center fade-in">
-                        <div className="text-3xl md:text-4xl lg:text-5xl mb-2">📦</div>
-                        <p className="text-sm">No Image</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {product.images && product.images.length > 1 && (
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {product.images.map((image, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden transition-all duration-300 hover-lift fade-in stagger-${Math.min(index + 1, 6)} ${
-                        index === selectedImage ? 'border-primary-500 scale-110' : 'border-gray-200'
-                      }`}
-                    >
-                      <img
-                        src={normalizeImageUrl(image)}
-                        alt={`${product.title} ${index + 1}`}
-                        className="w-full h-full object-contain p-1"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div className="sticky top-4">
+              <ProductImageCarousel
+                images={product.images?.map(img => normalizeImageUrl(img)) || []}
+                productName={product.title}
+              />
             </div>
           </div>
 
