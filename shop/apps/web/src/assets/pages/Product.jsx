@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/Product.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
@@ -265,6 +265,11 @@ const Product = () => {
     ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
     : 0;
 
+  // Memoize normalized images to prevent re-renders
+  const normalizedImages = useMemo(() => {
+    return product?.images?.map(img => normalizeImageUrl(img)) || [];
+  }, [product?.images]);
+
   const renderStars = (rating = 4.5) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
@@ -427,7 +432,7 @@ const Product = () => {
           <div className="lg:col-span-2 fade-in-left">
             <div className="sticky top-4">
               <ProductImageCarousel
-                images={product.images?.map(img => normalizeImageUrl(img)) || []}
+                images={normalizedImages}
                 productName={product.title}
               />
             </div>
