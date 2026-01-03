@@ -11,6 +11,7 @@ import SponsoredLabel from '@/components/ads/SponsoredLabel';
 import AdBanner from '@/components/common/AdBanner';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
+import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
 
 const Search = () => {
   const { t } = useTranslation();
@@ -279,9 +280,7 @@ const Search = () => {
         {/* Results */}
         <div className="flex-1">
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Spinner size="lg" />
-            </div>
+            <ProductGridSkeleton count={12} />
           ) : (
             <>
               {/* Combined Products (Sponsored + Regular) - Amazon Style */}

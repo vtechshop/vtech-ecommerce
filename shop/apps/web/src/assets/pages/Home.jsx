@@ -11,6 +11,10 @@ import SponsorAd from '@/components/ads/SponsorAd';
 import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
+import ScrollReveal, { ScrollRevealStagger } from '@/components/animations/ScrollReveal';
+import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
+import ShinyButton from '@/components/animations/ShinyButton';
+import CountUp from '@/components/animations/CountUp';
 
 // Admin settings for ad placements
 const AD_PLACEMENT_SETTINGS = {
@@ -118,6 +122,40 @@ const Home = React.memo(() => {
           </div>
         </div>
       </section>
+
+      {/* Stats Section with CountUp */}
+      <ScrollReveal direction="up" delay={0.2}>
+        <section className="bg-gradient-to-r from-gray-50 to-gray-100 py-16 border-y border-gray-200">
+          <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              <div className="text-center">
+                <div className="text-4xl md:text-5xl font-bold text-primary-600 mb-2">
+                  <CountUp end={10000} suffix="+" duration={2} />
+                </div>
+                <p className="text-gray-600 font-medium">Products</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl md:text-5xl font-bold text-green-600 mb-2">
+                  <CountUp end={5000} suffix="+" duration={2} />
+                </div>
+                <p className="text-gray-600 font-medium">Happy Customers</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl md:text-5xl font-bold text-blue-600 mb-2">
+                  <CountUp end={15000} suffix="+" duration={2} />
+                </div>
+                <p className="text-gray-600 font-medium">Orders Delivered</p>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl md:text-5xl font-bold text-purple-600 mb-2">
+                  <CountUp end={500} suffix="+" duration={2} />
+                </div>
+                <p className="text-gray-600 font-medium">Trusted Vendors</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </ScrollReveal>
 
       {/* Main Content with Sidebars */}
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-8 max-w-screen-2xl">
