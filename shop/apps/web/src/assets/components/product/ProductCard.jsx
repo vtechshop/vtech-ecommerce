@@ -1,5 +1,5 @@
 // FILE: apps/web/src/components/product/ProductCard.jsx
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, ShoppingCart } from 'lucide-react';
 import { useDispatch } from 'react-redux';
@@ -7,11 +7,14 @@ import { addToCart } from '@/store/slices/cartSlice';
 import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency } from '@/utils/format';
 import { normalizeImageUrl } from '@/utils/placeholders';
+import { useAddToCartAnimation } from '@/components/animations/AddToCartAnimation';
 
 const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const dispatch = useDispatch();
   const toast = useToast();
   const navigate = useNavigate();
+  const addToCartButtonRef = useRef(null);
+  const { triggerAnimation, AnimationComponent } = useAddToCartAnimation();
 
   // Memoize discount calculation
   const hasDiscount = React.useMemo(() => product.compareAt && product.compareAt > product.price, [product.compareAt, product.price]);
@@ -32,11 +35,17 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         productId: product._id,
         quantity: 1
       })).unwrap();
+
+      // Trigger flying animation
+      if (addToCartButtonRef.current) {
+        triggerAnimation(product, addToCartButtonRef.current);
+      }
+
       toast.success('Added to cart!');
     } catch (error) {
       toast.error(error?.message || 'Failed to add to cart');
     }
-  }, [dispatch, product._id, toast]);
+  }, [dispatch, product._id, product, toast, triggerAnimation]);
 
   // Memoize rating rendering
   const ratingStars = React.useMemo(() => {
@@ -56,6 +65,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   }, [product.rating]);
 
   return (
+    <>
     <Link
       to={`/product/${product.slug}`}
       onClick={handleClick}
@@ -169,6 +179,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
       {/* Add to Cart - Desktop only */}
       <div className="px-3 sm:px-4 pb-3 sm:pb-4 hidden sm:block">
         <button
+          ref={addToCartButtonRef}
           onClick={handleAddToCart}
           disabled={product.stock <= 0}
           className="etsy-add-to-cart etsy-btn w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-md"
@@ -179,6 +190,8 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         </button>
       </div>
     </Link>
+    {AnimationComponent}
+    </>
   );
 });
 
