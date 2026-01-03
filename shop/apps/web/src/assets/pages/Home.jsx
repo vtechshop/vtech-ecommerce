@@ -13,6 +13,7 @@ import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
 import ShinyButton from '@/components/animations/ShinyButton';
+import TestimonialSlider from '@/components/testimonials/TestimonialSlider';
 
 // Admin settings for ad placements
 const AD_PLACEMENT_SETTINGS = {
@@ -338,6 +339,12 @@ const Home = React.memo(() => {
                 showViewAll={true}
                 viewAllLink="/search?sort=-sold"
               />
+            </section>
+
+            {/* Customer Testimonials */}
+            <section className="mb-8">
+              <h2 className="text-xl md:text-2xl font-bold text-center mb-8">What Our Customers Say</h2>
+              <TestimonialSlider />
             </section>
 
             {/* Sponsored Ad - Bottom */}
