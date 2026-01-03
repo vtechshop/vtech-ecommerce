@@ -31,6 +31,63 @@ process.on('unhandledRejection', (err) => {
 // Load tracking sync job at module level
 const trackingSyncJob = require('./jobs/trackingSyncJob');
 
+// Load cron for automated tasks
+const cron = require('node-cron');
+
+// Cron job setup function
+function setupCronJobs() {
+  try {
+    const { AbandonedCartService } = require('./services/abandonedCartService');
+    const inventoryAlertService = require('./services/inventoryAlertService');
+    const loyaltyService = require('./services/loyaltyService');
+    const gdprService = require('./services/gdprService');
+
+    // Every hour - Send abandoned cart recovery emails
+    cron.schedule('0 * * * *', async () => {
+      try {
+        logger.info('[Cron] Running abandoned cart recovery emails...');
+        await AbandonedCartService.sendRecoveryEmails();
+      } catch (error) {
+        logger.error('[Cron] Abandoned cart recovery failed:', error);
+      }
+    });
+
+    // Daily at 9 AM - Check low stock inventory and send alerts
+    cron.schedule('0 9 * * *', async () => {
+      try {
+        logger.info('[Cron] Running inventory low stock check...');
+        await inventoryAlertService.checkLowStockProducts();
+      } catch (error) {
+        logger.error('[Cron] Inventory alert check failed:', error);
+      }
+    });
+
+    // Daily at 2 AM - Expire old loyalty points
+    cron.schedule('0 2 * * *', async () => {
+      try {
+        logger.info('[Cron] Running loyalty points expiration...');
+        await loyaltyService.expireOldPoints();
+      } catch (error) {
+        logger.error('[Cron] Loyalty points expiration failed:', error);
+      }
+    });
+
+    // Daily at 3 AM - Process GDPR scheduled deletions
+    cron.schedule('0 3 * * *', async () => {
+      try {
+        logger.info('[Cron] Running GDPR scheduled deletions...');
+        await gdprService.processScheduledDeletions();
+      } catch (error) {
+        logger.error('[Cron] GDPR deletion process failed:', error);
+      }
+    });
+
+    logger.info('✅ Cron jobs scheduled: Abandoned carts (hourly), Inventory alerts (9 AM), Loyalty expiration (2 AM), GDPR deletions (3 AM)');
+  } catch (error) {
+    logger.error('Failed to set up cron jobs:', error);
+  }
+}
+
 (async () => {
   try {
     // Connect to MongoDB
@@ -42,6 +99,9 @@ const trackingSyncJob = require('./jobs/trackingSyncJob');
     // Start tracking sync background job
     trackingSyncJob.start();
     logger.info('✅ Tracking sync background job started');
+
+    // Set up automated cron jobs for platform features
+    setupCronJobs();
 
     // One-time admin password reset/create if ADMIN_EMAIL and ADMIN_PASSWORD are set
     if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
