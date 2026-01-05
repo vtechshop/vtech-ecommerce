@@ -6,11 +6,11 @@ import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import PaymentMethods from './PaymentMethods';
 import { formatCurrency } from '@/utils/format';
-import { CreditCard, Lock } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 const PaymentStep = ({ order, totals, onBack }) => {
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const createPaymentMutation = useMutation({
@@ -56,21 +56,22 @@ const PaymentStep = ({ order, totals, onBack }) => {
     setIsProcessing(true);
 
     try {
-      // Create payment intent
+      // Create Razorpay payment intent
       await createPaymentMutation.mutateAsync({
         orderId: order._id,
-        provider: paymentMethod === 'card' ? 'stripe' : 'razorpay',
+        provider: 'razorpay',
+        method: paymentMethod, // 'razorpay', 'upi', 'card', or 'netbanking'
       });
 
       // In production, you would:
-      // 1. Load Stripe/Razorpay SDK
-      // 2. Collect card details securely
-      // 3. Confirm payment with provider
+      // 1. Load Razorpay SDK
+      // 2. Open Razorpay checkout modal
+      // 3. Handle payment success/failure
       // 4. Call confirmPayment API
 
       // For demo purposes, we'll simulate success after 2 seconds
       setTimeout(() => {
-        handlePaymentSuccess({ id: 'demo_payment_' + Date.now() });
+        handlePaymentSuccess({ id: 'razorpay_demo_' + Date.now() });
       }, 2000);
     } catch (error) {
       setIsProcessing(false);
@@ -118,71 +119,43 @@ const PaymentStep = ({ order, totals, onBack }) => {
         <PaymentMethods selected={paymentMethod} onSelect={setPaymentMethod} />
       </div>
 
-      {/* Card Details Form (Demo) */}
-      {paymentMethod === 'card' && (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <Lock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-primary-800">
-                <p className="font-semibold mb-1">Secure Payment</p>
-                <p>Your payment information is encrypted and secure. We never store your card details.</p>
-              </div>
+      {/* Razorpay Payment */}
+      <div className="space-y-4">
+        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Lock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-primary-800">
+              <p className="font-semibold mb-1">Secure Payment by Razorpay</p>
+              <p>Your payment is 100% secure. Razorpay uses industry-standard encryption.</p>
             </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Card Number</label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="1234 5678 9012 3456"
-                maxLength="19"
-                className="input w-full pl-10"
-                required
-                disabled={isProcessing}
-              />
-              <CreditCard className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            </div>
+        <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+          <div className="text-center mb-4">
+            <h3 className="font-semibold text-lg mb-2">
+              {paymentMethod === 'razorpay' && 'All Payment Methods'}
+              {paymentMethod === 'upi' && 'UPI Payment'}
+              {paymentMethod === 'card' && 'Card Payment'}
+              {paymentMethod === 'netbanking' && 'Net Banking'}
+            </h3>
+            <p className="text-sm text-gray-600">
+              {paymentMethod === 'razorpay' && 'Pay using UPI, Cards, Net Banking, or Wallets'}
+              {paymentMethod === 'upi' && 'Pay using Google Pay, PhonePe, Paytm, or any UPI app'}
+              {paymentMethod === 'card' && 'Pay using Credit or Debit Card (Visa, Mastercard, RuPay)'}
+              {paymentMethod === 'netbanking' && 'Pay using your bank account'}
+            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Expiry Date</label>
-              <input
-                type="text"
-                placeholder="MM/YY"
-                maxLength="5"
-                className="input w-full"
-                required
-                disabled={isProcessing}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">CVV</label>
-              <input
-                type="text"
-                placeholder="123"
-                maxLength="3"
-                className="input w-full"
-                required
-                disabled={isProcessing}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">Cardholder Name</label>
-            <input
-              type="text"
-              placeholder="John Doe"
-              className="input w-full"
-              required
-              disabled={isProcessing}
+          <div className="flex justify-center mb-4">
+            <img
+              src="https://razorpay.com/assets/razorpay-glyph.svg"
+              alt="Razorpay"
+              className="h-12 opacity-70"
             />
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3">
             <Button
               type="button"
               variant="outline"
@@ -193,7 +166,7 @@ const PaymentStep = ({ order, totals, onBack }) => {
               Back
             </Button>
             <Button
-              type="submit"
+              onClick={handleSubmit}
               variant="primary"
               className="flex-1"
               disabled={isProcessing}
@@ -208,26 +181,8 @@ const PaymentStep = ({ order, totals, onBack }) => {
               )}
             </Button>
           </div>
-        </form>
-      )}
-
-      {/* UPI/NetBanking Demo */}
-      {(paymentMethod === 'upi' || paymentMethod === 'netbanking') && (
-        <div className="space-y-4">
-          <div className="bg-gray-50 rounded-lg p-6 text-center">
-            <p className="text-gray-700 mb-4">
-              In production, this would redirect to {paymentMethod === 'upi' ? 'UPI app' : 'bank'} for payment
-            </p>
-            <Button
-              onClick={handleSubmit}
-              variant="primary"
-              disabled={isProcessing}
-            >
-              {isProcessing ? 'Processing...' : `Continue to ${paymentMethod === 'upi' ? 'UPI' : 'Bank'}`}
-            </Button>
-          </div>
         </div>
-      )}
+      </div>
 
       {/* Security Note */}
       <div className="text-xs text-gray-700 text-center pt-4 border-t">

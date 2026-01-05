@@ -1,24 +1,31 @@
 // FILE: apps/web/src/components/checkout/PaymentMethods.jsx
-import { CreditCard, Smartphone, Building } from 'lucide-react';
+import { CreditCard, Smartphone, Building, Wallet } from 'lucide-react';
 
 const PaymentMethods = ({ selected, onSelect }) => {
   const methods = [
     {
-      id: 'card',
-      name: 'Credit / Debit Card',
-      description: 'Pay securely with your card',
-      icon: CreditCard,
+      id: 'razorpay',
+      name: 'Razorpay (All Methods)',
+      description: 'UPI, Cards, Net Banking & Wallets',
+      icon: Wallet,
+      popular: true,
     },
     {
       id: 'upi',
       name: 'UPI',
-      description: 'Pay with UPI apps',
+      description: 'Google Pay, PhonePe, Paytm',
       icon: Smartphone,
+    },
+    {
+      id: 'card',
+      name: 'Credit / Debit Card',
+      description: 'Visa, Mastercard, RuPay',
+      icon: CreditCard,
     },
     {
       id: 'netbanking',
       name: 'Net Banking',
-      description: 'Pay via your bank',
+      description: 'All major banks supported',
       icon: Building,
     },
   ];
@@ -30,12 +37,17 @@ const PaymentMethods = ({ selected, onSelect }) => {
         return (
           <label
             key={method.id}
-            className={`flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+            className={`relative flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
               selected === method.id
                 ? 'border-primary-600 bg-primary-50'
                 : 'border-gray-200 hover:bg-gray-50'
             }`}
           >
+            {method.popular && (
+              <span className="absolute -top-2 right-4 bg-green-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                Recommended
+              </span>
+            )}
             <input
               type="radio"
               name="payment"
