@@ -115,18 +115,23 @@ exports.generateRobotsTxt = async (req, res, next) => {
 User-agent: *
 Allow: /
 
-# Disallow admin and private areas
+# Disallow admin and private areas only
 Disallow: /dashboard/
 Disallow: /admin/
-Disallow: /api/
 Disallow: /checkout/
+Disallow: /account/
 
-# Allow specific public pages
+# Allow all public pages
 Allow: /products/
+Allow: /product/
 Allow: /categories/
+Allow: /category/
+Allow: /vendor/
+Allow: /vendors/
 Allow: /blog/
 Allow: /about
 Allow: /contact
+Allow: /search
 
 # Sitemap location
 Sitemap: ${BASE_URL}/sitemap.xml
