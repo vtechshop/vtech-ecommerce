@@ -13,6 +13,16 @@
   body {
     background-color: #ffffff;
     @apply text-gray-900 antialiased;
+    /* Prevent cursor flickering on animations */
+    cursor: auto;
+  }
+
+  /* Force hardware acceleration for smooth animations without cursor flicker */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
 }
 
