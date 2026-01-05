@@ -223,7 +223,7 @@ const Home = React.memo(() => {
               <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
               <div className="grid md:grid-cols-2 gap-6">
                 {/* Become a Vendor */}
-                <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow hover-lift card-tilt slide-in-left">
+                <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow slide-in-left">
                   <div className="flex items-center mb-4">
                     <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-4">
                       <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -263,14 +263,15 @@ const Home = React.memo(() => {
                   </ul>
                   <Link
                     to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
-                    className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg will-change-auto"
+                    style={{ transform: 'translateZ(0)' }}
                   >
                     {t('home.startSelling')}
                   </Link>
                 </div>
 
                 {/* Become an Affiliate */}
-                <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow hover-lift card-tilt slide-in-right">
+                <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow slide-in-right">
                   <div className="flex items-center mb-4">
                     <div className="w-12 h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-4">
                       <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -310,7 +311,8 @@ const Home = React.memo(() => {
                   </ul>
                   <Link
                     to={user?.role === 'customer' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
-                    className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors duration-200 shadow-md hover:shadow-lg will-change-auto"
+                    style={{ transform: 'translateZ(0)' }}
                   >
                     {t('home.joinAffiliate')}
                   </Link>
