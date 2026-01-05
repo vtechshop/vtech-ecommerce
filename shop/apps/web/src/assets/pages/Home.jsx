@@ -263,7 +263,7 @@ const Home = React.memo(() => {
                   </ul>
                   <Link
                     to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
-                    className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors shadow-md btn-scale"
+                    className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
                   >
                     {t('home.startSelling')}
                   </Link>
@@ -310,7 +310,7 @@ const Home = React.memo(() => {
                   </ul>
                   <Link
                     to={user?.role === 'customer' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
-                    className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors shadow-md btn-scale"
+                    className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
                   >
                     {t('home.joinAffiliate')}
                   </Link>
