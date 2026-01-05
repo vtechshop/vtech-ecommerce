@@ -167,12 +167,47 @@ exports.getRobotsTxt = async (req, res, next) => {
   try {
     const baseUrl = env.APP_URL;
 
-    const txt = `User-agent: *
+    const txt = `# Allow all search engines to crawl the site
+User-agent: *
 Allow: /
 
+# Explicitly allow static assets (CSS, JS, images)
+Allow: /assets/
+Allow: /static/
+Allow: /src/
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.png$
+Allow: /*.gif$
+Allow: /*.svg$
+Allow: /*.webp$
+Allow: /*.avif$
+
+# Disallow admin and private areas only
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /account/
+
+# Allow all public pages
+Allow: /products/
+Allow: /product/
+Allow: /categories/
+Allow: /category/
+Allow: /vendor/
+Allow: /vendors/
+Allow: /blog/
+Allow: /about
+Allow: /contact
+Allow: /search
+
+# Sitemap location
 Sitemap: ${baseUrl}/api/seo/sitemap.xml`;
 
     res.header('Content-Type', 'text/plain');
+    res.header('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
     res.send(txt);
   } catch (error) {
     next(error);
