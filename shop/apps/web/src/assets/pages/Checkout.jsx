@@ -24,7 +24,7 @@ const Checkout = () => {
   const { items, totals } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
 
-  const [step, setStep] = useState(1); // 1: Address, 2: Shipping, 3: Payment
+  const [step, setStep] = useState(1); // 1: Address, 2: Payment (Shipping step removed)
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [newAddress, setNewAddress] = useState({
     fullName: '',
@@ -36,7 +36,7 @@ const Checkout = () => {
     zipCode: '',
     country: DEFAULT_COUNTRY, // 'IN' for India
   });
-  const [shippingMethod, setShippingMethod] = useState(null);
+  const [shippingMethod, setShippingMethod] = useState('standard'); // Default shipping
   const [paymentMethod, setPaymentMethod] = useState('razorpay'); // Default to Razorpay
   const [saveAddress, setSaveAddress] = useState(true); // Save address to account by default
   const [orderPlaced, setOrderPlaced] = useState(false); // Flag to prevent redirect after order success
@@ -196,21 +196,13 @@ const Checkout = () => {
 
     console.log('📝 New address set:', newAddress);
     setSelectedAddress(newAddress);
-    setStep(2);
+    setStep(2); // Go directly to payment (step 2, shipping removed)
   };
 
   const handleSelectExistingAddress = (address) => {
     console.log('📍 Selected existing address:', address);
     setSelectedAddress(address);
-    setStep(2);
-  };
-
-  const handleShippingSubmit = () => {
-    if (!shippingMethod) {
-      toast.error('Please select a shipping method');
-      return;
-    }
-    setStep(3);
+    setStep(2); // Go directly to payment (step 2, shipping removed)
   };
 
   const handlePaymentSubmit = async (e) => {
@@ -397,8 +389,7 @@ const Checkout = () => {
                 <div className="flex items-center justify-between">
                   {[
                     { num: 1, label: 'Address' },
-                    { num: 2, label: 'Shipping' },
-                    { num: 3, label: 'Payment' },
+                    { num: 2, label: 'Payment' },
                   ].map((s, index) => (
                   <div key={s.num} className="flex items-center flex-1">
                     <div className={`flex items-center ${index > 0 ? 'flex-1' : ''}`}>
@@ -615,68 +606,15 @@ const Checkout = () => {
                 )}
 
                 <ShinyButton type="submit" variant="primary" size="md" className="mt-6 w-full">
-                  Continue to Shipping
+                  Continue to Payment
                 </ShinyButton>
               </form>
             </div>
             </AnimatedDiv>
           )}
 
-          {/* Step 2: Shipping */}
+          {/* Step 2: Payment (Shipping step removed) */}
           {step === 2 && (
-            <AnimatedDiv animation="fadeInUp" duration={0.4}>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-xl md:text-2xl font-bold mb-4">Shipping Method</h2>
-
-              {loadingShipping ? (
-                <div className="flex justify-center py-8">
-                  <Spinner />
-                </div>
-              ) : shippingQuotes && shippingQuotes.length > 0 ? (
-                <div className="space-y-3">
-                  {shippingQuotes.map((quote, index) => (
-                    <button
-                      key={quote.id}
-                      onClick={() => setShippingMethod(quote)}
-                      className={`w-full text-left p-4 border-2 rounded-lg transition-all hover-lift fade-in stagger-${Math.min(index + 1, 6)} ${
-                        shippingMethod?.id === quote.id
-                          ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-semibold">{quote.name}</p>
-                          <p className="text-sm text-gray-700">{quote.description}</p>
-                          <p className="text-sm text-gray-700 mt-1">
-                            Estimated delivery: {quote.estimatedDays} business days
-                          </p>
-                        </div>
-                        <p className="font-bold text-lg">{formatCurrency(quote.cost)}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No shipping methods available</p>
-                </div>
-              )}
-
-              <div className="flex gap-3 mt-6">
-                <Button onClick={() => setStep(1)} variant="outline" className="btn-scale">
-                  Back
-                </Button>
-                <ShinyButton onClick={handleShippingSubmit} variant="primary" size="md" className="flex-1">
-                  Continue to Payment
-                </ShinyButton>
-              </div>
-            </div>
-            </AnimatedDiv>
-          )}
-
-          {/* Step 3: Payment */}
-          {step === 3 && (
             <AnimatedDiv animation="fadeInUp" duration={0.4}>
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-xl md:text-2xl font-bold mb-4">Payment Method</h2>
