@@ -21,23 +21,13 @@ if (env.NODE_ENV === 'production') {
 const cspDirectives = {
   defaultSrc: ["'self'"],
   scriptSrc: env.NODE_ENV === 'production'
-<<<<<<< HEAD
     ? ["'self'", "https://www.googletagmanager.com", "https://checkout.razorpay.com"] // Allow Google Analytics & Razorpay
-    : ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Relaxed in development
-  styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-  fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-  imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
-  connectSrc: ["'self'", env.CLIENT_URL || "http://localhost:3000", "https://www.google-analytics.com", "https://api.razorpay.com"],
-  frameSrc: ["'self'", "https://api.razorpay.com"], // Payment iframes (Stripe removed)
-=======
-    ? ["'self'", "https://checkout.razorpay.com"] // Strict in production - Razorpay allowed
     : ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://checkout.razorpay.com"], // Relaxed in development
   styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
   fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
   imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
-  connectSrc: ["'self'", env.CLIENT_URL || "http://localhost:3000"],
+  connectSrc: ["'self'", env.CLIENT_URL || "http://localhost:3000", "https://www.google-analytics.com", "https://api.razorpay.com"],
   frameSrc: ["'self'", "https://api.razorpay.com"], // Payment iframes (Razorpay only)
->>>>>>> 7b0b8baf821382dffc9fd53812ba4796fd3c3445
   objectSrc: ["'none'"],
   upgradeInsecureRequests: env.NODE_ENV === 'production' ? [] : null,
 };

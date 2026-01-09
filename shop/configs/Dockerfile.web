@@ -1,17 +1,31 @@
 # FILE: configs/Dockerfile.web
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies first (better caching)
+# Install dependencies
 COPY apps/web/package*.json ./
-RUN npm ci && npm cache clean --force
+RUN npm ci
 
 # Copy application code
 COPY apps/web/ .
 
-# Expose Vite dev server port
-EXPOSE 5173
+# Build production assets
+RUN npm run build
 
-# Start Vite dev server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Production stage - use lightweight web server
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install serve to run production build
+RUN npm install -g serve
+
+# Copy built assets from builder
+COPY --from=builder /app/dist ./dist
+
+# Expose port for web server
+EXPOSE 3000
+
+# Serve production build
+CMD ["serve", "-s", "dist", "-l", "3000"]
