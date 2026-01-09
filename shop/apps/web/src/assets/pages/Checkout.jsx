@@ -640,10 +640,10 @@ const Checkout = () => {
               </div>
             </AnimatedDiv>
           )}
-        </div>
+          </div>
 
-        {/* Order Summary Sidebar */}
-        <div className="lg:col-span-1">
+          {/* Order Summary Sidebar */}
+          <div className="lg:col-span-1">
           {/* Ad Banner - Checkout Sidebar */}
           <AdBanner placement="checkout_sidebar" position="right" className="mb-6 fade-in-right" />
 
@@ -704,7 +704,9 @@ const Checkout = () => {
               </div>
             </div>
           </div>
+          </div>
         </div>
+      </div>
       </div>
     </div>
   
