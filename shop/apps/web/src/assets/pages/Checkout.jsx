@@ -368,6 +368,7 @@ const Checkout = () => {
           {/* Progress Steps */}
           {step > 0 && (
             <AnimatedDiv animation="fadeInDown" duration={0.5}>
+
               <div className="mb-6">
                 <div className="flex items-center justify-between">
                   {[
@@ -404,6 +405,7 @@ const Checkout = () => {
                     </span>
                   </div>
                 ))}
+              </div>
               </div>
             </AnimatedDiv>
           )}
@@ -602,9 +604,7 @@ const Checkout = () => {
                 </ShinyButton>
               </form>
             </div>
-            </AnimatedDiv>
-          )}
-
+          
           {/* Step 2: Payment (Shipping step removed) */}
           {step === 2 && (
             <AnimatedDiv animation="fadeInUp" duration={0.4}>
@@ -719,8 +719,7 @@ const Checkout = () => {
           </div>
         </div>
       </div>
-      </div>
-    </div>
+  
   );
 };
 
