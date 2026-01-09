@@ -13,13 +13,14 @@ const mongoSanitize = require('express-mongo-sanitize');
 function sanitizeString(str) {
   if (typeof str !== 'string') return str;
 
-  // Remove HTML tags and dangerous characters (but preserve @ for emails)
+  // Only remove extremely dangerous patterns, preserve passwords and regular text
+  // DO NOT sanitize normal special characters like &, %, $, etc.
   return str
     .replace(/<script[^>]*>.*?<\/script>/gi, '') // Remove script tags
     .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '') // Remove iframes
     .replace(/javascript:/gi, '') // Remove javascript: protocol
     .replace(/on\w+\s*=\s*["'][^"']*["']/gi, ''); // Remove inline event handlers
-    // Note: NOT removing all HTML tags to preserve emails and other content
+    // Note: Preserves ALL other characters including &, %, $, @, etc. for passwords and emails
 }
 
 // Recursively sanitize object properties

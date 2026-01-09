@@ -24,10 +24,12 @@ const rateLimit = require('express-rate-limit');
  */
 const ATTACK_PATTERNS = {
   // SQL Injection patterns
+  // NOTE: Made less strict - only flag when SQL keywords are combined with injection patterns
   sqlInjection: [
-    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
-    /(-{2}|\/\*|\*\/|;|'|"|\bOR\b|\bAND\b)/gi,
+    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b.*\b(FROM|WHERE|INTO|TABLE)\b)/gi,
+    /(--|\/\*|\*\/|;.*(?:SELECT|INSERT|UPDATE|DELETE|DROP))/gi, // SQL comments with keywords
     /(\bxp_|sp_|0x[0-9a-f]+)/gi,
+    /('.*OR.*'|'.*AND.*'|1=1|' OR 1=1)/gi, // Classic SQL injection patterns
   ],
 
   // NoSQL Injection patterns
@@ -47,9 +49,13 @@ const ATTACK_PATTERNS = {
   ],
 
   // Command Injection patterns
+  // NOTE: Removed single special chars (&, $, etc.) as they're common in passwords
+  // Only detect actual command injection attempts
   commandInjection: [
-    /[;&|`$()]/g,
-    /(rm\s+-rf|curl|wget|nc\s|bash|sh\s)/gi,
+    /(;\s*(?:rm|curl|wget|nc|bash|sh|cat|ls|cd|mv|cp)\s)/gi, // Commands after semicolon
+    /(\|\s*(?:rm|curl|wget|nc|bash|sh|cat|ls|cd|mv|cp)\s)/gi, // Piped commands
+    /(`(?:rm|curl|wget|nc|bash|sh|cat|ls|cd|mv|cp)\s)/gi, // Backtick commands
+    /(rm\s+-rf|curl\s+http|wget\s+http)/gi, // Specific dangerous commands
   ],
 
   // Path Traversal patterns
