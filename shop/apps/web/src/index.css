@@ -24,6 +24,35 @@
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
   }
+
+  /* Mobile Performance Optimizations */
+  /* Fast tap response - removes 300ms delay on touch devices */
+  a, button, input, select, textarea, [role="button"], [tabindex] {
+    touch-action: manipulation;
+  }
+
+  /* Prevent accidental zoom on input focus (iOS) */
+  input, select, textarea {
+    font-size: 16px;
+  }
+
+  /* Smooth scrolling for mobile */
+  html {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Reduce motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 /* ============================================
