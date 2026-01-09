@@ -431,6 +431,8 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     seoKeywords: product?.seo?.keywords ? product.seo.keywords.join(', ') : '',
   });
 
+  const [faqs, setFaqs] = useState(product?.faqs || []);
+
   const [schemaData, setSchemaData] = useState({
     schemaType: product?.structuredData?.schemaType || 'Product',
     properties: product?.structuredData?.properties || {},

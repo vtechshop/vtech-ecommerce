@@ -86,6 +86,11 @@ const productSchema = new mongoose.Schema({
     provider: { type: String }, // Warranty provider (manufacturer, vendor, third-party)
     activationRequired: { type: Boolean, default: false }, // Requires customer to activate warranty
   },
+  // FAQ settings
+  faqs: [{
+    question: { type: String, trim: true },
+    answer: { type: String, trim: true }
+  }],
 }, { timestamps: true });
 
 // indexes (do not duplicate slug/sku uniques)
