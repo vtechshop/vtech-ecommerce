@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "postbuild": "react-snap",
+    "build:snap": "vite build && react-snap",
     "preview": "vite preview --port 5173",
     "lint": "eslint ."
   },
