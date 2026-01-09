@@ -26,7 +26,6 @@ const Checkout = () => {
 
 
   const [step, setStep] = useState(1); // 1: Address, 2: Payment
-  const [step, setStep] = useState(1); // 1: Address, 2: Payment (Shipping step removed)
  
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [newAddress, setNewAddress] = useState({
@@ -40,7 +39,6 @@ const Checkout = () => {
     country: DEFAULT_COUNTRY, // 'IN' for India
   });
   const [shippingMethod, setShippingMethod] = useState({ id: 'standard', name: 'Standard Shipping', cost: 0 }); // Default shipping
-  const [shippingMethod, setShippingMethod] = useState('standard'); // Default shipping
   const [paymentMethod, setPaymentMethod] = useState('razorpay'); // Default to Razorpay
   const [saveAddress, setSaveAddress] = useState(true); // Save address to account by default
   const [orderPlaced, setOrderPlaced] = useState(false); // Flag to prevent redirect after order success
@@ -598,14 +596,6 @@ const Checkout = () => {
           )}
 
           {/* Step 2: Payment */}
-=======
-                <ShinyButton type="submit" variant="primary" size="md" className="mt-6 w-full">
-                  Continue to Payment
-                </ShinyButton>
-              </form>
-            </div>
-          
-          {/* Step 2: Payment (Shipping step removed) */}
           {step === 2 && (
             <AnimatedDiv animation="fadeInUp" duration={0.4}>
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
