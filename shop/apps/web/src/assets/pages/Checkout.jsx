@@ -180,16 +180,13 @@ const Checkout = () => {
 
     console.log('📝 New address set:', newAddress);
     setSelectedAddress(newAddress);
- HEAD
     setStep(2); // Go directly to payment
-    setStep(2); // Go directly to payment (step 2, shipping removed)
   };
 
   const handleSelectExistingAddress = (address) => {
     console.log('📍 Selected existing address:', address);
     setSelectedAddress(address);
     setStep(2); // Go directly to payment
-    setStep(2); // Go directly to payment (step 2, shipping removed)
   };
 
   const handlePaymentSubmit = async (e) => {
@@ -709,6 +706,7 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+    </div>
   
   );
 };
