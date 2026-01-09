@@ -3,8 +3,6 @@ import { useEffect, Suspense, lazy, useRef } from 'react';
 import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
-import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
 import Loading from './assets/components/common/Loading';
 import { ToastProvider } from './assets/components/common/ToastContainer';
 import { loadConsent } from './assets/store/slices/consentSlice';
@@ -14,11 +12,6 @@ import useAnalytics from './assets/hooks/useAnalytics';
 import { initCsrfProtection } from './assets/utils/api';
 import { initWebVitals } from './assets/utils/webVitals';
 import { captureAffiliateFromURL } from './assets/utils/affiliateTracking';
-
-// Load Stripe
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
-  : null;
 
 // Lazy load layouts
 const PublicLayout = lazy(() => import('./assets/components/layout/PublicLayout'));

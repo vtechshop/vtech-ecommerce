@@ -13,8 +13,9 @@ import ProductReviews from '@/components/products/ProductReviews';
 import RelatedProducts from '@/components/products/RelatedProducts';
 import EditReviewModal from '@/components/product/EditReviewModal';
 import { formatCurrency } from '@/utils/format';
-import { updateMetaTags, addJsonLD, generateProductSchema } from '@/utils/seo';
-import { Star, ShoppingCart, Heart, Share2, Truck, Shield } from 'lucide-react';
+import { generateProductSchema } from '@/utils/seo';
+import SEO from '@/components/common/SEO';
+import { Star, ShoppingCart, Heart, Share2, Shield } from 'lucide-react';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -78,21 +79,8 @@ const ProductDetail = () => {
     },
   });
 
-  useEffect(() => {
-    if (product) {
-      // Update SEO
-      updateMetaTags({
-        title: `${product.title} - V-Tech Shop`,
-        description: product.description?.substring(0, 160),
-        image: product.images?.[0],
-        url: window.location.href,
-      });
-
-      // Add JSON-LD
-      const cleanup = addJsonLD(generateProductSchema(product));
-      return cleanup;
-    }
-  }, [product]);
+  // SEO data is now handled by SEO component in the render
+  const productSchema = product ? generateProductSchema(product) : null;
 
   const handleAddToCart = () => {
     dispatch(
@@ -164,8 +152,22 @@ const ProductDetail = () => {
   const compareAtPrice = selectedVariant?.compareAt || product.compareAt;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <>
+      {/* SEO Meta Tags */}
+      {product && (
+        <SEO
+          title={`${product.title} - V-Tech Kitchen`}
+          description={product.description?.substring(0, 160) || `Buy ${product.title} at V-Tech Kitchen. Premium quality at great prices.`}
+          keywords={`${product.title}, ${product.brand || 'kitchen'}, ${product.tags?.join(', ') || 'kitchenware'}`}
+          image={product.images?.[0]}
+          url={typeof window !== 'undefined' ? window.location.href : `https://vtechkitchen.com/product/${product.slug}`}
+          type="product"
+          structuredData={productSchema}
+        />
+      )}
+
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <div className="text-sm text-gray-700 mb-6">
           <Link to="/" className="hover:text-gray-600">Home</Link>
@@ -353,10 +355,6 @@ const ProductDetail = () => {
             {/* Features */}
             <div className="space-y-3 mt-6">
               <div className="flex items-center gap-3 text-sm">
-                <Truck className="w-5 h-5 text-green-600" />
-                <span>Free shipping on orders over ₹500</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
                 <Shield className="w-5 h-5 text-blue-600" />
                 <span>7-day return policy</span>
               </div>
@@ -387,20 +385,21 @@ const ProductDetail = () => {
             <RelatedProducts products={relatedProducts} />
           </div>
         )}
-      </div>
+        </div>
 
-      {/* Edit Review Modal */}
-      <EditReviewModal
-        isOpen={isEditModalOpen}
-        onClose={() => {
-          setIsEditModalOpen(false);
-          setEditingReview(null);
-        }}
-        review={editingReview}
-        onSubmit={handleEditSubmit}
-        isLoading={editReviewMutation.isPending}
-      />
-    </div>
+        {/* Edit Review Modal */}
+        <EditReviewModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setEditingReview(null);
+          }}
+          review={editingReview}
+          onSubmit={handleEditSubmit}
+          isLoading={editReviewMutation.isPending}
+        />
+      </div>
+    </>
   );
 };
 

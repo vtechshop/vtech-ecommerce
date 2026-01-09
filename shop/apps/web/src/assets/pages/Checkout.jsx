@@ -24,7 +24,7 @@ const Checkout = () => {
   const { items, totals } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
 
-  const [step, setStep] = useState(1); // 1: Address, 2: Shipping, 3: Payment
+  const [step, setStep] = useState(1); // 1: Address, 2: Payment
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [newAddress, setNewAddress] = useState({
     fullName: '',
@@ -36,7 +36,7 @@ const Checkout = () => {
     zipCode: '',
     country: DEFAULT_COUNTRY, // 'IN' for India
   });
-  const [shippingMethod, setShippingMethod] = useState(null);
+  const [shippingMethod, setShippingMethod] = useState({ id: 'standard', name: 'Standard Shipping', cost: 0 }); // Default shipping
   const [paymentMethod, setPaymentMethod] = useState('razorpay'); // Default to Razorpay
   const [saveAddress, setSaveAddress] = useState(true); // Save address to account by default
   const [orderPlaced, setOrderPlaced] = useState(false); // Flag to prevent redirect after order success
@@ -75,25 +75,7 @@ const Checkout = () => {
     enabled: !!user,
   });
 
-  // Fetch shipping quotes
-  const { data: shippingQuotes, isLoading: loadingShipping } = useQuery({
-    queryKey: ['shipping-quotes', selectedAddress],
-    queryFn: async () => {
-      console.log('🚚 Fetching shipping quotes with address:', selectedAddress);
-      console.log('📦 Items:', items);
-      const response = await api.post('/checkout/shipping-quotes', {
-        items,
-        address: selectedAddress, // Send the selected address
-      });
-      return response.data.data;
-    },
-    // Only fetch when on step 2+ AND address is complete with required fields
-    enabled: step >= 2 &&
-             !!selectedAddress &&
-             !!selectedAddress.city &&
-             !!selectedAddress.state &&
-             !!selectedAddress.zipCode,
-  });
+  // Shipping quotes removed - will be added in future
 
   // Create order mutation
   const createOrderMutation = useMutation({
@@ -196,21 +178,13 @@ const Checkout = () => {
 
     console.log('📝 New address set:', newAddress);
     setSelectedAddress(newAddress);
-    setStep(2);
+    setStep(2); // Go directly to payment
   };
 
   const handleSelectExistingAddress = (address) => {
     console.log('📍 Selected existing address:', address);
     setSelectedAddress(address);
-    setStep(2);
-  };
-
-  const handleShippingSubmit = () => {
-    if (!shippingMethod) {
-      toast.error('Please select a shipping method');
-      return;
-    }
-    setStep(3);
+    setStep(2); // Go directly to payment
   };
 
   const handlePaymentSubmit = async (e) => {
@@ -220,12 +194,6 @@ const Checkout = () => {
     if (!selectedAddress) {
       toast.error('Please select or enter a shipping address');
       setStep(1);
-      return;
-    }
-
-    if (!shippingMethod) {
-      toast.error('Please select a shipping method');
-      setStep(2);
       return;
     }
 
@@ -397,8 +365,7 @@ const Checkout = () => {
                 <div className="flex items-center justify-between">
                   {[
                     { num: 1, label: 'Address' },
-                    { num: 2, label: 'Shipping' },
-                    { num: 3, label: 'Payment' },
+                    { num: 2, label: 'Payment' },
                   ].map((s, index) => (
                   <div key={s.num} className="flex items-center flex-1">
                     <div className={`flex items-center ${index > 0 ? 'flex-1' : ''}`}>
@@ -431,7 +398,6 @@ const Checkout = () => {
                   </div>
                 ))}
               </div>
-              </div>
             </AnimatedDiv>
           )}
 
@@ -441,286 +407,233 @@ const Checkout = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-xl md:text-2xl font-bold mb-4">Shipping Address</h2>
 
-              {/* Existing Addresses */}
-              {user && addresses && addresses.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="font-semibold mb-3 fade-in">Your Addresses</h3>
-                  <div className="space-y-3">
-                    {addresses.map((addr, index) => (
-                      <button
-                        key={addr._id}
-                        onClick={() => handleSelectExistingAddress(addr)}
-                        className={`w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-primary-600 transition-all hover-lift fade-in stagger-${Math.min(index + 1, 6)}`}
-                      >
-                        <p className="font-medium">{addr.fullName}</p>
-                        <p className="text-sm text-gray-700">
-                          {addr.addressLine1}
-                          {addr.addressLine2 && `, ${addr.addressLine2}`}
-                        </p>
-                        <p className="text-sm text-gray-700">
-                          {addr.city}, {addr.state} {addr.zipCode}
-                        </p>
-                        <p className="text-sm text-gray-700">{addr.phone}</p>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="my-6 text-center text-gray-500">OR</div>
-                </div>
-              )}
-
-              {/* Guest Checkout Notice */}
-              {!user && (
-                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg fade-in">
-                  <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="flex-1">
-                      <p className="font-medium text-blue-900">Checking out as Guest</p>
-                      <p className="text-sm text-blue-700 mt-1">
-                        Already have an account?{' '}
+                {/* Existing Addresses */}
+                {user && addresses && addresses.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold mb-3 fade-in">Your Addresses</h3>
+                    <div className="space-y-3">
+                      {addresses.map((addr, index) => (
                         <button
-                          type="button"
-                          onClick={() => navigate('/login?redirect=/checkout')}
-                          className="underline font-medium hover:text-blue-900"
+                          key={addr._id}
+                          onClick={() => handleSelectExistingAddress(addr)}
+                          className={`w-full text-left p-4 border-2 border-gray-200 rounded-lg hover:border-primary-600 transition-all hover-lift fade-in stagger-${Math.min(index + 1, 6)}`}
                         >
-                          Login here
+                          <p className="font-medium">{addr.fullName}</p>
+                          <p className="text-sm text-gray-700">
+                            {addr.addressLine1}
+                            {addr.addressLine2 && `, ${addr.addressLine2}`}
+                          </p>
+                          <p className="text-sm text-gray-700">
+                            {addr.city}, {addr.state} {addr.zipCode}
+                          </p>
+                          <p className="text-sm text-gray-700">{addr.phone}</p>
                         </button>
-                      </p>
+                      ))}
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* New Address Form */}
-              <form onSubmit={handleAddressSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Guest Email Field */}
-                  {!user && (
-                    <Input
-                      label="Email"
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="For order confirmation"
-                      className="md:col-span-2"
-                      value={guestEmail}
-                      onChange={(e) => setGuestEmail(e.target.value)}
-                    />
-                  )}
-
-                  <Input
-                    label="Full Name"
-                    name="fullName"
-                    required
-                    value={newAddress.fullName}
-                    onChange={(e) => setNewAddress({ ...newAddress, fullName: e.target.value })}
-                  />
-                  <Input
-                    label="Phone"
-                    name="phone"
-                    type="tel"
-                    required
-                    value={newAddress.phone}
-                    onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
-                  />
-                  <Input
-                    label="Address Line 1"
-                    name="address"
-                    required
-                    fullWidth
-                    className="md:col-span-2"
-                    value={newAddress.addressLine1}
-                    onChange={(e) => setNewAddress({ ...newAddress, addressLine1: e.target.value })}
-                  />
-                  <Input
-                    label="Address Line 2 (Optional)"
-                    name="addressLine2"
-                    fullWidth
-                    className="md:col-span-2"
-                    value={newAddress.addressLine2}
-                    onChange={(e) => setNewAddress({ ...newAddress, addressLine2: e.target.value })}
-                  />
-                  <Input
-                    label="City"
-                    name="city"
-                    required
-                    value={newAddress.city}
-                    onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                  />
-                  <div>
-                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                      State/Province <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="state"
-                      name="state"
-                      required
-                      value={newAddress.state}
-                      onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      disabled={!newAddress.country}
-                    >
-                      <option value="">
-                        {!newAddress.country ? 'Select country first' : 'Select State/Province'}
-                      </option>
-                      {availableStates.map((state) => (
-                        <option key={state.value} value={state.value}>
-                          {state.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <Input
-                    label="ZIP/Postal Code"
-                    name="zipCode"
-                    required
-                    value={newAddress.zipCode}
-                    onChange={(e) => setNewAddress({ ...newAddress, zipCode: e.target.value })}
-                  />
-                  <div>
-                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                      Country <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="country"
-                      name="country"
-                      required
-                      value={newAddress.country}
-                      onChange={(e) => setNewAddress({ ...newAddress, country: e.target.value, state: '' })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    >
-                      {COUNTRIES.map((country) => (
-                        <option key={country.value} value={country.value}>
-                          {country.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Save Address Checkbox - Only for logged-in users */}
-                {user && (
-                  <div className="mt-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={saveAddress}
-                        onChange={(e) => setSaveAddress(e.target.checked)}
-                        className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
-                      <span className="text-sm text-gray-700">Save this address for future orders</span>
-                    </label>
+                    <div className="my-6 text-center text-gray-500">OR</div>
                   </div>
                 )}
 
-                <ShinyButton type="submit" variant="primary" size="md" className="mt-6 w-full">
-                  Continue to Shipping
-                </ShinyButton>
-              </form>
-            </div>
-            </AnimatedDiv>
-          )}
-
-          {/* Step 2: Shipping */}
-          {step === 2 && (
-            <AnimatedDiv animation="fadeInUp" duration={0.4}>
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-xl md:text-2xl font-bold mb-4">Shipping Method</h2>
-
-              {loadingShipping ? (
-                <div className="flex justify-center py-8">
-                  <Spinner />
-                </div>
-              ) : shippingQuotes && shippingQuotes.length > 0 ? (
-                <div className="space-y-3">
-                  {shippingQuotes.map((quote, index) => (
-                    <button
-                      key={quote.id}
-                      onClick={() => setShippingMethod(quote)}
-                      className={`w-full text-left p-4 border-2 rounded-lg transition-all hover-lift fade-in stagger-${Math.min(index + 1, 6)} ${
-                        shippingMethod?.id === quote.id
-                          ? 'border-primary-600 bg-primary-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-semibold">{quote.name}</p>
-                          <p className="text-sm text-gray-700">{quote.description}</p>
-                          <p className="text-sm text-gray-700 mt-1">
-                            Estimated delivery: {quote.estimatedDays} business days
-                          </p>
-                        </div>
-                        <p className="font-bold text-lg">{formatCurrency(quote.cost)}</p>
+                {/* Guest Checkout Notice */}
+                {!user && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg fade-in">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="font-medium text-blue-900">Checking out as Guest</p>
+                        <p className="text-sm text-blue-700 mt-1">
+                          Already have an account?{' '}
+                          <button
+                            type="button"
+                            onClick={() => navigate('/login?redirect=/checkout')}
+                            className="underline font-medium hover:text-blue-900"
+                          >
+                            Login here
+                          </button>
+                        </p>
                       </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <p>No shipping methods available</p>
-                </div>
-              )}
+                    </div>
+                  </div>
+                )}
 
-              <div className="flex gap-3 mt-6">
-                <Button onClick={() => setStep(1)} variant="outline" className="btn-scale">
-                  Back
-                </Button>
-                <ShinyButton onClick={handleShippingSubmit} variant="primary" size="md" className="flex-1">
-                  Continue to Payment
-                </ShinyButton>
+                {/* New Address Form */}
+                <form onSubmit={handleAddressSubmit}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Guest Email Field */}
+                    {!user && (
+                      <Input
+                        label="Email"
+                        name="email"
+                        type="email"
+                        required
+                        placeholder="For order confirmation"
+                        className="md:col-span-2"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                      />
+                    )}
+
+                    <Input
+                      label="Full Name"
+                      name="fullName"
+                      required
+                      value={newAddress.fullName}
+                      onChange={(e) => setNewAddress({ ...newAddress, fullName: e.target.value })}
+                    />
+                    <Input
+                      label="Phone"
+                      name="phone"
+                      type="tel"
+                      required
+                      value={newAddress.phone}
+                      onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
+                    />
+                    <Input
+                      label="Address Line 1"
+                      name="address"
+                      required
+                      fullWidth
+                      className="md:col-span-2"
+                      value={newAddress.addressLine1}
+                      onChange={(e) => setNewAddress({ ...newAddress, addressLine1: e.target.value })}
+                    />
+                    <Input
+                      label="Address Line 2 (Optional)"
+                      name="addressLine2"
+                      fullWidth
+                      className="md:col-span-2"
+                      value={newAddress.addressLine2}
+                      onChange={(e) => setNewAddress({ ...newAddress, addressLine2: e.target.value })}
+                    />
+                    <Input
+                      label="City"
+                      name="city"
+                      required
+                      value={newAddress.city}
+                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
+                    />
+                    <div>
+                      <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                        State/Province <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="state"
+                        name="state"
+                        required
+                        value={newAddress.state}
+                        onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        disabled={!newAddress.country}
+                      >
+                        <option value="">
+                          {!newAddress.country ? 'Select country first' : 'Select State/Province'}
+                        </option>
+                        {availableStates.map((state) => (
+                          <option key={state.value} value={state.value}>
+                            {state.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Input
+                      label="ZIP/Postal Code"
+                      name="zipCode"
+                      required
+                      value={newAddress.zipCode}
+                      onChange={(e) => setNewAddress({ ...newAddress, zipCode: e.target.value })}
+                    />
+                    <div>
+                      <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                        Country <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="country"
+                        name="country"
+                        required
+                        value={newAddress.country}
+                        onChange={(e) => setNewAddress({ ...newAddress, country: e.target.value, state: '' })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      >
+                        {COUNTRIES.map((country) => (
+                          <option key={country.value} value={country.value}>
+                            {country.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Save Address Checkbox - Only for logged-in users */}
+                  {user && (
+                    <div className="mt-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={saveAddress}
+                          onChange={(e) => setSaveAddress(e.target.checked)}
+                          className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-gray-700">Save this address for future orders</span>
+                      </label>
+                    </div>
+                  )}
+
+                  <ShinyButton type="submit" variant="primary" size="md" className="mt-6 w-full">
+                    Continue to Payment
+                  </ShinyButton>
+                </form>
               </div>
-            </div>
             </AnimatedDiv>
           )}
 
-          {/* Step 3: Payment */}
-          {step === 3 && (
+          {/* Step 2: Payment */}
+          {step === 2 && (
             <AnimatedDiv animation="fadeInUp" duration={0.4}>
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-xl md:text-2xl font-bold mb-4">Payment Method</h2>
 
-              <form onSubmit={handlePaymentSubmit}>
-                {/* Payment Method - Only Razorpay */}
-                <div className="mb-6">
-                  <div className="p-4 border-2 border-primary-600 bg-primary-50 rounded-lg fade-in hover-lift">
-                    <div className="flex items-center gap-3">
-                      <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                      </svg>
-                      <div className="flex-1">
-                        <span className="font-semibold text-lg">Online Payment (Razorpay)</span>
-                        <p className="text-sm text-gray-700 mt-1">Secure payment via Card, UPI, Net Banking, or Wallet</p>
+                <form onSubmit={handlePaymentSubmit}>
+                  {/* Payment Method - Only Razorpay */}
+                  <div className="mb-6">
+                    <div className="p-4 border-2 border-primary-600 bg-primary-50 rounded-lg fade-in hover-lift">
+                      <div className="flex items-center gap-3">
+                        <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                        <div className="flex-1">
+                          <span className="font-semibold text-lg">Online Payment (Razorpay)</span>
+                          <p className="text-sm text-gray-700 mt-1">Secure payment via Card, UPI, Net Banking, or Wallet</p>
+                        </div>
+                        <span className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">Secure</span>
                       </div>
-                      <span className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">Secure</span>
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
+                      <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      <span>Your payment information is encrypted and secure</span>
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2 text-sm text-gray-600">
-                    <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                    <span>Your payment information is encrypted and secure</span>
+                  <div className="flex gap-3">
+                    <Button type="button" onClick={() => setStep(1)} variant="outline" className="btn-scale">
+                      Back
+                    </Button>
+                    <ShinyButton
+                      type="submit"
+                      variant="primary"
+                      size="md"
+                      disabled={createOrderMutation.isPending}
+                      className="flex-1"
+                    >
+                      {createOrderMutation.isPending ? 'Processing...' : 'Continue to Payment'}
+                    </ShinyButton>
                   </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button type="button" onClick={() => setStep(2)} variant="outline" className="btn-scale">
-                    Back
-                  </Button>
-                  <ShinyButton
-                    type="submit"
-                    variant="primary"
-                    size="md"
-                    disabled={createOrderMutation.isPending}
-                    className="flex-1"
-                  >
-                    {createOrderMutation.isPending ? 'Processing...' : 'Continue to Payment'}
-                  </ShinyButton>
-                </div>
-              </form>
-            </div>
+                </form>
+              </div>
             </AnimatedDiv>
           )}
         </div>
@@ -767,12 +680,6 @@ const Checkout = () => {
                 <span className="text-gray-700">Subtotal:</span>
                 <span>{formatCurrency(totals.subtotal)}</span>
               </div>
-              {shippingMethod && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-700">Shipping:</span>
-                  <span>{formatCurrency(shippingMethod.cost)}</span>
-                </div>
-              )}
               {totals.tax > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">Tax:</span>
@@ -788,9 +695,7 @@ const Checkout = () => {
               <div className="border-t pt-2 flex justify-between font-bold text-lg">
                 <span>Total:</span>
                 <span className="price-highlight">
-                  {formatCurrency(
-                    totals.total + (shippingMethod?.cost || 0)
-                  )}
+                  {formatCurrency(totals.total)}
                 </span>
               </div>
             </div>

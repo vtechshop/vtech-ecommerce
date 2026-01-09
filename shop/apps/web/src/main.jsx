@@ -1,9 +1,11 @@
 ﻿// FILE: apps/web/src/main.jsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { hydrate, render } from 'react-dom';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 // import { ReactQueryDevtools } from '@tanstack/react-query-devtools'; // Disabled in production
 import axios from 'axios';
 
@@ -62,18 +64,30 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
   });
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById('root');
+
+const AppWrapper = (
   <React.StrictMode>
     <ErrorBoundary>
       <Provider store={store}>
         <BrowserRouter>
           <QueryClientProvider client={queryClient}>
-            <App />
-            {/* DevTools removed - uncomment line below for debugging */}
-            {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+            <HelmetProvider>
+              <App />
+              {/* DevTools removed - uncomment line below for debugging */}
+              {/* <ReactQueryDevtools initialIsOpen={false} /> */}
+            </HelmetProvider>
           </QueryClientProvider>
         </BrowserRouter>
       </Provider>
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+// Use hydrate for react-snap, render for development
+if (rootElement.hasChildNodes()) {
+  hydrate(AppWrapper, rootElement);
+} else {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(AppWrapper);
+}
