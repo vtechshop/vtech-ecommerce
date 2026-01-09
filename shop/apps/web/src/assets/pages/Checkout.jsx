@@ -24,11 +24,10 @@ const Checkout = () => {
   const { items, totals } = useSelector((state) => state.cart);
   const { user } = useSelector((state) => state.auth);
 
-<<<<<<< HEAD
+
   const [step, setStep] = useState(1); // 1: Address, 2: Payment
-=======
   const [step, setStep] = useState(1); // 1: Address, 2: Payment (Shipping step removed)
->>>>>>> 7b0b8baf821382dffc9fd53812ba4796fd3c3445
+ 
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [newAddress, setNewAddress] = useState({
     fullName: '',
@@ -40,11 +39,8 @@ const Checkout = () => {
     zipCode: '',
     country: DEFAULT_COUNTRY, // 'IN' for India
   });
-<<<<<<< HEAD
   const [shippingMethod, setShippingMethod] = useState({ id: 'standard', name: 'Standard Shipping', cost: 0 }); // Default shipping
-=======
   const [shippingMethod, setShippingMethod] = useState('standard'); // Default shipping
->>>>>>> 7b0b8baf821382dffc9fd53812ba4796fd3c3445
   const [paymentMethod, setPaymentMethod] = useState('razorpay'); // Default to Razorpay
   const [saveAddress, setSaveAddress] = useState(true); // Save address to account by default
   const [orderPlaced, setOrderPlaced] = useState(false); // Flag to prevent redirect after order success
@@ -186,21 +182,16 @@ const Checkout = () => {
 
     console.log('📝 New address set:', newAddress);
     setSelectedAddress(newAddress);
-<<<<<<< HEAD
+ HEAD
     setStep(2); // Go directly to payment
-=======
     setStep(2); // Go directly to payment (step 2, shipping removed)
->>>>>>> 7b0b8baf821382dffc9fd53812ba4796fd3c3445
   };
 
   const handleSelectExistingAddress = (address) => {
     console.log('📍 Selected existing address:', address);
     setSelectedAddress(address);
-<<<<<<< HEAD
     setStep(2); // Go directly to payment
-=======
     setStep(2); // Go directly to payment (step 2, shipping removed)
->>>>>>> 7b0b8baf821382dffc9fd53812ba4796fd3c3445
   };
 
   const handlePaymentSubmit = async (e) => {
@@ -450,7 +441,6 @@ const Checkout = () => {
                   </div>
                 )}
 
-<<<<<<< HEAD
                 {/* Guest Checkout Notice */}
                 {!user && (
                   <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg fade-in">
@@ -616,7 +606,6 @@ const Checkout = () => {
           )}
 
           {/* Step 2: Payment (Shipping step removed) */}
->>>>>>> 7b0b8baf821382dffc9fd53812ba4796fd3c3445
           {step === 2 && (
             <AnimatedDiv animation="fadeInUp" duration={0.4}>
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
