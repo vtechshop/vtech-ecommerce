@@ -12,16 +12,16 @@ router.post('/onboard', authenticate, vendorController.onboard);
 // Dashboard stats - requires approved KYC
 router.get('/dashboard/stats', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getDashboardStats);
 
-// Product routes - require approved KYC for vendors
-router.get('/products', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getVendorProducts);
-router.post('/products', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.createProduct);
-router.put('/products/:id', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.updateProduct);
-router.delete('/products/:id', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.deleteProduct);
-router.post('/products/import', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.importProducts);
+// Product routes - allow vendors to manage products without KYC approval
+router.get('/products', authenticate, authorize(['vendor', 'admin']), vendorController.getVendorProducts);
+router.post('/products', authenticate, authorize(['vendor', 'admin']), vendorController.createProduct);
+router.put('/products/:id', authenticate, authorize(['vendor', 'admin']), vendorController.updateProduct);
+router.delete('/products/:id', authenticate, authorize(['vendor', 'admin']), vendorController.deleteProduct);
+router.post('/products/import', authenticate, authorize(['vendor', 'admin']), vendorController.importProducts);
 
-// Inventory routes - require approved KYC
-router.get('/inventory', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getInventory);
-router.put('/inventory/:productId', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.updateInventory);
+// Inventory routes - allow vendors to manage inventory without KYC approval
+router.get('/inventory', authenticate, authorize(['vendor', 'admin']), vendorController.getInventory);
+router.put('/inventory/:productId', authenticate, authorize(['vendor', 'admin']), vendorController.updateInventory);
 
 // Order routes - require approved KYC
 router.get('/orders', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getVendorOrders);
@@ -34,7 +34,7 @@ router.put('/kyc', authenticate, authorize(['vendor', 'admin']), vendorControlle
 router.post('/kyc/documents', authenticate, authorize(['vendor', 'admin']), vendorController.uploadKYCDocument);
 router.delete('/kyc/documents/:documentId', authenticate, authorize(['vendor', 'admin']), vendorController.deleteKYCDocument);
 
-// Settings routes
+// Settings routes - allow vendors to manage settings without KYC approval
 router.get('/settings', authenticate, authorize(['vendor', 'admin']), vendorController.getSettings);
 router.put('/settings/profile', authenticate, authorize(['vendor', 'admin']), vendorController.updateProfile);
 router.put('/settings/bank', authenticate, authorize(['vendor', 'admin']), vendorController.updateBank);

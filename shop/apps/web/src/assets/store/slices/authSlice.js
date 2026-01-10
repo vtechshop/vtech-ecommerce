@@ -3,10 +3,6 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import api from '@/utils/api';
 import Cookies from 'js-cookie';
 
-// SECURITY FIX: Use a unique storage key per tab to prevent cross-tab collision
-const TAB_ID = `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-const AUTH_STORAGE_KEY = `auth_${TAB_ID}`;
-
 const initialState = {
   user: null,
   accessToken: null,
@@ -14,7 +10,6 @@ const initialState = {
   loading: false,
   error: null,
   initialized: false, // Tracks if we've completed the initial auth check
-  tabId: TAB_ID, // Track this tab's unique ID
 };
 
 export const initializeAuth = createAsyncThunk(
@@ -27,18 +22,8 @@ export const initializeAuth = createAsyncThunk(
     }
 
     try {
-      // SECURITY FIX: Try to get token from sessionStorage first (tab-specific)
-      let accessToken = sessionStorage.getItem(AUTH_STORAGE_KEY);
-
-      // Fallback to cookie for backward compatibility, but clear it immediately
-      if (!accessToken) {
-        accessToken = Cookies.get('accessToken');
-        if (accessToken) {
-          // Migrate from cookie to sessionStorage
-          sessionStorage.setItem(AUTH_STORAGE_KEY, accessToken);
-          Cookies.remove('accessToken');
-        }
-      }
+      // Get token from cookie (persists across refreshes)
+      let accessToken = Cookies.get('accessToken');
 
       // If no access token, try to refresh using the refresh token (stored as httpOnly cookie)
       if (!accessToken) {
@@ -46,8 +31,12 @@ export const initializeAuth = createAsyncThunk(
           const refreshRes = await api.post('/auth/refresh');
           const newAccessToken = refreshRes.data.data.accessToken;
 
-          // SECURITY FIX: Store in sessionStorage instead of cookie
-          sessionStorage.setItem(AUTH_STORAGE_KEY, newAccessToken);
+          // Store in cookie with proper settings
+          Cookies.set('accessToken', newAccessToken, {
+            expires: 1/96, // 15 minutes
+            sameSite: 'Lax',
+            secure: window.location.protocol === 'https:',
+          });
 
           // Now get user data with the new token
           const res = await api.get('/auth/me');
@@ -64,7 +53,6 @@ export const initializeAuth = createAsyncThunk(
       return { user: res.data.data, accessToken };
     } catch (err) {
       // If /auth/me fails, clear the token and return null (not authenticated)
-      sessionStorage.removeItem(AUTH_STORAGE_KEY);
       Cookies.remove('accessToken');
       return null;
     }
@@ -78,11 +66,12 @@ export const login = createAsyncThunk(
       const res = await api.post('/auth/login', credentials);
       const { accessToken, user } = res.data.data;
 
-      // SECURITY FIX: Store token in sessionStorage (tab-specific) instead of cookie
-      sessionStorage.setItem(AUTH_STORAGE_KEY, accessToken);
-
-      // Clear any legacy cookie
-      Cookies.remove('accessToken');
+      // Store token in cookie (persists across refreshes)
+      Cookies.set('accessToken', accessToken, {
+        expires: 1/96, // 15 minutes
+        sameSite: 'Lax',
+        secure: window.location.protocol === 'https:',
+      });
 
       return { user, accessToken };
     } catch (err) {
@@ -98,11 +87,12 @@ export const register = createAsyncThunk(
       const res = await api.post('/auth/register', payload);
       const { accessToken, user } = res.data.data;
 
-      // SECURITY FIX: Store token in sessionStorage (tab-specific) instead of cookie
-      sessionStorage.setItem(AUTH_STORAGE_KEY, accessToken);
-
-      // Clear any legacy cookie
-      Cookies.remove('accessToken');
+      // Store token in cookie (persists across refreshes)
+      Cookies.set('accessToken', accessToken, {
+        expires: 1/96, // 15 minutes
+        sameSite: 'Lax',
+        secure: window.location.protocol === 'https:',
+      });
 
       return { user, accessToken };
     } catch (err) {
@@ -122,10 +112,7 @@ export const logout = createAsyncThunk(
     try {
       await api.post('/auth/logout');
 
-      // SECURITY FIX: Clear sessionStorage instead of cookie
-      sessionStorage.removeItem(AUTH_STORAGE_KEY);
-
-      // Clear any legacy cookie
+      // Clear cookie
       Cookies.remove('accessToken');
 
       return null;
@@ -157,8 +144,12 @@ const slice = createSlice({
       state.accessToken = action.payload.accessToken;
       state.isAuthenticated = true;
 
-      // SECURITY FIX: Store in sessionStorage instead of cookie
-      sessionStorage.setItem(AUTH_STORAGE_KEY, action.payload.accessToken);
+      // Store in cookie
+      Cookies.set('accessToken', action.payload.accessToken, {
+        expires: 1/96, // 15 minutes
+        sameSite: 'Lax',
+        secure: window.location.protocol === 'https:',
+      });
     },
     clearCredentials: (state) => {
       state.user = null;
@@ -166,8 +157,7 @@ const slice = createSlice({
       state.isAuthenticated = false;
       state.initialized = false;
 
-      // SECURITY FIX: Clear sessionStorage instead of cookie
-      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+      // Clear cookie
       Cookies.remove('accessToken');
     },
     updateUserProfile: (state, action) => {

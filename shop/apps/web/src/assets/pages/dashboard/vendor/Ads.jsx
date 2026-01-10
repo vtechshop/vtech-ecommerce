@@ -18,6 +18,7 @@ const Ads = () => {
   const toast = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState(null);
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [selectedCampaignForReport, setSelectedCampaignForReport] = useState(null);
@@ -48,7 +49,10 @@ const Ads = () => {
     placement: 'homepage_banner',
     position: 'top',
     bannerSize: 'hero',
+<<<<<<< Updated upstream
     dimensions: { width: '', height: '' },
+=======
+>>>>>>> Stashed changes
     productIds: [],
     keywords: '', // Amazon-style: Keywords for ad targeting
   });
@@ -57,7 +61,7 @@ const Ads = () => {
   const { data: pricingSettings } = useQuery({
     queryKey: ['ad-pricing-settings', campaignForm.placement],
     queryFn: async () => {
-      const response = await api.get(`/ads/pricing-settings/${campaignForm.placement}`);
+      const response = await api.get(`/admin/ads/pricing-settings/${campaignForm.placement}`);
       return response.data.data;
     },
     enabled: !!campaignForm.placement && (isCreateModalOpen || isEditMode),
@@ -204,6 +208,19 @@ const Ads = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      await api.delete(`/ads/campaigns/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      toast.success('Campaign deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to delete campaign');
+    },
+  });
+
   const createCampaignMutation = useMutation({
     mutationFn: async (data) => {
       const response = await api.post('/ads/campaigns', data);
@@ -213,14 +230,19 @@ const Ads = () => {
       queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
       queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
       toast.success('Campaign created successfully! Waiting for admin approval.');
+<<<<<<< Updated upstream
       setIsCreateModalOpen(false);
       resetForm();
+=======
+      handleCloseModal();
+>>>>>>> Stashed changes
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to create campaign');
     },
   });
 
+<<<<<<< Updated upstream
   // NEW: Upload creative mutation
   const uploadCreativeMutation = useMutation({
     mutationFn: async ({ campaignId, file }) => {
@@ -346,6 +368,23 @@ const Ads = () => {
     }
   };
 
+=======
+  const updateCampaignMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const response = await api.put(`/ads/campaigns/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      toast.success('Campaign updated successfully!');
+      handleCloseModal();
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to update campaign');
+    },
+  });
+
+>>>>>>> Stashed changes
   const handleCreateCampaign = (e) => {
     e.preventDefault();
 
@@ -381,11 +420,19 @@ const Ads = () => {
       placement: campaignForm.placement,
       position: campaignForm.position,
       bannerSize: campaignForm.bannerSize,
+<<<<<<< Updated upstream
       dimensions: campaignForm.bannerSize === 'custom' && campaignForm.dimensions.width && campaignForm.dimensions.height
         ? { width: parseInt(campaignForm.dimensions.width), height: parseInt(campaignForm.dimensions.height) }
         : undefined,
       status: isEditMode ? undefined : 'draft',
+=======
+>>>>>>> Stashed changes
     };
+
+    // Only set status to draft for new campaigns
+    if (!editingCampaign) {
+      data.status = 'draft'; // Changed from 'active' to 'draft' - requires admin approval
+    }
 
     if (campaignForm.endAt) {
       data.endAt = new Date(campaignForm.endAt);
@@ -409,9 +456,14 @@ const Ads = () => {
       };
     }
 
+<<<<<<< Updated upstream
     console.log('🎯 [VENDOR DEBUG] Creating campaign with targeting:', data.targeting);
 
     if (isEditMode && editingCampaign) {
+=======
+    // Use update mutation if editing, otherwise create
+    if (editingCampaign) {
+>>>>>>> Stashed changes
       updateCampaignMutation.mutate({ id: editingCampaign._id, data });
     } else {
       createCampaignMutation.mutate(data);
@@ -562,6 +614,7 @@ const Ads = () => {
     initiateWalletRecharge(amount);
   };
 
+<<<<<<< Updated upstream
   // NEW: Download report as CSV
   const downloadReportCSV = (campaign) => {
     const impressions = campaign.stats?.impressions || 0;
@@ -656,6 +709,49 @@ const Ads = () => {
       product.title.toLowerCase().includes(productSearch.toLowerCase())
     );
   }, [products, productSearch]);
+=======
+  const handleEditCampaign = (campaign) => {
+    setEditingCampaign(campaign);
+    setCampaignForm({
+      name: campaign.name,
+      type: campaign.type,
+      pricing: campaign.pricing,
+      bid: campaign.bid.toString(),
+      dailyBudget: campaign.dailyBudget.toString(),
+      startAt: new Date(campaign.startAt).toISOString().split('T')[0],
+      endAt: campaign.endAt ? new Date(campaign.endAt).toISOString().split('T')[0] : '',
+      placement: campaign.placement,
+      position: campaign.position || 'top',
+      bannerSize: campaign.bannerSize || 'hero',
+      productIds: campaign.targeting?.products || [],
+    });
+    setIsCreateModalOpen(true);
+  };
+
+  const handleDeleteCampaign = (campaignId, campaignName) => {
+    if (window.confirm(`Are you sure you want to delete "${campaignName}"? This action cannot be undone.`)) {
+      deleteMutation.mutate(campaignId);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsCreateModalOpen(false);
+    setEditingCampaign(null);
+    setCampaignForm({
+      name: '',
+      type: 'SponsoredProduct',
+      pricing: 'CPC',
+      bid: '',
+      dailyBudget: '',
+      startAt: new Date().toISOString().split('T')[0],
+      endAt: '',
+      placement: 'homepage_banner',
+      position: 'top',
+      bannerSize: 'hero',
+      productIds: [],
+    });
+  };
+>>>>>>> Stashed changes
 
   if (isLoading) {
     return (
@@ -801,6 +897,7 @@ const Ads = () => {
         </div>
       ) : (
         <div className="space-y-4">
+<<<<<<< Updated upstream
           {filteredAndSortedCampaigns.map((campaign) => {
             const impressions = campaign.stats?.impressions || 0;
             const clicks = campaign.stats?.clicks || 0;
@@ -810,6 +907,107 @@ const Ads = () => {
             const conversionRate = clicks > 0 ? ((conversions / clicks) * 100).toFixed(2) : 0;
             const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : 0;
             const budgetUsed = campaign.dailyBudget > 0 ? ((campaign.dailySpend?.amount || 0) / campaign.dailyBudget * 100).toFixed(0) : 0;
+=======
+          {campaigns.map((campaign) => (
+            <div key={campaign._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <h3 className="text-lg font-semibold">{campaign.name}</h3>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      campaign.status === 'active' ? 'bg-green-100 text-green-800' :
+                      campaign.status === 'pending_approval' ? 'bg-blue-100 text-blue-800' :
+                      campaign.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      campaign.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      campaign.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                      campaign.status === 'budget_exhausted' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-900'
+                    }`}>
+                      {campaign.status.replace('_', ' ')}
+                    </span>
+                    {campaign.approval?.status && (
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        campaign.approval.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        campaign.approval.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {campaign.approval.status === 'approved' ? '✓ Approved' :
+                         campaign.approval.status === 'rejected' ? '✗ Rejected' :
+                         '⏳ Pending Review'}
+                      </span>
+                    )}
+                    {campaign.qualityScore?.overall && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                        Quality: {campaign.qualityScore.overall}/10
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    {campaign.type} • {campaign.pricing} • Bid: {formatCurrency(campaign.bid)}
+                    {campaign.auctionScore && ` • Score: ${campaign.auctionScore.toFixed(2)}`}
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    Daily Budget: {formatCurrency(campaign.dailyBudget)} •
+                    Spent Today: {formatCurrency(campaign.dailySpend?.amount || 0)}
+                  </p>
+                  {campaign.approval?.rejectionReason && (
+                    <p className="text-sm text-red-600 mt-2">
+                      <strong>Rejection Reason:</strong> {campaign.approval.rejectionReason}
+                    </p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2 min-w-[140px]">
+                  <div className="flex gap-2">
+                    {campaign.status === 'active' ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => pauseMutation.mutate(campaign._id)}
+                        className="flex-1"
+                      >
+                        Pause
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => resumeMutation.mutate(campaign._id)}
+                        className="flex-1"
+                      >
+                        Resume
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditCampaign(campaign)}
+                      className="flex-1"
+                      title="Edit campaign"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="primary" size="sm" disabled title="Detailed reports coming soon" className="flex-1">
+                      View Report
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteCampaign(campaign._id, campaign.name)}
+                      className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
+                      title="Delete campaign"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+>>>>>>> Stashed changes
 
             return (
               <div key={campaign._id} className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-md border-2 border-gray-200 hover:border-primary-400 hover:shadow-xl transition-all duration-300 overflow-hidden">
@@ -1189,6 +1387,7 @@ const Ads = () => {
         </form>
       </Modal>
 
+<<<<<<< Updated upstream
       {/* Campaign Report Modal */}
       {reportModalOpen && selectedCampaignForReport && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1508,6 +1707,13 @@ const Ads = () => {
           resetForm();
         }}
         title={isEditMode ? 'Edit Ad Campaign' : 'Create Ad Campaign'}
+=======
+      {/* Create/Edit Campaign Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseModal}
+        title={editingCampaign ? "Edit Ad Campaign" : "Create Ad Campaign"}
+>>>>>>> Stashed changes
         size="lg"
       >
         <form onSubmit={handleCreateCampaign} className="space-y-6">
@@ -1586,6 +1792,7 @@ const Ads = () => {
               </p>
             </div>
 
+<<<<<<< Updated upstream
             {/* Banner Position */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1691,6 +1898,49 @@ const Ads = () => {
                 </div>
               </div>
             )}
+=======
+            {/* Position and Banner Size - Amazon Style */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ad Position</label>
+                <select
+                  value={campaignForm.position}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, position: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  required
+                >
+                  <option value="top">Top</option>
+                  <option value="right">Right</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="top-right">Top Right</option>
+                  <option value="top-left">Top Left</option>
+                  <option value="bottom-right">Bottom Right</option>
+                  <option value="bottom-left">Bottom Left</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Banner Size</label>
+                <select
+                  value={campaignForm.bannerSize}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, bannerSize: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  required
+                >
+                  <option value="hero">Hero (Large Banner)</option>
+                  <option value="leaderboard">Leaderboard (728x90)</option>
+                  <option value="rectangle">Rectangle (300x250)</option>
+                  <option value="skyscraper">Skyscraper (160x600)</option>
+                  <option value="square">Square (250x250)</option>
+                  <option value="side-small">Side Small</option>
+                  <option value="side-large">Side Large</option>
+                  <option value="custom">Custom Size</option>
+                </select>
+              </div>
+            </div>
+>>>>>>> Stashed changes
 
             {campaignForm.type === 'SponsoredProduct' && (
               <div>
@@ -1857,21 +2107,31 @@ const Ads = () => {
             <Button
               type="button"
               variant="outline"
+<<<<<<< Updated upstream
               onClick={() => {
                 setIsCreateModalOpen(false);
                 setIsEditMode(false);
                 setEditingCampaign(null);
                 resetForm();
               }}
+=======
+              onClick={handleCloseModal}
+>>>>>>> Stashed changes
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="primary"
+<<<<<<< Updated upstream
               loading={isEditMode ? updateCampaignMutation.isPending : createCampaignMutation.isPending}
             >
               {isEditMode ? 'Update Campaign' : 'Create Campaign'}
+=======
+              loading={editingCampaign ? updateCampaignMutation.isPending : createCampaignMutation.isPending}
+            >
+              {editingCampaign ? 'Update Campaign' : 'Create Campaign'}
+>>>>>>> Stashed changes
             </Button>
           </div>
         </form>

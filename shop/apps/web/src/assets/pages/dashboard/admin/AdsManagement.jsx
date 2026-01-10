@@ -653,6 +653,7 @@ const AdsManagement = () => {
                         <span className="shrink-0 whitespace-nowrap">Bid: ${campaign.bid} {campaign.pricing}</span>
                       </div>
                     </div>
+<<<<<<< Updated upstream
                     <div className="shrink-0">{getStatusBadge(campaign.status)}</div>
                   </div>
                 </div>
@@ -663,6 +664,19 @@ const AdsManagement = () => {
                     <div>
                       <p className="text-gray-600 mb-1">Daily Budget</p>
                       <p className="font-semibold text-gray-900">${campaign.dailyBudget}</p>
+=======
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-700 capitalize">
+                      {ad.position || ad.bannerSize ? (
+                        <div>
+                          <div className="font-medium text-xs">{(ad.position || 'top').replace(/-/g, ' ')}</div>
+                          <div className="text-xs text-gray-500">
+                            {ad.bannerSize || 'hero'}
+                          </div>
+                        </div>
+                      ) : '-'}
+>>>>>>> Stashed changes
                     </div>
                     <div>
                       <p className="text-gray-600 mb-1">Placement</p>

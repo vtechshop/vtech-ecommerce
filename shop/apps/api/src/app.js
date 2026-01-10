@@ -208,10 +208,15 @@ const {
   apiLimiter,
 } = require('./middleware/security');
 
-// Apply advanced security middleware globally
-app.use(ipBlockingMiddleware); // Block banned IPs automatically
-app.use(attackDetectionMiddleware); // Detect SQL injection, XSS, NoSQL injection, etc.
-app.use(requestSizeLimiter); // Prevent large payload attacks (max 15MB)
+// Apply advanced security middleware globally (ONLY in production)
+if (env.NODE_ENV === 'production') {
+  app.use(ipBlockingMiddleware); // Block banned IPs automatically
+  app.use(attackDetectionMiddleware); // Detect SQL injection, XSS, NoSQL injection, etc.
+  app.use(requestSizeLimiter); // Prevent large payload attacks (max 15MB)
+  logger.info('🔒 Advanced security middleware enabled (Production mode)');
+} else {
+  logger.info('🔓 Advanced security middleware disabled (Development mode)');
+}
 
 // Apply OLD rate limiting ONLY to Login, Register, Order Creation (User's preference)
 app.use('/api/auth/login', loginLimiter); // 5 login attempts per 15min (OLD)
