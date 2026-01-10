@@ -1,7 +1,7 @@
 // FILE: apps/api/src/middleware/auth.js
 const { verifyAccessToken } = require('../utils/jwt');
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   try {
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -14,11 +14,43 @@ function authenticate(req, res, next) {
     }
 
     const decoded = verifyAccessToken(token);
+
+    // CRITICAL SECURITY FIX: Validate token data against database
+    const User = require('../models/User');
+    const user = await User.findById(decoded.userId).select('role email');
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'User not found' },
+      });
+    }
+
+    // CRITICAL: Verify role in token matches role in database
+    if (user.role !== decoded.role) {
+      // Log suspicious activity - role mismatch indicates potential token tampering or collision
+      console.error('[SECURITY ALERT] Token role mismatch:', {
+        userId: decoded.userId,
+        tokenRole: decoded.role,
+        dbRole: user.role,
+        email: decoded.email,
+        timestamp: new Date().toISOString()
+      });
+
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'ROLE_MISMATCH',
+          message: 'Token role does not match user role. Please log in again.'
+        },
+      });
+    }
+
     // SECURITY FIX: Include role and email in req.user for authorization checks
     req.user = {
       _id: decoded.userId,
-      role: decoded.role,
-      email: decoded.email
+      role: user.role, // Use database role, not token role
+      email: user.email // Use database email, not token email
     };
     next();
   } catch (err) {
@@ -143,7 +175,7 @@ async function requireApprovedKYC(req, res, next) {
 }
 
 // Optional authentication - attach user if token exists, but don't require it
-function optionalAuth(req, res, next) {
+async function optionalAuth(req, res, next) {
   try {
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -151,11 +183,20 @@ function optionalAuth(req, res, next) {
     if (token) {
       try {
         const decoded = verifyAccessToken(token);
-        req.user = {
-          _id: decoded.userId,
-          role: decoded.role,
-          email: decoded.email
-        };
+
+        // SECURITY FIX: Validate against database even for optional auth
+        const User = require('../models/User');
+        const user = await User.findById(decoded.userId).select('role email');
+
+        if (user && user.role === decoded.role) {
+          req.user = {
+            _id: decoded.userId,
+            role: user.role, // Use database role
+            email: user.email // Use database email
+          };
+        } else {
+          req.user = null;
+        }
       } catch (err) {
         // Token is invalid but that's okay for optional auth
         req.user = null;

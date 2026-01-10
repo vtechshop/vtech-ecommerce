@@ -4,6 +4,18 @@ import Cookies from 'js-cookie';
 import store from './index';
 import { clearCredentials } from './slices/authSlice';
 
+// SECURITY FIX: Helper function to get tab-specific token from sessionStorage
+const getAccessToken = () => {
+  // Try to get token from Redux store first (most current)
+  const storeToken = store.getState().auth.accessToken;
+  if (storeToken) return storeToken;
+
+  // Fallback to sessionStorage
+  const tabId = store.getState().auth.tabId;
+  const storageKey = `auth_${tabId}`;
+  return sessionStorage.getItem(storageKey);
+};
+
 const api = axios.create({
   baseURL: '/api',
   withCredentials: true, // Important: send cookies with every request
@@ -15,7 +27,8 @@ const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = Cookies.get('accessToken');
+    // SECURITY FIX: Get token from sessionStorage instead of cookie
+    const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -41,12 +54,21 @@ api.interceptors.response.use(
         });
         const { accessToken } = response.data.data;
 
-        Cookies.set('accessToken', accessToken, { expires: 1/96 });
+        // SECURITY FIX: Store in sessionStorage instead of cookie
+        const tabId = store.getState().auth.tabId;
+        const storageKey = `auth_${tabId}`;
+        sessionStorage.setItem(storageKey, accessToken);
+
+        // Clear any legacy cookie
+        Cookies.remove('accessToken');
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh failed, clear tokens and let the app handle redirect
+        const tabId = store.getState().auth.tabId;
+        const storageKey = `auth_${tabId}`;
+        sessionStorage.removeItem(storageKey);
         Cookies.remove('accessToken');
         store.dispatch(clearCredentials());
         return Promise.reject(refreshError);
