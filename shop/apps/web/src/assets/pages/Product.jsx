@@ -20,6 +20,7 @@ import EditReviewModal from '@/components/product/EditReviewModal';
 import AdBanner from '@/components/common/AdBanner';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
+import SEO from '@/components/common/SEO';
 
 // Customer Reviews Carousel Component
 const CustomerReviewsCarousel = ({ reviews, renderStars, onEdit, onDelete, currentUser }) => {
@@ -425,9 +426,60 @@ const Product = () => {
     );
   }
 
+  // SEO metadata for Google indexing
+  const seoTitle = product.seo?.title || `${product.title} - V-Tech Kitchen`;
+  const seoDescription = product.seo?.description || product.description?.substring(0, 160) || `Buy ${product.title} at the best price. ${product.brand ? `${product.brand} ` : ''}High-quality kitchen products with fast shipping.`;
+  const seoKeywords = product.seo?.keywords?.join(', ') || product.tags?.join(', ') || product.title;
+  const productImage = normalizedImages[0] || 'https://www.vtechkitchen.com/og-image.jpg';
+  const productUrl = `https://www.vtechkitchen.com/product/${product.slug}`;
+
+  // Google Rich Snippets - Product Structured Data
+  const structuredData = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.title,
+    "image": normalizedImages,
+    "description": product.description,
+    "sku": product.sku,
+    "brand": product.brand ? {
+      "@type": "Brand",
+      "name": product.brand
+    } : undefined,
+    "offers": {
+      "@type": "Offer",
+      "url": productUrl,
+      "priceCurrency": "INR",
+      "price": product.price,
+      "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      "itemCondition": "https://schema.org/NewCondition",
+      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      "seller": {
+        "@type": "Organization",
+        "name": product.vendorId?.storeName || "V-Tech Kitchen"
+      }
+    },
+    "aggregateRating": product.reviewCount > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": product.rating || 0,
+      "reviewCount": product.reviewCount || 0,
+      "bestRating": 5,
+      "worstRating": 1
+    } : undefined
+  };
+
   return (
-    <div className="min-h-screen bg-blue-50 pt-12">
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
+    <>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        keywords={seoKeywords}
+        image={productImage}
+        url={productUrl}
+        type="product"
+        structuredData={structuredData}
+      />
+      <div className="min-h-screen bg-blue-50 pt-12">
+        <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 lg:gap-6">
           {/* Product Images */}
           <div className="lg:col-span-2 fade-in-left">
@@ -1022,7 +1074,8 @@ const Product = () => {
         onSubmit={handleEditSubmit}
         isLoading={editReviewMutation.isPending}
       />
-    </div>
+      </div>
+    </>
   );
 };
 

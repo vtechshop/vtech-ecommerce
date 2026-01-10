@@ -9,6 +9,7 @@ import SponsoredLabel from '@/components/ads/SponsoredLabel';
 import AdBanner from '@/components/common/AdBanner';
 import ScrollReveal from '@/components/animations/ScrollReveal';
 import { updateMetaTags, injectJSONLD } from '@/utils/seo';
+import SEO from '@/components/common/SEO';
 
 const Category = () => {
   const { slug } = useParams();
@@ -136,8 +137,33 @@ const Category = () => {
     );
   }
 
+  // SEO metadata for category pages
+  const seoTitle = category.seo?.title || `${category.name} - V-Tech Kitchen`;
+  const seoDescription = category.seo?.description || category.description || `Shop ${category.name} at V-Tech Kitchen. Browse our selection of premium kitchen products.`;
+  const seoKeywords = category.seo?.keywords?.join(', ') || `${category.name}, kitchen, appliances`;
+  const categoryUrl = `https://www.vtechkitchen.com/category/${category.slug}`;
+
+  // Structured data for category
+  const structuredData = {
+    "@context": "https://schema.org/",
+    "@type": "CollectionPage",
+    "name": category.name,
+    "description": category.description,
+    "url": categoryUrl,
+    "numberOfItems": products.length
+  };
+
   return (
-    <div className="min-h-screen bg-white">
+    <>
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        keywords={seoKeywords}
+        url={categoryUrl}
+        type="website"
+        structuredData={structuredData}
+      />
+      <div className="min-h-screen bg-white">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl py-6">
         {/* Ad Banner - Top of Category Page */}
         <AdBanner placement="category_top_banner" position="top" className="mb-6" />
@@ -214,7 +240,8 @@ const Category = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
