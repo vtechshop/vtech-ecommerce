@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Shield, Upload, X, FileText, AlertCircle, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
 import { useToast } from '../../../components/common/ToastContainer';
 import CustomSelect from '../../../components/common/CustomSelect';
@@ -11,6 +12,7 @@ const VendorKYC = () => {
   const toast = useToast();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Manual refresh user session to get latest KYC status
@@ -196,12 +198,12 @@ const VendorKYC = () => {
           <p className="text-yellow-700 mb-6">
             Your vendor profile has not been created yet. Please complete the vendor onboarding process first.
           </p>
-          <a
-            href="/dashboard/become-vendor"
+          <button
+            onClick={() => navigate('/dashboard/become-vendor')}
             className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
           >
             Complete Vendor Onboarding
-          </a>
+          </button>
         </div>
       </div>
     );
