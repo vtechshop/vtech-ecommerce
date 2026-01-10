@@ -168,4 +168,7 @@ router.get('/crm/customers/:id/orders', crm.getCustomerOrders);
 router.get('/payments/stats', admin.getPaymentStats);
 router.get('/payments', admin.getPayments);
 
+// Data cleanup - Remove orphaned profiles
+router.post('/cleanup/orphaned-profiles', admin.cleanupOrphanedProfiles);
+
 module.exports = router;

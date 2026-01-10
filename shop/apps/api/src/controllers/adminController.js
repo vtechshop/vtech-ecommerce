@@ -2208,3 +2208,65 @@ exports.recordAffiliatePayout = async (req, res, next) => {
     next(error);
   }
 };
+
+// CLEANUP: Remove orphaned vendor/affiliate profiles
+exports.cleanupOrphanedProfiles = async (req, res, next) => {
+  try {
+    // Find all vendors
+    const vendors = await Vendor.find().lean();
+    const orphanedVendors = [];
+
+    for (const vendor of vendors) {
+      // Check if userId exists
+      if (vendor.userId) {
+        const userExists = await User.findById(vendor.userId);
+        if (!userExists) {
+          orphanedVendors.push(vendor._id);
+        }
+      } else {
+        // userId is null - definitely orphaned
+        orphanedVendors.push(vendor._id);
+      }
+    }
+
+    // Find all affiliates
+    const affiliates = await Affiliate.find().lean();
+    const orphanedAffiliates = [];
+
+    for (const affiliate of affiliates) {
+      // Check if userId exists
+      if (affiliate.userId) {
+        const userExists = await User.findById(affiliate.userId);
+        if (!userExists) {
+          orphanedAffiliates.push(affiliate._id);
+        }
+      } else {
+        // userId is null - definitely orphaned
+        orphanedAffiliates.push(affiliate._id);
+      }
+    }
+
+    // Delete orphaned profiles
+    const vendorDeleteResult = await Vendor.deleteMany({ _id: { $in: orphanedVendors } });
+    const affiliateDeleteResult = await Affiliate.deleteMany({ _id: { $in: orphanedAffiliates } });
+
+    // Delete products for orphaned vendors
+    const productDeleteResult = await Product.deleteMany({ vendorId: { $in: orphanedVendors } });
+
+    logger.info(`Cleanup completed: ${vendorDeleteResult.deletedCount} vendors, ${affiliateDeleteResult.deletedCount} affiliates, ${productDeleteResult.deletedCount} products deleted`);
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Cleanup completed successfully',
+        vendorsDeleted: vendorDeleteResult.deletedCount,
+        affiliatesDeleted: affiliateDeleteResult.deletedCount,
+        productsDeleted: productDeleteResult.deletedCount,
+        orphanedVendorIds: orphanedVendors,
+        orphanedAffiliateIds: orphanedAffiliates
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
