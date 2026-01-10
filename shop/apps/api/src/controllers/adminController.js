@@ -186,10 +186,46 @@ exports.updateUser = async (req, res, next) => {
 
 exports.deleteUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found' } });
+
+    // CRITICAL FIX: Delete associated vendor profile and vendor products if user is a vendor
+    if (user.role === 'vendor') {
+      const vendor = await Vendor.findOne({ userId: req.params.id });
+      if (vendor) {
+        // Delete all products belonging to this vendor
+        await Product.deleteMany({ vendorId: vendor._id });
+        logger.info(`Products deleted for vendor: ${user.email}`);
+
+        // Delete the vendor profile
+        await Vendor.deleteOne({ userId: req.params.id });
+        logger.info(`Vendor profile deleted for user: ${user.email}`);
+      }
+    }
+
+    // CRITICAL FIX: Delete associated affiliate profile and commissions if user is an affiliate
+    if (user.role === 'affiliate') {
+      const affiliate = await Affiliate.findOne({ userId: req.params.id });
+      if (affiliate) {
+        // Delete all commissions for this affiliate
+        await Commission.deleteMany({ affiliateId: affiliate._id });
+        logger.info(`Commissions deleted for affiliate: ${user.email}`);
+
+        // Delete the affiliate profile
+        await Affiliate.deleteOne({ userId: req.params.id });
+        logger.info(`Affiliate profile deleted for user: ${user.email}`);
+      }
+    }
+
+    // Delete user reviews
+    await Review.deleteMany({ userId: req.params.id });
+    logger.info(`Reviews deleted for user: ${user.email}`);
+
+    // Now delete the user
+    await User.findByIdAndDelete(req.params.id);
     logger.info(`User deleted: ${user.email}`);
-    res.json({ success: true, data: { message: 'User deleted successfully' } });
+
+    res.json({ success: true, data: { message: 'User and associated data deleted successfully' } });
   } catch (error) { next(error); }
 };
 
