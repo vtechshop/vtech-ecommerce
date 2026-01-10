@@ -842,8 +842,8 @@ const Product = () => {
 
               {/* Technical Specifications */}
               {product.specifications && product.specifications.length > 0 && (
-                <div className="bg-white rounded-xl border-2 border-orange-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
-                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+                <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
@@ -854,8 +854,8 @@ const Product = () => {
                   <div className="p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {product.specifications.map((spec, index) => (
-                        <div key={index} className="flex items-start gap-2 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                          <svg className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div key={index} className="flex items-start gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all">
+                          <svg className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                           <div className="flex-1">
@@ -877,8 +877,8 @@ const Product = () => {
 
           {/* FAQ Section */}
           {product.faqs && product.faqs.length > 0 && (
-            <div className="bg-white rounded-xl border-2 border-purple-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
-              <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+            <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
                 <h2 className="text-xl font-bold text-white flex items-center gap-3">
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -889,16 +889,16 @@ const Product = () => {
               <div className="p-6">
                 <div className="space-y-4">
                   {product.faqs.map((faq, index) => (
-                    <div key={index} className="bg-purple-50 rounded-lg border-2 border-purple-200 overflow-hidden hover:border-purple-300 transition-colors">
-                      <div className="bg-gradient-to-r from-purple-100 to-purple-50 px-4 py-3 border-b-2 border-purple-200">
+                    <div key={index} className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden hover:border-blue-300 hover:shadow-sm transition-all">
+                      <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-4 py-3 border-b-2 border-gray-200">
                         <h3 className="text-base font-bold text-gray-900 flex items-start gap-2">
-                          <span className="text-purple-600 flex-shrink-0">Q{index + 1}.</span>
+                          <span className="text-blue-600 flex-shrink-0">Q{index + 1}.</span>
                           <span>{faq.question}</span>
                         </h3>
                       </div>
                       <div className="px-4 py-3">
                         <p className="text-sm text-gray-900 leading-relaxed flex items-start gap-2">
-                          <span className="text-purple-600 font-bold flex-shrink-0">A:</span>
+                          <span className="text-blue-600 font-bold flex-shrink-0">A:</span>
                           <span>{faq.answer}</span>
                         </p>
                       </div>
