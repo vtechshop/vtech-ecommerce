@@ -889,6 +889,41 @@ const Product = () => {
             </div>
           )}
 
+          {/* Product Specifications Section */}
+          {product.specifications && product.specifications.length > 0 && (
+            <div className="bg-white rounded-xl border-2 border-orange-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
+              <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  Technical Specifications
+                </h2>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {product.specifications.map((spec, index) => (
+                    <div key={index} className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border-2 border-orange-200 p-4 hover:border-orange-300 hover:shadow-md transition-all duration-200">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <dt className="text-sm font-bold text-orange-800 uppercase tracking-wide mb-2 flex items-center gap-2">
+                            <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {spec.label}
+                          </dt>
+                          <dd className="text-base font-semibold text-gray-900 mt-1 pl-6">
+                            {spec.value}
+                          </dd>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {product.keyFeatures && product.keyFeatures.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-5">
