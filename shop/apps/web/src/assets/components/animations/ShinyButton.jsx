@@ -38,18 +38,17 @@ const ShinyButton = ({
       whileHover={{ scale: 1.02, boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)' }}
       whileTap={{ scale: 0.98 }}
     >
-      {/* Shine effect */}
+      {/* Shine effect - only on hover */}
       <motion.div
         className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0"
-        animate={{
-          x: ['-200%', '200%'],
-          opacity: [0, 0.3, 0]
-        }}
-        transition={{
-          duration: 2,
-          repeat: Infinity,
-          repeatDelay: 3,
-          ease: 'easeInOut'
+        initial={{ x: '-200%', opacity: 0 }}
+        whileHover={{
+          x: '200%',
+          opacity: [0, 0.3, 0],
+          transition: {
+            duration: 0.6,
+            ease: 'easeInOut'
+          }
         }}
       />
 
