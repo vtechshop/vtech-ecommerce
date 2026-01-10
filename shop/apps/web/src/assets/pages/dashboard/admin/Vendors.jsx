@@ -10,7 +10,7 @@ import PendingBadge from '@/components/common/PendingBadge';
 import { useToast } from '@/components/common/ToastContainer';
 import { getPendingItemClasses, formatRelativeTime } from '@/utils/dateHelpers';
 import CategoryCommissionRules from '@/components/admin/CategoryCommissionRules';
-import { Search, CheckCircle, XCircle, UserX, AlertCircle, RefreshCw, Percent } from 'lucide-react';
+import { Search, CheckCircle, XCircle, UserX, AlertCircle, RefreshCw, Percent, Trash2 } from 'lucide-react';
 
 const Vendors = () => {
   const queryClient = useQueryClient();
@@ -73,6 +73,19 @@ const Vendors = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      await api.delete(`/admin/vendors/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
+      toast.success('Vendor and associated data deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to delete vendor');
+    },
+  });
+
   const updateCommissionMutation = useMutation({
     mutationFn: async ({ id, commission }) => {
       const response = await api.put(`/admin/vendors/${id}/commission`, {
@@ -117,6 +130,12 @@ const Vendors = () => {
   const handleSuspend = (id) => {
     if (confirm('Are you sure you want to suspend this vendor?')) {
       suspendMutation.mutate(id);
+    }
+  };
+
+  const handleDelete = (id, storeName) => {
+    if (confirm(`Are you sure you want to DELETE "${storeName}"?\n\nThis will permanently delete:\n- The vendor profile\n- All their products\n- All their commissions\n\nThis action CANNOT be undone!`)) {
+      deleteMutation.mutate(id);
     }
   };
 
@@ -406,6 +425,13 @@ const Vendors = () => {
                           Suspend
                         </button>
                       )}
+                      <button
+                        onClick={() => handleDelete(vendor._id, vendor.storeName)}
+                        className="text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 text-sm font-medium flex items-center gap-1"
+                        title="Delete Vendor (Permanent)"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -431,6 +457,10 @@ const Vendors = () => {
           onApprove={() => handleApprove(viewingVendor._id)}
           onReject={() => handleReject(viewingVendor._id)}
           onSuspend={() => handleSuspend(viewingVendor._id)}
+          onDelete={() => {
+            handleDelete(viewingVendor._id, viewingVendor.storeName);
+            setViewingVendor(null);
+          }}
           onUpdateCommission={(commission) => updateCommissionMutation.mutate({ id: viewingVendor._id, commission })}
         />
       )}
@@ -439,7 +469,7 @@ const Vendors = () => {
 };
 
 // Vendor Details Modal Component
-const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, onUpdateCommission }) => {
+const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, onDelete, onUpdateCommission }) => {
   const [commissionValue, setCommissionValue] = useState(vendor.defaultCommissionPercentage || 15);
   const [isEditingCommission, setIsEditingCommission] = useState(false);
 
@@ -691,25 +721,35 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
           </div>
 
           {/* Actions */}
-          <div className="mt-6 flex items-center justify-end gap-4">
-            <Button variant="outline" onClick={onClose}>
-              Close
+          <div className="mt-6 flex items-center justify-between gap-4">
+            <Button
+              onClick={onDelete}
+              variant="outline"
+              className="border-red-300 text-red-600 hover:bg-red-50 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Vendor
             </Button>
-            {vendor.status === 'pending' && (
-              <>
-                <Button onClick={onApprove} className="bg-green-600 hover:bg-green-700">
-                  Approve Vendor
-                </Button>
-                <Button onClick={onReject} variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
-                  Reject Vendor
-                </Button>
-              </>
-            )}
-            {vendor.status === 'active' && (
-              <Button onClick={onSuspend} variant="outline" className="border-yellow-300 text-yellow-600 hover:bg-yellow-50">
-                Suspend Vendor
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={onClose}>
+                Close
               </Button>
-            )}
+              {vendor.status === 'pending' && (
+                <>
+                  <Button onClick={onApprove} className="bg-green-600 hover:bg-green-700">
+                    Approve Vendor
+                  </Button>
+                  <Button onClick={onReject} variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
+                    Reject Vendor
+                  </Button>
+                </>
+              )}
+              {vendor.status === 'active' && (
+                <Button onClick={onSuspend} variant="outline" className="border-yellow-300 text-yellow-600 hover:bg-yellow-50">
+                  Suspend Vendor
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

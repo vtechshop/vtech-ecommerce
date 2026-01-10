@@ -634,6 +634,25 @@ exports.suspendVendor = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+exports.deleteVendor = async (req, res, next) => {
+  try {
+    const vendor = await Vendor.findById(req.params.id);
+    if (!vendor) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Vendor not found' } });
+
+    // Delete all products belonging to this vendor
+    await Product.deleteMany({ vendorId: vendor._id });
+
+    // Delete all commissions for this vendor
+    await Commission.deleteMany({ vendorId: vendor._id });
+
+    // Delete the vendor profile
+    await Vendor.findByIdAndDelete(req.params.id);
+
+    logger.info(`Vendor deleted: ${vendor.storeName} (ID: ${vendor._id})`);
+    res.json({ success: true, data: { message: 'Vendor and associated data deleted successfully' } });
+  } catch (error) { next(error); }
+};
+
 exports.updateVendorCommission = async (req, res, next) => {
   try {
     const { defaultCommissionPercentage } = req.body;
@@ -997,6 +1016,22 @@ exports.suspendAffiliate = async (req, res, next) => {
     if (!aff) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Affiliate not found' } });
     logger.info(`Affiliate suspended: ${aff.code}`);
     res.json({ success: true, data: aff });
+  } catch (error) { next(error); }
+};
+
+exports.deleteAffiliate = async (req, res, next) => {
+  try {
+    const affiliate = await Affiliate.findById(req.params.id);
+    if (!affiliate) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Affiliate not found' } });
+
+    // Delete all commissions for this affiliate
+    await Commission.deleteMany({ affiliateId: affiliate._id });
+
+    // Delete the affiliate profile
+    await Affiliate.findByIdAndDelete(req.params.id);
+
+    logger.info(`Affiliate deleted: ${affiliate.code} (ID: ${affiliate._id})`);
+    res.json({ success: true, data: { message: 'Affiliate and associated data deleted successfully' } });
   } catch (error) { next(error); }
 };
 

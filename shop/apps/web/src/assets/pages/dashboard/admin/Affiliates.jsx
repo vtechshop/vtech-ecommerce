@@ -7,7 +7,7 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import { formatDate, formatCurrency } from '@/utils/format';
-import { Eye, Search, CheckCircle, XCircle, UserX } from 'lucide-react';
+import { Eye, Search, CheckCircle, XCircle, UserX, Trash2 } from 'lucide-react';
 import PendingBadge from '@/components/common/PendingBadge';
 import { getPendingItemClasses, formatRelativeTime } from '@/utils/dateHelpers';
 import CategoryCommissionRules from '@/components/admin/CategoryCommissionRules';
@@ -66,6 +66,20 @@ const Affiliate = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      await api.delete(`/admin/affiliates/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
+      setViewingAffiliate(null);
+      alert('Affiliate and associated data deleted successfully');
+    },
+    onError: (error) => {
+      alert(error.response?.data?.error?.message || 'Failed to delete affiliate');
+    },
+  });
+
   const handleView = (affiliate) => {
     setViewingAffiliate(affiliate);
   };
@@ -86,6 +100,12 @@ const Affiliate = () => {
   const handleSuspend = (id) => {
     if (confirm('Are you sure you want to suspend this affiliate?')) {
       suspendMutation.mutate(id);
+    }
+  };
+
+  const handleDelete = (id, affiliateName, affiliateCode) => {
+    if (confirm(`Are you sure you want to DELETE "${affiliateName}" (${affiliateCode})?\n\nThis will permanently delete:\n- The affiliate profile\n- All their commissions\n\nThis action CANNOT be undone!`)) {
+      deleteMutation.mutate(id);
     }
   };
 
@@ -293,6 +313,13 @@ const Affiliate = () => {
                           <UserX className="w-4 h-4" />
                         </button>
                       )}
+                      <button
+                        onClick={() => handleDelete(affiliate._id, affiliate.userId?.name || 'Affiliate', affiliate.code)}
+                        className="text-red-600 hover:text-red-700 p-1"
+                        title="Delete Affiliate (Permanent)"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -317,6 +344,10 @@ const Affiliate = () => {
           onApprove={() => handleApprove(viewingAffiliate._id)}
           onReject={() => handleReject(viewingAffiliate._id)}
           onSuspend={() => handleSuspend(viewingAffiliate._id)}
+          onDelete={() => {
+            handleDelete(viewingAffiliate._id, viewingAffiliate.userId?.name || 'Affiliate', viewingAffiliate.code);
+            setViewingAffiliate(null);
+          }}
         />
       )}
     </div>
@@ -324,7 +355,7 @@ const Affiliate = () => {
 };
 
 // Affiliate Details Modal Component
-const AffiliateDetailsModal = ({ affiliate, onClose, onApprove, onReject, onSuspend }) => {
+const AffiliateDetailsModal = ({ affiliate, onClose, onApprove, onReject, onSuspend, onDelete }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'active':
@@ -513,25 +544,35 @@ const AffiliateDetailsModal = ({ affiliate, onClose, onApprove, onReject, onSusp
           </div>
 
           {/* Actions */}
-          <div className="mt-6 flex items-center justify-end gap-4">
-            <Button variant="outline" onClick={onClose}>
-              Close
+          <div className="mt-6 flex items-center justify-between gap-4">
+            <Button
+              onClick={onDelete}
+              variant="outline"
+              className="border-red-300 text-red-600 hover:bg-red-50 flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Affiliate
             </Button>
-            {affiliate.status === 'pending' && (
-              <>
-                <Button onClick={onApprove} className="bg-green-600 hover:bg-green-700">
-                  Approve Affiliate
-                </Button>
-                <Button onClick={onReject} variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
-                  Reject Affiliate
-                </Button>
-              </>
-            )}
-            {affiliate.status === 'active' && (
-              <Button onClick={onSuspend} variant="outline" className="border-yellow-300 text-yellow-600 hover:bg-yellow-50">
-                Suspend Affiliate
+            <div className="flex items-center gap-4">
+              <Button variant="outline" onClick={onClose}>
+                Close
               </Button>
-            )}
+              {affiliate.status === 'pending' && (
+                <>
+                  <Button onClick={onApprove} className="bg-green-600 hover:bg-green-700">
+                    Approve Affiliate
+                  </Button>
+                  <Button onClick={onReject} variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
+                    Reject Affiliate
+                  </Button>
+                </>
+              )}
+              {affiliate.status === 'active' && (
+                <Button onClick={onSuspend} variant="outline" className="border-yellow-300 text-yellow-600 hover:bg-yellow-50">
+                  Suspend Affiliate
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

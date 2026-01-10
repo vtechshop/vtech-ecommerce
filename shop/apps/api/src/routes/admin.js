@@ -70,6 +70,7 @@ router.get('/vendors', admin.getVendors);
 router.put('/vendors/:id/approve', validateObjectId('id'), admin.approveVendor);
 router.put('/vendors/:id/reject', validateObjectId('id'), admin.rejectVendor);
 router.put('/vendors/:id/suspend', validateObjectId('id'), admin.suspendVendor);
+router.delete('/vendors/:id', validateObjectId('id'), admin.deleteVendor);
 router.put('/vendors/:id/commission', validateObjectId('id'), admin.updateVendorCommission);
 router.put('/vendors/:id/commission-rules', validateObjectId('id'), admin.updateVendorCommissionRules);
 
@@ -78,6 +79,7 @@ router.get('/affiliates', admin.getAffiliates);
 router.put('/affiliates/:id/approve', validateObjectId('id'), admin.approveAffiliate);
 router.put('/affiliates/:id/reject', validateObjectId('id'), admin.rejectAffiliate);
 router.put('/affiliates/:id/suspend', validateObjectId('id'), admin.suspendAffiliate);
+router.delete('/affiliates/:id', validateObjectId('id'), admin.deleteAffiliate);
 router.put('/affiliates/:id/commission-rules', validateObjectId('id'), admin.updateAffiliateCommissionRules);
 router.post('/affiliates/:id/payout', validateObjectId('id'), admin.recordAffiliatePayout);
 
