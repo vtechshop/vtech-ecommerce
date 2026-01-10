@@ -91,6 +91,11 @@ const productSchema = new mongoose.Schema({
     question: { type: String, trim: true },
     answer: { type: String, trim: true }
   }],
+  // Product Specifications
+  specifications: [{
+    label: { type: String, trim: true }, // e.g., "Weight", "Color", "Material"
+    value: { type: String, trim: true }, // e.g., "2.5 kg", "Silver", "Stainless Steel"
+  }],
 }, { timestamps: true });
 
 // indexes (do not duplicate slug/sku uniques)
