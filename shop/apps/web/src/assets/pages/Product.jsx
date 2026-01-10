@@ -450,6 +450,20 @@ const Product = () => {
             )}
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-snug fade-in-down">{product.title}</h1>
 
+            {/* Product Tags - Compact Pills */}
+            {product.tags && product.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {product.tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-primary-100 text-primary-700 rounded-md text-xs font-medium border border-primary-200 hover:bg-primary-200 transition-colors"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Vendor Name */}
             {product.vendorId && (
               <Link
@@ -755,32 +769,6 @@ const Product = () => {
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Product Tags */}
-          {product.tags && product.tags.length > 0 && (
-            <div className="bg-white rounded-xl border-2 border-primary-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
-              <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                  Product Tags
-                </h2>
-              </div>
-              <div className="p-6">
-                <div className="flex flex-wrap gap-2">
-                  {product.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-4 py-2 bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 rounded-full text-sm font-semibold border-2 border-primary-300 hover:from-primary-200 hover:to-primary-300 transition-all duration-200 cursor-default shadow-sm"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
             </div>
           )}
 

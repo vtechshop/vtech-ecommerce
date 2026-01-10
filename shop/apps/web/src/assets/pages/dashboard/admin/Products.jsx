@@ -397,6 +397,8 @@ const Products = () => {
 
 // Product Modal Component
 const ProductModal = ({ product, isViewing, onClose, onSave }) => {
+  console.log('ProductModal Debug:', { product: !!product, isViewing, productId: product?._id });
+
   const [formData, setFormData] = useState({
     title: product?.title || '',
     description: product?.description || '',
