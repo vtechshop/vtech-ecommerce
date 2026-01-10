@@ -758,6 +758,137 @@ const Product = () => {
             </div>
           )}
 
+          {/* Product Tags */}
+          {product.tags && product.tags.length > 0 && (
+            <div className="bg-white rounded-xl border-2 border-primary-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
+              <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  Product Tags
+                </h2>
+              </div>
+              <div className="p-6">
+                <div className="flex flex-wrap gap-2">
+                  {product.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-4 py-2 bg-gradient-to-r from-primary-100 to-primary-200 text-primary-800 rounded-full text-sm font-semibold border-2 border-primary-300 hover:from-primary-200 hover:to-primary-300 transition-all duration-200 cursor-default shadow-sm"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Warranty Information */}
+          {product.hasWarranty && product.warranty && (
+            <div className="bg-white rounded-xl border-2 border-blue-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                  <Shield className="w-6 h-6" />
+                  Warranty Information
+                </h2>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-blue-100 p-3 rounded-lg">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-1">Duration</h3>
+                      <p className="text-base font-bold text-gray-900">
+                        {product.warranty.duration} {product.warranty.durationType}
+                      </p>
+                    </div>
+                  </div>
+
+                  {product.warranty.provider && (
+                    <div className="flex items-start gap-3">
+                      <div className="bg-blue-100 p-3 rounded-lg">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Provider</h3>
+                        <p className="text-base font-bold text-gray-900">{product.warranty.provider}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {product.warranty.description && (
+                    <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Coverage Details</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">{product.warranty.description}</p>
+                    </div>
+                  )}
+
+                  {product.warranty.terms && (
+                    <div className="md:col-span-2 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Terms & Conditions</h3>
+                      <p className="text-sm text-gray-900 leading-relaxed">{product.warranty.terms}</p>
+                    </div>
+                  )}
+
+                  {product.warranty.activationRequired && (
+                    <div className="md:col-span-2 bg-orange-50 p-4 rounded-lg border-2 border-orange-300">
+                      <div className="flex items-start gap-2">
+                        <svg className="w-5 h-5 text-orange-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <h3 className="text-sm font-semibold text-orange-800 mb-1">Activation Required</h3>
+                          <p className="text-sm text-orange-900">This warranty requires customer activation. Please activate after purchase to ensure coverage.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FAQ Section */}
+          {product.faqs && product.faqs.length > 0 && (
+            <div className="bg-white rounded-xl border-2 border-purple-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
+              <div className="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+                <h2 className="text-xl font-bold text-white flex items-center gap-3">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Frequently Asked Questions
+                </h2>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {product.faqs.map((faq, index) => (
+                    <div key={index} className="bg-purple-50 rounded-lg border-2 border-purple-200 overflow-hidden hover:border-purple-300 transition-colors">
+                      <div className="bg-gradient-to-r from-purple-100 to-purple-50 px-4 py-3 border-b-2 border-purple-200">
+                        <h3 className="text-base font-bold text-gray-900 flex items-start gap-2">
+                          <span className="text-purple-600 flex-shrink-0">Q{index + 1}.</span>
+                          <span>{faq.question}</span>
+                        </h3>
+                      </div>
+                      <div className="px-4 py-3">
+                        <p className="text-sm text-gray-900 leading-relaxed flex items-start gap-2">
+                          <span className="text-purple-600 font-bold flex-shrink-0">A:</span>
+                          <span>{faq.answer}</span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {product.keyFeatures && product.keyFeatures.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-5">
