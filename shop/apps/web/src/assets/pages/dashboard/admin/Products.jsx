@@ -526,9 +526,25 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
         description: formData.seoDescription || formData.description.substring(0, 160), // Fallback to first 160 chars
         keywords: formData.seoKeywords.split(',').map(keyword => keyword.trim()).filter(Boolean),
       },
+      // FAQ Data
+      faqs: faqs.filter(faq => faq.question && faq.answer), // Only include FAQs with both question and answer
     };
     console.log('Submitting product data:', { price: dataToSubmit.price, compareAt: dataToSubmit.compareAt });
     saveMutation.mutate(dataToSubmit);
+  };
+
+  const addFaq = () => {
+    setFaqs([...faqs, { question: '', answer: '' }]);
+  };
+
+  const updateFaq = (index, field, value) => {
+    const updated = [...faqs];
+    updated[index][field] = value;
+    setFaqs(updated);
+  };
+
+  const removeFaq = (index) => {
+    setFaqs(faqs.filter((_, i) => i !== index));
   };
 
   const addCustomSnippet = () => {
@@ -1005,6 +1021,85 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
               </div>
             )}
           </div>
+
+          {/* FAQ Section */}
+          {!isViewing && (
+            <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Frequently Asked Questions (FAQ)
+                  </h3>
+                  <p className="text-xs text-gray-700 mt-1">Add common questions and answers about your product</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addFaq}
+                  className="px-3 py-1 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm font-medium"
+                >
+                  + Add FAQ
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {faqs.length === 0 ? (
+                  <div className="text-center py-6 bg-white rounded-lg border border-gray-200">
+                    <p className="text-gray-500 text-sm">No FAQs added yet. Click "+ Add FAQ" to add common questions about your product.</p>
+                  </div>
+                ) : (
+                  faqs.map((faq, index) => (
+                    <div key={index} className="bg-white p-4 rounded-lg border border-gray-200">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-xs font-semibold text-gray-700">FAQ #{index + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeFaq(index)}
+                          className="text-red-600 hover:text-red-700 text-xs font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Question
+                          </label>
+                          <input
+                            type="text"
+                            value={faq.question}
+                            onChange={(e) => updateFaq(index, 'question', e.target.value)}
+                            placeholder="e.g., What is the product size?"
+                            className="input w-full"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Answer
+                          </label>
+                          <textarea
+                            value={faq.answer}
+                            onChange={(e) => updateFaq(index, 'answer', e.target.value)}
+                            placeholder="e.g., The product measures 10 x 5 x 3 inches..."
+                            rows={3}
+                            className="input w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {faqs.length > 0 && (
+                <p className="text-xs text-gray-700 mt-3">
+                  💡 Tip: FAQs help customers make informed purchase decisions and reduce support queries.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* SEO Meta Tags Section */}
           {!isViewing && (
