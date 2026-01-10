@@ -163,6 +163,7 @@ const Product = () => {
   const [addedToCart, setAddedToCart] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
   // Capture affiliate code from URL on page load
   useEffect(() => {
@@ -875,40 +876,6 @@ const Product = () => {
             </div>
           )}
 
-          {/* FAQ Section */}
-          {product.faqs && product.faqs.length > 0 && (
-            <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Frequently Asked Questions
-                </h2>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  {product.faqs.map((faq, index) => (
-                    <div key={index} className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden hover:border-blue-300 hover:shadow-sm transition-all">
-                      <div className="bg-gradient-to-r from-blue-50 to-gray-50 px-4 py-3 border-b-2 border-gray-200">
-                        <h3 className="text-base font-bold text-gray-900 flex items-start gap-2">
-                          <span className="text-blue-600 flex-shrink-0">Q{index + 1}.</span>
-                          <span>{faq.question}</span>
-                        </h3>
-                      </div>
-                      <div className="px-4 py-3">
-                        <p className="text-sm text-gray-900 leading-relaxed flex items-start gap-2">
-                          <span className="text-blue-600 font-bold flex-shrink-0">A:</span>
-                          <span>{faq.answer}</span>
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {product.keyFeatures && product.keyFeatures.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-5">
@@ -969,6 +936,62 @@ const Product = () => {
               )}
             </div>
           </div>
+
+          {/* FAQ Section - Collapsible Accordion */}
+          {product.faqs && product.faqs.length > 0 && (
+            <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg overflow-hidden mb-8">
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Frequently Asked Questions
+                </h2>
+              </div>
+              <div className="p-4">
+                <div className="space-y-2">
+                  {product.faqs.map((faq, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
+                      {/* Question - Clickable Header */}
+                      <button
+                        onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                        className="w-full text-left px-4 py-3 bg-gradient-to-r from-blue-50 to-gray-50 hover:from-blue-100 hover:to-gray-100 transition-all flex items-center justify-between gap-3"
+                      >
+                        <div className="flex items-start gap-2 flex-1">
+                          <span className="text-blue-600 font-bold flex-shrink-0 text-sm">Q{index + 1}.</span>
+                          <span className="text-sm font-semibold text-gray-900">{faq.question}</span>
+                        </div>
+                        <svg
+                          className={`w-5 h-5 text-blue-600 flex-shrink-0 transition-transform duration-200 ${
+                            openFaqIndex === index ? 'transform rotate-180' : ''
+                          }`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {/* Answer - Collapsible Content */}
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ${
+                          openFaqIndex === index ? 'max-h-96' : 'max-h-0'
+                        }`}
+                      >
+                        <div className="px-4 py-3 bg-white border-t border-gray-200">
+                          <p className="text-sm text-gray-900 leading-relaxed flex items-start gap-2">
+                            <span className="text-blue-600 font-bold flex-shrink-0">A:</span>
+                            <span>{faq.answer}</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           <ProductRecommendations
             type="frequently-bought-together"
