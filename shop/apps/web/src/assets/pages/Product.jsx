@@ -772,74 +772,106 @@ const Product = () => {
             </div>
           )}
 
-          {/* Warranty Information */}
-          {product.hasWarranty && product.warranty && (
-            <div className="bg-white rounded-xl border-2 border-blue-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
-              <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                  <Shield className="w-6 h-6" />
-                  Warranty Information
-                </h2>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-blue-100 p-3 rounded-lg">
-                      <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-700 mb-1">Duration</h3>
-                      <p className="text-base font-bold text-gray-900">
-                        {product.warranty.duration} {product.warranty.durationType}
-                      </p>
-                    </div>
+          {/* Warranty & Specifications - Side by Side Container */}
+          {((product.hasWarranty && product.warranty) || (product.specifications && product.specifications.length > 0)) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Warranty Information */}
+              {product.hasWarranty && product.warranty && (
+                <div className="bg-white rounded-xl border-2 border-blue-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                      <Shield className="w-5 h-5" />
+                      Warranty Information
+                    </h2>
                   </div>
-
-                  {product.warranty.provider && (
-                    <div className="flex items-start gap-3">
-                      <div className="bg-blue-100 p-3 rounded-lg">
-                        <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-gray-700 mb-1">Provider</h3>
-                        <p className="text-base font-bold text-gray-900">{product.warranty.provider}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {product.warranty.description && (
-                    <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Coverage Details</h3>
-                      <p className="text-sm text-gray-900 leading-relaxed">{product.warranty.description}</p>
-                    </div>
-                  )}
-
-                  {product.warranty.terms && (
-                    <div className="md:col-span-2 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                      <h3 className="text-sm font-semibold text-gray-700 mb-2">Terms & Conditions</h3>
-                      <p className="text-sm text-gray-900 leading-relaxed">{product.warranty.terms}</p>
-                    </div>
-                  )}
-
-                  {product.warranty.activationRequired && (
-                    <div className="md:col-span-2 bg-orange-50 p-4 rounded-lg border-2 border-orange-300">
+                  <div className="p-4">
+                    {product.warranty.description && (
+                      <p className="text-sm text-gray-800 leading-relaxed mb-4">
+                        {product.warranty.description}
+                      </p>
+                    )}
+                    <div className="space-y-3">
                       <div className="flex items-start gap-2">
-                        <svg className="w-5 h-5 text-orange-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
-                          <h3 className="text-sm font-semibold text-orange-800 mb-1">Activation Required</h3>
-                          <p className="text-sm text-orange-900">This warranty requires customer activation. Please activate after purchase to ensure coverage.</p>
+                          <h3 className="text-xs font-semibold text-gray-600 uppercase">Duration</h3>
+                          <p className="text-sm font-bold text-gray-900">
+                            {product.warranty.duration} {product.warranty.durationType}
+                          </p>
                         </div>
                       </div>
+
+                      {product.warranty.provider && (
+                        <div className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                          <div>
+                            <h3 className="text-xs font-semibold text-gray-600 uppercase">Provider</h3>
+                            <p className="text-sm font-bold text-gray-900">{product.warranty.provider}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {product.warranty.terms && (
+                        <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                          <h3 className="text-xs font-semibold text-gray-700 mb-1">Terms & Conditions</h3>
+                          <p className="text-xs text-gray-800 leading-relaxed">{product.warranty.terms}</p>
+                        </div>
+                      )}
+
+                      {product.warranty.activationRequired && (
+                        <div className="bg-orange-50 p-3 rounded-lg border border-orange-300">
+                          <div className="flex items-start gap-2">
+                            <svg className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            <div>
+                              <h3 className="text-xs font-semibold text-orange-800 mb-1">Activation Required</h3>
+                              <p className="text-xs text-orange-900">Requires activation after purchase.</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Technical Specifications */}
+              {product.specifications && product.specifications.length > 0 && (
+                <div className="bg-white rounded-xl border-2 border-orange-200 shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300">
+                  <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-3">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                      Technical Specification
+                    </h2>
+                  </div>
+                  <div className="p-4">
+                    <div className="space-y-2">
+                      {product.specifications.map((spec, index) => (
+                        <div key={index} className="flex items-start gap-2 py-2 border-b border-gray-100 last:border-0">
+                          <svg className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="flex-1">
+                            <dt className="text-xs font-bold text-gray-600 uppercase">
+                              {spec.label}
+                            </dt>
+                            <dd className="text-sm font-semibold text-gray-900 mt-0.5">
+                              {spec.value}
+                            </dd>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -869,41 +901,6 @@ const Product = () => {
                           <span className="text-purple-600 font-bold flex-shrink-0">A:</span>
                           <span>{faq.answer}</span>
                         </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Product Specifications Section */}
-          {product.specifications && product.specifications.length > 0 && (
-            <div className="bg-white rounded-xl border-2 border-orange-200 shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 mb-8 animate-fadeInUp">
-              <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-3">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
-                  Technical Specifications
-                </h2>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {product.specifications.map((spec, index) => (
-                    <div key={index} className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border-2 border-orange-200 p-4 hover:border-orange-300 hover:shadow-md transition-all duration-200">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <dt className="text-sm font-bold text-orange-800 uppercase tracking-wide mb-2 flex items-center gap-2">
-                            <svg className="w-4 h-4 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {spec.label}
-                          </dt>
-                          <dd className="text-base font-semibold text-gray-900 mt-1 pl-6">
-                            {spec.value}
-                          </dd>
-                        </div>
                       </div>
                     </div>
                   ))}
