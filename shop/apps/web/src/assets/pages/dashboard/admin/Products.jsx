@@ -432,6 +432,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
   });
 
   const [faqs, setFaqs] = useState(product?.faqs || []);
+  const [specifications, setSpecifications] = useState(product?.specifications || []);
 
   const [schemaData, setSchemaData] = useState({
     schemaType: product?.structuredData?.schemaType || 'Product',
@@ -528,6 +529,8 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       },
       // FAQ Data
       faqs: faqs.filter(faq => faq.question && faq.answer), // Only include FAQs with both question and answer
+      // Specifications Data
+      specifications: specifications.filter(spec => spec.label && spec.value), // Only include specifications with both label and value
     };
     console.log('Submitting product data:', { price: dataToSubmit.price, compareAt: dataToSubmit.compareAt });
     saveMutation.mutate(dataToSubmit);
@@ -545,6 +548,20 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
 
   const removeFaq = (index) => {
     setFaqs(faqs.filter((_, i) => i !== index));
+  };
+
+  const addSpecification = () => {
+    setSpecifications([...specifications, { label: '', value: '' }]);
+  };
+
+  const updateSpecification = (index, field, value) => {
+    const updated = [...specifications];
+    updated[index][field] = value;
+    setSpecifications(updated);
+  };
+
+  const removeSpecification = (index) => {
+    setSpecifications(specifications.filter((_, i) => i !== index));
   };
 
   const addCustomSnippet = () => {
@@ -804,6 +821,73 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
               className="input w-full h-24"
               rows={4}
             />
+          </div>
+
+          {/* Product Specifications Section */}
+          <div className="md:col-span-2 bg-orange-50 border border-orange-200 rounded-lg p-4 mt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  Product Specifications (Optional)
+                </h3>
+                <p className="text-xs text-gray-700 mt-1">Add technical details like weight, dimensions, material, color, power, etc.</p>
+              </div>
+              {!isViewing && (
+                <button
+                  type="button"
+                  onClick={addSpecification}
+                  className="px-3 py-1 bg-orange-600 text-white rounded-md hover:bg-orange-700 text-sm font-medium"
+                >
+                  + Add Spec
+                </button>
+              )}
+            </div>
+            {specifications.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {specifications.map((spec, index) => (
+                  <div key={index} className="bg-white rounded-lg border border-orange-300 p-3 relative">
+                    {!isViewing && (
+                      <button
+                        type="button"
+                        onClick={() => removeSpecification(index)}
+                        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                    <div className="pr-6">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Label</label>
+                      <input
+                        type="text"
+                        value={spec.label}
+                        onChange={(e) => updateSpecification(index, 'label', e.target.value)}
+                        disabled={isViewing}
+                        placeholder="e.g., Weight, Color, Material"
+                        className="input w-full text-sm mb-2"
+                      />
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Value</label>
+                      <input
+                        type="text"
+                        value={spec.value}
+                        onChange={(e) => updateSpecification(index, 'value', e.target.value)}
+                        disabled={isViewing}
+                        placeholder="e.g., 2.5 kg, Silver, Stainless Steel"
+                        className="input w-full text-sm"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600 text-center py-4">
+                No specifications added yet. Click "+ Add Spec" to add technical details.
+              </p>
+            )}
           </div>
 
           {/* YouTube Video URL */}
