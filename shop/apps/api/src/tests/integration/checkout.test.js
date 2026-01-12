@@ -96,7 +96,8 @@ describe('Checkout Integration Tests', () => {
       // Multi-vendor order response structure
       expect(response.body.data).toHaveProperty('orderIds');
       expect(response.body.data).toHaveProperty('vendorOrders');
-      expect(response.body.data.vendorOrders[0].status).toBe('placed');
+      // Orders should be pending payment until payment is confirmed (correct behavior)
+      expect(response.body.data.vendorOrders[0].status).toBe('pending_payment');
     });
 
     test('should require items', async () => {

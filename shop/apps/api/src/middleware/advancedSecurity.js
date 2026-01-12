@@ -66,8 +66,13 @@ const ATTACK_PATTERNS = {
   ],
 
   // LDAP Injection patterns
+  // NOTE: Removed overly aggressive [*()\\] pattern that blocks normal punctuation
+  // Only detect actual LDAP injection attempts with multiple special chars
   ldapInjection: [
-    /[*()\\]/g,
+    /\(\*[a-zA-Z0-9]*\)/g, // Wildcard LDAP searches like (*) or (*user*)
+    /\)\(\&/g, // LDAP AND operator
+    /\)\(\|/g, // LDAP OR operator
+    /\)\(!/g, // LDAP NOT operator
   ],
 };
 
