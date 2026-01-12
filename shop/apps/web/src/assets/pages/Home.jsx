@@ -218,107 +218,117 @@ const Home = React.memo(() => {
               </section>
             )}
 
-            {/* Join as Vendor or Affiliate */}
-            <section className="mb-8">
-              <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* Become a Vendor */}
-                <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow slide-in-left">
-                  <div className="flex items-center mb-4">
-                    <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-4">
-                      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
+            {/* Join as Vendor or Affiliate - Only show if user doesn't have the role */}
+            {(user?.role !== 'vendor' || user?.role !== 'affiliate') && (
+              <section className="mb-8">
+                <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
+                <div className={`grid gap-6 ${
+                  user?.role === 'vendor' || user?.role === 'affiliate'
+                    ? 'md:grid-cols-1 max-w-2xl mx-auto'
+                    : 'md:grid-cols-2'
+                }`}>
+                  {/* Become a Vendor - Hide if already a vendor */}
+                  {user?.role !== 'vendor' && (
+                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow slide-in-left">
+                      <div className="flex items-center mb-4">
+                        <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-4">
+                          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeVendor')}</h3>
+                      </div>
+                      <p className="text-gray-700 mb-6 leading-relaxed">
+                        {t('home.vendorDesc')}
+                      </p>
+                      <ul className="space-y-2 mb-6">
+                        <li className="flex items-center text-gray-700">
+                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {t('home.easyProductMgmt')}
+                        </li>
+                        <li className="flex items-center text-gray-700">
+                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {t('home.powerfulAnalytics')}
+                        </li>
+                        <li className="flex items-center text-gray-700">
+                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {t('home.advertisingTools')}
+                        </li>
+                        <li className="flex items-center text-gray-700">
+                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {t('home.securePayment')}
+                        </li>
+                      </ul>
+                      <Link
+                        to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
+                        className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg will-change-auto"
+                        style={{ transform: 'translateZ(0)' }}
+                      >
+                        {t('home.startSelling')}
+                      </Link>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeVendor')}</h3>
-                  </div>
-                  <p className="text-gray-700 mb-6 leading-relaxed">
-                    {t('home.vendorDesc')}
-                  </p>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center text-gray-700">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      {t('home.easyProductMgmt')}
-                    </li>
-                    <li className="flex items-center text-gray-700">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      {t('home.powerfulAnalytics')}
-                    </li>
-                    <li className="flex items-center text-gray-700">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      {t('home.advertisingTools')}
-                    </li>
-                    <li className="flex items-center text-gray-700">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      {t('home.securePayment')}
-                    </li>
-                  </ul>
-                  <Link
-                    to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
-                    className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg will-change-auto"
-                    style={{ transform: 'translateZ(0)' }}
-                  >
-                    {t('home.startSelling')}
-                  </Link>
-                </div>
+                  )}
 
-                {/* Become an Affiliate */}
-                <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow slide-in-right">
-                  <div className="flex items-center mb-4">
-                    <div className="w-12 h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-4">
-                      <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
+                  {/* Become an Affiliate - Hide if already an affiliate */}
+                  {user?.role !== 'affiliate' && (
+                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow slide-in-right">
+                      <div className="flex items-center mb-4">
+                        <div className="w-12 h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-4">
+                          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeAffiliate')}</h3>
+                      </div>
+                      <p className="text-gray-700 mb-6 leading-relaxed">
+                        {t('home.affiliateDesc')}
+                      </p>
+                      <ul className="space-y-2 mb-6">
+                        <li className="flex items-center text-gray-700">
+                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {t('home.competitiveRates')}
+                        </li>
+                        <li className="flex items-center text-gray-700">
+                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {t('home.realtimeTracking')}
+                        </li>
+                        <li className="flex items-center text-gray-700">
+                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {t('home.marketingTools')}
+                        </li>
+                        <li className="flex items-center text-gray-700">
+                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          {t('home.monthlyPayout')}
+                        </li>
+                      </ul>
+                      <Link
+                        to={user?.role === 'customer' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
+                        className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors duration-200 shadow-md hover:shadow-lg will-change-auto"
+                        style={{ transform: 'translateZ(0)' }}
+                      >
+                        {t('home.joinAffiliate')}
+                      </Link>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeAffiliate')}</h3>
-                  </div>
-                  <p className="text-gray-700 mb-6 leading-relaxed">
-                    {t('home.affiliateDesc')}
-                  </p>
-                  <ul className="space-y-2 mb-6">
-                    <li className="flex items-center text-gray-700">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      {t('home.competitiveRates')}
-                    </li>
-                    <li className="flex items-center text-gray-700">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      {t('home.realtimeTracking')}
-                    </li>
-                    <li className="flex items-center text-gray-700">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      {t('home.marketingTools')}
-                    </li>
-                    <li className="flex items-center text-gray-700">
-                      <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      {t('home.monthlyPayout')}
-                    </li>
-                  </ul>
-                  <Link
-                    to={user?.role === 'customer' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
-                    className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors duration-200 shadow-md hover:shadow-lg will-change-auto"
-                    style={{ transform: 'translateZ(0)' }}
-                  >
-                    {t('home.joinAffiliate')}
-                  </Link>
+                  )}
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
 
             {/* Personalized Recommendations */}
             {user && (
