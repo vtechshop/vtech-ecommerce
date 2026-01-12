@@ -156,9 +156,9 @@ const ProductDetail = () => {
       {/* SEO Meta Tags */}
       {product && (
         <SEO
-          title={`${product.title} - V-Tech Kitchen`}
-          description={product.description?.substring(0, 160) || `Buy ${product.title} at V-Tech Kitchen. Premium quality at great prices.`}
-          keywords={`${product.title}, ${product.brand || 'kitchen'}, ${product.tags?.join(', ') || 'kitchenware'}`}
+          title={product.seo?.title || `${product.title} - V-Tech Kitchen`}
+          description={product.seo?.description || product.description?.substring(0, 160) || `Buy ${product.title} at V-Tech Kitchen. Premium quality at great prices.`}
+          keywords={product.seo?.keywords?.join(', ') || `${product.title}, ${product.brand || 'kitchen'}, ${product.tags?.join(', ') || 'kitchenware'}`}
           image={product.images?.[0]}
           url={typeof window !== 'undefined' ? window.location.href : `https://vtechkitchen.com/product/${product.slug}`}
           type="product"
