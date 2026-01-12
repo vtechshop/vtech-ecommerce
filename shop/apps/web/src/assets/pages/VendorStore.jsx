@@ -176,9 +176,9 @@ const VendorStore = () => {
   }
 
   return (
-    <div className="container mx-auto px-3 sm:px-4 md:px-6 py-8 min-h-screen">
+    <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-8 min-h-screen">
       {/* Vendor Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 mb-6 sm:mb-8">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
           {vendor.logo ? (
             <img
@@ -214,54 +214,56 @@ const VendorStore = () => {
         </div>
       </div>
 
-      {/* Navigation Links */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 sticky top-0 z-10 overflow-x-auto">
-        <div className="flex gap-1 sm:gap-2 p-3 sm:p-4 min-w-max">
-          <a
-            href="#items"
-            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
-              activeSection === 'items'
-                ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
-            }`}
-          >
-            Items
-          </a>
-          <a
-            href="#reviews"
-            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
-              activeSection === 'reviews'
-                ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
-            }`}
-          >
-            Reviews
-          </a>
-          <a
-            href="#about"
-            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
-              activeSection === 'about'
-                ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
-            }`}
-          >
-            About
-          </a>
-          <a
-            href="#policies"
-            className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
-              activeSection === 'policies'
-                ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
-            }`}
-          >
-            Shop Policies
-          </a>
+      {/* Navigation Links - Sticky wrapper */}
+      <div className="sticky top-0 z-20 mb-4 sm:mb-6 -mx-3 sm:mx-0 px-3 sm:px-0 bg-gray-50 sm:bg-transparent py-2 sm:py-0">
+        <div className="bg-white rounded-none sm:rounded-lg shadow-sm border-y sm:border border-gray-200 overflow-x-auto">
+          <div className="flex gap-1 sm:gap-2 p-2 sm:p-4">
+            <a
+              href="#items"
+              className={`flex-shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
+                activeSection === 'items'
+                  ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
+                  : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
+              }`}
+            >
+              Items
+            </a>
+            <a
+              href="#reviews"
+              className={`flex-shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
+                activeSection === 'reviews'
+                  ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
+                  : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
+              }`}
+            >
+              Reviews
+            </a>
+            <a
+              href="#about"
+              className={`flex-shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
+                activeSection === 'about'
+                  ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
+                  : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
+              }`}
+            >
+              About
+            </a>
+            <a
+              href="#policies"
+              className={`flex-shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
+                activeSection === 'policies'
+                  ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
+                  : 'text-gray-700 hover:text-primary-600 hover:bg-blue-100'
+              }`}
+            >
+              Shop Policies
+            </a>
+          </div>
         </div>
       </div>
 
       {/* Items Section */}
-      <div id="items" className="scroll-mt-24">
+      <div id="items" className="scroll-mt-16 sm:scroll-mt-24">
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -378,7 +380,7 @@ const VendorStore = () => {
       </div>
 
       {/* Reviews Section */}
-      <div id="reviews" className="scroll-mt-24 mt-12">
+      <div id="reviews" className="scroll-mt-16 sm:scroll-mt-24 mt-8 sm:mt-12">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8">
           <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Customer Reviews</h2>
 
@@ -577,7 +579,7 @@ const VendorStore = () => {
       </div>
 
       {/* About Section */}
-      <div id="about" className="scroll-mt-24 mt-12">
+      <div id="about" className="scroll-mt-16 sm:scroll-mt-24 mt-8 sm:mt-12">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8">
           <div className="flex flex-col md:flex-row gap-6 md:gap-12">
             {/* Left Sidebar */}
@@ -622,7 +624,7 @@ const VendorStore = () => {
       </div>
 
       {/* Shop Policies Section */}
-      <div id="policies" className="scroll-mt-24 mt-12">
+      <div id="policies" className="scroll-mt-16 sm:scroll-mt-24 mt-8 sm:mt-12">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8">
           <div className="max-w-3xl">
             <h2 className="text-lg sm:text-xl font-bold mb-2">Shop policies</h2>
