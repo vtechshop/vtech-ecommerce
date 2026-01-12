@@ -227,9 +227,16 @@ async function updateProduct(req, res, next) {
       'featured', 'taxable', 'taxRate', 'taxIncluded', 'seo', 'hasWarranty', 'warranty', 'faqs', 'structuredData', 'youtubeLink'
     ];
 
+    // Fields that are nested objects and need markModified
+    const nestedObjectFields = ['seo', 'warranty', 'shippingInfo', 'specifications', 'structuredData'];
+
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
         product[field] = req.body[field];
+        // Mark nested objects as modified so Mongoose detects the change
+        if (nestedObjectFields.includes(field)) {
+          product.markModified(field);
+        }
       }
     });
 
