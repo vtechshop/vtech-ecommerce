@@ -49,15 +49,25 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     // Optimize chunk size
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 500,
     // Enable minification
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: true, // Remove console.log in production
         drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'], // Remove specific console methods
+        passes: 2, // Run compression twice for better results
+      },
+      mangle: {
+        safari10: true, // Fix Safari 10 issues
+      },
+      format: {
+        comments: false, // Remove all comments
       },
     },
+    cssCodeSplit: true, // Enable CSS code splitting
+    cssMinify: true, // Minify CSS
     rollupOptions: {
       output: {
         // Smart chunking for better performance
