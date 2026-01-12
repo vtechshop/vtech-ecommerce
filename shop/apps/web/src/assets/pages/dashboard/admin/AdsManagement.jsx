@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+﻿import { useState, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -198,9 +198,9 @@ const AdsManagement = () => {
 
       // Amazon-style: Automatically inherit campaign settings for seamless upload
       const placementValue = campaign?.placement || 'search_sponsored_products';
-      console.log('🎨 [CREATIVE DEBUG] Campaign object:', campaign);
-      console.log('🎨 [CREATIVE DEBUG] Campaign placement:', campaign?.placement);
-      console.log('🎨 [CREATIVE DEBUG] Using placement:', placementValue);
+      console.log('ðŸŽ¨ [CREATIVE DEBUG] Campaign object:', campaign);
+      console.log('ðŸŽ¨ [CREATIVE DEBUG] Campaign placement:', campaign?.placement);
+      console.log('ðŸŽ¨ [CREATIVE DEBUG] Using placement:', placementValue);
 
       const creativeData = {
         imageUrl: uploadResponse.data.data.url,
@@ -209,7 +209,7 @@ const AdsManagement = () => {
         status: 'active', // Auto-activate creative
       };
 
-      console.log('🎨 [CREATIVE DEBUG] Creative data being sent:', creativeData);
+      console.log('ðŸŽ¨ [CREATIVE DEBUG] Creative data being sent:', creativeData);
 
       const response = await api.post(`/ads/campaigns/${campaignId}/creatives`, creativeData);
       return response.data;
@@ -453,7 +453,7 @@ const AdsManagement = () => {
       },
     };
 
-    console.log('🎯 [ADMIN DEBUG] Submitting campaign with targeting:', dataToSend.targeting);
+    console.log('ðŸŽ¯ [ADMIN DEBUG] Submitting campaign with targeting:', dataToSend.targeting);
     saveMutation.mutate(dataToSend);
   };
 
@@ -509,12 +509,12 @@ const AdsManagement = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      draft: { label: 'Draft', emoji: '📝', color: 'bg-gray-100 text-gray-800' },
-      active: { label: 'Active', emoji: '✅', color: 'bg-green-100 text-green-800' },
-      paused: { label: 'Paused', emoji: '⏸️', color: 'bg-yellow-100 text-yellow-800' },
-      completed: { label: 'Completed', emoji: '🏁', color: 'bg-blue-100 text-blue-800' },
-      cancelled: { label: 'Cancelled', emoji: '❌', color: 'bg-red-100 text-red-800' },
-      budget_exhausted: { label: 'Budget Exhausted', emoji: '💸', color: 'bg-orange-100 text-orange-800' },
+      draft: { label: 'Draft', emoji: 'ðŸ“', color: 'bg-gray-100 text-gray-800' },
+      active: { label: 'Active', emoji: 'âœ…', color: 'bg-green-100 text-green-800' },
+      paused: { label: 'Paused', emoji: 'â¸ï¸', color: 'bg-yellow-100 text-yellow-800' },
+      completed: { label: 'Completed', emoji: 'ðŸ', color: 'bg-blue-100 text-blue-800' },
+      cancelled: { label: 'Cancelled', emoji: 'âŒ', color: 'bg-red-100 text-red-800' },
+      budget_exhausted: { label: 'Budget Exhausted', emoji: 'ðŸ’¸', color: 'bg-orange-100 text-orange-800' },
     };
     const badge = badges[status] || badges.draft;
     return (
@@ -647,13 +647,12 @@ const AdsManagement = () => {
                       <h3 className="text-lg sm:text-xl font-bold mb-2">{campaign.name}</h3>
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-blue-100">
                         <span className="shrink-0 truncate max-w-[140px] sm:max-w-none">{campaign.type}</span>
-                        <span className="hidden sm:inline">•</span>
+                        <span className="hidden sm:inline">â€¢</span>
                         <span className="shrink-0 truncate max-w-[180px] sm:max-w-none">Vendor: {campaign.vendorId?.storeName || 'N/A'}</span>
-                        <span className="hidden sm:inline">•</span>
+                        <span className="hidden sm:inline">â€¢</span>
                         <span className="shrink-0 whitespace-nowrap">Bid: ${campaign.bid} {campaign.pricing}</span>
                       </div>
                     </div>
-<<<<<<< Updated upstream
                     <div className="shrink-0">{getStatusBadge(campaign.status)}</div>
                   </div>
                 </div>
@@ -664,19 +663,6 @@ const AdsManagement = () => {
                     <div>
                       <p className="text-gray-600 mb-1">Daily Budget</p>
                       <p className="font-semibold text-gray-900">${campaign.dailyBudget}</p>
-=======
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-700 capitalize">
-                      {ad.position || ad.bannerSize ? (
-                        <div>
-                          <div className="font-medium text-xs">{(ad.position || 'top').replace(/-/g, ' ')}</div>
-                          <div className="text-xs text-gray-500">
-                            {ad.bannerSize || 'hero'}
-                          </div>
-                        </div>
-                      ) : '-'}
->>>>>>> Stashed changes
                     </div>
                     <div>
                       <p className="text-gray-600 mb-1">Placement</p>
@@ -1120,7 +1106,7 @@ const AdsManagement = () => {
                       onClick={() => setFormData({ ...formData, bannerImage: '' })}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
                     >
-                      ×
+                      Ã—
                     </button>
                   </div>
                 ) : (
@@ -1163,7 +1149,7 @@ const AdsManagement = () => {
                   <strong>Required:</strong> Keywords for ad targeting. Use "all" to match all search queries, or enter specific keywords separated by commas.
                 </p>
                 <p className="text-xs text-blue-600 mt-1">
-                  💡 Examples: "all" (shows for all searches) | "laptop, computer, electronics" (shows for specific searches)
+                  ðŸ’¡ Examples: "all" (shows for all searches) | "laptop, computer, electronics" (shows for specific searches)
                 </p>
               </div>
 
@@ -1230,7 +1216,7 @@ const AdsManagement = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">{selectedAd.name}</h3>
                 <p className="text-sm text-gray-600">
-                  Vendor: {selectedAd.vendorId?.storeName || 'N/A'} • Type: {selectedAd.type} • Status: {selectedAd.status}
+                  Vendor: {selectedAd.vendorId?.storeName || 'N/A'} â€¢ Type: {selectedAd.type} â€¢ Status: {selectedAd.status}
                 </p>
               </div>
 
