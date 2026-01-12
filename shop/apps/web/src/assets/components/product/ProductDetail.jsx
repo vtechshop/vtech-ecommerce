@@ -214,23 +214,6 @@ const ProductDetail = () => {
               </p>
             )}
 
-            {/* Tags */}
-            {product.tags && product.tags.length > 0 && (
-              <div className="mb-4">
-                <div className="flex flex-wrap gap-2">
-                  {product.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-gray-200 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/products?tag=${tag}`)}
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Price */}
             <div className="mb-6">
               <div className="flex items-baseline gap-3">
