@@ -14,9 +14,7 @@ services:
       - app-network
 
   api:
-    build:
-      context: .
-      dockerfile: configs/docker/Dockerfile.api
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/shop-api:latest
     restart: always
     env_file:
       - .env.production
@@ -26,9 +24,7 @@ services:
       - app-network
 
   web:
-    build:
-      context: .
-      dockerfile: configs/docker/Dockerfile.web
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/shop-web:latest
     restart: always
     ports:
       - "80:80"
