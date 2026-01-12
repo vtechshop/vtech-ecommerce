@@ -60,14 +60,25 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        // Put ALL vendor dependencies in ONE chunk to avoid React instance issues
+        // Smart chunking for better performance
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
+            // Separate large libraries into their own chunks
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('recharts') || id.includes('framer-motion')) {
+              return 'charts-vendor';
+            }
+            if (id.includes('@tanstack')) {
+              return 'query-vendor';
+            }
             return 'vendor';
           }
         },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
       },
     },
   },
