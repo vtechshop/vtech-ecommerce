@@ -866,13 +866,13 @@ const Ads = () => {
                     campaign.status === 'draft' ? 'bg-gray-500 text-white' :
                     'bg-gray-600 text-white'
                   }`}>
-                    {campaign.status === 'active' ? 'ðŸŸ¢ ACTIVE' :
-                     campaign.status === 'paused' ? 'â¸ï¸ PAUSED' :
-                     campaign.status === 'pending_approval' ? 'ðŸ• PENDING' :
-                     campaign.status === 'approved' ? 'âœ… APPROVED' :
-                     campaign.status === 'rejected' ? 'âŒ REJECTED' :
-                     campaign.status === 'budget_exhausted' ? 'ðŸ’° BUDGET EXHAUSTED' :
-                     campaign.status === 'draft' ? 'ðŸ“ DRAFT' :
+                    {campaign.status === 'active' ? '🟢 ACTIVE' :
+                     campaign.status === 'paused' ? '⏸️ PAUSED' :
+                     campaign.status === 'pending_approval' ? '🕐 PENDING' :
+                     campaign.status === 'approved' ? '✅ APPROVED' :
+                     campaign.status === 'rejected' ? '❌ REJECTED' :
+                     campaign.status === 'budget_exhausted' ? '💰 BUDGET EXHAUSTED' :
+                     campaign.status === 'draft' ? '📝 DRAFT' :
                      campaign.status.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
@@ -924,9 +924,9 @@ const Ads = () => {
                             campaign.approval.status === 'rejected' ? 'bg-red-100 text-red-800 border border-red-300' :
                             'bg-yellow-100 text-yellow-800 border border-yellow-300'
                           }`}>
-                            {campaign.approval.status === 'approved' ? 'âœ… APPROVED' :
-                             campaign.approval.status === 'rejected' ? 'âŒ REJECTED' :
-                             'ðŸ• PENDING REVIEW'}
+                            {campaign.approval.status === 'approved' ? '✅ APPROVED' :
+                             campaign.approval.status === 'rejected' ? '❌ REJECTED' :
+                             '🕐 PENDING REVIEW'}
                           </span>
                         </div>
                       )}
