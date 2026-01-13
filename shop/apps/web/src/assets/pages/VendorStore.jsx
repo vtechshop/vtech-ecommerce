@@ -613,7 +613,6 @@ const VendorStore = () => {
                 <p>
                   We carefully curate our product selection to ensure quality and value for our customers. Every product in our store is chosen with care, focusing on reliability, functionality, and customer satisfaction.
                 </p>
-
                 <p>
                   Thank you for choosing {vendor.storeName}. We're committed to providing you with the best shopping experience possible.
                 </p>

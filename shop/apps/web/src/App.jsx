@@ -1,4 +1,4 @@
-﻿﻿// FILE: apps/web/src/App.jsx
+﻿// FILE: apps/web/src/App.jsx
 import { useEffect, Suspense, lazy, useRef } from 'react';
 import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';

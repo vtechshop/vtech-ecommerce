@@ -1,4 +1,4 @@
-﻿// FILE: apps/web/src/pages/dashboard/vendor/Ads.jsx
+// FILE: apps/web/src/pages/dashboard/vendor/Ads.jsx
 import { useState, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
