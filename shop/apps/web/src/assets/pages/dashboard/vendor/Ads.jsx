@@ -1165,15 +1165,15 @@ const Ads = () => {
                         {/* Show current status (read-only) */}
                         {(campaign.status === 'active' || campaign.status === 'paused' || campaign.status === 'pending_approval') && (
                           <option value={campaign.status} disabled>
-                            {campaign.status === 'active' && 'ðŸŸ¢ Active (Admin Controlled)'}
-                            {campaign.status === 'paused' && 'â¸ï¸ Paused (Admin Controlled)'}
-                            {campaign.status === 'pending_approval' && 'ðŸ• Pending Approval'}
+                            {campaign.status === 'active' && '🟢 Active (Admin Controlled)'}
+                            {campaign.status === 'paused' && '⏸️ Paused (Admin Controlled)'}
+                            {campaign.status === 'pending_approval' && '🕐 Pending Approval'}
                           </option>
                         )}
 
                         {/* Vendor can only move to Draft or Delete */}
-                        <option value="draft">ðŸ“ Move to Draft</option>
-                        <option value="delete">ðŸ—‘ï¸ Delete Forever</option>
+                        <option value="draft">📝 Move to Draft</option>
+                        <option value="delete">🗑️ Delete Forever</option>
                       </select>
                       <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

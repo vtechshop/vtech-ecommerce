@@ -1,4 +1,4 @@
-﻿// FILE: apps/web/vite.config.js
+// FILE: apps/web/vite.config.js
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
