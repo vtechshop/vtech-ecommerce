@@ -9,20 +9,20 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react()],
+
   resolve: {
     alias: {
-      // ✅ Alias @ -> src/assets (matches your codebase)
+      // Alias for your src/assets folder
       '@': path.resolve(__dirname, './src/assets'),
-      // Force single React instance
-      'react': path.resolve(__dirname, 'node_modules/react'),
-      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
     },
-    // Fix for useSyncExternalStore error - ensure single React instance
-    dedupe: ['react', 'react-dom', 'react-redux', '@reduxjs/toolkit', '@tanstack/react-query'],
+    // Ensure single instance of React everywhere
+    dedupe: ['react', 'react-dom'],
   },
+
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-redux', '@reduxjs/toolkit', '@tanstack/react-query'],
+    include: ['react', 'react-dom'],
   },
+
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -45,53 +45,41 @@ export default defineConfig({
       },
     },
   },
+
   build: {
     outDir: 'dist',
     sourcemap: false,
-    // Optimize chunk size
     chunkSizeWarningLimit: 500,
-    // Enable minification
+
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.log in production
+        drop_console: true,
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug'], // Remove specific console methods
-        passes: 2, // Run compression twice for better results
+        pure_funcs: ['console.log', 'console.info', 'console.debug'],
+        passes: 2,
       },
       mangle: {
-        safari10: true, // Fix Safari 10 issues
+        safari10: true,
       },
       format: {
-        comments: false, // Remove all comments
+        comments: false,
       },
     },
-    cssCodeSplit: true, // Enable CSS code splitting
-    cssMinify: true, // Minify CSS
+
+    cssCodeSplit: true,
+    cssMinify: true,
+
+    // 🚨 IMPORTANT: NO manualChunks — let Vite handle React bundling safely
     rollupOptions: {
       output: {
-        // Smart chunking for better performance
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            // Separate large libraries into their own chunks
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
-            if (id.includes('recharts') || id.includes('framer-motion')) {
-              return 'charts-vendor';
-            }
-            if (id.includes('@tanstack')) {
-              return 'query-vendor';
-            }
-            return 'vendor';
-          }
-        },
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
       },
     },
   },
+
   define: {
     __CDN_URL__: JSON.stringify(process.env.VITE_CDN_URL || ''),
   },
