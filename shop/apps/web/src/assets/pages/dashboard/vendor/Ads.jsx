@@ -413,7 +413,7 @@ const Ads = () => {
       };
     }
 
-    console.log('ðŸŽ¯ [VENDOR DEBUG] Creating campaign with targeting:', data.targeting);
+    console.log('🎯 [VENDOR DEBUG] Creating campaign with targeting:', data.targeting);
 
     // Use update mutation if editing, otherwise create
     if (editingCampaign) {
@@ -436,28 +436,28 @@ const Ads = () => {
       return {
         valid: false,
         level: 'error',
-        message: `Minimum bid is â‚¹${minBid}`,
+        message: `Minimum bid is ₹${minBid}`,
       };
     }
     if (bid > maxBid) {
       return {
         valid: false,
         level: 'error',
-        message: `Maximum bid is â‚¹${maxBid}`,
+        message: `Maximum bid is ₹${maxBid}`,
       };
     }
     if (bid < floorPrice) {
       return {
         valid: false,
         level: 'error',
-        message: `Minimum bid to participate in auction is â‚¹${floorPrice}`,
+        message: `Minimum bid to participate in auction is ₹${floorPrice}`,
       };
     }
     if (bid < recommendedBid) {
       return {
         valid: true,
         level: 'warning',
-        message: `Your bid is below recommended. Consider bidding â‚¹${recommendedBid} for better visibility.`,
+        message: `Your bid is below recommended. Consider bidding ₹${recommendedBid} for better visibility.`,
       };
     }
     return {
@@ -491,7 +491,7 @@ const Ads = () => {
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'V-Tech Ad Wallet',
-        description: `Recharge Ad Wallet - â‚¹${amount}`,
+        description: `Recharge Ad Wallet - ₹${amount}`,
         image: '/logo.png',
         order_id: orderData.orderId,
         prefill: {
@@ -560,7 +560,7 @@ const Ads = () => {
 
     const amount = parseFloat(rechargeAmount);
     if (!amount || amount < 100) {
-      toast.error('Minimum recharge amount is â‚¹100');
+      toast.error('Minimum recharge amount is ₹100');
       return;
     }
 
@@ -585,8 +585,8 @@ const Ads = () => {
       ['Metric', 'Value'],
       ['Campaign Type', campaign.type],
       ['Pricing Model', campaign.pricing],
-      ['Current Bid', `â‚¹${campaign.bid}`],
-      ['Daily Budget', `â‚¹${campaign.dailyBudget}`],
+      ['Current Bid', `₹${campaign.bid}`],
+      ['Daily Budget', `₹${campaign.dailyBudget}`],
       ['Status', campaign.status],
       [''],
       ['Performance Metrics', ''],
@@ -595,9 +595,9 @@ const Ads = () => {
       ['CTR', `${ctr}%`],
       ['Conversions', conversions],
       ['Conversion Rate', `${conversionRate}%`],
-      ['Avg CPC', `â‚¹${cpc}`],
-      ['CPA', `â‚¹${cpa}`],
-      ['Total Spend', `â‚¹${spend}`],
+      ['Avg CPC', `₹${cpc}`],
+      ['CPA', `₹${cpa}`],
+      ['Total Spend', `₹${spend}`],
     ].map(row => row.join(',')).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -735,17 +735,17 @@ const Ads = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
               <div className="bg-white border border-purple-200 rounded p-3">
                 <p className="text-xs text-purple-700 font-semibold mb-1">CPC Pricing</p>
-                <p className="text-lg font-bold text-purple-600">â‚¹5-â‚¹20</p>
+                <p className="text-lg font-bold text-purple-600">₹5-₹20</p>
                 <p className="text-xs text-purple-700">per click</p>
               </div>
               <div className="bg-white border border-purple-200 rounded p-3">
                 <p className="text-xs text-purple-700 font-semibold mb-1">CPM Pricing</p>
-                <p className="text-lg font-bold text-purple-600">â‚¹100-â‚¹300</p>
+                <p className="text-lg font-bold text-purple-600">₹100-₹300</p>
                 <p className="text-xs text-purple-700">per 1000 views</p>
               </div>
               <div className="bg-white border border-purple-200 rounded p-3">
                 <p className="text-xs text-purple-700 font-semibold mb-1">Starter Budget</p>
-                <p className="text-lg font-bold text-purple-600">â‚¹500+</p>
+                <p className="text-lg font-bold text-purple-600">₹500+</p>
                 <p className="text-xs text-purple-700">daily minimum</p>
               </div>
             </div>
@@ -1206,7 +1206,7 @@ const Ads = () => {
             step="100"
             value={rechargeAmount}
             onChange={(e) => setRechargeAmount(e.target.value)}
-            placeholder="Enter amount (minimum â‚¹100)"
+            placeholder="Enter amount (minimum ₹100)"
             required
           />
           <div className="flex justify-end gap-3 pt-4">
@@ -1434,7 +1434,7 @@ const Ads = () => {
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-1">ðŸŽ¨ Ad Creatives</h2>
+                <h2 className="text-2xl font-bold text-white mb-1">🎨 Ad Creatives</h2>
                 <p className="text-white/90 text-sm">{selectedCampaignForCreatives.name}</p>
               </div>
               <button
@@ -1613,7 +1613,7 @@ const Ads = () => {
                 </optgroup>
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                ðŸŽ¯ Select which page and section your ad will appear on
+                🎯 Select which page and section your ad will appear on
               </p>
             </div>
 
@@ -1642,10 +1642,10 @@ const Ads = () => {
                 <option value="bottom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Bottom - Full Width</option>
                 <option value="left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Left - Sidebar</option>
                 <option value="center" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Center - Overlay</option>
-                <option value="top-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Top-Right - Corner</option>
-                <option value="top-left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Top-Left - Corner</option>
-                <option value="bottom-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Bottom-Right - Corner</option>
-                <option value="bottom-left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Bottom-Left - Corner</option>
+                <option value="top-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top-Right - Corner</option>
+                <option value="top-left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top-Left - Corner</option>
+                <option value="bottom-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom-Right - Corner</option>
+                <option value="bottom-left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom-Left - Corner</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
                 Choose where the banner ad will be displayed on the page
@@ -1671,17 +1671,17 @@ const Ads = () => {
                 }}
                 required
               >
-                <option value="hero" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸŽ¯ Hero Banner - Full Width Header (1920x600px)</option>
-                <option value="leaderboard" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Leaderboard - Top Banner (728x90px)</option>
-                <option value="side-large" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“± Large Sidebar Banner (300x600px)</option>
-                <option value="side-small" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“¦ Small Sidebar Banner (300x250px)</option>
+                <option value="hero" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>🎯 Hero Banner - Full Width Header (1920x600px)</option>
+                <option value="leaderboard" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📏 Leaderboard - Top Banner (728x90px)</option>
+                <option value="side-large" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📱 Large Sidebar Banner (300x600px)</option>
+                <option value="side-small" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📦 Small Sidebar Banner (300x250px)</option>
                 <option value="rectangle" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>â¬› Medium Rectangle (300x250px)</option>
-                <option value="skyscraper" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ¢ Skyscraper - Tall Sidebar (160x600px)</option>
-                <option value="square" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>â—¼ï¸ Square Banner (250x250px)</option>
+                <option value="skyscraper" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>🏢 Skyscraper - Tall Sidebar (160x600px)</option>
+                <option value="square" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>◼️ Square Banner (250x250px)</option>
                 <option value="custom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>âœï¸ Custom Size (Specify Dimensions)</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                ðŸ’¡ Choose banner size based on placement. Hero for homepage, sidebar for product pages.
+                💡 Choose banner size based on placement. Hero for homepage, sidebar for product pages.
               </p>
             </div>
 
@@ -1796,7 +1796,7 @@ const Ads = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Input
-                  label={`Bid Amount (â‚¹) - ${campaignForm.pricing === 'CPC' ? 'per click' : 'per 1000 views'}`}
+                  label={`Bid Amount (₹) - ${campaignForm.pricing === 'CPC' ? 'per click' : 'per 1000 views'}`}
                   type="number"
                   step="0.01"
                   min="0"
@@ -1825,14 +1825,14 @@ const Ads = () => {
               </div>
 
               <Input
-                label="Daily Budget (â‚¹)"
+                label="Daily Budget (₹)"
                 type="number"
                 step="0.01"
                 min="0"
                 value={campaignForm.dailyBudget}
                 onChange={(e) => setCampaignForm({ ...campaignForm, dailyBudget: e.target.value })}
                 required
-                placeholder={pricingSettings ? `Minimum â‚¹${pricingSettings.dailyBudgetMin}` : 'Minimum â‚¹500'}
+                placeholder={pricingSettings ? `Minimum ₹${pricingSettings.dailyBudgetMin}` : 'Minimum ₹500'}
               />
             </div>
 
@@ -1869,7 +1869,7 @@ const Ads = () => {
                 required
               />
               <p className="text-xs text-gray-500 mt-1">
-                <strong>ðŸ’¡ Amazon-style Tips:</strong> Enter keywords that customers might search for. Use "all" to show for all searches on the search page. Separate multiple keywords with commas.
+                <strong>💡 Amazon-style Tips:</strong> Enter keywords that customers might search for. Use "all" to show for all searches on the search page. Separate multiple keywords with commas.
               </p>
               <p className="text-xs text-blue-600 mt-1">
                 Examples: "all" (shows for all searches) | "yoga, mat, fitness" (shows when users search for these terms)
