@@ -1227,7 +1227,7 @@ const Ads = () => {
             {/* Report Header */}
             <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-5 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-white mb-1">📊 Campaign Performance Report</h2>
+                <h2 className="text-2xl font-bold text-white mb-1">ðŸ“Š Campaign Performance Report</h2>
                 <p className="text-white/90 text-sm">{selectedCampaignForReport.name}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -1637,11 +1637,11 @@ const Ads = () => {
                 required
               >
                 <option value="" style={{ background: '#f9fafb', color: '#6b7280', padding: '12px' }}>Select position...</option>
-                <option value="top" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top - Full Width</option>
-                <option value="right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Right - Sidebar</option>
-                <option value="bottom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom - Full Width</option>
-                <option value="left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Left - Sidebar</option>
-                <option value="center" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Center - Overlay</option>
+                <option value="top" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Top - Full Width</option>
+                <option value="right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Right - Sidebar</option>
+                <option value="bottom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Bottom - Full Width</option>
+                <option value="left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Left - Sidebar</option>
+                <option value="center" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>ðŸ“ Center - Overlay</option>
                 <option value="top-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top-Right - Corner</option>
                 <option value="top-left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top-Left - Corner</option>
                 <option value="bottom-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom-Right - Corner</option>
@@ -1678,7 +1678,7 @@ const Ads = () => {
                 <option value="rectangle" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>⬛ Medium Rectangle (300x250px)</option>
                 <option value="skyscraper" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>🏢 Skyscraper - Tall Sidebar (160x600px)</option>
                 <option value="square" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>◼️ Square Banner (250x250px)</option>
-                <option value="custom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>✏️ Custom Size (Specify Dimensions)</option>
+                <option value="custom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>âœï¸ Custom Size (Specify Dimensions)</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
                 💡 Choose banner size based on placement. Hero for homepage, sidebar for product pages.
