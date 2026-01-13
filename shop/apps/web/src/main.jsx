@@ -1,7 +1,6 @@
 // FILE: apps/web/src/main.jsx
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { hydrate, render } from 'react-dom';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -34,6 +33,9 @@ const queryClient = new QueryClient({
 });
 
 // Register service worker for PWA support
+// TODO: Re-enable after generating PWA icons (72x72, 96x96, 128x128, 144x144, 152x152, 192x192, 384x384, 512x512)
+// Run: node generate-icons.js for instructions
+/*
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
@@ -63,6 +65,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
       });
   });
 }
+*/
 
 const rootElement = document.getElementById('root');
 
@@ -84,10 +87,6 @@ const AppWrapper = (
   </React.StrictMode>
 );
 
-// Use hydrate for react-snap, render for development
-if (rootElement.hasChildNodes()) {
-  hydrate(AppWrapper, rootElement);
-} else {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(AppWrapper);
-}
+// Use React 18+ createRoot API
+const root = ReactDOM.createRoot(rootElement);
+root.render(AppWrapper);

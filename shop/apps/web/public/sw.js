@@ -1,5 +1,10 @@
 // Service Worker for V-Tech Kitchen PWA
-// Version 1.0.0
+// Version 1.0.1
+
+// Production mode - disable debug logging
+const DEBUG = false;
+const log = DEBUG ? console.log.bind(console) : () => {};
+const logError = console.error.bind(console);
 
 const CACHE_NAME = 'vtech-kitchen-v1';
 const RUNTIME_CACHE = 'vtech-runtime-v1';
@@ -29,12 +34,12 @@ const NETWORK_FIRST_ROUTES = [
 
 // Install event - cache essential assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
+  log('[SW] Installing service worker...');
 
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[SW] Precaching app shell');
+        log('[SW] Precaching app shell');
         return cache.addAll(PRECACHE_ASSETS);
       })
       .then(() => self.skipWaiting())
@@ -43,7 +48,7 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
+  log('[SW] Activating service worker...');
 
   event.waitUntil(
     caches.keys()
@@ -56,7 +61,7 @@ self.addEventListener('activate', (event) => {
                      cacheName !== IMAGE_CACHE;
             })
             .map((cacheName) => {
-              console.log('[SW] Deleting old cache:', cacheName);
+              log('[SW] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             })
         );
@@ -127,7 +132,7 @@ async function cacheFirst(request, cacheName = CACHE_NAME) {
 
     return response;
   } catch (error) {
-    console.log('[SW] Fetch failed for:', request.url);
+    log('[SW] Fetch failed for:', request.url);
     throw error;
   }
 }
@@ -146,7 +151,7 @@ async function networkFirst(request) {
 
     return response;
   } catch (error) {
-    console.log('[SW] Network failed, trying cache:', request.url);
+    log('[SW] Network failed, trying cache:', request.url);
     const cached = await cache.match(request);
 
     if (cached) {
@@ -159,7 +164,7 @@ async function networkFirst(request) {
 
 // Background sync for offline actions
 self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync:', event.tag);
+  log('[SW] Background sync:', event.tag);
 
   if (event.tag === 'sync-cart') {
     event.waitUntil(syncCart());
@@ -172,19 +177,19 @@ self.addEventListener('sync', (event) => {
 
 async function syncCart() {
   // Sync cart data when back online
-  console.log('[SW] Syncing cart...');
+  log('[SW] Syncing cart...');
   // Implementation would go here
 }
 
 async function syncOrders() {
   // Sync order data when back online
-  console.log('[SW] Syncing orders...');
+  log('[SW] Syncing orders...');
   // Implementation would go here
 }
 
 // Push notification handling
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification received');
+  log('[SW] Push notification received');
 
   const data = event.data ? event.data.json() : {};
   const title = data.title || 'V-Tech Kitchen';
@@ -203,7 +208,7 @@ self.addEventListener('push', (event) => {
 
 // Notification click handling
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked');
+  log('[SW] Notification clicked');
 
   event.notification.close();
 
