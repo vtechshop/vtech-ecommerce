@@ -647,9 +647,9 @@ const AdsManagement = () => {
                       <h3 className="text-lg sm:text-xl font-bold mb-2">{campaign.name}</h3>
                       <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-blue-100">
                         <span className="shrink-0 truncate max-w-[140px] sm:max-w-none">{campaign.type}</span>
-                        <span className="hidden sm:inline">â€¢</span>
+                        <span className="hidden sm:inline">•</span>
                         <span className="shrink-0 truncate max-w-[180px] sm:max-w-none">Vendor: {campaign.vendorId?.storeName || 'N/A'}</span>
-                        <span className="hidden sm:inline">â€¢</span>
+                        <span className="hidden sm:inline">•</span>
                         <span className="shrink-0 whitespace-nowrap">Bid: ${campaign.bid} {campaign.pricing}</span>
                       </div>
                     </div>
@@ -1216,7 +1216,7 @@ const AdsManagement = () => {
               <div>
                 <h3 className="text-lg font-semibold mb-2">{selectedAd.name}</h3>
                 <p className="text-sm text-gray-600">
-                  Vendor: {selectedAd.vendorId?.storeName || 'N/A'} â€¢ Type: {selectedAd.type} â€¢ Status: {selectedAd.status}
+                  Vendor: {selectedAd.vendorId?.storeName || 'N/A'} • Type: {selectedAd.type} • Status: {selectedAd.status}
                 </p>
               </div>
 
