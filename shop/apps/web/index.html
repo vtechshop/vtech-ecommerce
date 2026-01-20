@@ -81,35 +81,85 @@
   </head>
   <body>
     <div id="root">
-      <!-- Initial content for SEO - React will replace this -->
-      <noscript>
-        <div style="padding: 40px; text-align: center; font-family: system-ui, sans-serif;">
-          <h1>V-Tech Kitchen - Premium Kitchen Appliances & Utensils</h1>
-          <p>Welcome to V-Tech Kitchen, your destination for quality kitchen products.</p>
-          <p>Browse our collection of cookware, gadgets, and kitchen tools.</p>
-          <p>Please enable JavaScript for the best experience.</p>
-          <nav>
-            <a href="/search">Shop Products</a> |
-            <a href="/blog">Blog</a> |
-            <a href="/page/about">About Us</a> |
-            <a href="/page/contact">Contact</a>
+      <!-- SEO Content - Visible to crawlers, hidden when React loads -->
+      <div id="seo-content" style="font-family: system-ui, -apple-system, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <header style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 12px; margin-bottom: 30px;">
+          <h1 style="font-size: 2.5rem; margin: 0 0 10px 0;">V-Tech Kitchen</h1>
+          <p style="font-size: 1.2rem; margin: 0; opacity: 0.9;">Premium Kitchen Appliances & Utensils</p>
+        </header>
+
+        <main>
+          <section style="margin-bottom: 40px;">
+            <h2 style="font-size: 1.8rem; color: #1f2937; margin-bottom: 20px;">Welcome to V-Tech Kitchen</h2>
+            <p style="color: #4b5563; line-height: 1.7; font-size: 1.1rem;">
+              Discover the finest collection of kitchen appliances, cookware, and utensils at V-Tech Kitchen.
+              We offer premium quality products from trusted brands to make your cooking experience exceptional.
+              From modern kitchen gadgets to traditional cookware, find everything you need for your dream kitchen.
+            </p>
+          </section>
+
+          <section style="margin-bottom: 40px;">
+            <h2 style="font-size: 1.5rem; color: #1f2937; margin-bottom: 20px;">Shop by Category</h2>
+            <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 15px;">
+              <li><a href="/category/cookware" style="display: inline-block; padding: 12px 24px; background: #f3f4f6; color: #374151; text-decoration: none; border-radius: 8px;">Cookware</a></li>
+              <li><a href="/category/appliances" style="display: inline-block; padding: 12px 24px; background: #f3f4f6; color: #374151; text-decoration: none; border-radius: 8px;">Kitchen Appliances</a></li>
+              <li><a href="/category/utensils" style="display: inline-block; padding: 12px 24px; background: #f3f4f6; color: #374151; text-decoration: none; border-radius: 8px;">Utensils</a></li>
+              <li><a href="/category/gadgets" style="display: inline-block; padding: 12px 24px; background: #f3f4f6; color: #374151; text-decoration: none; border-radius: 8px;">Kitchen Gadgets</a></li>
+              <li><a href="/search" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px;">View All Products</a></li>
+            </ul>
+          </section>
+
+          <section style="margin-bottom: 40px;">
+            <h2 style="font-size: 1.5rem; color: #1f2937; margin-bottom: 20px;">Why Choose V-Tech Kitchen?</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+              <div style="padding: 20px; background: #f9fafb; border-radius: 8px;">
+                <h3 style="color: #1f2937; margin: 0 0 10px 0;">Premium Quality</h3>
+                <p style="color: #6b7280; margin: 0;">Curated selection of high-quality kitchen products from trusted brands.</p>
+              </div>
+              <div style="padding: 20px; background: #f9fafb; border-radius: 8px;">
+                <h3 style="color: #1f2937; margin: 0 0 10px 0;">Fast Shipping</h3>
+                <p style="color: #6b7280; margin: 0;">Quick delivery across India with real-time tracking.</p>
+              </div>
+              <div style="padding: 20px; background: #f9fafb; border-radius: 8px;">
+                <h3 style="color: #1f2937; margin: 0 0 10px 0;">Best Prices</h3>
+                <p style="color: #6b7280; margin: 0;">Competitive pricing with regular deals and discounts.</p>
+              </div>
+            </div>
+          </section>
+
+          <nav style="margin-bottom: 40px;">
+            <h2 style="font-size: 1.5rem; color: #1f2937; margin-bottom: 15px;">Quick Links</h2>
+            <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 20px;">
+              <li><a href="/search" style="color: #3b82f6; text-decoration: none;">All Products</a></li>
+              <li><a href="/blog" style="color: #3b82f6; text-decoration: none;">Blog</a></li>
+              <li><a href="/page/about" style="color: #3b82f6; text-decoration: none;">About Us</a></li>
+              <li><a href="/page/contact" style="color: #3b82f6; text-decoration: none;">Contact</a></li>
+              <li><a href="/track-order" style="color: #3b82f6; text-decoration: none;">Track Order</a></li>
+              <li><a href="/page/privacy-policy" style="color: #3b82f6; text-decoration: none;">Privacy Policy</a></li>
+              <li><a href="/page/terms-of-service" style="color: #3b82f6; text-decoration: none;">Terms of Service</a></li>
+            </ul>
           </nav>
-        </div>
-      </noscript>
-      <!-- Loading state shown before React hydrates -->
-      <div id="initial-loader" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: system-ui, sans-serif;">
-        <div style="text-align: center;">
-          <h1 style="font-size: 24px; color: #333;">V-Tech Kitchen</h1>
-          <p style="color: #666;">Loading premium kitchen products...</p>
-        </div>
+        </main>
+
+        <footer style="text-align: center; padding: 30px; background: #f9fafb; border-radius: 8px; color: #6b7280;">
+          <p style="margin: 0 0 10px 0;">© 2024 V-Tech Kitchen. All rights reserved.</p>
+          <p style="margin: 0;">Shop premium kitchen appliances and utensils online in India.</p>
+        </footer>
       </div>
+
+      <noscript>
+        <p style="text-align: center; padding: 20px;">Please enable JavaScript for the best shopping experience.</p>
+      </noscript>
     </div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      // Remove initial loader once React mounts
+      // Hide SEO content once React mounts (React replaces #root contents)
+      // This is a fallback in case React doesn't fully replace the content
       window.addEventListener('load', function() {
-        var loader = document.getElementById('initial-loader');
-        if (loader) setTimeout(function() { loader.style.display = 'none'; }, 100);
+        setTimeout(function() {
+          var seoContent = document.getElementById('seo-content');
+          if (seoContent) seoContent.style.display = 'none';
+        }, 500);
       });
     </script>
   </body>
