@@ -35,17 +35,17 @@ exports.generateSitemap = async (req, res, next) => {
     xml += '    <priority>1.0</priority>\n';
     xml += '  </url>\n';
 
-    // Static pages - high priority
+    // Static pages - high priority (paths must match actual frontend routes)
     const staticPages = [
       { path: '/products', priority: '0.9', changefreq: 'daily' },
       { path: '/categories', priority: '0.9', changefreq: 'daily' },
-      { path: '/about', priority: '0.7', changefreq: 'monthly' },
-      { path: '/contact', priority: '0.7', changefreq: 'monthly' },
+      { path: '/page/about', priority: '0.7', changefreq: 'monthly' },
+      { path: '/page/contact', priority: '0.7', changefreq: 'monthly' },
       { path: '/blog', priority: '0.8', changefreq: 'weekly' },
       { path: '/track-order', priority: '0.6', changefreq: 'monthly' },
-      { path: '/privacy-policy', priority: '0.5', changefreq: 'monthly' },
-      { path: '/terms-of-service', priority: '0.5', changefreq: 'monthly' },
-      { path: '/return-policy', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/privacy-policy', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/terms-of-service', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/return-policy', priority: '0.5', changefreq: 'monthly' },
     ];
 
     staticPages.forEach(page => {

@@ -379,6 +379,44 @@ class DelhiveryService {
       return this.handleError(error);
     }
   }
+
+  // ================= 10. SERVICE STATUS =================
+
+  async getServiceStatus() {
+    try {
+      // Check API health by making a simple pincode serviceability call
+      const testResult = await this.checkPincodeServiceability('110001');
+
+      return {
+        success: true,
+        data: {
+          status: testResult.success ? 'operational' : 'degraded',
+          apiConnected: testResult.success,
+          environment: env.NODE_ENV === 'production' ? 'production' : 'staging',
+          baseURL: this.baseURL,
+          tokenConfigured: !!this.apiToken,
+          lastChecked: new Date().toISOString(),
+          message: testResult.success
+            ? 'Delhivery API is operational'
+            : 'Delhivery API may be experiencing issues',
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        data: {
+          status: 'down',
+          apiConnected: false,
+          environment: env.NODE_ENV === 'production' ? 'production' : 'staging',
+          baseURL: this.baseURL,
+          tokenConfigured: !!this.apiToken,
+          lastChecked: new Date().toISOString(),
+          message: 'Unable to connect to Delhivery API',
+          error: error.message,
+        },
+      };
+    }
+  }
 }
 
 module.exports = new DelhiveryService();

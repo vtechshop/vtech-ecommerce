@@ -646,7 +646,7 @@ exports.schedulePickup = async (req, res, next) => {
 
     // For now, use Delhivery for pickup
     // In future, can detect carrier from order
-    const result = await delhiveryService.schedulePickup(pickupDetails);
+    const result = await delhiveryService.raisePickupRequest(pickupDetails);
 
     res.json({
       success: true,
@@ -662,7 +662,7 @@ exports.createShipment = async (req, res, next) => {
   try {
     const shipmentData = req.body;
 
-    const result = await delhiveryService.createWaybill(shipmentData);
+    const result = await delhiveryService.createShipment(shipmentData);
 
     res.json({
       success: true,
