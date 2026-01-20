@@ -1050,7 +1050,7 @@ exports.getCommissions = async (req, res, next) => {
           path: 'orderId',
           select: 'orderId totals items',
           populate: {
-            path: 'items.product',
+            path: 'items.productId',
             select: 'title slug images'
           }
         })
@@ -1076,8 +1076,8 @@ exports.getCommissions = async (req, res, next) => {
           const item = commission.orderId.items.find(
             i => i._id?.toString() === commission.orderItemId?.toString()
           );
-          if (item?.product) {
-            productInfo = item.product;
+          if (item?.productId) {
+            productInfo = item.productId;
           }
         }
 
@@ -1086,14 +1086,14 @@ exports.getCommissions = async (req, res, next) => {
           const vendorItem = commission.orderId.items.find(
             i => i.vendorId?.toString() === commission.subjectId._id?.toString()
           );
-          if (vendorItem?.product) {
-            productInfo = vendorItem.product;
+          if (vendorItem?.productId) {
+            productInfo = vendorItem.productId;
           }
         }
 
         // Fallback: use first item's product
-        if (!productInfo && commission.orderId.items[0]?.product) {
-          productInfo = commission.orderId.items[0].product;
+        if (!productInfo && commission.orderId.items[0]?.productId) {
+          productInfo = commission.orderId.items[0].productId;
         }
       }
 
