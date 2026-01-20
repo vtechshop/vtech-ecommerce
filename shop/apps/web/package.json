@@ -6,8 +6,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --mode production",
+    "postbuild": "react-snap",
     "preview": "vite preview --port 5173",
     "lint": "eslint ."
+  },
+  "reactSnap": {
+    "source": "dist",
+    "minifyHtml": {
+      "collapseWhitespace": false,
+      "removeComments": false
+    },
+    "puppeteerArgs": ["--no-sandbox", "--disable-setuid-sandbox"],
+    "skipThirdPartyRequests": true,
+    "inlineCss": true
   },
   "overrides": {
     "react": "^18.3.1",
@@ -40,6 +51,7 @@
     "web-vitals": "^3.5.0"
   },
   "devDependencies": {
+    "react-snap": "^1.23.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "autoprefixer": "^10.4.16",

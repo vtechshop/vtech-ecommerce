@@ -87,6 +87,12 @@ const AppWrapper = (
   </React.StrictMode>
 );
 
-// Use React 18+ createRoot API
-const root = ReactDOM.createRoot(rootElement);
-root.render(AppWrapper);
+// Use React 18+ createRoot API with hydration support for react-snap (SEO prerendering)
+if (rootElement.hasChildNodes()) {
+  // Hydrate pre-rendered content (from react-snap)
+  ReactDOM.hydrateRoot(rootElement, AppWrapper);
+} else {
+  // Normal client-side render
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(AppWrapper);
+}

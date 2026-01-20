@@ -1,5 +1,13 @@
 # Netlify Configuration - SPA Routing + SEO Files
 
+# Enable post-processing
+[build.processing]
+  skip_processing = false
+[build.processing.html]
+  pretty_urls = true
+[build.processing.images]
+  compress = true
+
 # Proxy sitemap.xml to API (SEO critical)
 [[redirects]]
   from = "/sitemap.xml"
