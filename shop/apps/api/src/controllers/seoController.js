@@ -5,10 +5,19 @@ const Post = require('../models/Post');
 const Vendor = require('../models/Vendor');
 const env = require('../config/env');
 
+// Helper to ensure URL has proper protocol
+function ensureProtocol(url, defaultUrl) {
+  let result = url || defaultUrl;
+  if (result && !result.startsWith('http://') && !result.startsWith('https://')) {
+    result = 'https://' + result;
+  }
+  return result.replace(/\/$/, ''); // Remove trailing slash
+}
+
 // Get sitemap index
 exports.getSitemap = async (req, res, next) => {
   try {
-    const apiUrl = env.APP_URL;
+    const apiUrl = ensureProtocol(env.APP_URL, 'https://api.vtechkitchen.com');
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -45,7 +54,7 @@ exports.getProductSitemap = async (req, res, next) => {
       .limit(50000)
       .lean();
 
-    const baseUrl = env.CLIENT_URL;
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -76,7 +85,7 @@ exports.getCategorySitemap = async (req, res, next) => {
       .select('slug updatedAt')
       .lean();
 
-    const baseUrl = env.CLIENT_URL;
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -107,7 +116,7 @@ exports.getBlogSitemap = async (req, res, next) => {
       .select('slug updatedAt')
       .lean();
 
-    const baseUrl = env.CLIENT_URL;
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -138,7 +147,7 @@ exports.getVendorSitemap = async (req, res, next) => {
       .select('slug updatedAt')
       .lean();
 
-    const baseUrl = env.CLIENT_URL;
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -165,7 +174,7 @@ exports.getVendorSitemap = async (req, res, next) => {
 // Get robots.txt
 exports.getRobotsTxt = async (req, res, next) => {
   try {
-    const clientUrl = env.CLIENT_URL;
+    const clientUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
 
     const txt = `# VTech Kitchen - Robots.txt
 # https://vtechkitchen.com
@@ -213,7 +222,7 @@ exports.getProductFeed = async (req, res, next) => {
       .limit(10000)
       .lean();
 
-    const baseUrl = env.CLIENT_URL;
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">

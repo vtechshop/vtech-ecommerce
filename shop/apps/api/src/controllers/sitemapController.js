@@ -7,7 +7,13 @@ const Vendor = require('../models/Vendor');
 const env = require('../config/env');
 
 // Use CLIENT_URL for frontend pages (consistent with seoController)
-const BASE_URL = env.CLIENT_URL || 'https://vtechkitchen.com';
+// Ensure URL always has https:// protocol (fixes Google Search Console "Invalid URL" errors)
+let BASE_URL = env.CLIENT_URL || 'https://vtechkitchen.com';
+if (BASE_URL && !BASE_URL.startsWith('http://') && !BASE_URL.startsWith('https://')) {
+  BASE_URL = 'https://' + BASE_URL;
+}
+// Remove trailing slash if present
+BASE_URL = BASE_URL.replace(/\/$/, '');
 
 // Generate XML sitemap
 exports.generateSitemap = async (req, res, next) => {
