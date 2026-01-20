@@ -1046,7 +1046,14 @@ exports.getCommissions = async (req, res, next) => {
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [rows, total] = await Promise.all([
       Commission.find(query)
-        .populate('orderId', 'orderId totals')
+        .populate({
+          path: 'orderId',
+          select: 'orderId totals items',
+          populate: {
+            path: 'items.product',
+            select: 'title slug images'
+          }
+        })
         .populate({
           path: 'subjectId',
           populate: { path: 'userId', select: 'name email' }
@@ -1058,7 +1065,45 @@ exports.getCommissions = async (req, res, next) => {
       Commission.countDocuments(query),
     ]);
 
-    res.json({ success: true, data: { commissions: rows }, meta: getPaginationMeta(total, +page, +limit) });
+    // Map commissions to include product info from order items
+    const commissionsWithProducts = rows.map(commission => {
+      let productInfo = null;
+
+      // Try to find the product from order items
+      if (commission.orderId?.items?.length > 0) {
+        // If orderItemId exists, find that specific item
+        if (commission.orderItemId) {
+          const item = commission.orderId.items.find(
+            i => i._id?.toString() === commission.orderItemId?.toString()
+          );
+          if (item?.product) {
+            productInfo = item.product;
+          }
+        }
+
+        // If no specific item found, try to find by vendor
+        if (!productInfo && commission.type === 'vendor' && commission.subjectId) {
+          const vendorItem = commission.orderId.items.find(
+            i => i.vendorId?.toString() === commission.subjectId._id?.toString()
+          );
+          if (vendorItem?.product) {
+            productInfo = vendorItem.product;
+          }
+        }
+
+        // Fallback: use first item's product
+        if (!productInfo && commission.orderId.items[0]?.product) {
+          productInfo = commission.orderId.items[0].product;
+        }
+      }
+
+      return {
+        ...commission,
+        productId: productInfo
+      };
+    });
+
+    res.json({ success: true, data: { commissions: commissionsWithProducts }, meta: getPaginationMeta(total, +page, +limit) });
   } catch (error) { next(error); }
 };
 
