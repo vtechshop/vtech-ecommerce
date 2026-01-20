@@ -80,7 +80,37 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Initial content for SEO - React will replace this -->
+      <noscript>
+        <div style="padding: 40px; text-align: center; font-family: system-ui, sans-serif;">
+          <h1>V-Tech Kitchen - Premium Kitchen Appliances & Utensils</h1>
+          <p>Welcome to V-Tech Kitchen, your destination for quality kitchen products.</p>
+          <p>Browse our collection of cookware, gadgets, and kitchen tools.</p>
+          <p>Please enable JavaScript for the best experience.</p>
+          <nav>
+            <a href="/search">Shop Products</a> |
+            <a href="/blog">Blog</a> |
+            <a href="/page/about">About Us</a> |
+            <a href="/page/contact">Contact</a>
+          </nav>
+        </div>
+      </noscript>
+      <!-- Loading state shown before React hydrates -->
+      <div id="initial-loader" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: system-ui, sans-serif;">
+        <div style="text-align: center;">
+          <h1 style="font-size: 24px; color: #333;">V-Tech Kitchen</h1>
+          <p style="color: #666;">Loading premium kitchen products...</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Remove initial loader once React mounts
+      window.addEventListener('load', function() {
+        var loader = document.getElementById('initial-loader');
+        if (loader) setTimeout(function() { loader.style.display = 'none'; }, 100);
+      });
+    </script>
   </body>
 </html>
