@@ -42,12 +42,12 @@ exports.generateSitemap = async (req, res, next) => {
     xml += '  </url>\n';
 
     // Static pages - high priority (paths must match actual frontend routes)
+    // NOTE: /search is the main products listing page in this app
     const staticPages = [
-      { path: '/products', priority: '0.9', changefreq: 'daily' },
-      { path: '/categories', priority: '0.9', changefreq: 'daily' },
+      { path: '/search', priority: '0.9', changefreq: 'daily' },
+      { path: '/blog', priority: '0.8', changefreq: 'weekly' },
       { path: '/page/about', priority: '0.7', changefreq: 'monthly' },
       { path: '/page/contact', priority: '0.7', changefreq: 'monthly' },
-      { path: '/blog', priority: '0.8', changefreq: 'weekly' },
       { path: '/track-order', priority: '0.6', changefreq: 'monthly' },
       { path: '/page/privacy-policy', priority: '0.5', changefreq: 'monthly' },
       { path: '/page/terms-of-service', priority: '0.5', changefreq: 'monthly' },
