@@ -3,20 +3,24 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Post = require('../models/Post');
 const Page = require('../models/Page');
+const Vendor = require('../models/Vendor');
+const env = require('../config/env');
 
-const BASE_URL = process.env.FRONTEND_URL || 'https://vtechkitchen.com';
+// Use CLIENT_URL for frontend pages (consistent with seoController)
+const BASE_URL = env.CLIENT_URL || 'https://vtechkitchen.com';
 
 // Generate XML sitemap
 exports.generateSitemap = async (req, res, next) => {
   try {
     const now = new Date().toISOString();
 
-    // Fetch all published products, categories, posts, and pages
-    const [products, categories, posts, pages] = await Promise.all([
+    // Fetch all published products, categories, posts, pages, and vendors
+    const [products, categories, posts, pages, vendors] = await Promise.all([
       Product.find({ published: true }).select('slug updatedAt').lean(),
-      Category.find().select('slug updatedAt').lean(),
+      Category.find({ isActive: true }).select('slug updatedAt').lean(),
       Post.find({ status: 'published' }).select('slug updatedAt').lean(),
       Page.find({ status: 'published' }).select('slug updatedAt').lean(),
+      Vendor.find({ status: 'active' }).select('slug updatedAt').lean(),
     ]);
 
     // Build sitemap XML
@@ -97,6 +101,17 @@ exports.generateSitemap = async (req, res, next) => {
       xml += '  </url>\n';
     });
 
+    // Vendors - medium priority
+    vendors.forEach(vendor => {
+      const lastmod = vendor.updatedAt ? new Date(vendor.updatedAt).toISOString() : now;
+      xml += '  <url>\n';
+      xml += `    <loc>${BASE_URL}/vendor/${vendor.slug}</loc>\n`;
+      xml += `    <lastmod>${lastmod}</lastmod>\n`;
+      xml += '    <changefreq>weekly</changefreq>\n';
+      xml += '    <priority>0.7</priority>\n';
+      xml += '  </url>\n';
+    });
+
     xml += '</urlset>';
 
     // Set proper headers for XML
@@ -111,41 +126,32 @@ exports.generateSitemap = async (req, res, next) => {
 // Generate robots.txt (fallback if static file not found)
 exports.generateRobotsTxt = async (req, res, next) => {
   try {
-    const robotsTxt = `# Allow all search engines to crawl the site
+    const robotsTxt = `# VTech Kitchen - Robots.txt
+# https://vtechkitchen.com
+
 User-agent: *
 Allow: /
 
-# Explicitly allow static assets (CSS, JS, images)
-Allow: /assets/
-Allow: /static/
-Allow: /src/
-Allow: /*.css$
-Allow: /*.js$
-Allow: /*.jpg$
-Allow: /*.jpeg$
-Allow: /*.png$
-Allow: /*.gif$
-Allow: /*.svg$
-Allow: /*.webp$
-Allow: /*.avif$
-
-# Disallow admin and private areas only
+# Disallow private/user areas
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /checkout/
 Disallow: /account/
+Disallow: /cart
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /api/
 
-# Allow all public pages
-Allow: /products/
-Allow: /product/
-Allow: /categories/
-Allow: /category/
-Allow: /vendor/
-Allow: /vendors/
-Allow: /blog/
-Allow: /about
-Allow: /contact
-Allow: /search
+# Disallow query parameter variations (pagination, filters)
+Disallow: /*?page=
+Disallow: /*?sort=
+Disallow: /*?filter=
+Disallow: /*?ref=
+
+# Crawl-delay for polite crawling (optional)
+Crawl-delay: 1
 
 # Sitemap location
 Sitemap: ${BASE_URL}/sitemap.xml

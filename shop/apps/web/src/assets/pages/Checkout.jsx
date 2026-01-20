@@ -289,8 +289,8 @@ const Checkout = () => {
                   setOrderPlaced(true);
                   // Clear cart
                   dispatch(clearCart());
-                  // Navigate to order confirmation
-                  navigate(`/orders/${orderForPayment._id}`);
+                  // Navigate to order confirmation page (consistent with failure path)
+                  navigate(`/order-confirmation/${orderForPayment._id}`);
                 },
                 onFailure: (error) => {
                   console.error('❌ Payment failed:', error);

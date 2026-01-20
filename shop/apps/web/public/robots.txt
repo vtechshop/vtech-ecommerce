@@ -1,38 +1,29 @@
-# Allow all search engines to crawl the site
+# VTech Kitchen - Robots.txt
+# https://vtechkitchen.com
+
 User-agent: *
 Allow: /
 
-# Explicitly allow static assets (CSS, JS, images)
-Allow: /assets/
-Allow: /static/
-Allow: /src/
-Allow: /*.css$
-Allow: /*.js$
-Allow: /*.jpg$
-Allow: /*.jpeg$
-Allow: /*.png$
-Allow: /*.gif$
-Allow: /*.svg$
-Allow: /*.webp$
-Allow: /*.avif$
-
-# Disallow admin and private areas only
+# Disallow private/user areas
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /checkout/
 Disallow: /account/
+Disallow: /cart
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /api/
 
-# Allow all public pages
-Allow: /products/
-Allow: /product/
-Allow: /categories/
-Allow: /category/
-Allow: /vendor/
-Allow: /vendors/
-Allow: /blog/
-Allow: /about
-Allow: /contact
-Allow: /search
+# Disallow query parameter variations (pagination, filters)
+Disallow: /*?page=
+Disallow: /*?sort=
+Disallow: /*?filter=
+Disallow: /*?ref=
+
+# Crawl-delay for polite crawling (optional)
+Crawl-delay: 1
 
 # Sitemap location
 Sitemap: https://vtechkitchen.com/sitemap.xml

@@ -1,4 +1,20 @@
-# Netlify Configuration - SPA Routing Fix
+# Netlify Configuration - SPA Routing + SEO Files
+
+# Proxy sitemap.xml to API (SEO critical)
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "https://api.vtechkitchen.com/sitemap.xml"
+  status = 200
+  force = true
+
+# Proxy robots.txt to API (SEO critical)
+[[redirects]]
+  from = "/robots.txt"
+  to = "https://api.vtechkitchen.com/robots.txt"
+  status = 200
+  force = true
+
+# SPA fallback - must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"

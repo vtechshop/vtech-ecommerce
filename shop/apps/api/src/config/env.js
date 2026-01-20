@@ -17,8 +17,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 module.exports = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT) || 8080,
+  // API URL (backend) - used for sitemap index locations pointing to API
   APP_URL: process.env.APP_URL || 'http://localhost:8080',
-  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
+  // Client URL (frontend) - used for sitemap page URLs that users visit
+  CLIENT_URL: process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:5173',
 
   MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/shop',
 

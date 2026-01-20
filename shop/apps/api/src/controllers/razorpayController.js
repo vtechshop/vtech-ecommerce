@@ -43,8 +43,20 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Verify order ownership (skip for guest orders)
-    if (!order.isGuest && order.userId && order.userId.toString() !== req.user._id.toString()) {
+    // Verify order ownership
+    if (order.isGuest) {
+      // For guest orders, verify the email matches if user is authenticated
+      // Or allow if they provide the correct guest email in the request
+      if (req.user && order.guestEmail && req.user.email !== order.guestEmail) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'You cannot pay for orders placed by another guest',
+          },
+        });
+      }
+    } else if (order.userId && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: {
@@ -55,7 +67,7 @@ exports.createOrder = async (req, res, next) => {
     }
 
     // Check if order is already paid
-    if (order.paymentStatus === 'paid') {
+    if (order.payment?.status === 'paid' || order.payment?.status === 'captured') {
       return res.status(400).json({
         success: false,
         error: {
@@ -174,8 +186,19 @@ exports.verifyPayment = async (req, res, next) => {
       });
     }
 
-    // Verify order belongs to user (skip for guest orders)
-    if (!order.isGuest && order.userId && order.userId.toString() !== req.user._id.toString()) {
+    // Verify order ownership
+    if (order.isGuest) {
+      // For guest orders, verify the email matches if user is authenticated
+      if (req.user && order.guestEmail && req.user.email !== order.guestEmail) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'You cannot verify payment for orders placed by another guest',
+          },
+        });
+      }
+    } else if (order.userId && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: {
@@ -186,7 +209,6 @@ exports.verifyPayment = async (req, res, next) => {
     }
 
     // Update order with payment details
-    order.paymentStatus = payment.status === 'captured' ? 'paid' : 'pending';
     order.payment = {
       method: 'razorpay',
       razorpayOrderId,
@@ -229,36 +251,42 @@ exports.verifyPayment = async (req, res, next) => {
         logger.error(`Failed to process automatic transfers for order ${order._id}:`, error);
       });
 
-      // CRITICAL: Send order confirmation email AFTER payment is verified
-      try {
-        const notificationService = require('../services/notificationService');
-        const User = require('../models/User');
+      // CRITICAL: Send order confirmation email AFTER payment is verified (only if not already sent)
+      if (!order.confirmationEmailSent) {
+        try {
+          const notificationService = require('../services/notificationService');
+          const User = require('../models/User');
 
-        // Prepare user info for email
-        let userInfo;
-        if (order.userId && !order.isGuest) {
-          const user = await User.findById(order.userId);
-          if (user) {
+          // Prepare user info for email
+          let userInfo;
+          if (order.userId && !order.isGuest) {
+            const user = await User.findById(order.userId);
+            if (user) {
+              userInfo = {
+                name: user.name,
+                email: user.email,
+              };
+            }
+          } else if (order.isGuest && order.guestEmail) {
             userInfo = {
-              name: user.name,
-              email: user.email,
+              name: order.shipTo?.fullName || 'Guest',
+              email: order.guestEmail,
             };
           }
-        } else if (order.isGuest && order.guestEmail) {
-          userInfo = {
-            name: order.shipTo?.fullName || 'Guest',
-            email: order.guestEmail,
-          };
-        }
 
-        // Send order confirmation email
-        if (userInfo) {
-          await notificationService.sendOrderConfirmation(userInfo, order);
-          logger.info(`Order confirmation email sent after payment verification: ${userInfo.email}`);
+          // Send order confirmation email
+          if (userInfo) {
+            await notificationService.sendOrderConfirmation(userInfo, order);
+            // Mark email as sent to prevent duplicates
+            order.confirmationEmailSent = true;
+            order.confirmationEmailSentAt = new Date();
+            await order.save();
+            logger.info(`Order confirmation email sent after payment verification: ${userInfo.email}`);
+          }
+        } catch (emailError) {
+          logger.error('Failed to send order confirmation email after payment:', emailError);
+          // Don't fail the payment verification if email fails
         }
-      } catch (emailError) {
-        logger.error('Failed to send order confirmation email after payment:', emailError);
-        // Don't fail the payment verification if email fails
       }
     }
 
@@ -266,7 +294,7 @@ exports.verifyPayment = async (req, res, next) => {
       success: true,
       data: {
         orderId: order._id,
-        paymentStatus: order.paymentStatus,
+        paymentStatus: order.payment?.status === 'captured' ? 'paid' : order.payment?.status,
         orderStatus: order.status,
       },
     });
@@ -317,8 +345,19 @@ exports.paymentFailure = async (req, res, next) => {
       });
     }
 
-    // Verify order belongs to user (skip for guest orders)
-    if (!order.isGuest && order.userId && order.userId.toString() !== req.user._id.toString()) {
+    // Verify order ownership
+    if (order.isGuest) {
+      // For guest orders, verify the email matches if user is authenticated
+      if (req.user && order.guestEmail && req.user.email !== order.guestEmail) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Unauthorized access to order',
+          },
+        });
+      }
+    } else if (order.userId && order.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
         error: {
@@ -329,8 +368,8 @@ exports.paymentFailure = async (req, res, next) => {
     }
 
     // Update order with failure details
-    order.paymentStatus = 'failed';
     order.payment = order.payment || {};
+    order.payment.status = 'failed';
     order.payment.error = error;
     order.payment.failedAt = new Date();
 
@@ -413,9 +452,8 @@ async function handlePaymentCaptured(payload) {
     const order = await Order.findById(orderId);
     if (!order) return;
 
-    order.paymentStatus = 'paid';
     order.payment = order.payment || {};
-    order.payment.status = 'captured';
+    order.payment.status = 'paid';
     order.payment.paidAt = new Date();
 
     // Update status from pending_payment to placed
@@ -431,33 +469,39 @@ async function handlePaymentCaptured(payload) {
     await order.save();
     console.log(`Payment captured for order ${orderId}`);
 
-    // Send order confirmation email after webhook payment confirmation
-    try {
-      const notificationService = require('../services/notificationService');
-      const User = require('../models/User');
+    // Send order confirmation email after webhook payment confirmation (only if not already sent)
+    if (!order.confirmationEmailSent) {
+      try {
+        const notificationService = require('../services/notificationService');
+        const User = require('../models/User');
 
-      let userInfo;
-      if (order.userId && !order.isGuest) {
-        const user = await User.findById(order.userId);
-        if (user) {
+        let userInfo;
+        if (order.userId && !order.isGuest) {
+          const user = await User.findById(order.userId);
+          if (user) {
+            userInfo = {
+              name: user.name,
+              email: user.email,
+            };
+          }
+        } else if (order.isGuest && order.guestEmail) {
           userInfo = {
-            name: user.name,
-            email: user.email,
+            name: order.shipTo?.fullName || 'Guest',
+            email: order.guestEmail,
           };
         }
-      } else if (order.isGuest && order.guestEmail) {
-        userInfo = {
-          name: order.shipTo?.fullName || 'Guest',
-          email: order.guestEmail,
-        };
-      }
 
-      if (userInfo) {
-        await notificationService.sendOrderConfirmation(userInfo, order);
-        logger.info(`Order confirmation email sent via webhook: ${userInfo.email}`);
+        if (userInfo) {
+          await notificationService.sendOrderConfirmation(userInfo, order);
+          // Mark email as sent to prevent duplicates
+          order.confirmationEmailSent = true;
+          order.confirmationEmailSentAt = new Date();
+          await order.save();
+          logger.info(`Order confirmation email sent via webhook: ${userInfo.email}`);
+        }
+      } catch (emailError) {
+        logger.error('Failed to send email via webhook:', emailError);
       }
-    } catch (emailError) {
-      logger.error('Failed to send email via webhook:', emailError);
     }
   } catch (error) {
     console.error('Error handling payment captured:', error);
@@ -473,7 +517,6 @@ async function handlePaymentFailed(payload) {
     const order = await Order.findById(orderId);
     if (!order) return;
 
-    order.paymentStatus = 'failed';
     order.payment = order.payment || {};
     order.payment.status = 'failed';
     order.payment.error = payload.error_description;
@@ -637,14 +680,32 @@ async function processAutomaticTransfers(order, razorpayPaymentId) {
     const transfers = [];
     const commissionRecords = [];
 
-    // Get vendor information if this is a vendor order
-    if (order.vendorId) {
-      const vendor = await Vendor.findById(order.vendorId);
+    // Get unique vendors from order items (for multi-vendor orders)
+    // Group items by vendorId and calculate subtotal per vendor
+    const vendorSubtotals = {};
+    if (order.items && order.items.length > 0) {
+      for (const item of order.items) {
+        if (item.vendorId) {
+          const vendorIdStr = item.vendorId.toString();
+          if (!vendorSubtotals[vendorIdStr]) {
+            vendorSubtotals[vendorIdStr] = 0;
+          }
+          // Calculate item subtotal (price * qty)
+          vendorSubtotals[vendorIdStr] += (item.priceSnapshot || 0) * (item.qty || 1);
+        }
+      }
+    }
+
+    // Process each vendor's transfer
+    const vendorIds = Object.keys(vendorSubtotals);
+    for (const vendorIdStr of vendorIds) {
+      const vendor = await Vendor.findById(vendorIdStr);
 
       if (vendor && vendor.razorpay?.accountId && vendor.razorpay?.accountStatus === 'activated') {
-        // Calculate vendor commission
+        // Calculate vendor commission based on their items' subtotal
         const vendorCommissionPercentage = vendor.razorpay.settlementPercentage || 85;
-        const vendorAmount = (order.totals.subtotal * vendorCommissionPercentage) / 100;
+        const vendorItemsSubtotal = vendorSubtotals[vendorIdStr];
+        const vendorAmount = (vendorItemsSubtotal * vendorCommissionPercentage) / 100;
 
         transfers.push({
           accountId: vendor.razorpay.accountId,
@@ -670,9 +731,9 @@ async function processAutomaticTransfers(order, razorpayPaymentId) {
           status: 'pending', // Will be updated when transfer is processed
         });
 
-        logger.info(`Added vendor transfer: ${vendor.storeName} - ₹${vendorAmount}`);
+        logger.info(`Added vendor transfer: ${vendor.storeName} - ₹${vendorAmount} (from ₹${vendorItemsSubtotal} subtotal)`);
       } else {
-        logger.warn(`Vendor ${order.vendorId} doesn't have activated Razorpay account. Skipping automatic transfer.`);
+        logger.warn(`Vendor ${vendorIdStr} doesn't have activated Razorpay account. Skipping automatic transfer.`);
       }
     }
 

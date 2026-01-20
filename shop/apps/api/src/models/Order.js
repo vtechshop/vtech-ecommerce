@@ -77,6 +77,9 @@ const orderSchema = new mongoose.Schema({
       createdAt: Date,
     },
   },
+  // Email notification tracking to prevent duplicates
+  confirmationEmailSent: { type: Boolean, default: false },
+  confirmationEmailSentAt: { type: Date },
   shipment: {
     carrier: String,
     awb: String,
@@ -112,6 +115,18 @@ orderSchema.index({ isGuest: 1, guestEmail: 1 }); // Compound index for guest qu
 orderSchema.index({ 'payment.status': 1, createdAt: -1 }); // Payment status with sort
 orderSchema.index({ 'items.vendorId': 1, status: 1, createdAt: -1 }); // Vendor order queries
 orderSchema.index({ parentOrderId: 1 }); // Parent/child order relationship lookup
+orderSchema.index({ 'payment.razorpayOrderId': 1 }); // Performance: Fast lookup for reconciliation
 orderSchema.index({ isVendorOrder: 1 }); // Vendor-specific orders
+
+// RECONCILIATION: Helper to find orders where payment might be stuck
+// Usage: const stuckOrders = await Order.findStuckRazorpayOrders(15);
+orderSchema.statics.findStuckRazorpayOrders = function(olderThanMinutes = 15) {
+  const cutoffDate = new Date(Date.now() - olderThanMinutes * 60 * 1000);
+  return this.find({
+    'payment.razorpayOrderId': { $exists: true, $ne: null }, // Order initiated with Razorpay
+    'payment.status': 'pending',                             // But status is still pending
+    createdAt: { $lte: cutoffDate }                          // And it's been a while
+  });
+};
 
 module.exports = mongoose.model('Order', orderSchema);

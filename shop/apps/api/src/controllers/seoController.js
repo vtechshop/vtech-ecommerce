@@ -8,24 +8,24 @@ const env = require('../config/env');
 // Get sitemap index
 exports.getSitemap = async (req, res, next) => {
   try {
-    const baseUrl = env.APP_URL;
+    const apiUrl = env.APP_URL;
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <sitemap>
-    <loc>${baseUrl}/api/seo/sitemap-products.xml</loc>
+    <loc>${apiUrl}/api/seo/sitemap-products.xml</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${baseUrl}/api/seo/sitemap-categories.xml</loc>
+    <loc>${apiUrl}/api/seo/sitemap-categories.xml</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${baseUrl}/api/seo/sitemap-blog.xml</loc>
+    <loc>${apiUrl}/api/seo/sitemap-blog.xml</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${baseUrl}/api/seo/sitemap-vendors.xml</loc>
+    <loc>${apiUrl}/api/seo/sitemap-vendors.xml</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
   </sitemap>
 </sitemapindex>`;
@@ -165,46 +165,37 @@ exports.getVendorSitemap = async (req, res, next) => {
 // Get robots.txt
 exports.getRobotsTxt = async (req, res, next) => {
   try {
-    const baseUrl = env.APP_URL;
+    const clientUrl = env.CLIENT_URL;
 
-    const txt = `# Allow all search engines to crawl the site
+    const txt = `# VTech Kitchen - Robots.txt
+# https://vtechkitchen.com
+
 User-agent: *
 Allow: /
 
-# Explicitly allow static assets (CSS, JS, images)
-Allow: /assets/
-Allow: /static/
-Allow: /src/
-Allow: /*.css$
-Allow: /*.js$
-Allow: /*.jpg$
-Allow: /*.jpeg$
-Allow: /*.png$
-Allow: /*.gif$
-Allow: /*.svg$
-Allow: /*.webp$
-Allow: /*.avif$
-
-# Disallow admin and private areas only
+# Disallow private/user areas
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /checkout/
 Disallow: /account/
+Disallow: /cart
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /api/
 
-# Allow all public pages
-Allow: /products/
-Allow: /product/
-Allow: /categories/
-Allow: /category/
-Allow: /vendor/
-Allow: /vendors/
-Allow: /blog/
-Allow: /about
-Allow: /contact
-Allow: /search
+# Disallow query parameter variations (pagination, filters)
+Disallow: /*?page=
+Disallow: /*?sort=
+Disallow: /*?filter=
+Disallow: /*?ref=
+
+# Crawl-delay for polite crawling (optional)
+Crawl-delay: 1
 
 # Sitemap location
-Sitemap: ${baseUrl}/api/seo/sitemap.xml`;
+Sitemap: ${clientUrl}/sitemap.xml`;
 
     res.header('Content-Type', 'text/plain');
     res.header('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours

@@ -41,6 +41,7 @@ function setupCronJobs() {
     const inventoryAlertService = require('./services/inventoryAlertService');
     const loyaltyService = require('./services/loyaltyService');
     const gdprService = require('./services/gdprService');
+    const reconcilePayments = require('./jobs/reconcilePayments');
 
     // Every hour - Send abandoned cart recovery emails
     cron.schedule('0 * * * *', async () => {
@@ -82,7 +83,17 @@ function setupCronJobs() {
       }
     });
 
-    logger.info('✅ Cron jobs scheduled: Abandoned carts (hourly), Inventory alerts (9 AM), Loyalty expiration (2 AM), GDPR deletions (3 AM)');
+    // Every 5 minutes - Reconcile stuck payments (payments that succeeded on Razorpay but failed to update in DB)
+    cron.schedule('*/5 * * * *', async () => {
+      try {
+        logger.info('[Cron] Running payment reconciliation...');
+        await reconcilePayments();
+      } catch (error) {
+        logger.error('[Cron] Payment reconciliation failed:', error);
+      }
+    });
+
+    logger.info('✅ Cron jobs scheduled: Abandoned carts (hourly), Inventory alerts (9 AM), Loyalty expiration (2 AM), GDPR deletions (3 AM), Payment reconciliation (every 5 min)');
   } catch (error) {
     logger.error('Failed to set up cron jobs:', error);
   }
