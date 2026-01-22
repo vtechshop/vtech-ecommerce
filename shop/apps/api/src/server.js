@@ -44,17 +44,29 @@ function setupCronJobs() {
     const reconcilePayments = require('./jobs/reconcilePayments');
 
     // Every 14 minutes - Self-ping to keep server awake (prevents Render sleep)
+    // Also pings MongoDB to keep database connection alive
     cron.schedule('*/14 * * * *', async () => {
       try {
+        // 1. Ping the API server
         const https = require('https');
         const apiUrl = process.env.APP_URL || 'https://api.vtechkitchen.com';
         https.get(`${apiUrl}/api/health`, (res) => {
-          logger.info(`[Keep-Alive] Ping successful: ${res.statusCode}`);
+          logger.info(`[Keep-Alive] Server ping successful: ${res.statusCode}`);
         }).on('error', (err) => {
-          logger.warn(`[Keep-Alive] Ping failed: ${err.message}`);
+          logger.warn(`[Keep-Alive] Server ping failed: ${err.message}`);
         });
+
+        // 2. Ping MongoDB to keep connection alive
+        const mongoose = require('mongoose');
+        if (mongoose.connection.readyState === 1) {
+          const adminDb = mongoose.connection.db.admin();
+          const result = await adminDb.ping();
+          logger.info(`[Keep-Alive] MongoDB ping successful: ${JSON.stringify(result)}`);
+        } else {
+          logger.warn(`[Keep-Alive] MongoDB not connected (state: ${mongoose.connection.readyState})`);
+        }
       } catch (error) {
-        logger.warn('[Keep-Alive] Self-ping error:', error.message);
+        logger.warn('[Keep-Alive] Ping error:', error.message);
       }
     });
 
