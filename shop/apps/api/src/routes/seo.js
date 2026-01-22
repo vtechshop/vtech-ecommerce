@@ -15,4 +15,7 @@ router.get('/robots.txt', seoController.getRobotsTxt);
 // Product feed
 router.get('/feed/products.xml', seoController.getProductFeed);
 
+// Dynamic rendering for SEO (serves pre-rendered HTML to crawlers)
+router.get('/render', seoController.renderPage);
+
 module.exports = router;

@@ -214,6 +214,208 @@ Sitemap: ${clientUrl}/sitemap.xml`;
   }
 };
 
+// Dynamic HTML rendering for SEO (serves to crawlers)
+exports.renderPage = async (req, res, next) => {
+  try {
+    const { path } = req.query;
+    if (!path) {
+      return res.status(400).json({ error: 'Path parameter required' });
+    }
+
+    const clientUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
+    const fullUrl = `${clientUrl}${path}`;
+
+    // Parse the path to determine page type
+    const pathParts = path.split('/').filter(Boolean);
+    let pageData = {
+      title: 'V-Tech Kitchen - Premium Kitchen Appliances & Utensils',
+      description: 'Shop premium kitchen appliances and utensils at V-Tech Kitchen. Discover quality cookware, gadgets, and tools for your modern kitchen.',
+      image: `${clientUrl}/og-image.jpg`,
+      type: 'website',
+      content: '',
+      schema: null,
+    };
+
+    // Product page
+    if (pathParts[0] === 'product' && pathParts[1]) {
+      const product = await Product.findOne({ slug: pathParts[1], published: true })
+        .populate('vendorId', 'storeName')
+        .populate('category', 'name')
+        .lean();
+
+      if (product) {
+        pageData.title = `${product.title} - V-Tech Kitchen`;
+        pageData.description = product.description?.substring(0, 160) || `Buy ${product.title} at best price. ${product.shortDescription || ''}`;
+        pageData.image = product.images?.[0] || pageData.image;
+        pageData.type = 'product';
+        pageData.content = `
+          <h1>${product.title}</h1>
+          <p><strong>Price:</strong> ₹${product.price?.toLocaleString('en-IN')}</p>
+          <p><strong>Category:</strong> ${product.category?.name || 'Kitchen Products'}</p>
+          <p><strong>Availability:</strong> ${product.stock > 0 ? 'In Stock' : 'Out of Stock'}</p>
+          <p>${product.description || ''}</p>
+          ${product.features?.length ? `<h2>Features</h2><ul>${product.features.map(f => `<li>${f}</li>`).join('')}</ul>` : ''}
+        `;
+        pageData.schema = {
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: product.title,
+          description: product.description,
+          image: product.images,
+          sku: product.sku || product._id.toString(),
+          brand: { '@type': 'Brand', name: product.brand || product.vendorId?.storeName || 'V-Tech Kitchen' },
+          offers: {
+            '@type': 'Offer',
+            price: product.price,
+            priceCurrency: 'INR',
+            availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            url: fullUrl,
+          },
+        };
+      }
+    }
+
+    // Category page
+    else if (pathParts[0] === 'category' && pathParts[1]) {
+      const category = await Category.findOne({ slug: pathParts[1], isActive: true }).lean();
+      const products = await Product.find({ category: category?._id, published: true })
+        .select('title slug price images')
+        .limit(20)
+        .lean();
+
+      if (category) {
+        pageData.title = `${category.name} - V-Tech Kitchen`;
+        pageData.description = category.description || `Shop ${category.name} at V-Tech Kitchen. Best prices, fast delivery.`;
+        pageData.image = category.image || pageData.image;
+        pageData.content = `
+          <h1>${category.name}</h1>
+          <p>${category.description || `Explore our collection of ${category.name}.`}</p>
+          <h2>Products in ${category.name}</h2>
+          <ul>
+            ${products.map(p => `<li><a href="${clientUrl}/product/${p.slug}">${p.title} - ₹${p.price?.toLocaleString('en-IN')}</a></li>`).join('')}
+          </ul>
+        `;
+      }
+    }
+
+    // Vendor page
+    else if (pathParts[0] === 'vendor' && pathParts[1]) {
+      const vendor = await Vendor.findOne({ slug: pathParts[1], status: 'active' }).lean();
+      const products = await Product.find({ vendorId: vendor?._id, published: true })
+        .select('title slug price')
+        .limit(20)
+        .lean();
+
+      if (vendor) {
+        pageData.title = `${vendor.storeName} - V-Tech Kitchen Vendor`;
+        pageData.description = vendor.description || `Shop products from ${vendor.storeName} at V-Tech Kitchen.`;
+        pageData.image = vendor.logo || pageData.image;
+        pageData.content = `
+          <h1>${vendor.storeName}</h1>
+          <p>${vendor.description || `Welcome to ${vendor.storeName}'s store on V-Tech Kitchen.`}</p>
+          <h2>Products from ${vendor.storeName}</h2>
+          <ul>
+            ${products.map(p => `<li><a href="${clientUrl}/product/${p.slug}">${p.title} - ₹${p.price?.toLocaleString('en-IN')}</a></li>`).join('')}
+          </ul>
+        `;
+      }
+    }
+
+    // Search page
+    else if (pathParts[0] === 'search') {
+      pageData.title = 'Search Products - V-Tech Kitchen';
+      pageData.description = 'Search for premium kitchen appliances, cookware, and utensils at V-Tech Kitchen.';
+      pageData.content = `
+        <h1>Search Products</h1>
+        <p>Find the best kitchen appliances and utensils at V-Tech Kitchen.</p>
+        <p>Browse our categories: Cookware, Appliances, Utensils, Gadgets</p>
+      `;
+    }
+
+    // Static pages
+    else if (pathParts[0] === 'page') {
+      const pageName = pathParts[1];
+      const pageContent = {
+        'privacy-policy': { title: 'Privacy Policy', desc: 'Learn how V-Tech Kitchen protects your privacy and handles your data.' },
+        'terms-of-service': { title: 'Terms of Service', desc: 'Read the terms and conditions for using V-Tech Kitchen.' },
+        'return-policy': { title: 'Return Policy', desc: 'Learn about our return and refund policies at V-Tech Kitchen.' },
+        'about': { title: 'About Us', desc: 'Learn about V-Tech Kitchen - your trusted source for premium kitchen products.' },
+        'contact': { title: 'Contact Us', desc: 'Get in touch with V-Tech Kitchen for support or inquiries.' },
+      };
+
+      if (pageContent[pageName]) {
+        pageData.title = `${pageContent[pageName].title} - V-Tech Kitchen`;
+        pageData.description = pageContent[pageName].desc;
+        pageData.content = `<h1>${pageContent[pageName].title}</h1><p>${pageContent[pageName].desc}</p>`;
+      }
+    }
+
+    // Generate HTML
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${pageData.title}</title>
+  <meta name="description" content="${pageData.description}">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="${fullUrl}">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="${pageData.type}">
+  <meta property="og:url" content="${fullUrl}">
+  <meta property="og:title" content="${pageData.title}">
+  <meta property="og:description" content="${pageData.description}">
+  <meta property="og:image" content="${pageData.image}">
+  <meta property="og:site_name" content="V-Tech Kitchen">
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${pageData.title}">
+  <meta name="twitter:description" content="${pageData.description}">
+  <meta name="twitter:image" content="${pageData.image}">
+
+  ${pageData.schema ? `<script type="application/ld+json">${JSON.stringify(pageData.schema)}</script>` : ''}
+
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+    h1 { color: #1f2937; }
+    a { color: #3b82f6; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="${clientUrl}">V-Tech Kitchen</a> |
+      <a href="${clientUrl}/search">Products</a> |
+      <a href="${clientUrl}/blog">Blog</a> |
+      <a href="${clientUrl}/page/contact">Contact</a>
+    </nav>
+  </header>
+  <main>
+    ${pageData.content}
+  </main>
+  <footer>
+    <p>&copy; 2024 V-Tech Kitchen. All rights reserved.</p>
+  </footer>
+  <script>
+    // Redirect real users to React app
+    if (!navigator.userAgent.match(/bot|crawl|spider|slurp|googlebot|bingbot|yandex/i)) {
+      window.location.href = "${fullUrl}";
+    }
+  </script>
+</body>
+</html>`;
+
+    res.header('Content-Type', 'text/html');
+    res.send(html);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get product feed (Google Merchant Center format)
 exports.getProductFeed = async (req, res, next) => {
   try {
