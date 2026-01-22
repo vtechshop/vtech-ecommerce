@@ -32,21 +32,25 @@ const connectDB = async () => {
 
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/shop', {
-      // Connection pool settings
-      maxPoolSize: 10,
-      minPoolSize: 2,
+      // Connection pool settings - optimized for performance
+      maxPoolSize: 50, // Handle more concurrent requests
+      minPoolSize: 5,  // Keep connections ready
 
-      // Timeout settings
-      serverSelectionTimeoutMS: 10000, // Increased from 5s to 10s
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000, // Added explicit connect timeout
+      // Timeout settings - faster failure detection
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 30000,
+      connectTimeoutMS: 5000,
 
       // Automatic reconnection
       retryWrites: true,
       retryReads: true,
 
-      // Heartbeat settings for better connection monitoring
-      heartbeatFrequencyMS: 10000, // Check connection every 10s
+      // Heartbeat settings
+      heartbeatFrequencyMS: 10000,
+
+      // Performance optimizations
+      maxIdleTimeMS: 30000, // Close idle connections after 30s
+      compressors: ['zlib'], // Enable wire compression for faster data transfer
     });
 
     logger.info(`✅ MongoDB connected: ${conn.connection.host}`);

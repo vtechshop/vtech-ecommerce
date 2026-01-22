@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 const path = require('path');
 const logger = require('./config/logger');
 const env = require('./config/env');
@@ -10,6 +11,17 @@ const { xssSanitize, mongoSanitize } = require('./middleware/sanitize');
 const { doubleCsrfProtection, csrfErrorHandler, getCsrfToken } = require('./middleware/csrf');
 
 const app = express();
+
+// Enable gzip compression for all responses (reduces payload size by 70-90%)
+app.use(compression({
+  level: 6, // Balanced compression level (1-9)
+  threshold: 1024, // Only compress responses > 1KB
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) return false;
+    return compression.filter(req, res);
+  }
+}));
 
 // Trust proxy for Render/Vercel deployment (required for rate limiting, secure cookies)
 if (env.NODE_ENV === 'production') {

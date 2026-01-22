@@ -2,40 +2,112 @@ const { getRedisClient } = require('../config/redis');
 const logger = require('../config/logger');
 
 /**
- * Cache utility functions for Redis operations
+ * Cache utility functions with Redis + In-Memory fallback
+ * Uses in-memory cache when Redis is unavailable for better performance
  */
 
+// In-memory cache fallback (LRU-like with max size)
+const memoryCache = new Map();
+const MEMORY_CACHE_MAX_SIZE = 500;
+const MEMORY_CACHE_DEFAULT_TTL = 300; // 5 minutes
+
 /**
- * Get cached data
+ * Clean up expired entries from memory cache
+ */
+const cleanupMemoryCache = () => {
+  const now = Date.now();
+  for (const [key, value] of memoryCache.entries()) {
+    if (value.expiresAt && value.expiresAt < now) {
+      memoryCache.delete(key);
+    }
+  }
+  // If still over limit, remove oldest entries
+  if (memoryCache.size > MEMORY_CACHE_MAX_SIZE) {
+    const entriesToRemove = memoryCache.size - MEMORY_CACHE_MAX_SIZE;
+    const keys = Array.from(memoryCache.keys()).slice(0, entriesToRemove);
+    keys.forEach(key => memoryCache.delete(key));
+  }
+};
+
+// Run cleanup every 60 seconds
+setInterval(cleanupMemoryCache, 60000);
+
+/**
+ * Get from memory cache
+ */
+const memGet = (key) => {
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt && entry.expiresAt < Date.now()) {
+    memoryCache.delete(key);
+    return null;
+  }
+  return entry.data;
+};
+
+/**
+ * Set in memory cache
+ */
+const memSet = (key, data, ttl = MEMORY_CACHE_DEFAULT_TTL) => {
+  if (memoryCache.size >= MEMORY_CACHE_MAX_SIZE) {
+    cleanupMemoryCache();
+  }
+  memoryCache.set(key, {
+    data,
+    expiresAt: ttl ? Date.now() + (ttl * 1000) : null
+  });
+};
+
+/**
+ * Delete from memory cache
+ */
+const memDel = (key) => {
+  memoryCache.delete(key);
+};
+
+/**
+ * Get cached data (Redis with in-memory fallback)
  * @param {string} key - Cache key
  * @returns {Promise<any|null>} Parsed cached data or null
  */
 const get = async (key) => {
   try {
     const client = getRedisClient();
-    if (!client) return null;
 
-    const data = await client.get(key);
-    if (!data) return null;
+    // Try Redis first
+    if (client) {
+      const data = await client.get(key);
+      if (data) {
+        const parsed = JSON.parse(data);
+        // Also store in memory for faster subsequent access
+        memSet(key, parsed, 60);
+        return parsed;
+      }
+    }
 
-    return JSON.parse(data);
+    // Fallback to memory cache
+    return memGet(key);
   } catch (error) {
     logger.error(`Cache get error for key ${key}:`, error);
-    return null;
+    // Try memory cache on error
+    return memGet(key);
   }
 };
 
 /**
- * Set cached data
+ * Set cached data (Redis with in-memory fallback)
  * @param {string} key - Cache key
  * @param {any} value - Data to cache
  * @param {number} ttl - Time to live in seconds (optional)
  * @returns {Promise<boolean>} Success status
  */
 const set = async (key, value, ttl = null) => {
+  // Always set in memory cache for fast access
+  memSet(key, value, ttl || MEMORY_CACHE_DEFAULT_TTL);
+
   try {
     const client = getRedisClient();
-    if (!client) return false;
+    if (!client) return true; // Memory cache is set, consider success
 
     const serialized = JSON.stringify(value);
 
@@ -48,25 +120,28 @@ const set = async (key, value, ttl = null) => {
     return true;
   } catch (error) {
     logger.error(`Cache set error for key ${key}:`, error);
-    return false;
+    return true; // Memory cache is still set
   }
 };
 
 /**
- * Delete cached data
+ * Delete cached data (from both Redis and memory)
  * @param {string} key - Cache key
  * @returns {Promise<boolean>} Success status
  */
 const del = async (key) => {
+  // Always delete from memory cache
+  memDel(key);
+
   try {
     const client = getRedisClient();
-    if (!client) return false;
+    if (!client) return true;
 
     await client.del(key);
     return true;
   } catch (error) {
     logger.error(`Cache delete error for key ${key}:`, error);
-    return false;
+    return true;
   }
 };
 

@@ -1,6 +1,7 @@
 // FILE: apps/api/src/utils/razorpay.js
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const logger = require('../config/logger');
 
 // Initialize Razorpay instance only if credentials are configured
 let razorpay = null;
@@ -11,9 +12,9 @@ if (isConfigured) {
     key_id: process.env.RAZORPAY_KEY_ID,
     key_secret: process.env.RAZORPAY_KEY_SECRET,
   });
-  console.log('[INFO] Razorpay payment service initialized');
+  logger.info('Razorpay payment service initialized');
 } else {
-  console.log('[WARN] Razorpay not configured - payment features will be disabled');
+  logger.warn('Razorpay not configured - payment features will be disabled');
 }
 
 /**
@@ -49,10 +50,10 @@ const createOrder = async (amount, currency = 'INR', options = {}) => {
       order,
     };
   } catch (error) {
-    console.error('Razorpay order creation error:', error);
+    logger.error('Razorpay order creation error:', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Payment order creation failed',
     };
   }
 };
@@ -66,7 +67,7 @@ const createOrder = async (amount, currency = 'INR', options = {}) => {
  */
 const verifyPaymentSignature = (orderId, paymentId, signature) => {
   if (!isConfigured) {
-    console.error('Razorpay is not configured - cannot verify signature');
+    logger.error('Razorpay is not configured - cannot verify signature');
     return false;
   }
 
@@ -77,9 +78,16 @@ const verifyPaymentSignature = (orderId, paymentId, signature) => {
       .update(text)
       .digest('hex');
 
-    return generatedSignature === signature;
+    // Use timing-safe comparison to prevent timing attacks
+    if (generatedSignature.length !== signature.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(
+      Buffer.from(generatedSignature, 'hex'),
+      Buffer.from(signature, 'hex')
+    );
   } catch (error) {
-    console.error('Signature verification error:', error);
+    logger.error('Signature verification error:', error);
     return false;
   }
 };
@@ -104,10 +112,10 @@ const fetchPayment = async (paymentId) => {
       payment,
     };
   } catch (error) {
-    console.error('Fetch payment error:', error);
+    logger.error('Fetch payment error:', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Failed to fetch payment details',
     };
   }
 };
@@ -132,10 +140,10 @@ const fetchOrder = async (orderId) => {
       order,
     };
   } catch (error) {
-    console.error('Fetch order error:', error);
+    logger.error('Fetch order error:', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Failed to fetch order details',
     };
   }
 };
@@ -169,10 +177,10 @@ const createRefund = async (paymentId, amount = null) => {
       refund,
     };
   } catch (error) {
-    console.error('Refund creation error:', error);
+    logger.error('Refund creation error:', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Failed to process refund',
     };
   }
 };
@@ -222,10 +230,10 @@ const createLinkedAccount = async (accountData) => {
       account,
     };
   } catch (error) {
-    console.error('Razorpay linked account creation error:', error);
+    logger.error('Razorpay linked account creation error:', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Failed to create linked account',
     };
   }
 };
@@ -250,10 +258,10 @@ const fetchLinkedAccount = async (accountId) => {
       account,
     };
   } catch (error) {
-    console.error('Fetch linked account error:', error);
+    logger.error('Fetch linked account error:', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Failed to fetch linked account',
     };
   }
 };
@@ -315,10 +323,10 @@ const createTransfers = async (paymentId, transfers) => {
       totalTransfers: transfers.length,
     };
   } catch (error) {
-    console.error('Create transfers error:', error);
+    logger.error('Create transfers error:', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Failed to create transfers',
     };
   }
 };
@@ -343,10 +351,10 @@ const fetchTransfer = async (transferId) => {
       transfer,
     };
   } catch (error) {
-    console.error('Fetch transfer error:', error);
+    logger.error('Fetch transfer error:', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Failed to fetch transfer details',
     };
   }
 };
@@ -377,10 +385,10 @@ const reverseTransfer = async (transferId, amount = null) => {
       reversal,
     };
   } catch (error) {
-    console.error('Reverse transfer error:', error);
+    logger.error('Reverse transfer error:', error);
     return {
       success: false,
-      error: error.message,
+      error: 'Failed to reverse transfer',
     };
   }
 };
