@@ -33,13 +33,10 @@ export const loadRazorpayScript = () => {
  */
 export const createRazorpayOrder = async (orderId, amount) => {
   try {
-    console.log('📞 Calling Razorpay create-order API:', { orderId, amount });
     const response = await api.post('/payment/razorpay/create-order', {
       orderId,
       amount,
     });
-
-    console.log('📡 Razorpay API response:', response.data);
 
     if (!response.data.success) {
       throw new Error(response.data.error?.message || response.data.message || 'Failed to create Razorpay order');
@@ -47,7 +44,6 @@ export const createRazorpayOrder = async (orderId, amount) => {
 
     return response.data.data;
   } catch (error) {
-    console.error('❌ Error creating Razorpay order:', error);
     // Extract error message from axios response
     const errorMessage = error.response?.data?.error?.message ||
                         error.response?.data?.message ||
@@ -72,7 +68,6 @@ export const verifyRazorpayPayment = async (paymentData) => {
 
     return response.data.data;
   } catch (error) {
-    console.error('Error verifying payment:', error);
     const errorMessage = error.response?.data?.error?.message ||
                         error.response?.data?.message ||
                         error.message ||
@@ -90,8 +85,8 @@ export const verifyRazorpayPayment = async (paymentData) => {
 export const recordPaymentFailure = async (orderId, error) => {
   try {
     await api.post('/payment/razorpay/failure', { orderId, error });
-  } catch (err) {
-    console.error('Error recording payment failure:', err);
+  } catch {
+    // Silently fail - this is a non-critical operation
   }
 };
 
@@ -158,7 +153,6 @@ export const initiateRazorpayPayment = async ({
             onSuccess(result);
           }
         } catch (error) {
-          console.error('Payment verification failed:', error);
           if (onFailure) {
             onFailure(error);
           }
@@ -166,7 +160,6 @@ export const initiateRazorpayPayment = async ({
       },
       modal: {
         ondismiss: function () {
-          console.log('Payment modal dismissed');
           if (onFailure) {
             onFailure({ message: 'Payment cancelled by user' });
           }
@@ -178,8 +171,6 @@ export const initiateRazorpayPayment = async ({
     const razorpay = new window.Razorpay(options);
 
     razorpay.on('payment.failed', async function (response) {
-      console.error('Payment failed:', response.error);
-
       // Record failure on backend
       await recordPaymentFailure(orderId, {
         code: response.error.code,
@@ -197,7 +188,6 @@ export const initiateRazorpayPayment = async ({
 
     razorpay.open();
   } catch (error) {
-    console.error('Error initiating payment:', error);
     if (onFailure) {
       onFailure(error);
     }
@@ -213,7 +203,6 @@ export const getRazorpayKey = async () => {
     const response = await api.get('/payment/razorpay/key');
     return response.data.keyId;
   } catch (error) {
-    console.error('Error fetching Razorpay key:', error);
     throw error;
   }
 };

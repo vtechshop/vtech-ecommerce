@@ -6,7 +6,6 @@ const AdWallet = require('../models/AdWallet');
 const AdPricingSettings = require('../models/AdPricingSettings');
 const Product = require('../models/Product');
 const Vendor = require('../models/Vendor');
-const User = require('../models/User');
 const { getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
 const notificationHelper = require('../services/notificationHelper');
@@ -337,8 +336,6 @@ exports.updateCampaign = async (req, res, next) => {
 
       // Change campaign status to pending_approval
       req.body.status = 'pending_approval';
-
-      console.log(`Campaign ${campaign._id} edited by vendor - reset to pending approval`);
     }
 
     Object.assign(campaign, req.body);
@@ -670,8 +667,6 @@ exports.runAuction = async (req, res, next) => {
       limit = 3,
     } = req.body;
 
-    console.log('🎯 [AUCTION DEBUG] Received request:', { placement, keywords, limit });
-
     // Find eligible campaigns
     const now = new Date();
     const query = {
@@ -693,8 +688,6 @@ exports.runAuction = async (req, res, next) => {
       query['targeting.products'] = { $in: products };
     }
 
-    console.log('🎯 [AUCTION DEBUG] Campaign query:', JSON.stringify(query, null, 2));
-
     // ✅ Populate campaign products during initial query
     const campaigns = await AdCampaign.find(query)
       .populate({
@@ -707,22 +700,16 @@ exports.runAuction = async (req, res, next) => {
       })
       .lean();
 
-    console.log('🎯 [AUCTION DEBUG] Found campaigns:', campaigns.length);
-
     // Filter campaigns that can serve (budget check)
     const eligibleCampaigns = [];
     for (const campaign of campaigns) {
       const canServe = await AdCampaign.findById(campaign._id);
       if (canServe.canServe()) {
         eligibleCampaigns.push(campaign);
-        console.log('✅ [AUCTION DEBUG] Campaign eligible:', campaign.name, 'Products:', campaign.targeting?.products?.length || 0);
-      } else {
-        console.log('❌ [AUCTION DEBUG] Campaign NOT eligible:', campaign.name);
       }
     }
 
     if (eligibleCampaigns.length === 0) {
-      console.log('⚠️ [AUCTION DEBUG] No eligible campaigns found');
       return res.json({
         success: true,
         data: { ads: [] },
@@ -750,8 +737,6 @@ exports.runAuction = async (req, res, next) => {
     const creativesArrays = await Promise.all(creativePromises);
     const allCreatives = creativesArrays.flat();
 
-    console.log('🎯 [AUCTION DEBUG] Found creatives:', allCreatives.length);
-
     // Run auction: rank by bid × qualityScore
     const rankedCreatives = allCreatives.map(creative => {
       const campaign = eligibleCampaigns.find(c => c._id.toString() === creative.campaignId.toString());
@@ -763,14 +748,6 @@ exports.runAuction = async (req, res, next) => {
         productData = campaign.targeting.products[0];
       }
 
-      console.log('🎯 [AUCTION DEBUG] Creative auction score:', {
-        campaignName: campaign.name,
-        creativeId: creative._id,
-        score,
-        hasProduct: !!productData,
-        productTitle: productData?.title
-      });
-
       return { ...creative, campaign, auctionScore: score, resolvedProduct: productData };
     });
 
@@ -779,15 +756,6 @@ exports.runAuction = async (req, res, next) => {
     // Return top N - Amazon-style with complete product data
     const winners = rankedCreatives.slice(0, limit).map(c => {
       const productData = c.resolvedProduct;
-
-      console.log('🏆 [AUCTION DEBUG] Winner:', {
-        campaignId: c.campaignId,
-        creativeId: c._id,
-        hasProduct: !!productData,
-        productId: productData?._id,
-        productTitle: productData?.title,
-        productPrice: productData?.price
-      });
 
       return {
         campaignId: c.campaignId,
@@ -815,14 +783,11 @@ exports.runAuction = async (req, res, next) => {
       };
     });
 
-    console.log('✅ [AUCTION DEBUG] Returning', winners.length, 'ads');
-
     res.json({
       success: true,
       data: { ads: winners },
     });
   } catch (error) {
-    console.error('❌ [AUCTION DEBUG] Error:', error);
     next(error);
   }
 };
@@ -1130,7 +1095,7 @@ exports.createWalletRechargeOrder = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error('Create wallet recharge order error:', error);
+    logger.error('Create wallet recharge order error:', error);
     next(error);
   }
 };
@@ -1278,50 +1243,11 @@ exports.verifyWalletRechargePayment = async (req, res, next) => {
       });
     }
   } catch (error) {
-    console.error('Verify wallet recharge payment error:', error);
+    logger.error('Verify wallet recharge payment error:', error);
     next(error);
   }
 };
 
-// Recharge wallet (DEPRECATED - Use Razorpay flow instead)
-exports.rechargeWallet = async (req, res, next) => {
-try {
-const { amount } = req.body;
-const vendor = await Vendor.findOne({ userId: req.user._id });
-
-if (!vendor) {
-  return res.status(404).json({
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message: 'Vendor profile not found',
-    },
-  });
-}
-
-let wallet = await AdWallet.findOne({ vendorId: vendor._id });
-
-if (!wallet) {
-  wallet = await AdWallet.create({ vendorId: vendor._id });
-}
-
-// In production, process payment here
-// For now, just add the balance
-
-const paymentRef = 'PAY-' + Date.now();
-wallet.addTransaction('recharge', amount, 'Wallet recharge', paymentRef);
-await wallet.save();
-
-logger.info(`Ad wallet recharged: ${vendor.storeName} - ${amount}`);
-
-res.json({
-  success: true,
-  data: wallet,
-});
-} catch (error) {
-next(error);
-}
-};
 // Get wallet transactions
 exports.getWalletTransactions = async (req, res, next) => {
 try {

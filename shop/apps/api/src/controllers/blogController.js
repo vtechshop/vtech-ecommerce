@@ -461,10 +461,6 @@ exports.updateBlog = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    logger.info(`Update blog request - ID: ${id}, Body:`, req.body);
-    logger.info(`Content-Type: ${req.headers['content-type']}`);
-    logger.info(`Has files: ${!!req.files}`);
-
     const blog = await Blog.findById(id);
 
     if (!blog) {
@@ -493,8 +489,6 @@ exports.updateBlog = async (req, res, next) => {
       }
     });
 
-    logger.info(`After cleaning - updating with:`, req.body);
-
     Object.assign(blog, req.body);
     await blog.save({ validateModifiedOnly: true });
 
@@ -505,8 +499,7 @@ exports.updateBlog = async (req, res, next) => {
       data: blog,
     });
   } catch (error) {
-    logger.error(`Blog update error for ID ${id}:`, error);
-    logger.error(`Error stack:`, error.stack);
+    logger.error(`Blog update error for ID ${req.params.id}:`, error);
     next(error);
   }
 };
