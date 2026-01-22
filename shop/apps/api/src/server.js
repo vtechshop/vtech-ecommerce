@@ -43,6 +43,21 @@ function setupCronJobs() {
     const gdprService = require('./services/gdprService');
     const reconcilePayments = require('./jobs/reconcilePayments');
 
+    // Every 14 minutes - Self-ping to keep server awake (prevents Render sleep)
+    cron.schedule('*/14 * * * *', async () => {
+      try {
+        const https = require('https');
+        const apiUrl = process.env.APP_URL || 'https://api.vtechkitchen.com';
+        https.get(`${apiUrl}/api/health`, (res) => {
+          logger.info(`[Keep-Alive] Ping successful: ${res.statusCode}`);
+        }).on('error', (err) => {
+          logger.warn(`[Keep-Alive] Ping failed: ${err.message}`);
+        });
+      } catch (error) {
+        logger.warn('[Keep-Alive] Self-ping error:', error.message);
+      }
+    });
+
     // Every hour - Send abandoned cart recovery emails
     cron.schedule('0 * * * *', async () => {
       try {

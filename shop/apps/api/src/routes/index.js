@@ -69,4 +69,23 @@ router.post('/chatbot/message', optionalAuth, require('../controllers/chatbotCon
 // Public settings endpoint (for ad placements, etc.)
 router.get('/settings/public', require('../controllers/adPlacementController').getPublicSettings);
 
+// Health check endpoint - keeps server awake and checks DB connection
+router.get('/health', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = dbState === 1 ? 'connected' : dbState === 2 ? 'connecting' : 'disconnected';
+
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: dbStatus,
+      memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB'
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+});
+
 module.exports = router;
