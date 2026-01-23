@@ -279,7 +279,7 @@ const Checkout = () => {
                 amount: orderForPayment.totals.total,
                 customer: {
                   name: selectedAddress.fullName,
-                  email: user?.email || '',
+                  email: user?.email || guestEmail || '',
                   phone: selectedAddress.phone,
                 },
                 onSuccess: (paymentResult) => {

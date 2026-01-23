@@ -781,21 +781,30 @@ exports.getOrderById = async (req, res, next) => {
           ],
         };
       } else {
-        // Guest user - require email verification for guest order access
+        // Guest user accessing order
         const guestEmail = req.query.email;
 
-        if (!guestEmail) {
-          throw new Error('EMAIL_REQUIRED: Email parameter required for guest order access');
-        }
+        // For recently created orders (within 30 minutes), allow access without email
+        // This supports the checkout flow where guest is redirected to confirmation page
+        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
 
-        // Security: Only allow access to orders created in last 24 hours for guests
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        return {
-          ...idQuery,
-          isGuest: true,
-          guestEmail: guestEmail.toLowerCase(),
-          createdAt: { $gte: oneDayAgo },
-        };
+        if (guestEmail) {
+          // With email: allow access to orders created in last 24 hours
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          return {
+            ...idQuery,
+            isGuest: true,
+            guestEmail: guestEmail.toLowerCase(),
+            createdAt: { $gte: oneDayAgo },
+          };
+        } else {
+          // Without email: only allow access to very recent orders (checkout confirmation flow)
+          return {
+            ...idQuery,
+            isGuest: true,
+            createdAt: { $gte: thirtyMinutesAgo },
+          };
+        }
       }
     };
 

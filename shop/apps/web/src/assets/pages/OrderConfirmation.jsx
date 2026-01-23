@@ -237,11 +237,19 @@ const OrderConfirmation = () => {
 
         {/* Actions */}
         <div className="flex gap-3 pb-8">
-          <Link to="/dashboard/orders" className="flex-1">
-            <button className="btn btn-primary w-full">
-              View All Orders
-            </button>
-          </Link>
+          {user ? (
+            <Link to="/dashboard/orders" className="flex-1">
+              <button className="btn btn-primary w-full">
+                View All Orders
+              </button>
+            </Link>
+          ) : (
+            <Link to={`/track-order?orderId=${order.orderId}`} className="flex-1">
+              <button className="btn btn-primary w-full">
+                Track This Order
+              </button>
+            </Link>
+          )}
           <Link to="/" className="flex-1">
             <button className="btn btn-outline w-full">
               Continue Shopping

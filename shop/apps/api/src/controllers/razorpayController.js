@@ -45,8 +45,7 @@ exports.createOrder = async (req, res, next) => {
 
     // Verify order ownership
     if (order.isGuest) {
-      // For guest orders, verify the email matches if user is authenticated
-      // Or allow if they provide the correct guest email in the request
+      // Guest orders: allow payment if user is not logged in, or if logged in user's email matches
       if (req.user && order.guestEmail && req.user.email !== order.guestEmail) {
         return res.status(403).json({
           success: false,
@@ -56,14 +55,26 @@ exports.createOrder = async (req, res, next) => {
           },
         });
       }
-    } else if (order.userId && order.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message: 'You can only pay for your own orders',
-        },
-      });
+    } else if (order.userId) {
+      // Registered user orders: must be logged in and match userId
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Please login to pay for this order',
+          },
+        });
+      }
+      if (order.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'You can only pay for your own orders',
+          },
+        });
+      }
     }
 
     // Check if order is already paid
@@ -77,14 +88,14 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Create Razorpay order
+    // Create Razorpay order with user or guest info
     const result = await createRazorpayOrder(amount, 'INR', {
       receipt: `order_${orderId}`,
       notes: {
         orderId: orderId.toString(),
-        userId: req.user._id.toString(),
-        userEmail: req.user.email,
-        userName: req.user.name,
+        userId: req.user?._id?.toString() || 'guest',
+        userEmail: req.user?.email || order.guestEmail || '',
+        userName: req.user?.name || order.shipTo?.fullName || 'Guest',
       },
     });
 
@@ -188,7 +199,7 @@ exports.verifyPayment = async (req, res, next) => {
 
     // Verify order ownership
     if (order.isGuest) {
-      // For guest orders, verify the email matches if user is authenticated
+      // Guest orders: allow verification if user is not logged in, or if emails match
       if (req.user && order.guestEmail && req.user.email !== order.guestEmail) {
         return res.status(403).json({
           success: false,
@@ -198,14 +209,26 @@ exports.verifyPayment = async (req, res, next) => {
           },
         });
       }
-    } else if (order.userId && order.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Unauthorized access to order',
-        },
-      });
+    } else if (order.userId) {
+      // Registered user orders: must be logged in and match userId
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Please login to verify this payment',
+          },
+        });
+      }
+      if (order.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Unauthorized access to order',
+          },
+        });
+      }
     }
 
     // Update order with payment details
@@ -347,7 +370,7 @@ exports.paymentFailure = async (req, res, next) => {
 
     // Verify order ownership
     if (order.isGuest) {
-      // For guest orders, verify the email matches if user is authenticated
+      // Guest orders: allow if user is not logged in, or if emails match
       if (req.user && order.guestEmail && req.user.email !== order.guestEmail) {
         return res.status(403).json({
           success: false,
@@ -357,14 +380,26 @@ exports.paymentFailure = async (req, res, next) => {
           },
         });
       }
-    } else if (order.userId && order.userId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({
-        success: false,
-        error: {
-          code: 'FORBIDDEN',
-          message: 'Unauthorized access to order',
-        },
-      });
+    } else if (order.userId) {
+      // Registered user orders: must be logged in and match userId
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Please login to access this order',
+          },
+        });
+      }
+      if (order.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'FORBIDDEN',
+            message: 'Unauthorized access to order',
+          },
+        });
+      }
     }
 
     // Update order with failure details
