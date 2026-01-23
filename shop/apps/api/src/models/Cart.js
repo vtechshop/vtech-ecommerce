@@ -96,9 +96,9 @@ cartSchema.methods.calculateTotals = function() {
     return sum;
   }, 0);
 
-  // Shipping cost (same as orderController uses)
-  // Only add shipping if there are items in the cart
-  this.totals.shipping = this.items.length > 0 ? env.DEFAULT_SHIPPING_COST : 0;
+  // Shipping is included in product price (no separate shipping charge)
+  // Platform fee/commission is handled internally when paying vendors
+  this.totals.shipping = 0;
 
   this.totals.discount = this.coupons.reduce((sum, coupon) => sum + coupon.discount, 0);
   this.totals.total = this.totals.subtotal + this.totals.tax + this.totals.shipping - this.totals.discount;

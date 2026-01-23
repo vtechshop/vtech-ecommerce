@@ -262,8 +262,9 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Shipping cost (can be 0 for free shipping)
-    const shipping = env.DEFAULT_SHIPPING_COST;
+    // Shipping is included in product price (no separate shipping charge)
+    // Platform fee/commission is handled internally when paying vendors
+    const shipping = 0;
     const discount = 0;
     const total = subtotal + tax + shipping - discount;
 
