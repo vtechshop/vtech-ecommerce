@@ -208,11 +208,18 @@ exports.createOrder = async (req, res, next) => {
       }
     }
 
-    // Calculate totals and build order items
-    // Tax is included in product price (Indian MRP style) - no separate tax
-    // Platform fee/commission is handled internally when paying vendors
+    // Fetch user's cart to get the EXACT totals they saw in checkout
+    // This ensures Order total matches Checkout UI total
+    const userId = req.user?._id;
+    const guestId = req.cookies?.guestId;
+    const cartQuery = userId ? { userId } : { guestId };
+    const userCart = await Cart.findOne(cartQuery);
+
+    // Use cart totals if available, otherwise calculate
+    let cartTotals = userCart?.totals || { subtotal: 0, tax: 0, shipping: 0, discount: 0, total: 0 };
+
+    // Build order items and calculate subtotal for validation
     let subtotal = 0;
-    const tax = 0; // Tax included in product price
     const orderItems = [];
 
     for (const item of items) {
@@ -255,11 +262,12 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Shipping is included in product price (no separate shipping charge)
-    // Platform fee/commission is handled internally when paying vendors
-    const shipping = 0;
-    const discount = 0;
-    const total = subtotal + tax + shipping - discount;
+    // Use cart totals to ensure consistency with checkout UI
+    // This prevents mismatch between what user sees and what Razorpay charges
+    const tax = cartTotals.tax || 0;
+    const shipping = cartTotals.shipping || 0;
+    const discount = cartTotals.discount || 0;
+    const total = cartTotals.total || subtotal;
 
     // Determine payment provider and status
     // All payments go through Razorpay (COD has been removed)

@@ -80,9 +80,19 @@ cartSchema.methods.calculateTotals = function() {
     return sum + (item.priceSnapshot * item.qty);
   }, 0);
 
-  // Tax is included in product price (Indian MRP style)
-  // No separate tax calculation - product price = final price
-  this.totals.tax = 0;
+  // Calculate tax based on item tax settings
+  this.totals.tax = this.items.reduce((sum, item) => {
+    // Skip if tax is already included in price
+    if (item.taxIncluded) {
+      return sum;
+    }
+    // Calculate tax if item is taxable
+    if (item.taxable && item.taxRate > 0) {
+      const itemTax = (item.priceSnapshot * item.qty) * (item.taxRate / 100);
+      return sum + itemTax;
+    }
+    return sum;
+  }, 0);
 
   // Shipping is included in product price (no separate shipping charge)
   // Platform fee/commission is handled internally when paying vendors
