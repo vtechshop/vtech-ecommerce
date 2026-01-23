@@ -209,9 +209,10 @@ exports.createOrder = async (req, res, next) => {
     }
 
     // Calculate totals and build order items
-    // Use same calculation as Cart model to ensure consistency between checkout UI and payment
+    // Tax is included in product price (Indian MRP style) - no separate tax
+    // Platform fee/commission is handled internally when paying vendors
     let subtotal = 0;
-    let tax = 0;
+    const tax = 0; // Tax included in product price
     const orderItems = [];
 
     for (const item of items) {
@@ -221,14 +222,6 @@ exports.createOrder = async (req, res, next) => {
       const itemTotal = price * item.qty;
 
       subtotal += itemTotal;
-
-      // Calculate tax per-item (same logic as Cart.calculateTotals)
-      // Skip if tax is already included in price
-      if (!product.taxIncluded) {
-        if (product.taxable && product.taxRate > 0) {
-          tax += itemTotal * (product.taxRate / 100);
-        }
-      }
 
       // Copy warranty information from product
       const warrantyInfo = product.hasWarranty ? {
