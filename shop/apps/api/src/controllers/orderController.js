@@ -209,15 +209,26 @@ exports.createOrder = async (req, res, next) => {
     }
 
     // Calculate totals and build order items
+    // Use same calculation as Cart model to ensure consistency between checkout UI and payment
     let subtotal = 0;
+    let tax = 0;
     const orderItems = [];
 
     for (const item of items) {
       const product = await Product.findById(item.productId);
       const variant = item.variantId ? product.variants.id(item.variantId) : null;
       const price = variant ? variant.price : product.price;
+      const itemTotal = price * item.qty;
 
-      subtotal += price * item.qty;
+      subtotal += itemTotal;
+
+      // Calculate tax per-item (same logic as Cart.calculateTotals)
+      // Skip if tax is already included in price
+      if (!product.taxIncluded) {
+        if (product.taxable && product.taxRate > 0) {
+          tax += itemTotal * (product.taxRate / 100);
+        }
+      }
 
       // Copy warranty information from product
       const warrantyInfo = product.hasWarranty ? {
@@ -244,11 +255,15 @@ exports.createOrder = async (req, res, next) => {
         variantName: variant?.name,
         sku: variant?.sku || product.sku,
         warranty: warrantyInfo,
+        // Include tax info for reference
+        taxIncluded: product.taxIncluded || false,
+        taxable: product.taxable || false,
+        taxRate: product.taxRate || 0,
       });
     }
 
-    const tax = subtotal * env.DEFAULT_TAX_RATE; // Configurable tax rate
-    const shipping = env.DEFAULT_SHIPPING_COST; // Configurable shipping cost
+    // Shipping cost (can be 0 for free shipping)
+    const shipping = env.DEFAULT_SHIPPING_COST;
     const discount = 0;
     const total = subtotal + tax + shipping - discount;
 

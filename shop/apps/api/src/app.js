@@ -341,22 +341,27 @@ app.use('/', require('./routes/sitemap'));
 // Static files (uploads)
 app.use('/uploads', express.static('uploads'));
 
-// SPA Fallback for Production (Render deployment)
-// Serve frontend static files and handle client-side routing
+// SPA Fallback for Production (only if frontend build exists)
+// This allows the API to optionally serve the frontend when deployed together
 if (env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../../web/dist');
+  const fs = require('fs');
 
-  // Serve static files from the React build
-  app.use(express.static(frontendPath));
+  // Only serve frontend if the build exists (for combined deployments)
+  // If frontend is deployed separately (e.g., Vercel), this will be skipped
+  if (fs.existsSync(path.join(frontendPath, 'index.html'))) {
+    // Serve static files from the React build
+    app.use(express.static(frontendPath));
 
-  // Handle SPA routing - serve index.html for all non-API routes
-  app.get('*', (req, res, next) => {
-    // Skip if it's an API route
-    if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
-      return next();
-    }
-    res.sendFile(path.join(frontendPath, 'index.html'));
-  });
+    // Handle SPA routing - serve index.html for all non-API routes
+    app.get('*', (req, res, next) => {
+      // Skip if it's an API route
+      if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+        return next();
+      }
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+  }
 }
 
 // 404 handler (only for API routes in production, all routes in development)

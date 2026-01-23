@@ -672,6 +672,12 @@ const Checkout = () => {
                   <span>{formatCurrency(totals.tax)}</span>
                 </div>
               )}
+              {totals.shipping > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700">Shipping:</span>
+                  <span>{formatCurrency(totals.shipping)}</span>
+                </div>
+              )}
               {totals.discount > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Discount:</span>
