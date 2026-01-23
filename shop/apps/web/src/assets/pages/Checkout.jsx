@@ -80,38 +80,15 @@ const Checkout = () => {
   // Shipping quotes removed - will be added in future
 
   // Create order mutation
+  // NOTE: onSuccess/onError are handled inline in handlePaymentSubmit for Razorpay flow
+  // This allows proper control over when to navigate vs open payment modal
   const createOrderMutation = useMutation({
     mutationFn: async (orderData) => {
       const response = await api.post('/orders', orderData);
       return response.data.data;
     },
-    onSuccess: (data) => {
-      // Set flag FIRST to prevent useEffect from redirecting to /cart when cart is cleared
-      setOrderPlaced(true);
-
-      // Handle multi-vendor order response structure
-      // The API returns { vendorOrders: [...], orderIds: [...] }
-      const orderId = data.vendorOrders?.[0]?._id || data.orderIds?.[0] || data._id;
-
-      // Navigate first, then clear cart
-      navigate(`/order-confirmation/${orderId}`, { replace: true });
-
-      // Clear cart after navigation is initiated
-      setTimeout(() => {
-        dispatch(clearCart());
-      }, 100);
-    },
-    onError: (error) => {
-      const errorMessage = error.response?.data?.error?.message || 'Failed to create order';
-
-      // Show error to user
-      toast.error(`Order failed: ${errorMessage}`);
-
-      // If user is not authenticated, redirect to login
-      if (error.response?.status === 401) {
-        navigate('/login?redirect=/checkout');
-      }
-    },
+    // Don't define onSuccess here - it's handled inline in handlePaymentSubmit
+    // to allow Razorpay payment modal to open before navigation
   });
 
   const validateAddress = () => {
@@ -318,7 +295,12 @@ const Checkout = () => {
                                 error.response?.data?.message ||
                                 'Failed to create order. Please try again.';
             toast.error(errorMessage);
-            // Don't navigate anywhere - stay on checkout page so user can retry
+
+            // If user is not authenticated (for registered user orders), redirect to login
+            if (error.response?.status === 401) {
+              navigate('/login?redirect=/checkout');
+            }
+            // Otherwise stay on checkout page so user can retry
           }
         });
       } catch (error) {
@@ -326,8 +308,8 @@ const Checkout = () => {
         toast.error('Failed to load payment system. Please refresh and try again.');
       }
     } else {
-      // For COD and other methods, create order normally
-      createOrderMutation.mutate(orderData);
+      // Only Razorpay is supported - this is a fallback that shouldn't be reached
+      toast.error('Invalid payment method. Please refresh the page.');
     }
   };
 

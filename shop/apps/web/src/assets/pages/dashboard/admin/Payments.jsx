@@ -251,7 +251,6 @@ const Payments = () => {
             <option value="">All Payment Methods</option>
             <option value="stripe">Stripe</option>
             <option value="razorpay">Razorpay</option>
-            <option value="cod">Cash on Delivery</option>
             <option value="bank_transfer">Bank Transfer</option>
           </select>
 

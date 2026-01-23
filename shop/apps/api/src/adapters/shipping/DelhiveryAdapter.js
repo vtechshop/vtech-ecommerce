@@ -34,7 +34,7 @@ class DelhiveryAdapter extends ShippingAdapter {
           pin: orderData.shipTo.zipCode,
           phone: orderData.shipTo.phone,
           order: orderData.orderId,
-          payment_mode: orderData.payment?.method === 'cod' ? 'COD' : 'Prepaid',
+          payment_mode: 'Prepaid', // All orders are prepaid (COD removed)
           return_pin: orderData.returnPin || '',
           return_city: orderData.returnCity || '',
           return_phone: orderData.returnPhone || '',
@@ -43,7 +43,7 @@ class DelhiveryAdapter extends ShippingAdapter {
           return_country: orderData.returnCountry || 'India',
           products_desc: orderData.items.map(item => item.name).join(', '),
           hsn_code: '',
-          cod_amount: orderData.payment?.method === 'cod' ? orderData.totals.total : 0,
+          cod_amount: 0, // No COD - all orders prepaid
           order_date: new Date().toISOString(),
           total_amount: orderData.totals.total,
           seller_add: orderData.sellerAddress || '',

@@ -159,10 +159,6 @@ const Returns = () => {
                   <span className="text-blue-600 font-bold">•</span>
                   <span><strong>Wallet:</strong> 2-3 business days</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">•</span>
-                  <span><strong>Cash on Delivery:</strong> 7-10 business days (bank transfer)</span>
-                </li>
               </ul>
             </div>
 

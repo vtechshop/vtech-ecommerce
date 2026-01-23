@@ -148,7 +148,7 @@ class NotificationService {
             </div>
 
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
-              <strong>Payment Method:</strong> ${order.payment?.method === 'cod' ? 'Cash on Delivery (COD)' : (order.payment?.method || 'N/A').toUpperCase()}
+              <strong>Payment Method:</strong> ${(order.payment?.method || 'N/A').toUpperCase()}
             </div>
 
             <p style="text-align: center;">
@@ -277,7 +277,7 @@ class NotificationService {
             </div>
 
             <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
-              <strong>Payment Method:</strong> ${vendorOrders[0]?.payment?.method === 'cod' ? 'Cash on Delivery (COD)' : (vendorOrders[0]?.payment?.method || 'N/A').toUpperCase()}
+              <strong>Payment Method:</strong> ${(vendorOrders[0]?.payment?.method || 'N/A').toUpperCase()}
             </div>
 
             <p style="text-align: center;">
@@ -460,7 +460,7 @@ class NotificationService {
               <p style="margin: 5px 0;"><strong>Vendor Contact:</strong> ${vendorUser?.email || 'N/A'}</p>
               <p style="margin: 5px 0;"><strong>Customer:</strong> ${order.shipTo?.fullName} ${order.isGuest ? '(Guest)' : ''}</p>
               <p style="margin: 5px 0;"><strong>Email:</strong> ${order.guestEmail || order.userId?.email || 'N/A'}</p>
-              <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${order.payment?.method === 'cod' ? 'Cash on Delivery' : (order.payment?.method || 'N/A').toUpperCase()}</p>
+              <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${(order.payment?.method || 'N/A').toUpperCase()}</p>
               <p style="margin: 5px 0;"><strong>Vendor Products Total:</strong> ₹${totalAmount.toFixed(2)}</p>
             </div>
 

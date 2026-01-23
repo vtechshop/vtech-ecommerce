@@ -77,7 +77,7 @@ class ShiprocketAdapter extends ShippingAdapter {
           tax: 0,
           hsn: item.hsn || ''
         })),
-        payment_method: orderData.payment?.method === 'cod' ? 'COD' : 'Prepaid',
+        payment_method: 'Prepaid', // All orders are prepaid (COD removed)
         shipping_charges: orderData.totals.shipping / 100,
         giftwrap_charges: 0,
         transaction_charges: 0,

@@ -62,8 +62,7 @@ const Terms = () => {
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
                 <li>Payment must be made at the time of order placement</li>
                 <li>We accept various payment methods as displayed during checkout</li>
-                <li>All transactions are processed through secure payment gateways</li>
-                <li>Cash on Delivery is available for eligible orders</li>
+                <li>All transactions are processed through secure payment gateways (Razorpay)</li>
               </ul>
             </section>
 

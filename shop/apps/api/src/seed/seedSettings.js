@@ -64,22 +64,7 @@ const defaultSettings = [
     description: 'Enable Razorpay payment gateway',
     isPublic: false,
   },
-  {
-    key: 'payment.cod.enabled',
-    value: true,
-    type: 'boolean',
-    category: 'payment',
-    description: 'Enable Cash on Delivery',
-    isPublic: true,
-  },
-  {
-    key: 'payment.cod.maxAmount',
-    value: 40000,
-    type: 'number',
-    category: 'payment',
-    description: 'Maximum order amount for COD (in INR)',
-    isPublic: true,
-  },
+  // COD has been removed - all payments through Razorpay
 
   // SHIPPING SETTINGS
   {

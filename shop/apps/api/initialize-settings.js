@@ -466,22 +466,7 @@ const defaultSettings = [
     description: 'Enable Stripe payment gateway',
     isPublic: false
   },
-  {
-    key: 'cod_enabled',
-    value: 'false',
-    type: 'boolean',
-    category: 'payment',
-    description: 'Enable Cash on Delivery',
-    isPublic: true
-  },
-  {
-    key: 'cod_max_amount',
-    value: '10000',
-    type: 'number',
-    category: 'payment',
-    description: 'Maximum order amount for COD (in INR)',
-    isPublic: true
-  },
+  // COD has been removed - all payments through Razorpay
   {
     key: 'wallet_enabled',
     value: 'true',

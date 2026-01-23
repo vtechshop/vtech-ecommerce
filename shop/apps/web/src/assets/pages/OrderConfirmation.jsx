@@ -151,11 +151,7 @@ const OrderConfirmation = () => {
             </div>
             <div>
               <p className="text-sm text-gray-700">Payment Status</p>
-              <p className="font-medium capitalize">
-                {order.payment.status === 'cod'
-                  ? 'Cash on Delivery'
-                  : order.payment.status}
-              </p>
+              <p className="font-medium capitalize">{order.payment.status}</p>
             </div>
             <div>
               <p className="text-sm text-gray-700">Order Status</p>

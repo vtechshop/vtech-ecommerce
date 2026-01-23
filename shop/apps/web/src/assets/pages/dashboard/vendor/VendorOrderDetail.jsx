@@ -361,25 +361,21 @@ const VendorOrderDetail = () => {
               <div className="flex justify-between">
                 <span className="text-gray-700">Method:</span>
                 <span className="font-semibold capitalize">
-                  {order.payment?.method === 'cod' ? 'Cash on Delivery' : order.payment?.method || 'N/A'}
+                  {order.payment?.method || 'N/A'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-700">Status:</span>
                 <span
                   className={`font-semibold ${
-                    order.payment?.status === 'paid'
+                    order.payment?.status === 'paid' || order.payment?.status === 'captured'
                       ? 'text-green-600'
-                      : order.payment?.status === 'cod'
-                      ? 'text-orange-600'
                       : 'text-gray-700'
                   }`}
                 >
-                  {order.payment?.status === 'cod'
-                    ? 'COD - Pending'
-                    : String(order.payment?.status || 'pending')
-                        .replace(/_/g, ' ')
-                        .replace(/\b\w/g, (c) => c.toUpperCase())}
+                  {String(order.payment?.status || 'pending')
+                    .replace(/_/g, ' ')
+                    .replace(/\b\w/g, (c) => c.toUpperCase())}
                 </span>
               </div>
               {order.payment?.transactionId && (

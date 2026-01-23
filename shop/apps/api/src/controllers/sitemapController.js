@@ -127,7 +127,7 @@ exports.generateSitemap = async (req, res, next) => {
       if (post.featuredImage) {
         xml += '    <image:image>\n';
         xml += `      <image:loc>${escapeXml(post.featuredImage)}</image:loc>\n`;
-        xml += `      <image:title>${escapeXml(post.title)}</image:title>\n';
+        xml += `      <image:title>${escapeXml(post.title)}</image:title>\n`;
         xml += '    </image:image>\n';
       }
       xml += '  </url>\n';

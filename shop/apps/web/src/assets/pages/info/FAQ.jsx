@@ -11,7 +11,7 @@ const FAQ = () => {
       questions: [
         {
           q: 'What payment methods do you accept?',
-          a: 'We accept Credit/Debit Cards (Visa, Mastercard, RuPay), UPI, Net Banking, Wallets, and Cash on Delivery (COD) for eligible orders.'
+          a: 'We accept Credit/Debit Cards (Visa, Mastercard, RuPay), UPI, Net Banking, and Wallets through our secure Razorpay payment gateway.'
         },
         {
           q: 'How can I track my order?',
@@ -22,8 +22,8 @@ const FAQ = () => {
           a: 'Yes, you can cancel your order before it ships. Go to "My Orders" and click "Cancel Order". Once shipped, you\'ll need to follow the return process.'
         },
         {
-          q: 'Is Cash on Delivery (COD) available?',
-          a: 'Yes, COD is available for orders below ₹10,000. Additional ₹50 COD handling charges may apply.'
+          q: 'Is my payment information secure?',
+          a: 'Yes, all payments are processed through Razorpay\'s secure payment gateway with bank-level encryption. We never store your card details.'
         }
       ]
     },

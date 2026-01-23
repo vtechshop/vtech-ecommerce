@@ -49,7 +49,7 @@ const orderSchema = new mongoose.Schema({
     provider: String,
     method: String,
     transactionId: String,
-    status: { type: String, enum: ['pending', 'paid', 'failed', 'refunded', 'cod'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'paid', 'failed', 'refunded', 'captured'], default: 'pending' },
     paidAt: Date,
     amount: Number,
     currency: String,
@@ -80,6 +80,8 @@ const orderSchema = new mongoose.Schema({
   // Email notification tracking to prevent duplicates
   confirmationEmailSent: { type: Boolean, default: false },
   confirmationEmailSentAt: { type: Date },
+  vendorNotificationSent: { type: Boolean, default: false },
+  vendorNotificationSentAt: { type: Date },
   shipment: {
     carrier: String,
     awb: String,

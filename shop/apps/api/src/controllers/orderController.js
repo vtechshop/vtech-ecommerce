@@ -253,15 +253,13 @@ exports.createOrder = async (req, res, next) => {
     const total = subtotal + tax + shipping - discount;
 
     // Determine payment provider and status
-    let paymentProvider = 'manual';
+    // All payments go through Razorpay (COD has been removed)
+    let paymentProvider = 'razorpay';
     let paymentStatus = 'pending';
 
-    if (paymentMethod === 'cod') {
-      paymentProvider = 'cod';
-      paymentStatus = 'cod';
-    } else if (paymentMethod === 'card') {
+    if (paymentMethod === 'card') {
       paymentProvider = 'stripe';
-    } else if (paymentMethod === 'upi' || paymentMethod === 'netbanking') {
+    } else if (paymentMethod === 'upi' || paymentMethod === 'netbanking' || paymentMethod === 'razorpay') {
       paymentProvider = 'razorpay';
     }
 
@@ -600,87 +598,10 @@ exports.createOrder = async (req, res, next) => {
     logger.error('Failed to send order confirmation email:', error);
   }
 
-  // Send vendor and admin notifications (one per vendor order)
-  try {
-    const User = require('../models/User');
-    const Vendor = require('../models/Vendor');
-
-    for (const vendorOrder of vendorOrders) {
-      try {
-        // Get vendor from first item (all items in vendorOrder are from same vendor)
-        if (!vendorOrder.items || vendorOrder.items.length === 0) {
-          logger.warn(`Skipping notification for order ${vendorOrder.orderId}: no items`);
-          continue;
-        }
-        const vendorId = vendorOrder.items[0]?.vendorId;
-        if (!vendorId) {
-          logger.warn(`Skipping notification for order ${vendorOrder.orderId}: no vendorId`);
-          continue;
-        }
-
-        // vendorId references Vendor model, not User model
-        // First find the Vendor, then get the User from vendor.userId
-        const vendorProfile = await Vendor.findById(vendorId);
-        if (!vendorProfile) {
-          logger.warn(`Skipping notification for order ${vendorOrder.orderId}: vendor profile not found`);
-          continue;
-        }
-
-        const vendorUser = await User.findById(vendorProfile.userId);
-
-        // Send to vendor
-        if (vendorUser && vendorUser.email) {
-          await notificationService.sendVendorOrderNotification(vendorUser, vendorOrder, vendorOrder.items);
-          logger.info(`Vendor notification sent to: ${vendorUser.email} for order ${vendorOrder.orderId}`);
-
-          // Create in-app notification for vendor
-          try {
-            await notificationHelper.notifyVendorNewOrder({
-              vendorUserId: vendorUser._id,
-              order: vendorOrder,
-              items: vendorOrder.items,
-            });
-            logger.info(`In-app notification created for vendor: ${vendorUser.email}`);
-          } catch (notifError) {
-            logger.error('Failed to create vendor in-app notification:', notifError);
-          }
-        } else {
-          logger.warn(`Skipping vendor notification for order ${vendorOrder.orderId}: vendor user not found or no email`);
-        }
-
-        // Send to admin (pass vendor profile for store name info)
-        try {
-          // Populate userId with email for registered users
-          let orderForAdmin = vendorOrder.toObject ? vendorOrder.toObject() : vendorOrder;
-          if (vendorOrder.userId && !vendorOrder.isGuest) {
-            const customerUser = await User.findById(vendorOrder.userId).select('email name');
-            if (customerUser) {
-              orderForAdmin.userId = customerUser;
-            }
-          }
-          await notificationService.sendAdminOrderNotification(orderForAdmin, vendorOrder.items, vendorUser, vendorProfile);
-          logger.info(`Admin notification sent for order ${vendorOrder.orderId}`);
-
-          // Create in-app notification for admin
-          try {
-            await notificationHelper.notifyAdminNewOrder({
-              order: vendorOrder,
-              vendorName: vendorProfile.businessName || 'Unknown Vendor',
-            });
-            logger.info(`In-app notification created for admins about order ${vendorOrder.orderId}`);
-          } catch (notifError) {
-            logger.error('Failed to create admin in-app notification:', notifError);
-          }
-        } catch (adminEmailError) {
-          logger.error(`Failed to send admin notification for order ${vendorOrder.orderId}:`, adminEmailError);
-        }
-      } catch (vendorEmailError) {
-        logger.error(`Failed to send notifications for order ${vendorOrder.orderId}:`, vendorEmailError);
-      }
-    }
-  } catch (notificationError) {
-    logger.error('Failed to send vendor/admin notifications:', notificationError);
-  }
+  // IMPORTANT: Vendor and admin notifications are sent AFTER payment verification
+  // This prevents notifications being sent for orders where payment is cancelled
+  // See razorpayController.js verifyPayment() and handlePaymentCaptured() webhook
+  logger.info(`Order(s) created with pending payment - vendor/admin notifications will be sent after payment verification`);
 
   // ===== RETURN ALL VENDOR ORDERS =====
   res.status(201).json({

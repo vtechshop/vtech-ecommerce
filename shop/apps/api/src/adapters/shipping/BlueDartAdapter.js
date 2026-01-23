@@ -37,12 +37,12 @@ class BlueDartAdapter extends ShippingAdapter {
         consigneePhone: orderData.shipTo.phone,
         consigneeEmail: orderData.guestEmail || '',
         productType: 'D', // D = Document, N = Non-Document
-        subProductType: orderData.payment?.method === 'cod' ? 'COD' : 'C', // C = Cash, COD = Cash on Delivery
+        subProductType: 'C', // C = Cash/Prepaid (COD removed)
         numberOfPieces: orderData.items.reduce((sum, item) => sum + item.qty, 0),
         actualWeight: (orderData.weight || 500) / 1000, // Convert to kg
         description: orderData.items.map(item => item.name).join(', '),
         invoiceValue: orderData.totals.total / 100,
-        collectionValue: orderData.payment?.method === 'cod' ? orderData.totals.total / 100 : 0,
+        collectionValue: 0, // No COD - all orders prepaid
         specialInstruction: orderData.customerNotes || ''
       };
 

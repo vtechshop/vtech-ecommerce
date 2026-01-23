@@ -865,16 +865,6 @@ async function updateOrderStatus(req, res, next) {
     // Update status
     order.status = status;
 
-    // For COD orders, mark payment as received when delivered
-    if (status === 'delivered' && order.payment.method === 'cod' && order.payment.status === 'cod') {
-      order.payment.status = 'paid';
-      order.events.push({
-        status: 'payment_received',
-        description: 'Cash on Delivery payment received',
-        timestamp: new Date(),
-      });
-    }
-
     // Add event to order timeline
     order.events.push({
       status,

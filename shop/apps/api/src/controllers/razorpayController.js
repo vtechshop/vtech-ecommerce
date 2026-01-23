@@ -311,6 +311,49 @@ exports.verifyPayment = async (req, res, next) => {
           // Don't fail the payment verification if email fails
         }
       }
+
+      // Send vendor and admin notifications (only if not already sent)
+      if (!order.vendorNotificationSent) {
+        try {
+          const Product = require('../models/Product');
+
+          // Get unique vendors from order items
+          const vendorItemsMap = {};
+          for (const item of order.items) {
+            if (item.vendorId) {
+              const vendorIdStr = item.vendorId.toString();
+              if (!vendorItemsMap[vendorIdStr]) {
+                vendorItemsMap[vendorIdStr] = [];
+              }
+              vendorItemsMap[vendorIdStr].push(item);
+            }
+          }
+
+          // Send notification to each vendor
+          for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
+            try {
+              const vendor = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
+              if (vendor && vendor.userId?.email) {
+                await notificationService.sendVendorOrderNotification(vendor, order, vendorItems);
+                logger.info(`Vendor notification sent to ${vendor.storeName} (${vendor.userId.email})`);
+              }
+
+              // Send admin notification for each vendor's items
+              await notificationService.sendAdminOrderNotification(order, vendorItems, vendor?.userId, vendor);
+            } catch (vendorError) {
+              logger.error(`Failed to send vendor notification to ${vendorIdStr}:`, vendorError);
+            }
+          }
+
+          // Mark vendor notifications as sent
+          order.vendorNotificationSent = true;
+          order.vendorNotificationSentAt = new Date();
+          await order.save();
+          logger.info(`Vendor/admin notifications sent after payment verification for order ${order.orderId}`);
+        } catch (notifError) {
+          logger.error('Failed to send vendor/admin notifications after payment:', notifError);
+        }
+      }
     }
 
     res.json({
@@ -536,6 +579,49 @@ async function handlePaymentCaptured(payload) {
         }
       } catch (emailError) {
         logger.error('Failed to send email via webhook:', emailError);
+      }
+    }
+
+    // Send vendor and admin notifications (only if not already sent)
+    if (!order.vendorNotificationSent) {
+      try {
+        const Product = require('../models/Product');
+
+        // Get unique vendors from order items
+        const vendorItemsMap = {};
+        for (const item of order.items) {
+          if (item.vendorId) {
+            const vendorIdStr = item.vendorId.toString();
+            if (!vendorItemsMap[vendorIdStr]) {
+              vendorItemsMap[vendorIdStr] = [];
+            }
+            vendorItemsMap[vendorIdStr].push(item);
+          }
+        }
+
+        // Send notification to each vendor
+        for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
+          try {
+            const vendor = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
+            if (vendor && vendor.userId?.email) {
+              await notificationService.sendVendorOrderNotification(vendor, order, vendorItems);
+              logger.info(`Vendor notification sent via webhook to ${vendor.storeName} (${vendor.userId.email})`);
+            }
+
+            // Send admin notification for each vendor's items
+            await notificationService.sendAdminOrderNotification(order, vendorItems, vendor?.userId, vendor);
+          } catch (vendorError) {
+            logger.error(`Failed to send vendor notification to ${vendorIdStr}:`, vendorError);
+          }
+        }
+
+        // Mark vendor notifications as sent
+        order.vendorNotificationSent = true;
+        order.vendorNotificationSentAt = new Date();
+        await order.save();
+        logger.info(`Vendor/admin notifications sent via webhook for order ${order.orderId}`);
+      } catch (notifError) {
+        logger.error('Failed to send vendor/admin notifications via webhook:', notifError);
       }
     }
   } catch (error) {
