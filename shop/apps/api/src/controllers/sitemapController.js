@@ -7,31 +7,48 @@ const Vendor = require('../models/Vendor');
 const env = require('../config/env');
 
 // Use CLIENT_URL for frontend pages (consistent with seoController)
-// Ensure URL always has https:// protocol (fixes Google Search Console "Invalid URL" errors)
-let BASE_URL = env.CLIENT_URL || 'https://vtechkitchen.com';
-if (BASE_URL && !BASE_URL.startsWith('http://') && !BASE_URL.startsWith('https://')) {
-  BASE_URL = 'https://' + BASE_URL;
+// Ensure URL always has https:// and www prefix for consistency
+function getBaseUrl() {
+  let url = env.CLIENT_URL || 'https://www.vtechkitchen.com';
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = 'https://' + url;
+  }
+  // Ensure www prefix for consistency (SEO best practice)
+  url = url.replace('https://vtechkitchen.com', 'https://www.vtechkitchen.com');
+  return url.replace(/\/$/, ''); // Remove trailing slash
 }
-// Remove trailing slash if present
-BASE_URL = BASE_URL.replace(/\/$/, '');
 
-// Generate XML sitemap
+const BASE_URL = getBaseUrl();
+
+// Escape XML special characters
+function escapeXml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+// Generate main XML sitemap with images (Google Image sitemap)
 exports.generateSitemap = async (req, res, next) => {
   try {
     const now = new Date().toISOString();
 
-    // Fetch all published products, categories, posts, pages, and vendors
+    // Fetch all data with images for product sitemap
     const [products, categories, posts, pages, vendors] = await Promise.all([
-      Product.find({ published: true }).select('slug updatedAt').lean(),
-      Category.find({ isActive: true }).select('slug updatedAt').lean(),
-      Post.find({ status: 'published' }).select('slug updatedAt').lean(),
+      Product.find({ published: true }).select('slug updatedAt title images').lean(),
+      Category.find({ isActive: true }).select('slug updatedAt name image').lean(),
+      Post.find({ status: 'published' }).select('slug updatedAt title featuredImage').lean(),
       Page.find({ status: 'published' }).select('slug updatedAt').lean(),
-      Vendor.find({ status: 'active' }).select('slug updatedAt').lean(),
+      Vendor.find({ status: 'active' }).select('slug updatedAt storeName logo').lean(),
     ]);
 
-    // Build sitemap XML
+    // Build sitemap XML with image namespace
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n';
+    xml += '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n';
 
     // Homepage - highest priority
     xml += '  <url>\n';
@@ -41,8 +58,7 @@ exports.generateSitemap = async (req, res, next) => {
     xml += '    <priority>1.0</priority>\n';
     xml += '  </url>\n';
 
-    // Static pages - high priority (paths must match actual frontend routes)
-    // NOTE: /search is the main products listing page in this app
+    // Static pages
     const staticPages = [
       { path: '/search', priority: '0.9', changefreq: 'daily' },
       { path: '/blog', priority: '0.8', changefreq: 'weekly' },
@@ -63,7 +79,7 @@ exports.generateSitemap = async (req, res, next) => {
       xml += '  </url>\n';
     });
 
-    // Categories - high priority
+    // Categories with images
     categories.forEach(category => {
       const lastmod = category.updatedAt ? new Date(category.updatedAt).toISOString() : now;
       xml += '  <url>\n';
@@ -71,21 +87,36 @@ exports.generateSitemap = async (req, res, next) => {
       xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>weekly</changefreq>\n';
       xml += '    <priority>0.8</priority>\n';
+      if (category.image) {
+        xml += '    <image:image>\n';
+        xml += `      <image:loc>${escapeXml(category.image)}</image:loc>\n`;
+        xml += `      <image:title>${escapeXml(category.name)}</image:title>\n`;
+        xml += '    </image:image>\n';
+      }
       xml += '  </url>\n';
     });
 
-    // Products - medium-high priority
+    // Products with images (most important for e-commerce SEO)
     products.forEach(product => {
       const lastmod = product.updatedAt ? new Date(product.updatedAt).toISOString() : now;
       xml += '  <url>\n';
       xml += `    <loc>${BASE_URL}/product/${product.slug}</loc>\n`;
       xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>weekly</changefreq>\n';
-      xml += '    <priority>0.7</priority>\n';
+      xml += '    <priority>0.8</priority>\n';
+      // Add all product images (up to 5 for Google)
+      if (product.images && product.images.length > 0) {
+        product.images.slice(0, 5).forEach((img, idx) => {
+          xml += '    <image:image>\n';
+          xml += `      <image:loc>${escapeXml(img)}</image:loc>\n`;
+          xml += `      <image:title>${escapeXml(product.title)}${idx > 0 ? ` - Image ${idx + 1}` : ''}</image:title>\n`;
+          xml += '    </image:image>\n';
+        });
+      }
       xml += '  </url>\n';
     });
 
-    // Blog posts - medium priority
+    // Blog posts with featured images
     posts.forEach(post => {
       const lastmod = post.updatedAt ? new Date(post.updatedAt).toISOString() : now;
       xml += '  <url>\n';
@@ -93,21 +124,27 @@ exports.generateSitemap = async (req, res, next) => {
       xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>monthly</changefreq>\n';
       xml += '    <priority>0.6</priority>\n';
+      if (post.featuredImage) {
+        xml += '    <image:image>\n';
+        xml += `      <image:loc>${escapeXml(post.featuredImage)}</image:loc>\n`;
+        xml += `      <image:title>${escapeXml(post.title)}</image:title>\n';
+        xml += '    </image:image>\n';
+      }
       xml += '  </url>\n';
     });
 
-    // Custom pages - medium priority
+    // Custom pages
     pages.forEach(page => {
       const lastmod = page.updatedAt ? new Date(page.updatedAt).toISOString() : now;
       xml += '  <url>\n';
-      xml += `    <loc>${BASE_URL}/${page.slug}</loc>\n`;
+      xml += `    <loc>${BASE_URL}/page/${page.slug}</loc>\n`;
       xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>monthly</changefreq>\n';
-      xml += '    <priority>0.6</priority>\n';
+      xml += '    <priority>0.5</priority>\n';
       xml += '  </url>\n';
     });
 
-    // Vendors - medium priority
+    // Vendors with logos
     vendors.forEach(vendor => {
       const lastmod = vendor.updatedAt ? new Date(vendor.updatedAt).toISOString() : now;
       xml += '  <url>\n';
@@ -115,14 +152,19 @@ exports.generateSitemap = async (req, res, next) => {
       xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>weekly</changefreq>\n';
       xml += '    <priority>0.7</priority>\n';
+      if (vendor.logo) {
+        xml += '    <image:image>\n';
+        xml += `      <image:loc>${escapeXml(vendor.logo)}</image:loc>\n`;
+        xml += `      <image:title>${escapeXml(vendor.storeName)} Store</image:title>\n`;
+        xml += '    </image:image>\n';
+      }
       xml += '  </url>\n';
     });
 
     xml += '</urlset>';
 
-    // Set proper headers for XML
     res.header('Content-Type', 'application/xml');
-    res.header('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.header('Cache-Control', 'public, max-age=3600');
     res.send(xml);
   } catch (error) {
     next(error);
@@ -133,7 +175,7 @@ exports.generateSitemap = async (req, res, next) => {
 exports.generateRobotsTxt = async (req, res, next) => {
   try {
     const robotsTxt = `# VTech Kitchen - Robots.txt
-# https://vtechkitchen.com
+# https://www.vtechkitchen.com
 
 User-agent: *
 Allow: /
@@ -150,21 +192,18 @@ Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /api/
 
-# Disallow query parameter variations (pagination, filters)
+# Disallow query parameter variations
 Disallow: /*?page=
 Disallow: /*?sort=
 Disallow: /*?filter=
 Disallow: /*?ref=
-
-# Crawl-delay for polite crawling (optional)
-Crawl-delay: 1
 
 # Sitemap location
 Sitemap: ${BASE_URL}/sitemap.xml
 `;
 
     res.header('Content-Type', 'text/plain');
-    res.header('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+    res.header('Cache-Control', 'public, max-age=86400');
     res.send(robotsTxt);
   } catch (error) {
     next(error);
