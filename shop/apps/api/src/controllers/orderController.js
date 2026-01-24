@@ -208,15 +208,22 @@ exports.createOrder = async (req, res, next) => {
       }
     }
 
-    // Fetch user's cart to get the EXACT totals they saw in checkout
-    // This ensures Order total matches Checkout UI total
+    // Fetch user's cart to get discount/coupon info
+    // Try both userId and guestId to handle login state transitions
     const userId = req.user?._id;
     const guestId = req.cookies?.guestId;
-    const cartQuery = userId ? { userId } : { guestId };
-    const userCart = await Cart.findOne(cartQuery);
+    let userCart = null;
 
-    // Use cart totals if available, otherwise calculate
-    let cartTotals = userCart?.totals || { subtotal: 0, tax: 0, shipping: 0, discount: 0, total: 0 };
+    // Try to find cart by userId first, then by guestId
+    if (userId) {
+      userCart = await Cart.findOne({ userId });
+    }
+    if (!userCart && guestId) {
+      userCart = await Cart.findOne({ guestId });
+    }
+
+    // Get discount from cart (coupons), other totals will be calculated from items
+    const cartDiscount = userCart?.totals?.discount || 0;
 
     // Build order items and calculate subtotal for validation
     let subtotal = 0;
@@ -262,12 +269,25 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Use cart totals to ensure consistency with checkout UI
-    // This prevents mismatch between what user sees and what Razorpay charges
-    const tax = cartTotals.tax || 0;
-    const shipping = cartTotals.shipping || 0;
-    const discount = cartTotals.discount || 0;
-    const total = cartTotals.total || subtotal;
+    // Calculate tax directly from order items (same logic as Cart model)
+    // This ensures consistency even if cart is not found
+    const calculatedTax = orderItems.reduce((sum, item) => {
+      // Skip if tax is already included in price (Indian MRP)
+      if (item.taxIncluded) {
+        return sum;
+      }
+      // Calculate tax if item is taxable
+      if (item.taxable && item.taxRate > 0) {
+        const itemTax = (item.priceSnapshot * item.qty) * (item.taxRate / 100);
+        return sum + itemTax;
+      }
+      return sum;
+    }, 0);
+
+    const tax = calculatedTax;
+    const shipping = 0; // Shipping included in product price
+    const discount = cartDiscount;
+    const total = subtotal + tax + shipping - discount;
 
     // Determine payment provider and status
     // All payments go through Razorpay (COD has been removed)
@@ -330,18 +350,28 @@ exports.createOrder = async (req, res, next) => {
       // ===== NEW: CREATE SEPARATE ORDER FOR EACH VENDOR =====
 
       for (const [vendorIdStr, vendorItems] of Object.entries(vendorGroups)) {
-      // Calculate vendor-specific totals
-      // Use cart totals which already have the correct tax (0% for Indian MRP pricing)
+      // Calculate vendor-specific totals directly from items
       const vendorSubtotal = vendorItems.reduce((sum, item) =>
         sum + (item.priceSnapshot * item.qty), 0);
 
-      // Calculate vendor's proportion of cart totals
-      const vendorProportion = subtotal > 0 ? vendorSubtotal / subtotal : 1;
+      // Calculate vendor tax directly from vendor items (same logic as Cart model)
+      const vendorTax = vendorItems.reduce((sum, item) => {
+        // Skip if tax is already included in price (Indian MRP)
+        if (item.taxIncluded) {
+          return sum;
+        }
+        // Calculate tax if item is taxable
+        if (item.taxable && item.taxRate > 0) {
+          const itemTax = (item.priceSnapshot * item.qty) * (item.taxRate / 100);
+          return sum + itemTax;
+        }
+        return sum;
+      }, 0);
 
-      // Use cart tax rate (0% - Indian MRP includes all taxes)
-      const vendorTax = Math.round((cartTotals.tax || 0) * vendorProportion * 100) / 100;
-      const vendorShipping = Math.round((cartTotals.shipping || 0) * vendorProportion * 100) / 100;
-      const vendorDiscount = Math.round((cartTotals.discount || 0) * vendorProportion * 100) / 100;
+      // Calculate vendor's proportion of discount
+      const vendorProportion = subtotal > 0 ? vendorSubtotal / subtotal : 1;
+      const vendorShipping = 0; // Shipping included in product price
+      const vendorDiscount = Math.round(discount * vendorProportion * 100) / 100;
       const vendorTotal = vendorSubtotal + vendorTax + vendorShipping - vendorDiscount;
 
         // All orders require payment verification (COD removed)
