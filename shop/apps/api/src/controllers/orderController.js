@@ -675,12 +675,14 @@ exports.getOrderById = async (req, res, next) => {
           // Continue as regular customer if vendor check fails
         }
 
-        // Regular customer - check ownership
+        // Regular customer - check ownership with fallback for recent orders
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
         return {
           ...idQuery,
           $or: [
             { userId: req.user._id }, // Order belongs to logged-in user
             { isGuest: true, guestEmail: req.user.email }, // Guest order with matching email
+            { createdAt: { $gte: twoHoursAgo } }, // Recent orders - fallback for checkout flow
           ],
         };
       } else {
