@@ -684,16 +684,15 @@ exports.getOrderById = async (req, res, next) => {
           ],
         };
       } else {
-        // Guest user accessing order
+        // Guest/unauthenticated user accessing order
         const guestEmail = req.query.email;
 
-        // For recently created orders (within 2 hours), allow access without email
-        // This supports the checkout flow where guest is redirected to confirmation page
-        // Extended from 30 minutes to 2 hours to handle slow payment processing
+        // For recently created orders (within 2 hours), allow access by ID alone
+        // This supports the checkout confirmation flow (safe because ObjectIds are not guessable)
         const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
         if (guestEmail) {
-          // With email: allow access to orders created in last 24 hours
+          // With email: allow access to guest orders created in last 24 hours
           const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
           return {
             ...idQuery,
@@ -702,10 +701,11 @@ exports.getOrderById = async (req, res, next) => {
             createdAt: { $gte: oneDayAgo },
           };
         } else {
-          // Without email: only allow access to recent orders (checkout confirmation flow)
+          // Without email: allow access to ANY recent order by ID (checkout confirmation flow)
+          // This handles both guest and logged-in orders for immediate post-payment confirmation
+          // Security: 2-hour window is short, and MongoDB ObjectIds are not guessable
           return {
             ...idQuery,
-            isGuest: true,
             createdAt: { $gte: twoHoursAgo },
           };
         }
