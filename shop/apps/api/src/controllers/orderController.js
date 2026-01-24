@@ -714,7 +714,9 @@ exports.getOrderById = async (req, res, next) => {
 
     // Check if it's a valid MongoDB ObjectId format
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      const query = await buildQuery({ _id: id });
+      // Convert string to ObjectId for proper MongoDB query
+      const objectId = new mongoose.Types.ObjectId(id);
+      const query = await buildQuery({ _id: objectId });
       order = await Order.findOne(query).lean();
     } else {
       // Assume it's an orderId string

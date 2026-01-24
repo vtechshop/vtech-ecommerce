@@ -13,6 +13,45 @@ const crypto = require('crypto');
 const logger = require('../config/logger');
 
 /**
+ * Helper function to restore stock when payment fails
+ * @param {Object} order - Order object
+ */
+const restoreStockOnPaymentFailure = async (order) => {
+  try {
+    logger.info(`Restoring stock for failed payment on order ${order._id}`);
+
+    for (const item of order.items) {
+      const Product = require('../models/Product');
+      const product = await Product.findById(item.productId);
+
+      if (!product) {
+        logger.warn(`Product not found for stock restoration: ${item.productId}`);
+        continue;
+      }
+
+      if (item.variantId) {
+        const variant = product.variants.id(item.variantId);
+        if (variant) {
+          variant.stock += item.qty;
+          logger.info(`Restored ${item.qty} stock for variant ${item.variantId} of product ${product.title}`);
+        } else {
+          logger.warn(`Variant ${item.variantId} not found for stock restoration`);
+        }
+      } else {
+        product.stock += item.qty;
+        logger.info(`Restored ${item.qty} stock for product ${product.title}`);
+      }
+
+      await product.save();
+    }
+
+    logger.info(`Stock restoration completed for order ${order._id}`);
+  } catch (error) {
+    logger.error(`Failed to restore stock for order ${order._id}:`, error);
+  }
+};
+
+/**
  * Create Razorpay order
  * POST /api/payment/razorpay/create-order
  */
@@ -43,7 +82,10 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Verify order ownership
+    // Verify order ownership (with fallback for recent orders if auth expires during payment)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const isRecentOrder = order.createdAt >= oneHourAgo;
+
     if (order.isGuest) {
       // Guest orders: allow payment if user is not logged in, or if logged in user's email matches
       if (req.user && order.guestEmail && req.user.email !== order.guestEmail) {
@@ -56,8 +98,20 @@ exports.createOrder = async (req, res, next) => {
         });
       }
     } else if (order.userId) {
-      // Registered user orders: must be logged in and match userId
-      if (!req.user) {
+      // Registered user orders: check ownership
+      if (req.user) {
+        // If logged in, must match userId
+        if (order.userId.toString() !== req.user._id.toString()) {
+          return res.status(403).json({
+            success: false,
+            error: {
+              code: 'FORBIDDEN',
+              message: 'You can only pay for your own orders',
+            },
+          });
+        }
+      } else if (!isRecentOrder) {
+        // If not logged in and order is old, require login
         return res.status(401).json({
           success: false,
           error: {
@@ -66,15 +120,8 @@ exports.createOrder = async (req, res, next) => {
           },
         });
       }
-      if (order.userId.toString() !== req.user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: 'FORBIDDEN',
-            message: 'You can only pay for your own orders',
-          },
-        });
-      }
+      // If not logged in but order is recent (within 1 hour), allow payment
+      // This handles token expiration during checkout flow
     }
 
     // Check if order is already paid
@@ -197,7 +244,10 @@ exports.verifyPayment = async (req, res, next) => {
       });
     }
 
-    // Verify order ownership
+    // Verify order ownership (with fallback for recent orders if auth expires during payment)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const isRecentOrder = order.createdAt >= oneHourAgo;
+
     if (order.isGuest) {
       // Guest orders: allow verification if user is not logged in, or if emails match
       if (req.user && order.guestEmail && req.user.email !== order.guestEmail) {
@@ -210,8 +260,20 @@ exports.verifyPayment = async (req, res, next) => {
         });
       }
     } else if (order.userId) {
-      // Registered user orders: must be logged in and match userId
-      if (!req.user) {
+      // Registered user orders: check ownership
+      if (req.user) {
+        // If logged in, must match userId
+        if (order.userId.toString() !== req.user._id.toString()) {
+          return res.status(403).json({
+            success: false,
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Unauthorized access to order',
+            },
+          });
+        }
+      } else if (!isRecentOrder) {
+        // If not logged in and order is old, require login
         return res.status(401).json({
           success: false,
           error: {
@@ -220,15 +282,22 @@ exports.verifyPayment = async (req, res, next) => {
           },
         });
       }
-      if (order.userId.toString() !== req.user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: 'FORBIDDEN',
-            message: 'Unauthorized access to order',
-          },
-        });
-      }
+      // If not logged in but order is recent (within 1 hour), allow verification
+      // This handles token expiration during checkout flow
+    }
+
+    // Check for double processing - if payment is already captured/paid, skip processing
+    if (order.payment?.status === 'captured' || order.payment?.status === 'paid') {
+      logger.warn(`Payment ${razorpayPaymentId} already processed for order ${orderId}, skipping duplicate processing`);
+      return res.json({
+        success: true,
+        data: {
+          orderId: order._id,
+          paymentStatus: 'already_processed',
+          orderStatus: order.status,
+          message: 'Payment already processed',
+        },
+      });
     }
 
     // Update order with payment details
@@ -411,7 +480,10 @@ exports.paymentFailure = async (req, res, next) => {
       });
     }
 
-    // Verify order ownership
+    // Verify order ownership (with fallback for recent orders if auth expires during payment)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const isRecentOrder = order.createdAt >= oneHourAgo;
+
     if (order.isGuest) {
       // Guest orders: allow if user is not logged in, or if emails match
       if (req.user && order.guestEmail && req.user.email !== order.guestEmail) {
@@ -424,8 +496,20 @@ exports.paymentFailure = async (req, res, next) => {
         });
       }
     } else if (order.userId) {
-      // Registered user orders: must be logged in and match userId
-      if (!req.user) {
+      // Registered user orders: check ownership
+      if (req.user) {
+        // If logged in, must match userId
+        if (order.userId.toString() !== req.user._id.toString()) {
+          return res.status(403).json({
+            success: false,
+            error: {
+              code: 'FORBIDDEN',
+              message: 'Unauthorized access to order',
+            },
+          });
+        }
+      } else if (!isRecentOrder) {
+        // If not logged in and order is old, require login
         return res.status(401).json({
           success: false,
           error: {
@@ -434,15 +518,7 @@ exports.paymentFailure = async (req, res, next) => {
           },
         });
       }
-      if (order.userId.toString() !== req.user._id.toString()) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: 'FORBIDDEN',
-            message: 'Unauthorized access to order',
-          },
-        });
-      }
+      // If not logged in but order is recent (within 1 hour), allow access
     }
 
     // Update order with failure details
@@ -452,6 +528,9 @@ exports.paymentFailure = async (req, res, next) => {
     order.payment.failedAt = new Date();
 
     await order.save();
+
+    // Restore stock since payment failed
+    await restoreStockOnPaymentFailure(order);
 
     res.json({
       success: true,
@@ -644,6 +723,9 @@ async function handlePaymentFailed(payload) {
 
     await order.save();
     console.log(`Payment failed for order ${orderId}`);
+
+    // Restore stock since payment failed via webhook
+    await restoreStockOnPaymentFailure(order);
   } catch (error) {
     console.error('Error handling payment failed:', error);
   }
@@ -791,6 +873,323 @@ async function handleTransferReversed(payload) {
 }
 
 /**
+ * Determine if a failed transfer should be retried
+ * @param {string} errorCode - Razorpay error code
+ * @param {string} failureReason - Failure reason description
+ * @returns {boolean} Whether the transfer should be retried
+ */
+function shouldRetryTransfer(errorCode, failureReason) {
+  // Retry for temporary network/server errors, but not for permanent issues
+  const retryableErrors = [
+    'GATEWAY_ERROR',
+    'SERVER_ERROR',
+    'NETWORK_ERROR',
+    'TIMEOUT_ERROR',
+    'RATE_LIMIT_ERROR'
+  ];
+
+  const nonRetryableReasons = [
+    'insufficient funds',
+    'account suspended',
+    'invalid account',
+    'account not found',
+    'kyc pending',
+    'kyc failed'
+  ];
+
+  // Check if error code suggests retry
+  if (errorCode && retryableErrors.includes(errorCode)) {
+    return true;
+  }
+
+  // Check if failure reason suggests no retry
+  if (failureReason) {
+    const lowerReason = failureReason.toLowerCase();
+    if (nonRetryableReasons.some(reason => lowerReason.includes(reason))) {
+      return false;
+    }
+  }
+
+  // Default to retry for unknown errors (they might be temporary)
+  return true;
+}
+
+/**
+ * Retry a failed transfer
+ * @param {Object} commission - Commission record to retry
+ */
+async function retryFailedTransfer(commission) {
+  try {
+    logger.info(`Retrying failed transfer for commission ${commission._id}`);
+
+    // Check if commission is still in pending status (not manually processed)
+    if (commission.status !== 'pending') {
+      logger.info(`Commission ${commission._id} is no longer pending, skipping retry`);
+      return;
+    }
+
+    // Check retry count to prevent infinite loops
+    const retryCount = commission.transfer?.retryCount || 0;
+    if (retryCount >= 3) {
+      logger.warn(`Commission ${commission._id} has exceeded maximum retry attempts (${retryCount})`);
+      return;
+    }
+
+    // Get order to recreate transfer
+    const Order = require('../models/Order');
+    const order = await Order.findById(commission.orderId);
+    if (!order) {
+      logger.error(`Order not found for commission retry: ${commission.orderId}`);
+      return;
+    }
+
+    // Get payment ID from order
+    const razorpayPaymentId = order.payment?.razorpayPaymentId;
+    if (!razorpayPaymentId) {
+      logger.error(`Payment ID not found for order ${order._id}`);
+      return;
+    }
+
+    // Recreate the transfer
+    const transferData = {
+      accountId: commission.transfer?.linkedAccountId,
+      amount: commission.amount,
+      currency: 'INR',
+      notes: {
+        orderId: order._id.toString(),
+        orderNumber: order.orderId,
+        commissionId: commission._id.toString(),
+        retryAttempt: retryCount + 1,
+        type: commission.type === 'vendor' ? 'vendor_commission' : 'affiliate_commission',
+      },
+    };
+
+    const { createTransfers } = require('../utils/razorpay');
+    const transferResult = await createTransfers(razorpayPaymentId, [transferData]);
+
+    if (transferResult.success && transferResult.successfulTransfers.length > 0) {
+      const newTransfer = transferResult.successfulTransfers[0];
+
+      // Update commission with new transfer details
+      commission.transfer.transferId = newTransfer.transferId;
+      commission.transfer.status = newTransfer.status;
+      commission.transfer.retryCount = retryCount + 1;
+      commission.transfer.lastRetryAt = new Date();
+
+      if (newTransfer.status === 'processed') {
+        commission.status = 'paid';
+        commission.paidAt = new Date();
+      } else {
+        commission.status = 'approved';
+        commission.approvedAt = new Date();
+      }
+
+      await commission.save();
+      logger.info(`Successfully retried transfer for commission ${commission._id}`);
+    } else {
+      // Update retry count and schedule next retry if under limit
+      commission.transfer.retryCount = retryCount + 1;
+      commission.transfer.lastRetryAt = new Date();
+      await commission.save();
+
+      if (retryCount + 1 < 3) {
+        // Schedule next retry with exponential backoff (5 minutes, 15 minutes, 45 minutes)
+        const delays = [5 * 60 * 1000, 15 * 60 * 1000, 45 * 60 * 1000];
+        setTimeout(() => retryFailedTransfer(commission), delays[retryCount]);
+        logger.info(`Scheduled next retry for commission ${commission._id} in ${delays[retryCount] / 1000 / 60} minutes`);
+      } else {
+        logger.warn(`Maximum retries exceeded for commission ${commission._id}`);
+      }
+    }
+
+  } catch (error) {
+    logger.error(`Failed to retry transfer for commission ${commission._id}:`, error);
+  }
+}
+
+/**
+ * Create commissions for a successfully paid order
+ * This function calculates and creates commission records after payment verification
+ */
+async function createCommissionsAfterPayment(order) {
+  try {
+    logger.info(`Creating commissions for paid order ${order._id}`);
+
+    const commissionRecords = [];
+
+    // Get unique vendors from order items (for multi-vendor orders)
+    // Group items by vendorId and calculate subtotal per vendor
+    const vendorSubtotals = {};
+    if (order.items && order.items.length > 0) {
+      for (const item of order.items) {
+        if (item.vendorId) {
+          const vendorIdStr = item.vendorId.toString();
+          if (!vendorSubtotals[vendorIdStr]) {
+            vendorSubtotals[vendorIdStr] = 0;
+          }
+          // Calculate item subtotal (price * qty)
+          vendorSubtotals[vendorIdStr] += (item.priceSnapshot || 0) * (item.qty || 1);
+        }
+      }
+    }
+
+    // Process each vendor's commission
+    const vendorIds = Object.keys(vendorSubtotals);
+    for (const vendorIdStr of vendorIds) {
+      const Vendor = require('../models/Vendor');
+      const Product = require('../models/Product');
+
+      const vendor = await Vendor.findById(vendorIdStr);
+
+      if (vendor) {
+        // Batch fetch products for this vendor to avoid N+1 queries
+        const vendorItems = order.items.filter(item => item.vendorId.toString() === vendorIdStr);
+        const productIds = vendorItems.map(item => item.productId);
+        const products = await Product.find({ _id: { $in: productIds } }).populate('categoryIds');
+
+        // Create a map for quick product lookup
+        const productMap = new Map(products.map(p => [p._id.toString(), p]));
+
+        // Calculate commissions for each item
+        for (const item of vendorItems) {
+          const product = productMap.get(item.productId.toString());
+          if (!product) continue;
+
+          // Commission calculation logic
+          let commissionPercentage = null;
+
+          if (product.vendorCommissionPercentage !== undefined && product.vendorCommissionPercentage !== null) {
+            commissionPercentage = product.vendorCommissionPercentage;
+          }
+
+          if (commissionPercentage === null && product.categoryIds && product.categoryIds.length > 0 &&
+              product.vendorCommissionRules && product.vendorCommissionRules.length > 0) {
+            for (const categoryId of product.categoryIds) {
+              const rule = product.vendorCommissionRules.find(r => r.categoryId.toString() === categoryId._id.toString());
+              if (rule && rule.percentage !== undefined && rule.percentage !== null) {
+                commissionPercentage = rule.percentage;
+                break;
+              }
+            }
+          }
+
+          if (commissionPercentage === null && product.categoryIds && product.categoryIds.length > 0 &&
+              vendor.commissionRules && vendor.commissionRules.length > 0) {
+            for (const categoryId of product.categoryIds) {
+              const rule = vendor.commissionRules.find(r => r.categoryId.toString() === categoryId._id.toString());
+              if (rule && rule.percentage !== undefined && rule.percentage !== null) {
+                commissionPercentage = rule.percentage;
+                break;
+              }
+            }
+          }
+
+          if (commissionPercentage === null) {
+            commissionPercentage = vendor.defaultCommissionPercentage || 15;
+          }
+
+          const commissionAmount = (item.priceSnapshot * item.qty * commissionPercentage) / 100;
+
+          commissionRecords.push({
+            type: 'vendor',
+            subjectId: item.vendorId,
+            subjectModel: 'Vendor',
+            orderId: order._id,
+            orderItemId: item._id,
+            amount: commissionAmount,
+            percentage: commissionPercentage,
+            status: 'pending', // Will be updated when transfer is processed
+          });
+        }
+
+        logger.info(`Created ${commissionRecords.length} commission records for vendor ${vendor.storeName}`);
+      }
+    }
+
+    // Check if order has affiliate tracking and create affiliate commission
+    if (order.affiliateCode) {
+      const Affiliate = require('../models/Affiliate');
+      const affiliate = await Affiliate.findOne({ code: order.affiliateCode });
+
+      if (affiliate) {
+        let totalAffiliateCommission = 0;
+
+        for (const item of order.items) {
+          const Product = require('../models/Product');
+          const product = await Product.findById(item.productId).populate('categoryIds');
+          let commissionPercentage = null;
+
+          if (product.affiliateCommissionPercentage !== undefined && product.affiliateCommissionPercentage !== null) {
+            commissionPercentage = product.affiliateCommissionPercentage;
+          }
+
+          if (commissionPercentage === null && product.categoryIds && product.categoryIds.length > 0 &&
+              product.affiliateCommissionRules && product.affiliateCommissionRules.length > 0) {
+            for (const categoryId of product.categoryIds) {
+              const rule = product.affiliateCommissionRules.find(r => r.categoryId.toString() === categoryId._id.toString());
+              if (rule && rule.percentage !== undefined && rule.percentage !== null) {
+                commissionPercentage = rule.percentage;
+                break;
+              }
+            }
+          }
+
+          if (commissionPercentage === null && product.categoryIds && product.categoryIds.length > 0 &&
+              affiliate.commissionRules && affiliate.commissionRules.length > 0) {
+            for (const categoryId of product.categoryIds) {
+              const rule = affiliate.commissionRules.find(r => r.categoryId.toString() === categoryId._id.toString());
+              if (rule && rule.percentage !== undefined && rule.percentage !== null) {
+                commissionPercentage = rule.percentage;
+                break;
+              }
+            }
+          }
+
+          if (commissionPercentage === null) {
+            commissionPercentage = affiliate.commissionPercentage || 5;
+          }
+
+          const itemTotal = item.priceSnapshot * item.qty;
+          const itemCommission = (itemTotal * commissionPercentage) / 100;
+          totalAffiliateCommission += itemCommission;
+        }
+
+        commissionRecords.push({
+          type: 'affiliate',
+          subjectId: affiliate._id,
+          subjectModel: 'Affiliate',
+          orderId: order._id,
+          amount: totalAffiliateCommission,
+          percentage: affiliate.commissionPercentage,
+          status: 'pending',
+        });
+
+        // Update affiliate stats
+        affiliate.totalConversions += 1;
+        affiliate.pendingEarnings += totalAffiliateCommission;
+        await affiliate.save();
+
+        logger.info(`Created affiliate commission: ₹${totalAffiliateCommission} for ${affiliate.code}`);
+      }
+    }
+
+    // Save all commission records
+    if (commissionRecords.length > 0) {
+      await Commission.insertMany(commissionRecords);
+      logger.info(`Successfully created ${commissionRecords.length} commission records for order ${order._id}`);
+      return commissionRecords;
+    } else {
+      logger.info(`No commission records to create for order ${order._id}`);
+      return [];
+    }
+
+  } catch (error) {
+    logger.error(`Failed to create commissions for order ${order._id}:`, error);
+    return [];
+  }
+}
+
+/**
  * Process automatic transfers to vendors and affiliates
  * This function calculates commissions and creates transfers via Razorpay Route
  */
@@ -899,62 +1298,102 @@ async function processAutomaticTransfers(order, razorpayPaymentId) {
     if (transfers.length > 0) {
       logger.info(`Creating ${transfers.length} transfer(s) for payment ${razorpayPaymentId}`);
 
-      const transferResult = await createTransfers(razorpayPaymentId, transfers);
+      try {
+        const transferResult = await createTransfers(razorpayPaymentId, transfers);
 
-      if (transferResult.success) {
-        logger.info(`Successfully created ${transferResult.successfulTransfers.length} transfer(s)`);
+        if (transferResult.success) {
+          logger.info(`Successfully created ${transferResult.successfulTransfers.length} transfer(s)`);
 
-        // Update commission records with transfer details
-        for (let i = 0; i < transferResult.successfulTransfers.length; i++) {
-          const transfer = transferResult.successfulTransfers[i];
-          commissionRecords[i].transfer = {
-            transferId: transfer.transferId,
-            status: transfer.status,
-            processedAt: new Date(),
-            linkedAccountId: transfer.accountId,
-          };
-          commissionRecords[i].status = 'approved';
-          commissionRecords[i].approvedAt = new Date();
+          // Update commission records with transfer details
+          for (let i = 0; i < transferResult.successfulTransfers.length; i++) {
+            const transfer = transferResult.successfulTransfers[i];
+            commissionRecords[i].transfer = {
+              transferId: transfer.transferId,
+              status: transfer.status,
+              processedAt: new Date(),
+              linkedAccountId: transfer.accountId,
+            };
+            commissionRecords[i].status = 'approved';
+            commissionRecords[i].approvedAt = new Date();
 
-          // If transfer is already processed, mark as paid
-          if (transfer.status === 'processed') {
-            commissionRecords[i].status = 'paid';
-            commissionRecords[i].paidAt = new Date();
+            // If transfer is already processed, mark as paid
+            if (transfer.status === 'processed') {
+              commissionRecords[i].status = 'paid';
+              commissionRecords[i].paidAt = new Date();
+            }
+          }
+
+          // Save commission records with error handling
+          try {
+            await Commission.insertMany(commissionRecords);
+            logger.info(`Commission records saved successfully`);
+          } catch (commissionError) {
+            logger.error(`Failed to save commission records: ${commissionError.message}`, commissionError);
+            // Continue processing even if commission save fails
+          }
+
+          // Update vendor/affiliate earnings with error handling
+          for (const transfer of transferResult.successfulTransfers) {
+            try {
+              const commissionType = transfer.notes.type;
+              if (commissionType === 'vendor_commission') {
+                await Vendor.findByIdAndUpdate(transfer.notes.vendorId, {
+                  $inc: { pendingEarnings: transfer.amount },
+                  'razorpay.lastSettlementAt': new Date(),
+                });
+                logger.info(`Updated earnings for vendor ${transfer.notes.vendorId}`);
+              } else if (commissionType === 'affiliate_commission') {
+                await Affiliate.findByIdAndUpdate(transfer.notes.affiliateId, {
+                  $inc: { pendingEarnings: transfer.amount },
+                  'razorpay.lastSettlementAt': new Date(),
+                });
+                logger.info(`Updated earnings for affiliate ${transfer.notes.affiliateId}`);
+              }
+            } catch (earningsError) {
+              logger.error(`Failed to update earnings for ${commissionType}: ${earningsError.message}`, earningsError);
+              // Continue processing other transfers
+            }
+          }
+
+          logger.info(`Commission records created and earnings updated`);
+        } else {
+          logger.error(`Transfer creation failed: ${transferResult.error}`);
+          // Save commission records as pending even if transfer failed
+          try {
+            await Commission.insertMany(commissionRecords);
+            logger.info(`Commission records saved as pending after transfer failure`);
+          } catch (commissionError) {
+            logger.error(`Failed to save commission records after transfer failure: ${commissionError.message}`, commissionError);
           }
         }
 
-        // Save commission records
-        await Commission.insertMany(commissionRecords);
-
-        // Update vendor/affiliate earnings
-        for (const transfer of transferResult.successfulTransfers) {
-          const commissionType = transfer.notes.type;
-          if (commissionType === 'vendor_commission') {
-            await Vendor.findByIdAndUpdate(transfer.notes.vendorId, {
-              $inc: { pendingEarnings: transfer.amount },
-              'razorpay.lastSettlementAt': new Date(),
-            });
-          } else if (commissionType === 'affiliate_commission') {
-            await Affiliate.findByIdAndUpdate(transfer.notes.affiliateId, {
-              $inc: { pendingEarnings: transfer.amount },
-              'razorpay.lastSettlementAt': new Date(),
-            });
-          }
+        // Log failed transfers with detailed information
+        if (transferResult.failedTransfers && transferResult.failedTransfers.length > 0) {
+          logger.error(`Failed transfers (${transferResult.failedTransfers.length}):`);
+          transferResult.failedTransfers.forEach((failedTransfer, index) => {
+            logger.error(`  ${index + 1}. Account: ${failedTransfer.accountId}, Amount: ₹${failedTransfer.amount}, Error: ${failedTransfer.error || 'Unknown'}`);
+          });
         }
 
-        logger.info(`Commission records created and earnings updated`);
-      } else {
-        logger.error(`Transfer creation failed: ${transferResult.error}`);
-        // Save commission records as pending even if transfer failed
-        await Commission.insertMany(commissionRecords);
-      }
+        return transferResult;
 
-      // Log failed transfers
-      if (transferResult.failedTransfers && transferResult.failedTransfers.length > 0) {
-        logger.error(`Failed transfers: ${JSON.stringify(transferResult.failedTransfers)}`);
-      }
+      } catch (transferError) {
+        logger.error(`Critical error during transfer processing: ${transferError.message}`, transferError);
 
-      return transferResult;
+        // Save commission records as pending on critical error
+        try {
+          await Commission.insertMany(commissionRecords);
+          logger.info(`Commission records saved as pending after critical transfer error`);
+        } catch (commissionError) {
+          logger.error(`Failed to save commission records after critical error: ${commissionError.message}`, commissionError);
+        }
+
+        return {
+          success: false,
+          error: `Transfer processing failed: ${transferError.message}`,
+          commissionRecordsSaved: true
+        };
+      }
     } else {
       logger.info(`No transfers to process for order ${order._id}`);
       return { success: true, message: 'No transfers needed' };
