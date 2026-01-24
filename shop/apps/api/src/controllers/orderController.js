@@ -331,12 +331,17 @@ exports.createOrder = async (req, res, next) => {
 
       for (const [vendorIdStr, vendorItems] of Object.entries(vendorGroups)) {
       // Calculate vendor-specific totals
+      // Use cart totals which already have the correct tax (0% for Indian MRP pricing)
       const vendorSubtotal = vendorItems.reduce((sum, item) =>
         sum + (item.priceSnapshot * item.qty), 0);
 
-      const vendorTax = vendorSubtotal * 0.1;
-      const vendorShipping = shipping / Object.keys(vendorGroups).length; // Split shipping
-      const vendorDiscount = 0;
+      // Calculate vendor's proportion of cart totals
+      const vendorProportion = subtotal > 0 ? vendorSubtotal / subtotal : 1;
+
+      // Use cart tax rate (0% - Indian MRP includes all taxes)
+      const vendorTax = Math.round((cartTotals.tax || 0) * vendorProportion * 100) / 100;
+      const vendorShipping = Math.round((cartTotals.shipping || 0) * vendorProportion * 100) / 100;
+      const vendorDiscount = Math.round((cartTotals.discount || 0) * vendorProportion * 100) / 100;
       const vendorTotal = vendorSubtotal + vendorTax + vendorShipping - vendorDiscount;
 
         // All orders require payment verification (COD removed)
@@ -422,79 +427,9 @@ exports.createOrder = async (req, res, next) => {
           }
         }
 
-      // ===== CREATE COMMISSIONS FOR THIS VENDOR ORDER (BATCH OPTIMIZED) =====
-      const Vendor = require('../models/Vendor');
-
-      // Batch fetch vendor and products to avoid N+1 queries
-      const productIds = vendorItems.map(item => item.productId);
-      const [vendor, products] = await Promise.all([
-        Vendor.findById(vendorIdStr),
-        Product.find({ _id: { $in: productIds } }).populate('categoryIds')
-      ]);
-
-      if (!vendor) continue;
-
-      // Create a map for quick product lookup
-      const productMap = new Map(products.map(p => [p._id.toString(), p]));
-
-      // Collect all commissions to create in batch
-      const commissionsToCreate = [];
-
-      for (const item of vendorItems) {
-        const product = productMap.get(item.productId.toString());
-        if (!product) continue;
-
-        // Commission calculation logic
-        let commissionPercentage = null;
-
-        if (product.vendorCommissionPercentage !== undefined && product.vendorCommissionPercentage !== null) {
-          commissionPercentage = product.vendorCommissionPercentage;
-        }
-
-        if (commissionPercentage === null && product.categoryIds && product.categoryIds.length > 0 &&
-            product.vendorCommissionRules && product.vendorCommissionRules.length > 0) {
-          for (const categoryId of product.categoryIds) {
-            const rule = product.vendorCommissionRules.find(r => r.categoryId.toString() === categoryId._id.toString());
-            if (rule && rule.percentage !== undefined && rule.percentage !== null) {
-              commissionPercentage = rule.percentage;
-              break;
-            }
-          }
-        }
-
-        if (commissionPercentage === null && product.categoryIds && product.categoryIds.length > 0 &&
-            vendor.commissionRules && vendor.commissionRules.length > 0) {
-          for (const categoryId of product.categoryIds) {
-            const rule = vendor.commissionRules.find(r => r.categoryId.toString() === categoryId._id.toString());
-            if (rule && rule.percentage !== undefined && rule.percentage !== null) {
-              commissionPercentage = rule.percentage;
-              break;
-            }
-          }
-        }
-
-        if (commissionPercentage === null) {
-          commissionPercentage = vendor.defaultCommissionPercentage || 15;
-        }
-
-        const commissionAmount = (item.priceSnapshot * item.qty * commissionPercentage) / 100;
-
-        commissionsToCreate.push({
-          type: 'vendor',
-          subjectId: item.vendorId,
-          subjectModel: 'Vendor',
-          orderId: vendorOrder._id,
-          orderItemId: item._id,
-          amount: commissionAmount,
-          percentage: commissionPercentage,
-          status: 'pending',
-        });
-      }
-
-      // Batch create all commissions for this vendor
-      if (commissionsToCreate.length > 0) {
-        await Commission.create(commissionsToCreate, sessionOpt);
-      }
+      // ===== COMMISSIONS WILL BE CREATED AFTER PAYMENT SUCCESS =====
+      // Commission creation moved to razorpayController.js after payment verification
+      // to ensure commissions are only created for successfully paid orders
       }
 
     // ===== AFFILIATE TRACKING (track once for entire purchase) =====
@@ -722,9 +657,10 @@ exports.getOrderById = async (req, res, next) => {
         // Guest user accessing order
         const guestEmail = req.query.email;
 
-        // For recently created orders (within 30 minutes), allow access without email
+        // For recently created orders (within 2 hours), allow access without email
         // This supports the checkout flow where guest is redirected to confirmation page
-        const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);
+        // Extended from 30 minutes to 2 hours to handle slow payment processing
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
         if (guestEmail) {
           // With email: allow access to orders created in last 24 hours
@@ -736,11 +672,11 @@ exports.getOrderById = async (req, res, next) => {
             createdAt: { $gte: oneDayAgo },
           };
         } else {
-          // Without email: only allow access to very recent orders (checkout confirmation flow)
+          // Without email: only allow access to recent orders (checkout confirmation flow)
           return {
             ...idQuery,
             isGuest: true,
-            createdAt: { $gte: thirtyMinutesAgo },
+            createdAt: { $gte: twoHoursAgo },
           };
         }
       }
