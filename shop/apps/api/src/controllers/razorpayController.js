@@ -11,6 +11,7 @@ const Vendor = require('../models/Vendor');
 const Affiliate = require('../models/Affiliate');
 const crypto = require('crypto');
 const logger = require('../config/logger');
+const notificationHelper = require('../services/notificationHelper');
 
 /**
  * Helper function to restore stock when payment fails
@@ -135,8 +136,26 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Create Razorpay order with user or guest info
-    const result = await createRazorpayOrder(amount, 'INR', {
+    // SECURITY: Use the order's actual total from database, not the amount from request
+    // This prevents malicious users from manipulating the payment amount
+    const orderTotal = order.totals?.total;
+    if (!orderTotal || orderTotal <= 0) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_ORDER_TOTAL',
+          message: 'Order has invalid total amount',
+        },
+      });
+    }
+
+    // Log if frontend amount differs from order total (for debugging)
+    if (amount !== orderTotal) {
+      logger.warn(`Amount mismatch for order ${orderId}: frontend=${amount}, order=${orderTotal}. Using order total.`);
+    }
+
+    // Create Razorpay order with order total from database
+    const result = await createRazorpayOrder(orderTotal, 'INR', {
       receipt: `order_${orderId}`,
       notes: {
         orderId: orderId.toString(),
@@ -172,7 +191,7 @@ exports.createOrder = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error('Create Razorpay order error:', error);
+    logger.error('Create Razorpay order error:', error);
     next(error);
   }
 };
@@ -384,8 +403,6 @@ exports.verifyPayment = async (req, res, next) => {
       // Send vendor and admin notifications (only if not already sent)
       if (!order.vendorNotificationSent) {
         try {
-          const Product = require('../models/Product');
-
           // Get unique vendors from order items
           const vendorItemsMap = {};
           for (const item of order.items) {
@@ -403,15 +420,55 @@ exports.verifyPayment = async (req, res, next) => {
             try {
               const vendor = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
               if (vendor && vendor.userId?.email) {
+                // Send email notification to vendor
                 await notificationService.sendVendorOrderNotification(vendor, order, vendorItems);
-                logger.info(`Vendor notification sent to ${vendor.storeName} (${vendor.userId.email})`);
+                logger.info(`Vendor email notification sent to ${vendor.storeName} (${vendor.userId.email})`);
+
+                // Create in-app notification for vendor
+                await notificationHelper.notifyVendorNewOrder({
+                  vendorUserId: vendor.userId._id,
+                  order: {
+                    _id: order._id,
+                    orderNumber: order.orderId,
+                  },
+                  items: vendorItems.map(item => ({
+                    quantity: item.qty,
+                    price: item.priceSnapshot,
+                  })),
+                });
+                logger.info(`Vendor in-app notification created for ${vendor.storeName}`);
               }
 
-              // Send admin notification for each vendor's items
+              // Send admin email notification for each vendor's items
               await notificationService.sendAdminOrderNotification(order, vendorItems, vendor?.userId, vendor);
             } catch (vendorError) {
               logger.error(`Failed to send vendor notification to ${vendorIdStr}:`, vendorError);
             }
+          }
+
+          // Create single in-app notification for admins (outside vendor loop to avoid duplicates)
+          try {
+            const vendorNames = Object.keys(vendorItemsMap).length > 0
+              ? (await Promise.all(
+                  Object.keys(vendorItemsMap).map(async (vid) => {
+                    const v = await Vendor.findById(vid).select('storeName').lean();
+                    return v?.storeName;
+                  })
+                )).filter(Boolean).join(', ')
+              : 'Direct Sale';
+
+            await notificationHelper.notifyAdminNewOrder({
+              order: {
+                _id: order._id,
+                orderNumber: order.orderId,
+                shippingAddress: { name: order.shipTo?.fullName },
+                totalAmount: order.totals?.total,
+              },
+              vendorName: vendorNames,
+            });
+            logger.info(`Admin in-app notification created for order ${order.orderId}`);
+          } catch (adminNotifError) {
+            logger.error(`Failed to create admin in-app notification:`, adminNotifError);
           }
 
           // Mark vendor notifications as sent
@@ -434,7 +491,7 @@ exports.verifyPayment = async (req, res, next) => {
       },
     });
   } catch (error) {
-    console.error('Payment verification error:', error);
+    logger.error('Payment verification error:', error);
     next(error);
   }
 };
@@ -537,7 +594,7 @@ exports.paymentFailure = async (req, res, next) => {
       message: 'Payment failure recorded',
     });
   } catch (error) {
-    console.error('Payment failure handler error:', error);
+    logger.error('Payment failure handler error:', error);
     next(error);
   }
 };
@@ -590,12 +647,12 @@ exports.webhook = async (req, res, next) => {
         await handleTransferReversed(req.body.payload.transfer.entity);
         break;
       default:
-        console.log(`Unhandled webhook event: ${event}`);
+        logger.warn(`Unhandled webhook event: ${event}`);
     }
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Webhook error:', error);
+    logger.error('Webhook error:', error);
     next(error);
   }
 };
@@ -624,7 +681,7 @@ async function handlePaymentCaptured(payload) {
     }
 
     await order.save();
-    console.log(`Payment captured for order ${orderId}`);
+    logger.info(`Payment captured for order ${orderId}`);
 
     // Send order confirmation email after webhook payment confirmation (only if not already sent)
     if (!order.confirmationEmailSent) {
@@ -664,8 +721,6 @@ async function handlePaymentCaptured(payload) {
     // Send vendor and admin notifications (only if not already sent)
     if (!order.vendorNotificationSent) {
       try {
-        const Product = require('../models/Product');
-
         // Get unique vendors from order items
         const vendorItemsMap = {};
         for (const item of order.items) {
@@ -683,15 +738,55 @@ async function handlePaymentCaptured(payload) {
           try {
             const vendor = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
             if (vendor && vendor.userId?.email) {
+              // Send email notification to vendor
               await notificationService.sendVendorOrderNotification(vendor, order, vendorItems);
-              logger.info(`Vendor notification sent via webhook to ${vendor.storeName} (${vendor.userId.email})`);
+              logger.info(`Vendor email notification sent via webhook to ${vendor.storeName} (${vendor.userId.email})`);
+
+              // Create in-app notification for vendor
+              await notificationHelper.notifyVendorNewOrder({
+                vendorUserId: vendor.userId._id,
+                order: {
+                  _id: order._id,
+                  orderNumber: order.orderId,
+                },
+                items: vendorItems.map(item => ({
+                  quantity: item.qty,
+                  price: item.priceSnapshot,
+                })),
+              });
+              logger.info(`Vendor in-app notification created via webhook for ${vendor.storeName}`);
             }
 
-            // Send admin notification for each vendor's items
+            // Send admin email notification for each vendor's items
             await notificationService.sendAdminOrderNotification(order, vendorItems, vendor?.userId, vendor);
           } catch (vendorError) {
             logger.error(`Failed to send vendor notification to ${vendorIdStr}:`, vendorError);
           }
+        }
+
+        // Create single in-app notification for admins (outside vendor loop to avoid duplicates)
+        try {
+          const vendorNames = Object.keys(vendorItemsMap).length > 0
+            ? (await Promise.all(
+                Object.keys(vendorItemsMap).map(async (vid) => {
+                  const v = await Vendor.findById(vid).select('storeName').lean();
+                  return v?.storeName;
+                })
+              )).filter(Boolean).join(', ')
+            : 'Direct Sale';
+
+          await notificationHelper.notifyAdminNewOrder({
+            order: {
+              _id: order._id,
+              orderNumber: order.orderId,
+              shippingAddress: { name: order.shipTo?.fullName },
+              totalAmount: order.totals?.total,
+            },
+            vendorName: vendorNames,
+          });
+          logger.info(`Admin in-app notification created via webhook for order ${order.orderId}`);
+        } catch (adminNotifError) {
+          logger.error(`Failed to create admin in-app notification via webhook:`, adminNotifError);
         }
 
         // Mark vendor notifications as sent
@@ -704,7 +799,7 @@ async function handlePaymentCaptured(payload) {
       }
     }
   } catch (error) {
-    console.error('Error handling payment captured:', error);
+    logger.error('Error handling payment captured:', error);
   }
 }
 
@@ -722,12 +817,12 @@ async function handlePaymentFailed(payload) {
     order.payment.error = payload.error_description;
 
     await order.save();
-    console.log(`Payment failed for order ${orderId}`);
+    logger.info(`Payment failed for order ${orderId}`);
 
     // Restore stock since payment failed via webhook
     await restoreStockOnPaymentFailure(order);
   } catch (error) {
-    console.error('Error handling payment failed:', error);
+    logger.error('Error handling payment failed:', error);
   }
 }
 
@@ -748,9 +843,9 @@ async function handleRefundCreated(payload) {
     };
 
     await order.save();
-    console.log(`Refund created for order ${order._id}`);
+    logger.info(`Refund created for order ${order._id}`);
   } catch (error) {
-    console.error('Error handling refund created:', error);
+    logger.error('Error handling refund created:', error);
   }
 }
 
