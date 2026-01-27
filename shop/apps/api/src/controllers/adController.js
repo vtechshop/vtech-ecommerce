@@ -677,16 +677,9 @@ exports.runAuction = async (req, res, next) => {
       $or: [{ endAt: { $gte: now } }, { endAt: null }],
     };
 
-    // Match by targeting - Amazon-style keyword matching
-    if (keywords.length > 0) {
-      query['targeting.keywords.keyword'] = { $in: keywords };
-    }
-    if (categories.length > 0) {
-      query['targeting.categories'] = { $in: categories };
-    }
-    if (products.length > 0) {
-      query['targeting.products'] = { $in: products };
-    }
+    // Match by targeting - Amazon-style
+    // For SponsoredProduct: show if placement matches (targeting is optional)
+    // Targeting filters are additive - if campaign has targeting, it should match
 
     // ✅ Populate campaign products during initial query
     const campaigns = await AdCampaign.find(query)
