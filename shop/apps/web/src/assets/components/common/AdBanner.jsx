@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
 import { normalizeImageUrl } from '@/utils/placeholders';
 
 const AdBanner = ({ placement, position = 'top', className = '' }) => {
+  const navigate = useNavigate();
   const [adToShow, setAdToShow] = useState(null);
 
   const { data: adsData, isError, error } = useQuery({
@@ -67,9 +69,18 @@ const AdBanner = ({ placement, position = 'top', className = '' }) => {
       // Track click
       await api.post(`/ads/${adToShow._id}/click`);
 
-      // Open link if available
-      if (adToShow.targetUrl) {
-        window.open(adToShow.targetUrl, '_blank');
+      // Navigate to target URL
+      const targetUrl = adToShow.targetUrl || (adToShow.productSlug ? `/product/${adToShow.productSlug}` : null);
+
+      if (targetUrl) {
+        // Check if internal URL (starts with /)
+        if (targetUrl.startsWith('/')) {
+          navigate(targetUrl);
+        } else if (targetUrl.startsWith('http')) {
+          window.open(targetUrl, '_blank');
+        } else {
+          navigate(`/${targetUrl}`);
+        }
       }
     } catch (error) {
       console.error('Error tracking ad click:', error);

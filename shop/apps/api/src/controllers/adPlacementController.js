@@ -149,20 +149,46 @@ exports.getSponsoredAds = async (req, res) => {
     const winners = runAdAuction(campaigns, pricingSettings, parseInt(limit));
 
     // Fetch creatives for all winners and format ads data
+    const Product = require('../models/Product');
     const ads = await Promise.all(winners.map(async (campaign) => {
       let bannerImage = campaign.bannerImage;
+      let productSlug = null;
+      let targetUrl = campaign.targetUrl || null;
 
       try {
         const creative = await AdCreative.findOne({
           campaignId: campaign._id,
           status: 'active'
-        }).sort({ createdAt: -1 }).lean();
+        }).populate('productId', 'slug title').sort({ createdAt: -1 }).lean();
 
-        if (creative && creative.bannerAsset && creative.bannerAsset.imageUrl) {
-          bannerImage = creative.bannerAsset.imageUrl;
+        if (creative) {
+          if (creative.bannerAsset && creative.bannerAsset.imageUrl) {
+            bannerImage = creative.bannerAsset.imageUrl;
+          }
+          if (creative.productId && creative.productId.slug) {
+            productSlug = creative.productId.slug;
+          }
+          if (creative.bannerAsset && creative.bannerAsset.clickUrl) {
+            targetUrl = creative.bannerAsset.clickUrl;
+          }
         }
       } catch (err) {
         console.error('Error fetching creative:', err);
+      }
+
+      // Get product from campaign targeting if not from creative
+      if (!productSlug && campaign.type === 'SponsoredProduct' && campaign.targeting?.products?.length > 0) {
+        try {
+          const product = await Product.findById(campaign.targeting.products[0]).select('slug').lean();
+          if (product) productSlug = product.slug;
+        } catch (err) {
+          console.error('Error fetching product:', err);
+        }
+      }
+
+      // Build targetUrl
+      if (!targetUrl && productSlug) {
+        targetUrl = `/product/${productSlug}`;
       }
 
       return {
@@ -170,7 +196,8 @@ exports.getSponsoredAds = async (req, res) => {
         name: campaign.name,
         type: campaign.type,
         bannerImage: bannerImage,
-        targetUrl: campaign.targetUrl || '#',
+        targetUrl: targetUrl || '#',
+        productSlug: productSlug,
         position: campaign.position,
         bannerSize: campaign.bannerSize,
         targeting: campaign.targeting,
@@ -273,18 +300,50 @@ exports.getAdForPlacement = async (req, res) => {
 
     // Get the first active creative for this campaign if exists
     let bannerImage = campaign.bannerImage;
+    let productSlug = null;
+    let targetUrl = campaign.targetUrl || null;
+
     try {
       const creative = await AdCreative.findOne({
         campaignId: campaign._id,
         status: 'active'
-      }).sort({ createdAt: -1 }).lean();
+      }).populate('productId', 'slug title').sort({ createdAt: -1 }).lean();
 
-      if (creative && creative.bannerAsset && creative.bannerAsset.imageUrl) {
-        bannerImage = creative.bannerAsset.imageUrl;
+      if (creative) {
+        if (creative.bannerAsset && creative.bannerAsset.imageUrl) {
+          bannerImage = creative.bannerAsset.imageUrl;
+        }
+        // Get product slug from creative
+        if (creative.productId && creative.productId.slug) {
+          productSlug = creative.productId.slug;
+        }
+        // Use creative's clickUrl if available
+        if (creative.bannerAsset && creative.bannerAsset.clickUrl) {
+          targetUrl = creative.bannerAsset.clickUrl;
+        }
       }
     } catch (err) {
       console.error('Error fetching creative:', err);
-      // Continue with campaign.bannerImage if creative fetch fails
+    }
+
+    // For SponsoredProduct, try to get product from campaign targeting
+    if (!productSlug && campaign.type === 'SponsoredProduct') {
+      try {
+        const Product = require('../models/Product');
+        if (campaign.targeting?.products?.length > 0) {
+          const product = await Product.findById(campaign.targeting.products[0]).select('slug').lean();
+          if (product) {
+            productSlug = product.slug;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching product:', err);
+      }
+    }
+
+    // Build targetUrl - prioritize: campaign.targetUrl > product page > null
+    if (!targetUrl && productSlug) {
+      targetUrl = `/product/${productSlug}`;
     }
 
     // Format response with correct AdCampaign fields
@@ -304,6 +363,8 @@ exports.getAdForPlacement = async (req, res) => {
       auctionScore: campaign.auctionScore,
       status: campaign.status,
       campaignId: campaign._id,
+      targetUrl: targetUrl,
+      productSlug: productSlug,
     };
 
     res.json({
