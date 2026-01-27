@@ -509,12 +509,12 @@ const AdsManagement = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
-      draft: { label: 'Draft', emoji: 'ðŸ“', color: 'bg-gray-100 text-gray-800' },
-      active: { label: 'Active', emoji: 'âœ…', color: 'bg-green-100 text-green-800' },
-      paused: { label: 'Paused', emoji: 'â¸ï¸', color: 'bg-yellow-100 text-yellow-800' },
-      completed: { label: 'Completed', emoji: 'ðŸ', color: 'bg-blue-100 text-blue-800' },
-      cancelled: { label: 'Cancelled', emoji: 'âŒ', color: 'bg-red-100 text-red-800' },
-      budget_exhausted: { label: 'Budget Exhausted', emoji: 'ðŸ’¸', color: 'bg-orange-100 text-orange-800' },
+      draft: { label: 'Draft', emoji: '📝', color: 'bg-gray-100 text-gray-800' },
+      active: { label: 'Active', emoji: '✅', color: 'bg-green-100 text-green-800' },
+      paused: { label: 'Paused', emoji: '⏸️', color: 'bg-yellow-100 text-yellow-800' },
+      completed: { label: 'Completed', emoji: '🏁', color: 'bg-blue-100 text-blue-800' },
+      cancelled: { label: 'Cancelled', emoji: '❌', color: 'bg-red-100 text-red-800' },
+      budget_exhausted: { label: 'Budget Exhausted', emoji: '💸', color: 'bg-orange-100 text-orange-800' },
     };
     const badge = badges[status] || badges.draft;
     return (

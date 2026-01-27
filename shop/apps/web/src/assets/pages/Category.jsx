@@ -48,7 +48,7 @@ const Category = () => {
       try {
         const response = await api.post('/ads/auction', {
           placement: 'category_grid',
-          categories: [category.slug],
+          categories: [category._id],
           limit: 4,
         }, { signal: abortController.signal });
 
