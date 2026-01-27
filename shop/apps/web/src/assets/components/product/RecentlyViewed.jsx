@@ -110,7 +110,7 @@ const RecentlyViewed = ({ currentProductId = null, limit = 6 }) => {
                   {product.image ? (
                     <img
                       src={product.image}
-                      alt={product.title}
+                      alt={product.seo?.title || product.title}
                       className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
                     />
                   ) : (

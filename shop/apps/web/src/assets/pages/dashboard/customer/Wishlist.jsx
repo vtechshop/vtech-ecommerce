@@ -66,7 +66,7 @@ const Wishlist = () => {
                   {product.images && product.images.length > 0 ? (
                     <img
                       src={product.images[0]}
-                      alt={product.title}
+                      alt={product.seo?.title || product.title}
                       className="w-full h-full object-cover"
                     />
                   ) : (

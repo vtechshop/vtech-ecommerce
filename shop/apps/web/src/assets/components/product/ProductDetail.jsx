@@ -181,7 +181,7 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Gallery */}
           <div>
-            <ProductGallery images={product.images} />
+            <ProductGallery images={product.images} productTitle={product.seo?.title || product.title} />
           </div>
 
           {/* Product Info */}

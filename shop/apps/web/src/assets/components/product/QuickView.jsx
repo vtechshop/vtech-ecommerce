@@ -158,7 +158,7 @@ const QuickView = ({ product, isOpen, onClose }) => {
               {product.images && product.images.length > 0 ? (
                 <img
                   src={normalizeImageUrl(product.images[selectedImage])}
-                  alt={product.title}
+                  alt={product.seo?.title || product.title}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -183,7 +183,7 @@ const QuickView = ({ product, isOpen, onClose }) => {
                   >
                     <img
                       src={normalizeImageUrl(image)}
-                      alt={`${product.title} ${index + 1}`}
+                      alt={`${product.seo?.title || product.title} - Image ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
                   </button>

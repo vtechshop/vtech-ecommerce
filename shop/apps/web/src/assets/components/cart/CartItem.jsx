@@ -29,7 +29,7 @@ const CartItem = ({ item }) => {
     >
       <img
         src={normalizeImageUrl(item.product.images?.[0])}
-        alt={item.product.title}
+        alt={item.product.seo?.title || item.product.title}
         className="w-24 h-24 object-cover rounded"
         data-testid="item-image"
       />

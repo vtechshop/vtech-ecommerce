@@ -208,7 +208,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                     {product.images && product.images[0] ? (
                       <img
                         src={normalizeImageUrl(product.images[0])}
-                        alt={product.title}
+                        alt={product.seo?.title || product.title}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -302,7 +302,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                     {product.images && product.images[0] ? (
                       <img
                         src={normalizeImageUrl(product.images[0])}
-                        alt={product.title}
+                        alt={product.seo?.title || product.title}
                         className="w-full h-full object-cover"
                       />
                     ) : (

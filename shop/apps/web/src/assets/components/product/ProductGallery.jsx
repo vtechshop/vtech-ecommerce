@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import ImageZoom from './ImageZoom';
 
-const ProductGallery = ({ images = [] }) => {
+const ProductGallery = ({ images = [], productTitle = '' }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (images.length === 0) {
@@ -28,7 +28,7 @@ const ProductGallery = ({ images = [] }) => {
       <div className="relative group">
         <ImageZoom
           src={images[currentIndex]}
-          alt={`Product ${currentIndex + 1}`}
+          alt={productTitle ? `${productTitle} - Image ${currentIndex + 1}` : `Product Image ${currentIndex + 1}`}
           className="aspect-square bg-gray-100 rounded-lg"
         />
 
@@ -65,7 +65,7 @@ const ProductGallery = ({ images = [] }) => {
             >
               <img
                 src={image}
-                alt={`Thumbnail ${index + 1}`}
+                alt={productTitle ? `${productTitle} - Thumbnail ${index + 1}` : `Product Thumbnail ${index + 1}`}
                 className="w-full h-full object-cover"
               />
             </button>
