@@ -1,4 +1,5 @@
 // FILE: apps/api/src/controllers/sitemapController.js
+
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Post = require('../models/Post');
@@ -6,21 +7,19 @@ const Page = require('../models/Page');
 const Vendor = require('../models/Vendor');
 const env = require('../config/env');
 
-// Use CLIENT_URL for frontend pages (consistent with seoController)
-// Ensure URL always has https:// and www prefix for consistency
+// Always return https://www.vtechkitchen.com
 function getBaseUrl() {
   let url = env.CLIENT_URL || 'https://www.vtechkitchen.com';
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     url = 'https://' + url;
   }
-  // Ensure www prefix for consistency (SEO best practice)
   url = url.replace('https://vtechkitchen.com', 'https://www.vtechkitchen.com');
-  return url.replace(/\/$/, ''); // Remove trailing slash
+  return url.replace(/\/$/, '');
 }
 
 const BASE_URL = getBaseUrl();
 
-// Escape XML special characters
+// Escape XML
 function escapeXml(str) {
   if (!str) return '';
   return str
@@ -31,26 +30,27 @@ function escapeXml(str) {
     .replace(/'/g, '&apos;');
 }
 
-// Generate main XML sitemap with images (Google Image sitemap)
+// ======================
+// MAIN SITEMAP GENERATOR
+// ======================
 exports.generateSitemap = async (req, res, next) => {
   try {
     const now = new Date().toISOString();
 
-    // Fetch all data with images for product sitemap
+    // ✅ IMPORTANT: use correct filters (no "published: true" mistake)
     const [products, categories, posts, pages, vendors] = await Promise.all([
-      Product.find({ published: true }).select('slug updatedAt title images').lean(),
+      Product.find({ status: 'active' }).select('slug updatedAt title images').lean(),
       Category.find({ isActive: true }).select('slug updatedAt name image').lean(),
       Post.find({ status: 'published' }).select('slug updatedAt title featuredImage').lean(),
       Page.find({ status: 'published' }).select('slug updatedAt').lean(),
       Vendor.find({ status: 'active' }).select('slug updatedAt storeName logo').lean(),
     ]);
 
-    // Build sitemap XML with image namespace
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n';
     xml += '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n';
 
-    // Homepage - highest priority
+    // ===== HOME =====
     xml += '  <url>\n';
     xml += `    <loc>${BASE_URL}</loc>\n`;
     xml += `    <lastmod>${now}</lastmod>\n`;
@@ -58,9 +58,9 @@ exports.generateSitemap = async (req, res, next) => {
     xml += '    <priority>1.0</priority>\n';
     xml += '  </url>\n';
 
-    // Static pages
+    // ===== STATIC PAGES (NO /search) =====
     const staticPages = [
-      { path: '/search', priority: '0.9', changefreq: 'daily' },
+      { path: '/products', priority: '0.9', changefreq: 'daily' }, // IMPORTANT
       { path: '/blog', priority: '0.8', changefreq: 'weekly' },
       { path: '/page/about', priority: '0.7', changefreq: 'monthly' },
       { path: '/page/contact', priority: '0.7', changefreq: 'monthly' },
@@ -79,7 +79,7 @@ exports.generateSitemap = async (req, res, next) => {
       xml += '  </url>\n';
     });
 
-    // Categories with images
+    // ===== CATEGORIES =====
     categories.forEach(category => {
       const lastmod = category.updatedAt ? new Date(category.updatedAt).toISOString() : now;
       xml += '  <url>\n';
@@ -96,27 +96,31 @@ exports.generateSitemap = async (req, res, next) => {
       xml += '  </url>\n';
     });
 
-    // Products with images (most important for e-commerce SEO)
+    // ===== PRODUCTS =====
     products.forEach(product => {
+      if (!product.slug) return;
+
       const lastmod = product.updatedAt ? new Date(product.updatedAt).toISOString() : now;
       xml += '  <url>\n';
       xml += `    <loc>${BASE_URL}/product/${product.slug}</loc>\n`;
       xml += `    <lastmod>${lastmod}</lastmod>\n`;
       xml += '    <changefreq>weekly</changefreq>\n';
-      xml += '    <priority>0.8</priority>\n';
-      // Add all product images (up to 5 for Google)
+      xml += '    <priority>0.9</priority>\n';
+
       if (product.images && product.images.length > 0) {
         product.images.slice(0, 5).forEach((img, idx) => {
+          if (!img) return;
           xml += '    <image:image>\n';
           xml += `      <image:loc>${escapeXml(img)}</image:loc>\n`;
-          xml += `      <image:title>${escapeXml(product.title)}${idx > 0 ? ` - Image ${idx + 1}` : ''}</image:title>\n`;
+          xml += `      <image:title>${escapeXml(product.title || 'Product')} ${idx + 1}</image:title>\n`;
           xml += '    </image:image>\n';
         });
       }
+
       xml += '  </url>\n';
     });
 
-    // Blog posts with featured images
+    // ===== BLOG POSTS =====
     posts.forEach(post => {
       const lastmod = post.updatedAt ? new Date(post.updatedAt).toISOString() : now;
       xml += '  <url>\n';
@@ -133,7 +137,7 @@ exports.generateSitemap = async (req, res, next) => {
       xml += '  </url>\n';
     });
 
-    // Custom pages
+    // ===== CUSTOM PAGES =====
     pages.forEach(page => {
       const lastmod = page.updatedAt ? new Date(page.updatedAt).toISOString() : now;
       xml += '  <url>\n';
@@ -144,7 +148,7 @@ exports.generateSitemap = async (req, res, next) => {
       xml += '  </url>\n';
     });
 
-    // Vendors with logos
+    // ===== VENDORS =====
     vendors.forEach(vendor => {
       const lastmod = vendor.updatedAt ? new Date(vendor.updatedAt).toISOString() : now;
       xml += '  <url>\n';
@@ -163,24 +167,25 @@ exports.generateSitemap = async (req, res, next) => {
 
     xml += '</urlset>';
 
-    res.header('Content-Type', 'application/xml');
-    res.header('Cache-Control', 'public, max-age=3600');
+    res.setHeader('Content-Type', 'application/xml');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
     res.send(xml);
   } catch (error) {
+    console.error('SITEMAP ERROR:', error);
     next(error);
   }
 };
 
-// Generate robots.txt (fallback if static file not found)
+// ======================
+// ROBOTS.TXT GENERATOR
+// ======================
 exports.generateRobotsTxt = async (req, res, next) => {
   try {
-    const robotsTxt = `# VTech Kitchen - Robots.txt
-# https://www.vtechkitchen.com
+    const robotsTxt = `# VTech Kitchen Robots.txt
 
 User-agent: *
 Allow: /
 
-# Disallow private/user areas
 Disallow: /dashboard/
 Disallow: /admin/
 Disallow: /checkout/
@@ -191,19 +196,13 @@ Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /api/
+Disallow: /search
 
-# Disallow query parameter variations
-Disallow: /*?page=
-Disallow: /*?sort=
-Disallow: /*?filter=
-Disallow: /*?ref=
-
-# Sitemap location
 Sitemap: ${BASE_URL}/sitemap.xml
 `;
 
-    res.header('Content-Type', 'text/plain');
-    res.header('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
     res.send(robotsTxt);
   } catch (error) {
     next(error);
