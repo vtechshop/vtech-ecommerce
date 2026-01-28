@@ -207,7 +207,7 @@ const Orders = () => {
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => navigate(`/dashboard/admin/orders/${order._id}`)}
+                        onClick={() => navigate(`/admin-dashboard/orders/${order._id}`)}
                         className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded"
                         title="View & Assign Carrier"
                       >
