@@ -123,7 +123,7 @@ const AdminOrderDetail = () => {
     return (
       <div className="text-center py-12">
         <h2 className="text-2xl font-bold text-gray-900">Order not found</h2>
-        <Button onClick={() => navigate('/dashboard/admin/orders')} className="mt-4">
+        <Button onClick={() => navigate('/admin-dashboard/orders')} className="mt-4">
           Back to Orders
         </Button>
       </div>
@@ -148,10 +148,10 @@ const AdminOrderDetail = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Order #{order.orderId}</h1>
-          <p className="text-gray-600 mt-1">Placed on {formatDate(order.createdAt)}</p>
+          <h1 className="text-3xl font-bold text-gray-900">Order #{order?.orderId || 'N/A'}</h1>
+          <p className="text-gray-600 mt-1">Placed on {order?.createdAt ? formatDate(order.createdAt) : 'N/A'}</p>
         </div>
-        <Button onClick={() => navigate('/dashboard/admin/orders')} variant="outline">
+        <Button onClick={() => navigate('/admin-dashboard/orders')} variant="outline">
           Back to Orders
         </Button>
       </div>
@@ -203,14 +203,16 @@ const AdminOrderDetail = () => {
           {/* Customer Info */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold mb-4">Customer Information</h2>
-            {order.userId ? (
+            {order?.userId ? (
               <div className="space-y-2">
-                <p className="text-sm"><span className="font-medium">User ID:</span> {order.userId}</p>
+                <p className="text-sm"><span className="font-medium">Name:</span> {order.userId?.name || order.userId?._id || 'N/A'}</p>
+                <p className="text-sm"><span className="font-medium">Email:</span> {order.userId?.email || 'N/A'}</p>
+                {order.userId?.phone && <p className="text-sm"><span className="font-medium">Phone:</span> {order.userId.phone}</p>}
               </div>
             ) : (
               <div className="space-y-2">
                 <p className="text-sm"><span className="font-medium">Guest Order</span></p>
-                <p className="text-sm"><span className="font-medium">Email:</span> {order.guestEmail}</p>
+                <p className="text-sm"><span className="font-medium">Email:</span> {order?.guestEmail || 'N/A'}</p>
               </div>
             )}
           </div>
@@ -240,15 +242,15 @@ const AdminOrderDetail = () => {
           <h2 className="text-2xl font-bold mb-4 text-gray-900">🚚 Assign Delivery Carrier</h2>
 
           {/* Recommended Carrier */}
-          {recommendedCarrier && !showCarrierForm && (
+          {recommendedCarrier?.recommended && !showCarrierForm && (
             <div className="mb-6 p-4 bg-white rounded-lg border-2 border-green-300">
-              <h3 className="font-semibold text-gray-900 mb-3">💡 Recommended Carrier (Best Cost)</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">Recommended Carrier (Best Cost)</h3>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-lg font-bold text-gray-900">{recommendedCarrier.recommended.carrier}</p>
+                  <p className="text-lg font-bold text-gray-900">{recommendedCarrier.recommended?.carrier || 'N/A'}</p>
                   <p className="text-sm text-gray-600">
-                    Rate: {formatCurrency(recommendedCarrier.recommended.rate)} |
-                    Delivery: {recommendedCarrier.recommended.estimatedDays} days
+                    Rate: {formatCurrency(recommendedCarrier.recommended?.rate || 0)} |
+                    Delivery: {recommendedCarrier.recommended?.estimatedDays || 'N/A'} days
                   </p>
                 </div>
                 <Button onClick={handleUseRecommended} variant="primary">
