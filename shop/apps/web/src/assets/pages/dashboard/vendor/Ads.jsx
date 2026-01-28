@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/dashboard/vendor/Ads.jsx
+﻿// FILE: apps/web/src/pages/dashboard/vendor/Ads.jsx
 import { useState, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -753,7 +753,7 @@ const Ads = () => {
               to="/page/vendor-guide#sponsor-ads"
               className="inline-block bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors text-sm font-medium"
             >
-              Learn More About Sponsored Ads â†’
+              Learn More About Sponsored Ads →
             </Link>
           </div>
         </div>
@@ -976,7 +976,7 @@ const Ads = () => {
                   {campaign.approval?.rejectionReason && (
                     <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                       <p className="text-sm text-red-800">
-                        <strong className="font-bold">âŒ Rejection Reason:</strong> {campaign.approval.rejectionReason}
+                        <strong className="font-bold">❌ Rejection Reason:</strong> {campaign.approval.rejectionReason}
                       </p>
                     </div>
                   )}

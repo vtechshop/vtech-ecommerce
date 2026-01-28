@@ -53,6 +53,11 @@ const adCampaignSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  // Target URL - where to redirect when ad is clicked
+  targetUrl: {
+    type: String,
+    trim: true,
+  },
   // Page/Placement where ad appears (NEW - for identifying which page)
   placement: {
     type: String,

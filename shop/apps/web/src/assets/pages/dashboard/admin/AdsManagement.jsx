@@ -49,6 +49,7 @@ const AdsManagement = () => {
     position: 'top',
     bannerSize: 'hero',
     dimensions: { width: '', height: '' },
+    targetUrl: '', // URL to redirect when ad is clicked
   });
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingCreative, setUploadingCreative] = useState(false);
@@ -198,9 +199,9 @@ const AdsManagement = () => {
 
       // Amazon-style: Automatically inherit campaign settings for seamless upload
       const placementValue = campaign?.placement || 'search_sponsored_products';
-      console.log('ðŸŽ¨ [CREATIVE DEBUG] Campaign object:', campaign);
-      console.log('ðŸŽ¨ [CREATIVE DEBUG] Campaign placement:', campaign?.placement);
-      console.log('ðŸŽ¨ [CREATIVE DEBUG] Using placement:', placementValue);
+      console.log('🎨 [CREATIVE DEBUG] Campaign object:', campaign);
+      console.log('🎨 [CREATIVE DEBUG] Campaign placement:', campaign?.placement);
+      console.log('🎨 [CREATIVE DEBUG] Using placement:', placementValue);
 
       const creativeData = {
         imageUrl: uploadResponse.data.data.url,
@@ -209,7 +210,7 @@ const AdsManagement = () => {
         status: 'active', // Auto-activate creative
       };
 
-      console.log('ðŸŽ¨ [CREATIVE DEBUG] Creative data being sent:', creativeData);
+      console.log('🎨 [CREATIVE DEBUG] Creative data being sent:', creativeData);
 
       const response = await api.post(`/ads/campaigns/${campaignId}/creatives`, creativeData);
       return response.data;
@@ -266,6 +267,7 @@ const AdsManagement = () => {
       position: 'top',
       bannerSize: 'hero',
       dimensions: { width: '', height: '' },
+      targetUrl: '',
     });
     setIsEditMode(false);
     setEditingCampaign(null);
@@ -297,6 +299,7 @@ const AdsManagement = () => {
       position: ad.position || 'top',
       bannerSize: ad.bannerSize || 'hero',
       dimensions: ad.dimensions || { width: '', height: '' },
+      targetUrl: ad.targetUrl || '',
     });
     setModalOpen(true);
   };
@@ -446,6 +449,7 @@ const AdsManagement = () => {
       dimensions: formData.bannerSize === 'custom' && formData.dimensions.width && formData.dimensions.height
         ? { width: parseInt(formData.dimensions.width), height: parseInt(formData.dimensions.height) }
         : undefined,
+      targetUrl: formData.targetUrl || undefined,
       targeting: {
         keywords: keywords.map(k => ({ keyword: k, matchType: 'broad' })),
         // Include products array - empty for search placements, can be populated for product-specific ads
@@ -453,7 +457,7 @@ const AdsManagement = () => {
       },
     };
 
-    console.log('ðŸŽ¯ [ADMIN DEBUG] Submitting campaign with targeting:', dataToSend.targeting);
+    console.log('🎯 [ADMIN DEBUG] Submitting campaign with targeting:', dataToSend.targeting);
     saveMutation.mutate(dataToSend);
   };
 
@@ -1106,7 +1110,7 @@ const AdsManagement = () => {
                       onClick={() => setFormData({ ...formData, bannerImage: '' })}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
                     >
-                      Ã—
+                      ×
                     </button>
                   </div>
                 ) : (
@@ -1149,7 +1153,7 @@ const AdsManagement = () => {
                   <strong>Required:</strong> Keywords for ad targeting. Use "all" to match all search queries, or enter specific keywords separated by commas.
                 </p>
                 <p className="text-xs text-blue-600 mt-1">
-                  ðŸ’¡ Examples: "all" (shows for all searches) | "laptop, computer, electronics" (shows for specific searches)
+                  💡 Examples: "all" (shows for all searches) | "laptop, computer, electronics" (shows for specific searches)
                 </p>
               </div>
 
@@ -1166,6 +1170,22 @@ const AdsManagement = () => {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Optional: Leave empty for keyword-based search ads. For product-specific placements, enter product IDs separated by commas.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Target URL (Click Destination)
+                </label>
+                <input
+                  type="text"
+                  value={formData.targetUrl}
+                  onChange={(e) => setFormData({ ...formData, targetUrl: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="e.g., /product/iphone-15 or https://example.com"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Where to redirect when ad is clicked. Use internal paths like "/product/slug" or "/category/electronics", or external URLs starting with "https://".
                 </p>
               </div>
 
