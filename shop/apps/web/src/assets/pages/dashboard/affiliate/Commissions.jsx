@@ -20,6 +20,17 @@ const Commissions = () => {
     return sessionStorage.getItem('affiliate-commissions-filter') || '';
   });
 
+  // Fetch dashboard stats for accurate totals
+  const { data: statsData } = useQuery({
+    queryKey: ['affiliate-stats'],
+    queryFn: async () => {
+      const response = await api.get('/affiliates/dashboard/stats');
+      return response.data.data;
+    },
+    staleTime: 3 * 60 * 1000,
+    retry: false,
+  });
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['affiliate-commissions', page, statusFilter],
     queryFn: async () => {
@@ -97,10 +108,10 @@ const Commissions = () => {
   const commissions = data?.data || [];
   const totalPages = Math.ceil((data?.meta?.total || 0) / 20);
 
-  // Calculate totals
-  const pending = commissions.filter(c => c.status === 'pending').reduce((sum, c) => sum + c.amount, 0);
-  const approved = commissions.filter(c => c.status === 'approved').reduce((sum, c) => sum + c.amount, 0);
-  const paid = commissions.filter(c => c.status === 'paid').reduce((sum, c) => sum + c.amount, 0);
+  // Use stats API for accurate totals (not just current page)
+  const pending = statsData?.pendingEarnings || 0;
+  const approved = (statsData?.totalEarnings || 0) - (statsData?.pendingEarnings || 0) - (statsData?.paidEarnings || 0);
+  const paid = statsData?.paidEarnings || 0;
 
   return (
     <div>
@@ -205,42 +216,58 @@ const Commissions = () => {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-blue-100 border-b">
-            <tr>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Order ID</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Date</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Amount</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Rate</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Paid Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {commissions.map((commission) => (
-              <tr key={commission._id} className="border-b last:border-b-0">
-                <td className="py-3 px-4 font-mono text-sm">
-                  {commission.orderId?.orderId || 'N/A'}
-                </td>
-                <td className="py-3 px-4 text-sm">{formatDate(commission.createdAt)}</td>
-                <td className="py-3 px-4 font-semibold">{formatCurrency(commission.amount)}</td>
-                <td className="py-3 px-4 text-sm">{commission.percentage}%</td>
-                <td className="py-3 px-3 sm:px-4">
-                  <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                    commission.status === 'paid' ? 'bg-green-100 text-green-800' :
-                    commission.status === 'approved' ? 'bg-primary-100 text-primary-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {commission.status}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-sm">
-                  {commission.paidAt ? formatDate(commission.paidAt) : '-'}
-                </td>
+        {commissions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 px-4">
+            <DollarSign className="w-16 h-16 text-gray-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">No Commissions Yet</h3>
+            <p className="text-gray-500 text-center max-w-md mb-4">
+              When customers make purchases using your affiliate links, your commissions will appear here.
+            </p>
+            <Link
+              to="/affiliate-dashboard/links"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              Get Your Affiliate Links
+            </Link>
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-blue-100 border-b">
+              <tr>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Order ID</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Date</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Amount</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Rate</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Paid Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {commissions.map((commission) => (
+                <tr key={commission._id} className="border-b last:border-b-0">
+                  <td className="py-3 px-4 font-mono text-sm">
+                    {commission.orderId?.orderId || 'N/A'}
+                  </td>
+                  <td className="py-3 px-4 text-sm">{formatDate(commission.createdAt)}</td>
+                  <td className="py-3 px-4 font-semibold">{formatCurrency(commission.amount)}</td>
+                  <td className="py-3 px-4 text-sm">{commission.percentage}%</td>
+                  <td className="py-3 px-3 sm:px-4">
+                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
+                      commission.status === 'paid' ? 'bg-green-100 text-green-800' :
+                      commission.status === 'approved' ? 'bg-primary-100 text-primary-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {commission.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-sm">
+                    {commission.paidAt ? formatDate(commission.paidAt) : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {totalPages > 1 && (

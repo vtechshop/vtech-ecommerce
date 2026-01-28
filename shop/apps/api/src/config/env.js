@@ -71,6 +71,17 @@ module.exports = {
   MAX_QTY_PER_ITEM: parseInt(process.env.MAX_QTY_PER_ITEM) || 100,
   MAX_ITEMS_PER_ORDER: parseInt(process.env.MAX_ITEMS_PER_ORDER) || 50,
 
+  // Shipping settings
+  FREE_SHIPPING_THRESHOLD: parseFloat(process.env.FREE_SHIPPING_THRESHOLD) || 2000,
+  FREE_SHIPPING_SUBTOTAL: parseFloat(process.env.FREE_SHIPPING_SUBTOTAL) || 8000,
+  DEFAULT_ORIGIN_ZIP: process.env.DEFAULT_ORIGIN_ZIP || '110001',
+  DEFAULT_PACKAGE_LENGTH: parseInt(process.env.DEFAULT_PACKAGE_LENGTH) || 20,
+  DEFAULT_PACKAGE_BREADTH: parseInt(process.env.DEFAULT_PACKAGE_BREADTH) || 15,
+  DEFAULT_PACKAGE_HEIGHT: parseInt(process.env.DEFAULT_PACKAGE_HEIGHT) || 10,
+
+  // Payout settings
+  MIN_PAYOUT_AMOUNT: parseFloat(process.env.MIN_PAYOUT_AMOUNT) || 500,
+
   // Delhivery Shipping Integration
   DELHIVERY_TEST_TOKEN: process.env.DELHIVERY_TEST_TOKEN,
   DELHIVERY_LIVE_TOKEN: process.env.DELHIVERY_LIVE_TOKEN,

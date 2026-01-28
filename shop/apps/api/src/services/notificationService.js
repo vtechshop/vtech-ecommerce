@@ -318,6 +318,15 @@ class NotificationService {
   }
 
   async sendVendorOrderNotification(vendor, order, items) {
+    // Get vendor email and name - handle both populated userId and direct fields
+    const vendorEmail = vendor.userId?.email || vendor.email;
+    const vendorName = vendor.userId?.name || vendor.storeName || 'Vendor';
+
+    if (!vendorEmail) {
+      logger.warn(`Cannot send vendor notification - no email found for vendor ${vendor._id}`);
+      return { success: false, reason: 'NO_VENDOR_EMAIL' };
+    }
+
     // Generate vendor's items list
     const vendorItemsHtml = items.map(item => `
       <tr>
@@ -356,7 +365,7 @@ class NotificationService {
             <h1>New Order Received!</h1>
           </div>
           <div class="content">
-            <p>Hi ${vendor.name},</p>
+            <p>Hi ${vendorName},</p>
             <p>Great news! You have received a new order for your products.</p>
 
             <div class="order-id">Order #${order.orderId}</div>
@@ -405,7 +414,7 @@ class NotificationService {
       </html>
     `;
 
-    return this.sendEmail(vendor.email, `New Order #${order.orderId} - Action Required`, html);
+    return this.sendEmail(vendorEmail, `New Order #${order.orderId} - Action Required`, html);
   }
 
   async sendAdminOrderNotification(order, items, vendorUser, vendorProfile = null) {
@@ -509,6 +518,285 @@ class NotificationService {
       : `New Order #${order.orderId} Received`;
 
     return this.sendEmail(env.ADMIN_EMAIL, subject, html);
+  }
+
+  /**
+   * Send order cancellation email to customer
+   */
+  async sendOrderCancellationEmail(user, order, reason, cancelledBy = 'customer') {
+    const customerEmail = user.email || order.guestEmail;
+    const customerName = user.name || order.shipTo?.fullName || 'Customer';
+
+    if (!customerEmail) {
+      logger.warn(`Cannot send cancellation email - no email found for order ${order.orderId}`);
+      return { success: false, reason: 'NO_CUSTOMER_EMAIL' };
+    }
+
+    const cancelledByText = cancelledBy === 'admin' ? 'by the store admin' :
+                            cancelledBy === 'vendor' ? 'by the vendor' : 'as per your request';
+
+    const itemsHtml = order.items.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.qty}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₹${(item.priceSnapshot * item.qty).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 30px; text-align: center; border-radius: 5px 5px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; }
+          .order-box { background: white; border: 2px solid #dc3545; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .order-id { font-size: 24px; font-weight: bold; color: #dc3545; text-align: center; margin: 20px 0; }
+          .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          .button { display: inline-block; background: #FF9F1C; color: white !important; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .reason-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Order Cancelled</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${customerName},</p>
+            <p>Your order has been cancelled ${cancelledByText}.</p>
+
+            <div class="order-id">Order #${order.orderId}</div>
+
+            <div class="reason-box">
+              <strong>Cancellation Reason:</strong><br>
+              ${reason || 'No reason provided'}
+            </div>
+
+            <div class="order-box">
+              <h3 style="margin-top: 0;">Cancelled Items</h3>
+              <table class="items-table">
+                <thead>
+                  <tr style="background: #f5f5f5;">
+                    <th style="padding: 10px; text-align: left;">Product</th>
+                    <th style="padding: 10px; text-align: center;">Qty</th>
+                    <th style="padding: 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsHtml}
+                </tbody>
+              </table>
+            </div>
+
+            <p>If payment was already made, a refund will be processed within 5-7 business days.</p>
+
+            <p>If you have any questions, please contact our support team.</p>
+
+            <p style="text-align: center;">
+              <a href="${env.CLIENT_URL}/orders/${order.orderId}" class="button">View Order Details</a>
+            </p>
+
+            <p style="margin-top: 30px;"><em>- Vtech Shop Team</em></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail(customerEmail, `Order #${order.orderId} Cancelled`, html);
+  }
+
+  /**
+   * Send order cancellation email to vendor
+   */
+  async sendVendorOrderCancellationEmail(vendor, order, vendorItems, reason, cancelledBy = 'customer') {
+    const vendorEmail = vendor.userId?.email || vendor.email;
+    const vendorName = vendor.userId?.name || vendor.storeName || 'Vendor';
+
+    if (!vendorEmail) {
+      logger.warn(`Cannot send vendor cancellation email - no email found for vendor ${vendor._id}`);
+      return { success: false, reason: 'NO_VENDOR_EMAIL' };
+    }
+
+    const cancelledByText = cancelledBy === 'admin' ? 'by the admin' : 'by the customer';
+    const totalAmount = vendorItems.reduce((sum, item) => sum + (item.priceSnapshot * item.qty), 0);
+
+    const itemsHtml = vendorItems.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.qty}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">₹${(item.priceSnapshot * item.qty).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 30px; text-align: center; border-radius: 5px 5px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; }
+          .order-box { background: white; border: 2px solid #dc3545; border-radius: 8px; padding: 20px; margin: 20px 0; }
+          .order-id { font-size: 24px; font-weight: bold; color: #dc3545; text-align: center; margin: 20px 0; }
+          .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          .button { display: inline-block; background: #FF9F1C; color: white !important; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .reason-box { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Order Cancelled</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${vendorName},</p>
+            <p>An order containing your products has been cancelled ${cancelledByText}.</p>
+
+            <div class="order-id">Order #${order.orderId}</div>
+
+            <div class="reason-box">
+              <strong>Cancellation Reason:</strong><br>
+              ${reason || 'No reason provided'}
+            </div>
+
+            <div class="order-box">
+              <h3 style="margin-top: 0;">Your Cancelled Products</h3>
+              <table class="items-table">
+                <thead>
+                  <tr style="background: #f5f5f5;">
+                    <th style="padding: 10px; text-align: left;">Product</th>
+                    <th style="padding: 10px; text-align: center;">Qty</th>
+                    <th style="padding: 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsHtml}
+                  <tr style="background: #f0f9ff; font-weight: bold;">
+                    <td colspan="2" style="padding: 15px;">Total</td>
+                    <td style="padding: 15px; text-align: right; color: #dc3545;">₹${totalAmount.toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>Stock has been automatically restored for these items.</p>
+
+            <p style="text-align: center;">
+              <a href="${env.CLIENT_URL}/vendor-dashboard/orders" class="button">View Orders</a>
+            </p>
+
+            <p style="margin-top: 30px;"><em>- Vtech Shop Team</em></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail(vendorEmail, `Order #${order.orderId} Cancelled`, html);
+  }
+
+  /**
+   * Send order status update email to customer
+   */
+  async sendOrderStatusUpdateEmail(user, order, newStatus, trackingInfo = null) {
+    const customerEmail = user.email || order.guestEmail;
+    const customerName = user.name || order.shipTo?.fullName || 'Customer';
+
+    if (!customerEmail) {
+      logger.warn(`Cannot send status update email - no email found for order ${order.orderId}`);
+      return { success: false, reason: 'NO_CUSTOMER_EMAIL' };
+    }
+
+    const statusConfig = {
+      packed: {
+        title: 'Order Packed',
+        color: '#17a2b8',
+        icon: '📦',
+        message: 'Your order has been packed and is ready for shipping.',
+      },
+      shipped: {
+        title: 'Order Shipped',
+        color: '#007bff',
+        icon: '🚚',
+        message: 'Your order is on the way! Track your shipment below.',
+      },
+      out_for_delivery: {
+        title: 'Out for Delivery',
+        color: '#fd7e14',
+        icon: '🏃',
+        message: 'Your order is out for delivery and will arrive soon!',
+      },
+      delivered: {
+        title: 'Order Delivered',
+        color: '#28a745',
+        icon: '✅',
+        message: 'Your order has been delivered. Enjoy your purchase!',
+      },
+    };
+
+    const config = statusConfig[newStatus] || {
+      title: `Order ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}`,
+      color: '#6c757d',
+      icon: '📋',
+      message: `Your order status has been updated to: ${newStatus}`,
+    };
+
+    const trackingHtml = trackingInfo ? `
+      <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${config.color};">
+        <h3 style="margin-top: 0; color: ${config.color};">📍 Tracking Information</h3>
+        <p style="margin: 5px 0;"><strong>Carrier:</strong> ${trackingInfo.carrier || 'N/A'}</p>
+        <p style="margin: 5px 0;"><strong>AWB Number:</strong> ${trackingInfo.awb || 'N/A'}</p>
+        ${trackingInfo.trackingUrl ? `<p style="margin: 10px 0;"><a href="${trackingInfo.trackingUrl}" style="color: ${config.color};">Track your package →</a></p>` : ''}
+      </div>
+    ` : '';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, ${config.color} 0%, ${config.color}dd 100%); color: white; padding: 30px; text-align: center; border-radius: 5px 5px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; }
+          .order-id { font-size: 24px; font-weight: bold; color: ${config.color}; text-align: center; margin: 20px 0; }
+          .status-icon { font-size: 48px; text-align: center; margin: 20px 0; }
+          .button { display: inline-block; background: #FF9F1C; color: white !important; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>${config.title}</h1>
+          </div>
+          <div class="content">
+            <p>Hi ${customerName},</p>
+
+            <div class="status-icon">${config.icon}</div>
+
+            <p style="text-align: center; font-size: 18px;">${config.message}</p>
+
+            <div class="order-id">Order #${order.orderId}</div>
+
+            ${trackingHtml}
+
+            <p style="text-align: center;">
+              <a href="${env.CLIENT_URL}/orders/${order.orderId}" class="button">View Order Details</a>
+            </p>
+
+            <p style="margin-top: 30px;"><em>- Vtech Shop Team</em></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail(customerEmail, `${config.icon} Order #${order.orderId} - ${config.title}`, html);
   }
 
   async sendSMS(phone, message) {

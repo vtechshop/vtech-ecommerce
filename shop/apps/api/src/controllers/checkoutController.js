@@ -1,8 +1,9 @@
 // FILE: apps/api/src/controllers/checkoutController.js
-const ShippingZone = require('../models/ShippingZone');
 const Tax = require('../models/Tax');
 const AppError = require('../utils/AppError');
 const shippingService = require('../services/shippingService');
+const env = require('../config/env');
+const logger = require('../config/logger');
 
 // Get shipping quotes
 exports.getShippingQuotes = async (req, res, next) => {
@@ -43,7 +44,7 @@ exports.getShippingQuotes = async (req, res, next) => {
     try {
       // Default origin (can be configured per vendor later)
       const origin = {
-        zipCode: process.env.DEFAULT_ORIGIN_ZIP || '110001', // Delhi
+        zipCode: env.DEFAULT_ORIGIN_ZIP,
       };
 
       const destination = {
@@ -54,9 +55,9 @@ exports.getShippingQuotes = async (req, res, next) => {
 
       const packages = {
         weight: totalWeight,
-        length: 20, // Default dimensions in cm
-        breadth: 15,
-        height: 10,
+        length: env.DEFAULT_PACKAGE_LENGTH,
+        breadth: env.DEFAULT_PACKAGE_BREADTH,
+        height: env.DEFAULT_PACKAGE_HEIGHT,
       };
 
       // Get rates from all available carriers
@@ -91,18 +92,17 @@ exports.getShippingQuotes = async (req, res, next) => {
       });
 
       // Add free shipping option if order value is high enough
-      const freeShippingThreshold = 2000; // INR 2000
-      if (orderValue >= freeShippingThreshold && quotes.length > 0) {
+      if (orderValue >= env.FREE_SHIPPING_THRESHOLD && quotes.length > 0) {
         quotes.unshift({
           id: 'free-shipping',
           name: 'Free Standard Shipping',
-          description: `Orders above ₹${freeShippingThreshold}`,
+          description: `Orders above ₹${env.FREE_SHIPPING_THRESHOLD}`,
           cost: 0,
           estimatedDays: 7,
         });
       }
     } catch (error) {
-      console.error('Failed to fetch real shipping rates:', error);
+      logger.error('Failed to fetch real shipping rates:', error);
       // Fallback to mock quotes if real rates fail
       quotes = [
         {
@@ -216,7 +216,7 @@ exports.calculateTaxes = async (req, res, next) => {
         }
       } catch (error) {
         // If tax lookup fails, continue with default rate
-        console.error('Tax lookup error:', error);
+        logger.error('Tax lookup error:', error);
       }
     }
 

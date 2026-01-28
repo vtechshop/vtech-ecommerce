@@ -37,8 +37,9 @@ export const captureAffiliateFromURL = async (searchParams) => {
     const existingCode = getAffiliateCode();
 
     // Store affiliate code in cookie for 30 days
+    // Encode the value to handle any special characters safely
     const maxAge = 30 * 24 * 60 * 60; // 30 days in seconds
-    document.cookie = `affiliate=${affiliateCode}; max-age=${maxAge}; path=/; SameSite=Lax`;
+    document.cookie = `affiliate=${encodeURIComponent(affiliateCode)}; max-age=${maxAge}; path=/; SameSite=Lax`;
 
     // Track click only if it's a new affiliate code (not already stored)
     if (existingCode !== affiliateCode) {
@@ -60,9 +61,20 @@ export const getAffiliateCode = () => {
   const cookies = document.cookie.split(';');
 
   for (let cookie of cookies) {
-    const [name, value] = cookie.trim().split('=');
-    if (name === 'affiliate') {
-      return value;
+    const trimmed = cookie.trim();
+    const eqIndex = trimmed.indexOf('=');
+    if (eqIndex === -1) continue;
+
+    const name = trimmed.substring(0, eqIndex);
+    const value = trimmed.substring(eqIndex + 1);
+
+    if (name === 'affiliate' && value) {
+      // Decode the value in case it was encoded when setting
+      try {
+        return decodeURIComponent(value);
+      } catch {
+        return value; // Return as-is if decoding fails
+      }
     }
   }
 

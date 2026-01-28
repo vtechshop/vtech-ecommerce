@@ -5,6 +5,7 @@ const Commission = require('../models/Commission');
 const Affiliate = require('../models/Affiliate');
 const { generateOrderId } = require('../utils/helpers');
 const logger = require('../config/logger');
+const env = require('../config/env');
 
 class OrderService {
   async createOrder(userId, orderData) {
@@ -12,10 +13,8 @@ class OrderService {
     const items = await this.validateAndPrepareItems(orderData.items);
 
     const subtotal = items.reduce((sum, item) => sum + item.priceSnapshot * item.qty, 0);
-    // Get tax rate from environment or default to 18% GST (India)
-    const taxRate = parseFloat(process.env.DEFAULT_TAX_RATE || '0.18');
-    const tax = subtotal * taxRate;
-    const shipping = subtotal > 8000 ? 0 : 499; // Free shipping above ₹8000, otherwise ₹499
+    const tax = subtotal * env.DEFAULT_TAX_RATE;
+    const shipping = subtotal > env.FREE_SHIPPING_SUBTOTAL ? 0 : env.DEFAULT_SHIPPING_COST;
     const total = subtotal + tax + shipping;
 
     const order = await Order.create({

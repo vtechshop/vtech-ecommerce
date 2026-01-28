@@ -6,6 +6,7 @@ const Commission = require('../models/Commission');
 const { slugify, generateSKU, getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
 const notificationHelper = require('../services/notificationHelper');
+const notificationService = require('../services/notificationService');
 
 // ---------- CONTROLLERS ----------
 async function getVendorBySlug(req, res, next) {
@@ -753,8 +754,6 @@ async function updatePolicies(req, res, next) {
 // Update payout preferences
 async function updatePayout(req, res, next) {
   try {
-    const { defaultCommissionPercentage } = req.body;
-
     const vendor = await Vendor.findOne({ userId: req.user._id });
     if (!vendor) {
       return res.status(404).json({
@@ -763,11 +762,7 @@ async function updatePayout(req, res, next) {
       });
     }
 
-    // Commission percentage can only be changed by admin
-    // This endpoint is here for future use but currently disabled
-    // if (defaultCommissionPercentage !== undefined) {
-    //   vendor.defaultCommissionPercentage = defaultCommissionPercentage;
-    // }
+    // Note: Commission percentage can only be changed by admin via admin dashboard
 
     await vendor.save();
 
@@ -873,6 +868,87 @@ async function updateOrderStatus(req, res, next) {
     });
 
     await order.save();
+
+    // Send notifications for status changes (async - don't block response)
+    (async () => {
+      try {
+        const User = require('../models/User');
+
+        // Get user info for email
+        let userInfo = {};
+        if (order.userId && !order.isGuest) {
+          const user = await User.findById(order.userId);
+          if (user) {
+            userInfo = { name: user.name, email: user.email };
+          }
+        } else if (order.isGuest && order.guestEmail) {
+          userInfo = { name: order.shipTo?.fullName || 'Guest', email: order.guestEmail };
+        }
+
+        // Send status update email to customer for key status changes
+        const notifiableStatuses = ['packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+        if (notifiableStatuses.includes(status) && userInfo.email) {
+          // Get tracking info if available
+          const trackingInfo = order.shipment ? {
+            carrier: order.shipment.carrier,
+            awb: order.shipment.awb,
+            trackingUrl: order.shipment.trackingUrl,
+          } : null;
+
+          if (status === 'cancelled') {
+            // Determine who cancelled
+            const cancelledBy = req.user.role === 'admin' ? 'admin' : 'vendor';
+            await notificationService.sendOrderCancellationEmail(
+              userInfo,
+              order,
+              order.cancellation?.reason || 'Order cancelled',
+              cancelledBy
+            );
+
+            // Also notify vendors if cancelled by admin
+            if (cancelledBy === 'admin') {
+              const vendorItemsMap = {};
+              for (const item of order.items) {
+                if (item.vendorId) {
+                  const vendorIdStr = item.vendorId.toString();
+                  if (!vendorItemsMap[vendorIdStr]) {
+                    vendorItemsMap[vendorIdStr] = [];
+                  }
+                  vendorItemsMap[vendorIdStr].push(item);
+                }
+              }
+
+              for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
+                const vendorForNotif = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
+                if (vendorForNotif && vendorForNotif.userId?.email) {
+                  await notificationService.sendVendorOrderCancellationEmail(
+                    vendorForNotif,
+                    order,
+                    vendorItems,
+                    order.cancellation?.reason || 'Order cancelled',
+                    'admin'
+                  );
+                }
+              }
+            }
+          } else {
+            await notificationService.sendOrderStatusUpdateEmail(userInfo, order, status, trackingInfo);
+          }
+          logger.info(`Status update email sent to customer for order ${order.orderId}: ${status}`);
+
+          // Send in-app notification to customer if registered user
+          if (order.userId && !order.isGuest) {
+            await notificationHelper.notifyCustomerOrderStatus({
+              userId: order.userId,
+              order: { _id: order._id, orderNumber: order.orderId },
+              status,
+            });
+          }
+        }
+      } catch (notifError) {
+        logger.error('Failed to send status update notifications:', notifError);
+      }
+    })();
 
     res.json({
       success: true,

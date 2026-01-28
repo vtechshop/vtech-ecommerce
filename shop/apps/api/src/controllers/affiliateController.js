@@ -184,9 +184,13 @@ exports.trackClick = async (req, res, next) => {
       const env = require('../config/env');
       const days = env.AFFILIATE_WINDOW_DAYS || 30;
       
+      // Note: Do NOT set httpOnly here - the frontend needs to read this cookie
+      // to include affiliateCode in the order request body for commission tracking
       res.cookie('affiliate', affId, {
         maxAge: days * 24 * 60 * 60 * 1000,
-        httpOnly: true,
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
       });
     }
 

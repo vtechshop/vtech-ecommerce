@@ -170,9 +170,8 @@ class PayoutService {
       }
 
       // Check minimum payout threshold
-      const MIN_PAYOUT = 500; // ₹500 minimum
-      if (amount < MIN_PAYOUT) {
-        throw new Error(`Minimum payout amount is ₹${MIN_PAYOUT}`);
+      if (amount < env.MIN_PAYOUT_AMOUNT) {
+        throw new Error(`Minimum payout amount is ₹${env.MIN_PAYOUT_AMOUNT}`);
       }
 
       // Manual payout for affiliates
