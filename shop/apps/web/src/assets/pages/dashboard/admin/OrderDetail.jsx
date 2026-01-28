@@ -160,15 +160,15 @@ const AdminOrderDetail = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-sm font-medium text-gray-500">Order Status</h3>
-          <p className="text-2xl font-bold text-gray-900 mt-2 capitalize">{order.status.replace('_', ' ')}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2 capitalize">{order.status?.replace('_', ' ') || 'Unknown'}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-sm font-medium text-gray-500">Total Amount</h3>
-          <p className="text-2xl font-bold text-gray-900 mt-2">{formatCurrency(order.totals.total)}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">{formatCurrency(order.totals?.total || 0)}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-sm font-medium text-gray-500">Payment Status</h3>
-          <p className="text-2xl font-bold text-gray-900 mt-2 capitalize">{order.payment.status}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2 capitalize">{order.payment?.status || 'Unknown'}</p>
         </div>
       </div>
 
@@ -177,21 +177,21 @@ const AdminOrderDetail = () => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-bold mb-4">Order Items</h2>
           <div className="space-y-4">
-            {order.items.map((item, index) => (
+            {(order.items || []).map((item, index) => (
               <div key={index} className="flex gap-4 pb-4 border-b last:border-0">
                 <img
-                  src={item.image || PLACEHOLDER_IMAGE_SM}
-                  alt={item.name}
+                  src={item?.image || PLACEHOLDER_IMAGE_SM}
+                  alt={item?.name || 'Product'}
                   className="w-20 h-20 object-cover rounded"
                   onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
                 />
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                  {item.variantName && (
+                  <h3 className="font-semibold text-gray-900">{item?.name || 'Unknown Product'}</h3>
+                  {item?.variantName && (
                     <p className="text-sm text-gray-600">{item.variantName}</p>
                   )}
-                  <p className="text-sm text-gray-600">Quantity: {item.qty}</p>
-                  <p className="font-semibold text-gray-900">{formatCurrency(item.priceSnapshot)}</p>
+                  <p className="text-sm text-gray-600">Quantity: {item?.qty || 0}</p>
+                  <p className="font-semibold text-gray-900">{formatCurrency(item?.priceSnapshot || 0)}</p>
                 </div>
               </div>
             ))}
@@ -218,22 +218,24 @@ const AdminOrderDetail = () => {
           {/* Shipping Address */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-xl font-bold mb-4">Shipping Address</h2>
-            {order.shipTo && (
+            {order.shipTo ? (
               <div className="text-sm text-gray-700">
-                <p className="font-semibold text-gray-900">{order.shipTo.fullName}</p>
-                <p>{order.shipTo.addressLine1}</p>
+                <p className="font-semibold text-gray-900">{order.shipTo.fullName || 'N/A'}</p>
+                <p>{order.shipTo.addressLine1 || ''}</p>
                 {order.shipTo.addressLine2 && <p>{order.shipTo.addressLine2}</p>}
-                <p>{order.shipTo.city}, {order.shipTo.state} {order.shipTo.zipCode}</p>
-                <p>{order.shipTo.country}</p>
-                <p className="mt-2">Phone: {order.shipTo.phone}</p>
+                <p>{order.shipTo.city || ''}, {order.shipTo.state || ''} {order.shipTo.zipCode || ''}</p>
+                <p>{order.shipTo.country || ''}</p>
+                <p className="mt-2">Phone: {order.shipTo.phone || 'N/A'}</p>
               </div>
+            ) : (
+              <p className="text-sm text-gray-500">No shipping address provided</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Carrier Assignment Section - ADMIN ONLY */}
-      {!order.shipment?.awb && order.status !== 'cancelled' && order.payment.status === 'paid' && (
+      {!order.shipment?.awb && order.status !== 'cancelled' && order.payment?.status === 'paid' && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-6">
           <h2 className="text-2xl font-bold mb-4 text-gray-900">🚚 Assign Delivery Carrier</h2>
 
@@ -324,15 +326,15 @@ const AdminOrderDetail = () => {
       {/* Show Assigned Carrier Info */}
       {order.shipment?.awb && (
         <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">✅ Carrier Assigned</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-900">Carrier Assigned</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <span className="text-sm font-medium text-gray-700">Carrier:</span>
-              <p className="text-lg font-semibold text-gray-900">{order.shipment.carrier}</p>
+              <p className="text-lg font-semibold text-gray-900">{order.shipment?.carrier || 'N/A'}</p>
             </div>
             <div>
               <span className="text-sm font-medium text-gray-700">AWB Number:</span>
-              <p className="text-lg font-mono font-semibold text-gray-900">{order.shipment.awb}</p>
+              <p className="text-lg font-mono font-semibold text-gray-900">{order.shipment?.awb || 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -342,7 +344,7 @@ const AdminOrderDetail = () => {
       {order.shipment?.awb && trackingData?.data && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-bold mb-4">Shipment Tracking</h2>
-          <TrackingTimeline events={trackingData.data.events || []} />
+          <TrackingTimeline events={trackingData?.data?.events || []} />
         </div>
       )}
 
