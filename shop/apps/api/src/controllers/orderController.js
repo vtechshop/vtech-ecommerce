@@ -613,10 +613,13 @@ exports.getOrders = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
 
+    // Convert user ID to ObjectId for proper comparison
+    const userObjectId = new mongoose.Types.ObjectId(req.user._id);
+
     // Build query to find orders that belong to user OR are guest orders with matching email
     const query = {
       $or: [
-        { userId: req.user._id }, // Orders placed as logged-in user
+        { userId: userObjectId }, // Orders placed as logged-in user
         { isGuest: true, guestEmail: req.user.email }, // Guest orders with matching email
       ],
     };
@@ -658,16 +661,28 @@ exports.getOrderById = async (req, res, next) => {
     // Build query based on whether user is authenticated
     const buildQuery = async (idQuery) => {
       if (req.user) {
+        // Convert user ID to ObjectId for proper comparison
+        const userObjectId = new mongoose.Types.ObjectId(req.user._id);
+
         // Check if user is a vendor
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
         try {
           const Vendor = require('../models/Vendor');
-          const vendor = await Vendor.findOne({ userId: req.user._id });
+          const vendor = await Vendor.findOne({ userId: userObjectId });
 
           if (vendor) {
-            // Vendor can view orders containing their products
+            // Vendor can view:
+            // 1. Orders containing their products (as a vendor)
+            // 2. Orders they placed as a customer (their own orders)
             return {
               ...idQuery,
-              'items.vendorId': vendor._id, // Order contains vendor's products
+              $or: [
+                { 'items.vendorId': vendor._id }, // Orders containing vendor's products
+                { userId: userObjectId }, // Orders they placed as a customer
+                { isGuest: true, guestEmail: req.user.email }, // Guest orders with matching email
+                { createdAt: { $gte: twoHoursAgo } }, // Recent orders - fallback for checkout flow
+              ],
             };
           }
         } catch (vendorError) {
@@ -676,11 +691,10 @@ exports.getOrderById = async (req, res, next) => {
         }
 
         // Regular customer - check ownership with fallback for recent orders
-        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
         return {
           ...idQuery,
           $or: [
-            { userId: req.user._id }, // Order belongs to logged-in user
+            { userId: userObjectId }, // Order belongs to logged-in user
             { isGuest: true, guestEmail: req.user.email }, // Guest order with matching email
             { createdAt: { $gte: twoHoursAgo } }, // Recent orders - fallback for checkout flow
           ],
@@ -828,10 +842,13 @@ exports.cancelOrder = async (req, res, next) => {
       });
     }
 
+    // Convert user ID to ObjectId for proper comparison
+    const userObjectId = new mongoose.Types.ObjectId(req.user._id);
+
     const order = await Order.findOne({
       orderId: id,
       $or: [
-        { userId: req.user._id }, // Order belongs to logged-in user
+        { userId: userObjectId }, // Order belongs to logged-in user
         { isGuest: true, guestEmail: req.user.email }, // Guest order with matching email
       ],
     });
@@ -898,6 +915,62 @@ exports.cancelOrder = async (req, res, next) => {
 
     logger.info(`Order cancelled: ${order.orderId}`);
 
+    // Send cancellation notifications (async - don't block response)
+    (async () => {
+      try {
+        const User = require('../models/User');
+        const Vendor = require('../models/Vendor');
+
+        // Get user info for email
+        let userInfo = {};
+        if (order.userId && !order.isGuest) {
+          const user = await User.findById(order.userId);
+          if (user) {
+            userInfo = { name: user.name, email: user.email };
+          }
+        } else if (order.isGuest && order.guestEmail) {
+          userInfo = { name: order.shipTo?.fullName || 'Guest', email: order.guestEmail };
+        }
+
+        // Send cancellation email to customer
+        if (userInfo.email) {
+          await notificationService.sendOrderCancellationEmail(userInfo, order, reason, 'customer');
+          logger.info(`Cancellation email sent to customer: ${userInfo.email}`);
+
+          // Send in-app notification to customer if registered user
+          if (order.userId && !order.isGuest) {
+            await notificationHelper.notifyCustomerOrderStatus({
+              userId: order.userId,
+              order: { _id: order._id, orderNumber: order.orderId },
+              status: 'cancelled',
+            });
+          }
+        }
+
+        // Send cancellation notifications to vendors
+        const vendorItemsMap = {};
+        for (const item of order.items) {
+          if (item.vendorId) {
+            const vendorIdStr = item.vendorId.toString();
+            if (!vendorItemsMap[vendorIdStr]) {
+              vendorItemsMap[vendorIdStr] = [];
+            }
+            vendorItemsMap[vendorIdStr].push(item);
+          }
+        }
+
+        for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
+          const vendor = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
+          if (vendor && vendor.userId?.email) {
+            await notificationService.sendVendorOrderCancellationEmail(vendor, order, vendorItems, reason, 'customer');
+            logger.info(`Cancellation email sent to vendor: ${vendor.storeName}`);
+          }
+        }
+      } catch (notifError) {
+        logger.error('Failed to send cancellation notifications:', notifError);
+      }
+    })();
+
     res.json({
       success: true,
       data: order,
@@ -913,9 +986,12 @@ exports.requestReturn = async (req, res, next) => {
     const { id } = req.params;
     const { items, reason } = req.body;
 
+    // Convert user ID to ObjectId for proper comparison
+    const userObjectId = new mongoose.Types.ObjectId(req.user._id);
+
     const order = await Order.findOne({
       _id: id,
-      userId: req.user._id,
+      userId: userObjectId,
     });
 
     if (!order) {
