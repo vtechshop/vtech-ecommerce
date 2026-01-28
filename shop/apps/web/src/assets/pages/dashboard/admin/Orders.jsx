@@ -157,57 +157,57 @@ const Orders = () => {
             </thead>
             <tbody>
               {orders.map((order) => (
-                <tr key={order._id} className={`border-b last:border-b-0 transition-colors ${getNewItemClasses(order.createdAt)}`}>
+                <tr key={order?._id || Math.random()} className={`border-b last:border-b-0 transition-colors ${getNewItemClasses(order?.createdAt)}`}>
                   <td className="py-3 px-3 sm:px-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium">#{order.orderId}</p>
-                        <NewBadge createdAt={order.createdAt} />
+                        <p className="font-medium">#{order?.orderId || 'N/A'}</p>
+                        <NewBadge createdAt={order?.createdAt} />
                       </div>
                       <p className="text-xs text-gray-700">
-                        ID: {order._id.slice(-8)} • {formatRelativeTime(order.createdAt)}
+                        ID: {order?._id?.slice(-8) || 'N/A'} • {formatRelativeTime(order?.createdAt)}
                       </p>
                     </div>
                   </td>
                   <td className="py-3 px-3 sm:px-4">
                     <div>
-                      <p className="font-medium">{order.userId?.name || 'Guest'}</p>
-                      <p className="text-xs text-gray-700">{order.userId?.email || order.email}</p>
+                      <p className="font-medium">{order?.userId?.name || order?.shipTo?.fullName || 'Guest'}</p>
+                      <p className="text-xs text-gray-700">{order?.userId?.email || order?.guestEmail || 'N/A'}</p>
                     </div>
                   </td>
                   <td className="py-3 px-4 text-sm">
                     <div>
-                      <p className="font-medium">{order.items?.length || 0} items</p>
+                      <p className="font-medium">{order?.items?.length || 0} items</p>
                       <p className="text-xs text-gray-700">
-                        {order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0} units
+                        {order?.items?.reduce((sum, item) => sum + (item?.qty || 0), 0) || 0} units
                       </p>
                     </div>
                   </td>
                   <td className="py-3 px-3 sm:px-4">
                     <div>
-                      <p className="font-semibold">{formatCurrency(order.totals?.total || 0)}</p>
+                      <p className="font-semibold">{formatCurrency(order?.totals?.total || 0)}</p>
                       <p className="text-xs text-gray-700">
-                        Tax: {formatCurrency(order.totals?.tax || 0)}
+                        Tax: {formatCurrency(order?.totals?.tax || 0)}
                       </p>
                     </div>
                   </td>
                   <td className="py-3 px-3 sm:px-4">
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                        order.status
+                        order?.status
                       )}`}
                     >
-                      {getStatusIcon(order.status)}
-                      {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
+                      {getStatusIcon(order?.status)}
+                      {order?.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Unknown'}
                     </span>
                   </td>
                   <td className="py-3 px-4 text-sm text-gray-700">
-                    {new Date(order.createdAt).toLocaleDateString()}
+                    {order?.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-2">
                       <button
-                        onClick={() => navigate(`/admin-dashboard/orders/${order._id}`)}
+                        onClick={() => navigate(`/admin-dashboard/orders/${order?._id}`)}
                         className="text-blue-600 hover:text-blue-700 p-1 hover:bg-blue-50 rounded"
                         title="View & Assign Carrier"
                       >
