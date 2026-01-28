@@ -24,7 +24,7 @@ const AdminOrderDetail = () => {
   const { data: order, isLoading } = useQuery({
     queryKey: ['admin-order', id],
     queryFn: async () => {
-      const response = await api.get(`/orders/${id}`);
+      const response = await api.get(`/admin/orders/${id}`);
       return response.data.data;
     },
   });
