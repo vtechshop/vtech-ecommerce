@@ -463,10 +463,16 @@ exports.createOrder = async (req, res, next) => {
       }
 
     // ===== AFFILIATE TRACKING (track once for entire purchase) =====
-    const affiliateCookie = req.cookies?.affiliate;
-    if (affiliateCookie) {
+    // Accept affiliate code from request body (preferred) or cookie (fallback)
+    const affiliateCode = req.body.affiliateCode || req.cookies?.affiliate;
+    console.log('🔗 [AFFILIATE DEBUG] affiliateCode from body:', req.body.affiliateCode);
+    console.log('🔗 [AFFILIATE DEBUG] affiliateCode from cookie:', req.cookies?.affiliate);
+    console.log('🔗 [AFFILIATE DEBUG] Final affiliateCode:', affiliateCode);
+
+    if (affiliateCode) {
       const Affiliate = require('../models/Affiliate');
-      const affiliate = await Affiliate.findOne({ code: affiliateCookie });
+      const affiliate = await Affiliate.findOne({ code: affiliateCode, status: 'active' });
+      console.log('🔗 [AFFILIATE DEBUG] Affiliate found:', affiliate ? `${affiliate.code} (ID: ${affiliate._id})` : 'NOT FOUND');
 
       if (affiliate) {
         let totalAffiliateCommission = 0;
@@ -511,20 +517,29 @@ exports.createOrder = async (req, res, next) => {
         }
 
         // Link affiliate commission to first vendor order
-        await Commission.create([{
+        const commissionData = {
           type: 'affiliate',
           subjectId: affiliate._id,
           subjectModel: 'Affiliate',
           orderId: vendorOrders[0]._id,
           amount: totalAffiliateCommission,
-          percentage: affiliate.commissionPercentage,
+          percentage: affiliate.commissionPercentage || 5,
           status: 'pending',
-        }], sessionOpt);
+        };
+        console.log('🔗 [AFFILIATE DEBUG] Creating commission:', commissionData);
+
+        await Commission.create([commissionData], sessionOpt);
+        console.log('🔗 [AFFILIATE DEBUG] Commission created successfully!');
 
         affiliate.totalConversions += 1;
         affiliate.pendingEarnings += totalAffiliateCommission;
         await affiliate.save(sessionOpt);
+        console.log('🔗 [AFFILIATE DEBUG] Affiliate stats updated. Conversions:', affiliate.totalConversions, 'Pending:', affiliate.pendingEarnings);
+      } else {
+        console.log('🔗 [AFFILIATE DEBUG] Affiliate not found or not active for code:', affiliateCode);
       }
+    } else {
+      console.log('🔗 [AFFILIATE DEBUG] No affiliate code provided in request');
     }
 
     // Clear cart (only for authenticated users)

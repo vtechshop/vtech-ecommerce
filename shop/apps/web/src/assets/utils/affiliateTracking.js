@@ -1,4 +1,5 @@
 // FILE: apps/web/src/utils/affiliateTracking.js
+import api from './api';
 
 /**
  * Affiliate Tracking Utility
@@ -6,20 +7,44 @@
  */
 
 /**
+ * Track affiliate click via API
+ * @param {string} affiliateCode - The affiliate code to track
+ */
+const trackAffiliateClick = async (affiliateCode) => {
+  try {
+    await api.post('/affiliates/track/click', { affId: affiliateCode });
+    console.log('📊 Affiliate click tracked:', affiliateCode);
+  } catch (error) {
+    // Don't block the user experience if tracking fails
+    console.warn('Failed to track affiliate click:', error.message);
+  }
+};
+
+/**
  * Captures affiliate code from URL parameter and stores it in a cookie
  * Supports both 'affId' and 'ref' URL parameters
  * Cookie expires after 30 days
+ * Also tracks the click via API
  *
  * @param {URLSearchParams} searchParams - URL search parameters
  */
-export const captureAffiliateFromURL = (searchParams) => {
+export const captureAffiliateFromURL = async (searchParams) => {
   // Check for affiliate code in URL parameters (support both affId and ref)
   const affiliateCode = searchParams.get('affId') || searchParams.get('ref');
 
   if (affiliateCode) {
+    // Check if we already have this affiliate code stored (to avoid duplicate tracking)
+    const existingCode = getAffiliateCode();
+
     // Store affiliate code in cookie for 30 days
     const maxAge = 30 * 24 * 60 * 60; // 30 days in seconds
     document.cookie = `affiliate=${affiliateCode}; max-age=${maxAge}; path=/; SameSite=Lax`;
+
+    // Track click only if it's a new affiliate code (not already stored)
+    if (existingCode !== affiliateCode) {
+      trackAffiliateClick(affiliateCode);
+    }
+
     return affiliateCode;
   }
 

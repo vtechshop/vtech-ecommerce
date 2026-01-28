@@ -16,6 +16,7 @@ import { COUNTRIES, DEFAULT_COUNTRY, getStatesForCountry } from '@/utils/locatio
 import { useToast } from '@/components/common/ToastContainer';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
+import { getAffiliateCode } from '@/utils/affiliateTracking';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -176,6 +177,9 @@ const Checkout = () => {
       return;
     }
 
+    // Get affiliate code from cookie for commission tracking
+    const affiliateCode = getAffiliateCode();
+
     const orderData = {
       items: items.map(item => {
         // Handle both populated (object) and non-populated (string) productId
@@ -206,6 +210,8 @@ const Checkout = () => {
       paymentDetails: {},
       // Include guest email if not logged in
       ...((!user && guestEmail) && { guestEmail: guestEmail.trim() }),
+      // Include affiliate code for commission tracking
+      ...(affiliateCode && { affiliateCode }),
     };
 
     console.log('📦 Final orderData:', orderData);
