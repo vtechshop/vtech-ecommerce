@@ -456,6 +456,76 @@ async function getSettlements(req, res, next) {
   }
 }
 
+// ---------- SETTLEMENT REPORT EXPORT ----------
+async function exportSettlements(req, res, next) {
+  try {
+    const { startDate, endDate, status } = req.query;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    const query = { subjectId: vendor._id, type: 'vendor' };
+    if (status && status !== 'all') query.status = status;
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
+    const commissions = await Commission.find(query)
+      .populate('orderId', 'orderId totals createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Build CSV
+    const headers = ['Order ID', 'Date', 'Order Amount', 'Commission %', 'Your Earnings', 'Status', 'Paid Date', 'Payment Ref'];
+    const rows = commissions.map(c => [
+      c.orderId?.orderId || 'N/A',
+      c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN') : '',
+      c.orderId?.totals?.total != null ? c.orderId.totals.total.toFixed(2) : '',
+      c.percentage != null ? `${c.percentage}%` : '',
+      c.amount.toFixed(2),
+      c.status,
+      c.paidAt ? new Date(c.paidAt).toLocaleDateString('en-IN') : '',
+      c.paymentRef || '',
+    ]);
+
+    // Summary rows
+    const totalEarnings = commissions.reduce((s, c) => s + c.amount, 0);
+    const pendingTotal = commissions.filter(c => c.status === 'pending').reduce((s, c) => s + c.amount, 0);
+    const approvedTotal = commissions.filter(c => c.status === 'approved').reduce((s, c) => s + c.amount, 0);
+    const paidTotal = commissions.filter(c => c.status === 'paid').reduce((s, c) => s + c.amount, 0);
+
+    rows.push([]);
+    rows.push(['Summary']);
+    rows.push(['Total Records', commissions.length]);
+    rows.push(['Total Earnings', '', '', '', totalEarnings.toFixed(2)]);
+    rows.push(['Pending', '', '', '', pendingTotal.toFixed(2)]);
+    rows.push(['Approved', '', '', '', approvedTotal.toFixed(2)]);
+    rows.push(['Paid', '', '', '', paidTotal.toFixed(2)]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const filename = `settlements_${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvContent);
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ---------- KYC METHODS ----------
 async function getKYC(req, res, next) {
   try {
@@ -1069,6 +1139,7 @@ module.exports = {
   getVendorOrders,
   updateOrderStatus,
   getSettlements,
+  exportSettlements,
   getKYC,
   updateKYC,
   uploadKYCDocument,

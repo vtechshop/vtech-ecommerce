@@ -4,13 +4,9 @@ const logger = require('../config/logger');
 const Commission = require('../models/Commission');
 const Vendor = require('../models/Vendor');
 const Affiliate = require('../models/Affiliate');
+const { createPayout, isConfigured: razorpayConfigured } = require('../utils/razorpay');
 
 class PayoutService {
-  constructor() {
-    // Initialize Stripe if key is available
-    this.stripe = env.STRIPE_KEY ? require('stripe')(env.STRIPE_KEY) : null;
-  }
-
   /**
    * Calculate total pending commission for a vendor
    */
@@ -20,7 +16,7 @@ class PayoutService {
         $match: {
           subjectId: vendorId,
           type: 'vendor',
-          status: 'approved', // Only approved commissions
+          status: 'approved',
         },
       },
       {
@@ -66,8 +62,7 @@ class PayoutService {
   }
 
   /**
-   * Process payout to vendor via Stripe
-   * This requires Stripe Connect to be set up
+   * Process payout to vendor via Razorpay (RazorpayX) or manual
    */
   async processVendorPayout(vendorId, amount, commissionIds) {
     try {
@@ -76,125 +71,202 @@ class PayoutService {
         throw new Error('Vendor not found');
       }
 
-      // Check if vendor has bank account configured
       if (!vendor.bank?.accountNumber || !vendor.bank?.ifscCode) {
-        throw new Error('Vendor bank account not configured');
+        throw new Error('Vendor bank account not configured. Please ask the vendor to add bank details in Settings.');
       }
 
-      // In a real implementation with Stripe Connect:
-      // 1. Vendor would have a connected Stripe account
-      // 2. Use stripe.transfers.create() to send money
+      // Try Razorpay payout first
+      if (razorpayConfigured && process.env.RAZORPAY_ACCOUNT_NUMBER) {
+        const referenceId = `vendor_${vendorId}_${Date.now()}`;
 
-      if (this.stripe && vendor.stripeAccountId) {
-        // Stripe Connect Transfer
-        const transfer = await this.stripe.transfers.create({
-          amount: Math.round(amount * 100), // Convert to cents
-          currency: 'inr',
-          destination: vendor.stripeAccountId,
-          description: `Payout for commissions: ${commissionIds.join(', ')}`,
-          metadata: {
-            vendorId: vendorId.toString(),
-            commissionIds: commissionIds.join(','),
-          },
+        const payoutResult = await createPayout({
+          amount,
+          beneficiaryName: vendor.bank.accountHolderName || vendor.storeName,
+          beneficiaryAccountNumber: vendor.bank.accountNumber,
+          beneficiaryIfsc: vendor.bank.ifscCode,
+          referenceId,
+          mode: amount >= 200000 ? 'RTGS' : 'IMPS',
+          purpose: 'payout',
+          narration: `Commission payout for ${vendor.storeName}`,
         });
 
-        // Update commissions
-        await Commission.updateMany(
-          { _id: { $in: commissionIds } },
-          {
-            status: 'paid',
-            paidAt: new Date(),
-            paymentRef: transfer.id,
-          }
-        );
+        if (payoutResult.success) {
+          await Commission.updateMany(
+            { _id: { $in: commissionIds } },
+            {
+              status: 'paid',
+              paidAt: new Date(),
+              paymentRef: payoutResult.payoutId,
+              notes: `Razorpay payout: ${payoutResult.payoutId}`,
+            }
+          );
 
-        // Update vendor stats
-        vendor.totalEarnings = (vendor.totalEarnings || 0) + amount;
-        vendor.pendingEarnings = Math.max(0, (vendor.pendingEarnings || 0) - amount);
-        await vendor.save();
+          vendor.totalEarnings = (vendor.totalEarnings || 0) + amount;
+          vendor.pendingEarnings = Math.max(0, (vendor.pendingEarnings || 0) - amount);
+          await vendor.save();
 
-        logger.info(`Payout processed for vendor ${vendor.storeName}: ₹${amount}`);
+          logger.info(`Razorpay payout processed for vendor ${vendor.storeName}: ₹${amount} (${payoutResult.payoutId})`);
 
-        return {
-          success: true,
-          transferId: transfer.id,
-          amount,
-          vendor: vendor.storeName,
-        };
-      } else {
-        // Manual payout (no Stripe Connect)
-        // Mark as paid manually - admin needs to transfer via bank
-        await Commission.updateMany(
-          { _id: { $in: commissionIds } },
-          {
-            status: 'paid',
-            paidAt: new Date(),
-            paymentRef: 'MANUAL_TRANSFER',
-            notes: 'Manual bank transfer - admin to process',
-          }
-        );
-
-        vendor.totalEarnings = (vendor.totalEarnings || 0) + amount;
-        vendor.pendingEarnings = Math.max(0, (vendor.pendingEarnings || 0) - amount);
-        await vendor.save();
-
-        logger.info(`Manual payout marked for vendor ${vendor.storeName}: ₹${amount}`);
-
-        return {
-          success: true,
-          transferId: 'MANUAL',
-          amount,
-          vendor: vendor.storeName,
-          note: 'Please transfer funds manually to vendor bank account',
-          bankDetails: {
-            accountNumber: vendor.bank.accountNumber,
-            ifscCode: vendor.bank.ifscCode,
-            accountHolder: vendor.bank.accountHolderName,
-          },
-        };
-      }
-    } catch (error) {
-      logger.error('Payout failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Process payout to affiliate
-   */
-  async processAffiliatePayout(affiliateId, amount, commissionIds) {
-    try {
-      const affiliate = await Affiliate.findById(affiliateId);
-      if (!affiliate) {
-        throw new Error('Affiliate not found');
+          return {
+            success: true,
+            method: 'razorpay',
+            transferId: payoutResult.payoutId,
+            amount,
+            vendor: vendor.storeName,
+            status: payoutResult.status,
+          };
+        } else {
+          logger.warn(`Razorpay payout failed for vendor ${vendor.storeName}: ${payoutResult.error}. Falling back to manual.`);
+        }
       }
 
-      // Check minimum payout threshold
-      if (amount < env.MIN_PAYOUT_AMOUNT) {
-        throw new Error(`Minimum payout amount is ₹${env.MIN_PAYOUT_AMOUNT}`);
-      }
-
-      // Manual payout for affiliates
+      // Manual payout fallback
       await Commission.updateMany(
         { _id: { $in: commissionIds } },
         {
           status: 'paid',
           paidAt: new Date(),
           paymentRef: 'MANUAL_TRANSFER',
+          notes: 'Manual bank transfer - admin to process',
         }
       );
 
-      affiliate.totalEarnings = (affiliate.totalEarnings || 0) + amount;
-      affiliate.pendingEarnings = Math.max(0, (affiliate.pendingEarnings || 0) - amount);
-      await affiliate.save();
+      vendor.totalEarnings = (vendor.totalEarnings || 0) + amount;
+      vendor.pendingEarnings = Math.max(0, (vendor.pendingEarnings || 0) - amount);
+      await vendor.save();
 
-      logger.info(`Payout processed for affiliate ${affiliate.userId}: ₹${amount}`);
+      logger.info(`Manual payout marked for vendor ${vendor.storeName}: ₹${amount}`);
 
       return {
         success: true,
+        method: 'manual',
+        transferId: 'MANUAL',
         amount,
-        affiliate: affiliate.userId,
-        paymentMethod: affiliate.paymentMethod || 'bank_transfer',
+        vendor: vendor.storeName,
+        note: 'Razorpay payout not available. Please transfer funds manually to vendor bank account.',
+        bankDetails: {
+          accountNumber: vendor.bank.accountNumber,
+          ifscCode: vendor.bank.ifscCode,
+          accountHolder: vendor.bank.accountHolderName,
+        },
+      };
+    } catch (error) {
+      logger.error('Vendor payout failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process payout to affiliate via Razorpay or manual
+   */
+  async processAffiliatePayout(affiliateId, amount, commissionIds) {
+    try {
+      const affiliate = await Affiliate.findById(affiliateId).populate('userId', 'name email');
+      if (!affiliate) {
+        throw new Error('Affiliate not found');
+      }
+
+      const MIN_PAYOUT = 500;
+      if (amount < MIN_PAYOUT) {
+        throw new Error(`Minimum payout amount is ₹${MIN_PAYOUT}`);
+      }
+
+      if (!affiliate.bankDetails?.accountNumber || !affiliate.bankDetails?.ifscCode) {
+        throw new Error('Affiliate bank account not configured. Please ask the affiliate to add bank details.');
+      }
+
+      // Calculate 2% TDS (Tax Deducted at Source) as per Indian Income Tax rules
+      const TDS_RATE = 2;
+      const tdsAmount = Math.round((amount * TDS_RATE) / 100 * 100) / 100; // Round to 2 decimals
+      const netAmount = Math.round((amount - tdsAmount) * 100) / 100;
+
+      logger.info(`Affiliate payout: Gross ₹${amount}, TDS (${TDS_RATE}%): ₹${tdsAmount}, Net: ₹${netAmount}`);
+
+      // Update commission records with TDS info
+      const tdsUpdate = {
+        'tds.rate': TDS_RATE,
+        'tds.amount': tdsAmount,
+        'tds.netAmount': netAmount,
+      };
+
+      // Try Razorpay payout (send net amount after TDS)
+      if (razorpayConfigured && process.env.RAZORPAY_ACCOUNT_NUMBER) {
+        const referenceId = `affiliate_${affiliateId}_${Date.now()}`;
+
+        const payoutResult = await createPayout({
+          amount: netAmount, // Send net amount after TDS deduction
+          beneficiaryName: affiliate.bankDetails.accountHolderName || affiliate.userId?.name || 'Affiliate',
+          beneficiaryAccountNumber: affiliate.bankDetails.accountNumber,
+          beneficiaryIfsc: affiliate.bankDetails.ifscCode,
+          referenceId,
+          mode: netAmount >= 200000 ? 'RTGS' : 'IMPS',
+          purpose: 'payout',
+          narration: `Affiliate commission payout - ${affiliate.code} (TDS ${TDS_RATE}% deducted)`,
+        });
+
+        if (payoutResult.success) {
+          await Commission.updateMany(
+            { _id: { $in: commissionIds } },
+            {
+              status: 'paid',
+              paidAt: new Date(),
+              paymentRef: payoutResult.payoutId,
+              notes: `Razorpay payout: ${payoutResult.payoutId} | TDS ${TDS_RATE}%: ₹${tdsAmount} | Net paid: ₹${netAmount}`,
+              ...tdsUpdate,
+            }
+          );
+
+          affiliate.totalEarnings = (affiliate.totalEarnings || 0) + netAmount;
+          affiliate.pendingEarnings = Math.max(0, (affiliate.pendingEarnings || 0) - amount);
+          await affiliate.save();
+
+          logger.info(`Razorpay payout processed for affiliate ${affiliate.code}: Gross ₹${amount}, TDS ₹${tdsAmount}, Net ₹${netAmount}`);
+
+          return {
+            success: true,
+            method: 'razorpay',
+            transferId: payoutResult.payoutId,
+            grossAmount: amount,
+            tdsRate: TDS_RATE,
+            tdsAmount,
+            netAmount,
+            amount: netAmount,
+            affiliate: affiliate.code,
+            status: payoutResult.status,
+          };
+        } else {
+          logger.warn(`Razorpay payout failed for affiliate ${affiliate.code}: ${payoutResult.error}. Falling back to manual.`);
+        }
+      }
+
+      // Manual payout fallback (net amount after TDS)
+      await Commission.updateMany(
+        { _id: { $in: commissionIds } },
+        {
+          status: 'paid',
+          paidAt: new Date(),
+          paymentRef: 'MANUAL_TRANSFER',
+          notes: `Manual transfer | TDS ${TDS_RATE}%: ₹${tdsAmount} | Net to pay: ₹${netAmount}`,
+          ...tdsUpdate,
+        }
+      );
+
+      affiliate.totalEarnings = (affiliate.totalEarnings || 0) + netAmount;
+      affiliate.pendingEarnings = Math.max(0, (affiliate.pendingEarnings || 0) - amount);
+      await affiliate.save();
+
+      logger.info(`Manual payout marked for affiliate ${affiliate.code}: Gross ₹${amount}, TDS ₹${tdsAmount}, Net ₹${netAmount}`);
+
+      return {
+        success: true,
+        method: 'manual',
+        grossAmount: amount,
+        tdsRate: TDS_RATE,
+        tdsAmount,
+        netAmount,
+        amount: netAmount,
+        affiliate: affiliate.code,
+        note: 'Razorpay payout not available. Please transfer funds manually (net amount after TDS).',
       };
     } catch (error) {
       logger.error('Affiliate payout failed:', error);
@@ -233,7 +305,6 @@ class PayoutService {
    */
   async batchPayoutVendor(vendorId) {
     try {
-      // Get all approved commissions
       const commissions = await Commission.find({
         subjectId: vendorId,
         type: 'vendor',

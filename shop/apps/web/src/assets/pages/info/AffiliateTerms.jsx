@@ -4,7 +4,7 @@ const AffiliateTerms = () => {
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Affiliate Program Terms & Conditions</h1>
-          <p className="text-gray-700 mb-8">Last updated: December 2025</p>
+          <p className="text-gray-700 mb-8">Last updated: January 2026</p>
 
           <div className="prose prose-lg max-w-none space-y-8">
             <section>
@@ -74,9 +74,34 @@ const AffiliateTerms = () => {
                 <li>PayPal (where available)</li>
               </ul>
 
+              <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-4" id="tds">4.3 Tax Deducted at Source (TDS)</h3>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mt-2">
+                <p className="text-amber-900 font-semibold mb-3">TDS Deduction - 2% on All Payouts</p>
+                <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
+                  <li>As per <strong>Section 194H of the Indian Income Tax Act</strong>, 2% TDS (Tax Deducted at Source) is deducted on all affiliate commission payouts.</li>
+                  <li>TDS is deducted at the time of payment, not at the time of earning.</li>
+                  <li>The TDS amount will be clearly shown in your commission dashboard.</li>
+                  <li>You will receive the <strong>net amount</strong> (commission minus TDS) in your bank account.</li>
+                </ul>
+                <div className="bg-white border border-amber-300 rounded p-4 mb-4">
+                  <p className="text-sm font-semibold text-gray-900 mb-2">Example:</p>
+                  <p className="text-sm text-gray-700">
+                    Commission Earned: <strong>₹500</strong> |
+                    TDS (2%): <strong className="text-red-600">-₹10</strong> |
+                    Net Payout: <strong className="text-green-700">₹490</strong>
+                  </p>
+                </div>
+                <ul className="list-disc pl-6 text-gray-700 space-y-2">
+                  <li>You can claim TDS credit while filing your <strong>Income Tax Return (ITR)</strong>.</li>
+                  <li>TDS details will be reflected under your PAN in Form 26AS / AIS on the Income Tax portal.</li>
+                  <li>If your annual income is below the taxable limit, you may apply for a <strong>lower/nil TDS certificate</strong> under Section 197 and submit it to us.</li>
+                  <li>Vtech will file quarterly TDS returns (Form 26Q) with the Income Tax Department.</li>
+                </ul>
+              </div>
+
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-4">
                 <p className="text-yellow-900">
-                  <strong>Note:</strong> You are responsible for any applicable taxes on your commission earnings.
+                  <strong>Note:</strong> You are responsible for filing your income tax returns and paying any additional taxes on your commission earnings beyond TDS. Please consult a tax professional for advice specific to your situation.
                 </p>
               </div>
             </section>

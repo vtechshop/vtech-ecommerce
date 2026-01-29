@@ -9,6 +9,12 @@ const commissionSchema = new mongoose.Schema({
   orderItemId: mongoose.Schema.Types.ObjectId,
   amount: { type: Number, required: true },
   percentage: Number,
+  // TDS (Tax Deducted at Source) - applicable for affiliate payouts
+  tds: {
+    rate: { type: Number, default: 0 }, // TDS percentage (e.g. 2)
+    amount: { type: Number, default: 0 }, // TDS amount deducted
+    netAmount: { type: Number, default: 0 }, // Amount after TDS deduction
+  },
   status: { type: String, enum: ['pending', 'approved', 'paid', 'cancelled'], default: 'pending' },
   approvedAt: Date,
   paidAt: Date,

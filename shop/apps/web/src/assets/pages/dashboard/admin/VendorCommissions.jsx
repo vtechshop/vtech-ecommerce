@@ -13,11 +13,38 @@ import { useToast } from '@/components/common/ToastContainer';
 import PendingBadge from '@/components/common/PendingBadge';
 import { getPendingItemClasses, formatRelativeTime } from '@/utils/dateHelpers';
 
+const DATE_PRESETS = [
+  { label: 'Last 1 Month', months: 1 },
+  { label: 'Last 3 Months', months: 3 },
+  { label: 'Last 6 Months', months: 6 },
+  { label: 'Last 1 Year', months: 12 },
+  { label: 'All Time', months: null },
+];
+
+const getPresetDates = (months) => {
+  if (!months) return { startDate: '', endDate: '' };
+  const end = new Date();
+  const start = new Date();
+  start.setMonth(start.getMonth() - months);
+  return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+  };
+};
+
 const VendorCommissions = () => {
-  const [statusFilter, setStatusFilter] = useState('all'); // all, pending, approved, paid, cancelled
+  const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const toast = useToast();
+
+  // Export panel state
+  const [showExport, setShowExport] = useState(false);
+  const [exportVendorId, setExportVendorId] = useState('');
+  const [exportStartDate, setExportStartDate] = useState('');
+  const [exportEndDate, setExportEndDate] = useState('');
+  const [exportStatus, setExportStatus] = useState('all');
+  const [downloading, setDownloading] = useState(false);
 
   // Fetch commissions with filters
   const { data, isLoading } = useQuery({
@@ -43,6 +70,16 @@ const VendorCommissions = () => {
       const response = await api.get('/admin/commissions/stats?type=vendor');
       return response.data.data;
     },
+  });
+
+  // Fetch vendor list for export dropdown
+  const { data: vendorsData } = useQuery({
+    queryKey: ['admin-vendors-list'],
+    queryFn: async () => {
+      const response = await api.get('/admin/vendors?limit=200');
+      return response.data.data;
+    },
+    enabled: showExport,
   });
 
   // Approve commission mutation
@@ -111,7 +148,7 @@ const VendorCommissions = () => {
     },
   });
 
-  // Export commissions to CSV
+  // Quick export current page to CSV
   const handleExportCSV = () => {
     const csvData = [
       ['Vendor', 'Order ID', 'Product', 'Amount', 'Rate', 'Status', 'Date', 'Paid Date'].join(','),
@@ -135,6 +172,46 @@ const VendorCommissions = () => {
     link.click();
     URL.revokeObjectURL(url);
     toast.success('CSV exported successfully!');
+  };
+
+  // Download vendor-specific report from backend
+  const handleDownloadReport = async () => {
+    setDownloading(true);
+    try {
+      const params = new URLSearchParams();
+      if (exportVendorId) params.set('vendorId', exportVendorId);
+      if (exportStartDate) params.set('startDate', exportStartDate);
+      if (exportEndDate) params.set('endDate', exportEndDate);
+      if (exportStatus !== 'all') params.set('status', exportStatus);
+
+      const response = await api.get(`/admin/commissions/export?${params.toString()}`, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+
+      const selectedVendor = vendorsList.find(v => v._id === exportVendorId);
+      const vendorLabel = selectedVendor ? (selectedVendor.storeName || 'vendor').replace(/\s+/g, '-') : 'all-vendors';
+      link.setAttribute('download', `commissions_${vendorLabel}_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Report downloaded!');
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error('Failed to download report. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handlePreset = (months) => {
+    const { startDate, endDate } = getPresetDates(months);
+    setExportStartDate(startDate);
+    setExportEndDate(endDate);
   };
 
   // Approve all pending commissions
@@ -172,6 +249,8 @@ const VendorCommissions = () => {
     }
   };
 
+  const vendorsList = vendorsData?.vendors || vendorsData || [];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -195,6 +274,14 @@ const VendorCommissions = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowExport(!showExport)}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            {showExport ? 'Close Report' : 'Download Report'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleExportCSV}
           >
             <Download className="w-4 h-4 mr-2" />
@@ -211,6 +298,102 @@ const VendorCommissions = () => {
           </Button>
         </div>
       </div>
+
+      {/* Export Panel */}
+      {showExport && (
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="w-5 h-5 text-gray-600" />
+            <h3 className="font-semibold text-gray-800 text-lg">Download Vendor Commission Report</h3>
+          </div>
+
+          {/* Vendor Selector */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Select Vendor</label>
+            <select
+              value={exportVendorId}
+              onChange={(e) => setExportVendorId(e.target.value)}
+              className="w-full sm:w-80 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            >
+              <option value="">All Vendors</option>
+              {vendorsList.map((vendor) => (
+                <option key={vendor._id} value={vendor._id}>
+                  {vendor.storeName || vendor.userId?.name || 'Unknown Vendor'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date Presets */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {DATE_PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                onClick={() => handlePreset(preset.months)}
+                className="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-300 bg-gray-50 hover:bg-primary-50 hover:border-primary-300 hover:text-primary-700 transition-colors"
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom Date Range + Status */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">From Date</label>
+              <input
+                type="date"
+                value={exportStartDate}
+                onChange={(e) => setExportStartDate(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">To Date</label>
+              <input
+                type="date"
+                value={exportEndDate}
+                onChange={(e) => setExportEndDate(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+              <select
+                value={exportStatus}
+                onChange={(e) => setExportStatus(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="all">All Statuses</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="paid">Paid</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-500">
+              {exportVendorId
+                ? `Vendor: ${vendorsList.find(v => v._id === exportVendorId)?.storeName || 'Selected'}`
+                : 'All vendors'}
+              {' | '}
+              {!exportStartDate && !exportEndDate
+                ? 'All time'
+                : `${exportStartDate || 'Start'} to ${exportEndDate || 'Present'}`}
+            </p>
+            <button
+              onClick={handleDownloadReport}
+              disabled={downloading}
+              className="flex items-center gap-2 px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              {downloading ? 'Downloading...' : 'Download CSV'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

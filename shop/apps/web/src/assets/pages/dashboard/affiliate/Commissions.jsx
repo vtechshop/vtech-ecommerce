@@ -157,7 +157,15 @@ const Commissions = () => {
               <p className="text-sm text-green-900 font-semibold mb-1">Example Calculation:</p>
               <p className="text-sm text-green-800">
                 Customer buys ₹10,000 worth of products →
-                <span className="text-green-600 font-bold"> Your Commission (5%): ₹500</span>
+                <span className="text-green-600 font-bold"> Commission (5%): ₹500</span> →
+                <span className="text-red-600 font-semibold"> TDS (2%): -₹10</span> →
+                <span className="text-green-700 font-bold"> You Receive: ₹490</span>
+              </p>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-3">
+              <p className="text-sm text-amber-900">
+                <strong>TDS Notice:</strong> As per Indian Income Tax rules, 2% TDS (Tax Deducted at Source) is deducted on all affiliate commission payouts.
+                You can claim TDS credit while filing your Income Tax Return (ITR). A TDS certificate will be available for download.
               </p>
             </div>
             <div className="bg-purple-50 border border-purple-200 rounded p-3">
@@ -216,6 +224,7 @@ const Commissions = () => {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+<<<<<<< HEAD
         {commissions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4">
             <DollarSign className="w-16 h-16 text-gray-300 mb-4" />
@@ -244,13 +253,42 @@ const Commissions = () => {
             </thead>
             <tbody>
               {commissions.map((commission) => (
+=======
+        <table className="w-full">
+          <thead className="bg-blue-100 border-b">
+            <tr>
+              <th className="text-left py-3 px-4 font-semibold text-sm">Order ID</th>
+              <th className="text-left py-3 px-4 font-semibold text-sm">Date</th>
+              <th className="text-left py-3 px-4 font-semibold text-sm">Commission</th>
+              <th className="text-left py-3 px-4 font-semibold text-sm">TDS (2%)</th>
+              <th className="text-left py-3 px-4 font-semibold text-sm">Net Payout</th>
+              <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
+              <th className="text-left py-3 px-4 font-semibold text-sm">Paid Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {commissions.map((commission) => {
+              const tdsAmt = commission.tds?.amount || 0;
+              const netAmt = commission.tds?.netAmount || commission.amount;
+              return (
+>>>>>>> fc4361f (feat: Commission system overhaul - Razorpay payouts, TDS, CSV exports)
                 <tr key={commission._id} className="border-b last:border-b-0">
                   <td className="py-3 px-4 font-mono text-sm">
                     {commission.orderId?.orderId || 'N/A'}
                   </td>
                   <td className="py-3 px-4 text-sm">{formatDate(commission.createdAt)}</td>
+<<<<<<< HEAD
                   <td className="py-3 px-4 font-semibold">{formatCurrency(commission.amount)}</td>
                   <td className="py-3 px-4 text-sm">{commission.percentage}%</td>
+=======
+                  <td className="py-3 px-4 font-semibold text-green-700">{formatCurrency(commission.amount)}</td>
+                  <td className="py-3 px-4 text-sm text-red-600">
+                    {commission.status === 'paid' && tdsAmt > 0 ? `-${formatCurrency(tdsAmt)}` : '-'}
+                  </td>
+                  <td className="py-3 px-4 font-semibold">
+                    {commission.status === 'paid' && tdsAmt > 0 ? formatCurrency(netAmt) : formatCurrency(commission.amount)}
+                  </td>
+>>>>>>> fc4361f (feat: Commission system overhaul - Razorpay payouts, TDS, CSV exports)
                   <td className="py-3 px-3 sm:px-4">
                     <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
                       commission.status === 'paid' ? 'bg-green-100 text-green-800' :
@@ -264,10 +302,17 @@ const Commissions = () => {
                     {commission.paidAt ? formatDate(commission.paidAt) : '-'}
                   </td>
                 </tr>
+<<<<<<< HEAD
               ))}
             </tbody>
           </table>
         )}
+=======
+              );
+            })}
+          </tbody>
+        </table>
+>>>>>>> fc4361f (feat: Commission system overhaul - Razorpay payouts, TDS, CSV exports)
       </div>
 
       {totalPages > 1 && (

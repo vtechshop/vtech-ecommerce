@@ -318,7 +318,7 @@ const Home = React.memo(() => {
                         </li>
                       </ul>
                       <Link
-                        to={user?.role === 'customer' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
+                        to={user && user.role !== 'affiliate' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
                         className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors duration-200 shadow-md hover:shadow-lg will-change-auto"
                         style={{ transform: 'translateZ(0)' }}
                       >

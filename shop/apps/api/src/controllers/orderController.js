@@ -349,6 +349,9 @@ exports.createOrder = async (req, res, next) => {
     try {
       // ===== NEW: CREATE SEPARATE ORDER FOR EACH VENDOR =====
 
+      // Extract affiliate code early so we can store it on orders
+      const affiliateCode = req.body.affiliateCode || req.cookies?.affiliate || null;
+
       for (const [vendorIdStr, vendorItems] of Object.entries(vendorGroups)) {
       // Calculate vendor-specific totals directly from items
       const vendorSubtotal = vendorItems.reduce((sum, item) =>
@@ -407,6 +410,7 @@ exports.createOrder = async (req, res, next) => {
             amount: vendorTotal, // Vendor-specific amount
           },
           isVendorOrder: true, // Mark as vendor order
+          ...(affiliateCode && { affiliateCode }), // Store affiliate code for commission tracking
         }], sessionOpt))[0];
 
       vendorOrders.push(vendorOrder);
@@ -462,85 +466,11 @@ exports.createOrder = async (req, res, next) => {
       // to ensure commissions are only created for successfully paid orders
       }
 
-    // ===== AFFILIATE TRACKING (track once for entire purchase) =====
-    // Accept affiliate code from request body (preferred) or cookie (fallback)
-    const affiliateCode = req.body.affiliateCode || req.cookies?.affiliate;
-    console.log('🔗 [AFFILIATE DEBUG] affiliateCode from body:', req.body.affiliateCode);
-    console.log('🔗 [AFFILIATE DEBUG] affiliateCode from cookie:', req.cookies?.affiliate);
-    console.log('🔗 [AFFILIATE DEBUG] Final affiliateCode:', affiliateCode);
-
-    if (affiliateCode) {
-      const Affiliate = require('../models/Affiliate');
-      const affiliate = await Affiliate.findOne({ code: affiliateCode, status: 'active' });
-      console.log('🔗 [AFFILIATE DEBUG] Affiliate found:', affiliate ? `${affiliate.code} (ID: ${affiliate._id})` : 'NOT FOUND');
-
-      if (affiliate) {
-        let totalAffiliateCommission = 0;
-
-        for (const item of orderItems) {
-          const product = await Product.findById(item.productId).populate('categoryIds');
-          let commissionPercentage = null;
-
-          if (product.affiliateCommissionPercentage !== undefined && product.affiliateCommissionPercentage !== null) {
-            commissionPercentage = product.affiliateCommissionPercentage;
-          }
-
-          if (commissionPercentage === null && product.categoryIds && product.categoryIds.length > 0 &&
-              product.affiliateCommissionRules && product.affiliateCommissionRules.length > 0) {
-            for (const categoryId of product.categoryIds) {
-              const rule = product.affiliateCommissionRules.find(r => r.categoryId.toString() === categoryId._id.toString());
-              if (rule && rule.percentage !== undefined && rule.percentage !== null) {
-                commissionPercentage = rule.percentage;
-                break;
-              }
-            }
-          }
-
-          if (commissionPercentage === null && product.categoryIds && product.categoryIds.length > 0 &&
-              affiliate.commissionRules && affiliate.commissionRules.length > 0) {
-            for (const categoryId of product.categoryIds) {
-              const rule = affiliate.commissionRules.find(r => r.categoryId.toString() === categoryId._id.toString());
-              if (rule && rule.percentage !== undefined && rule.percentage !== null) {
-                commissionPercentage = rule.percentage;
-                break;
-              }
-            }
-          }
-
-          if (commissionPercentage === null) {
-            commissionPercentage = affiliate.commissionPercentage || 5;
-          }
-
-          const itemTotal = item.priceSnapshot * item.qty;
-          const itemCommission = (itemTotal * commissionPercentage) / 100;
-          totalAffiliateCommission += itemCommission;
-        }
-
-        // Link affiliate commission to first vendor order
-        const commissionData = {
-          type: 'affiliate',
-          subjectId: affiliate._id,
-          subjectModel: 'Affiliate',
-          orderId: vendorOrders[0]._id,
-          amount: totalAffiliateCommission,
-          percentage: affiliate.commissionPercentage || 5,
-          status: 'pending',
-        };
-        console.log('🔗 [AFFILIATE DEBUG] Creating commission:', commissionData);
-
-        await Commission.create([commissionData], sessionOpt);
-        console.log('🔗 [AFFILIATE DEBUG] Commission created successfully!');
-
-        affiliate.totalConversions += 1;
-        affiliate.pendingEarnings += totalAffiliateCommission;
-        await affiliate.save(sessionOpt);
-        console.log('🔗 [AFFILIATE DEBUG] Affiliate stats updated. Conversions:', affiliate.totalConversions, 'Pending:', affiliate.pendingEarnings);
-      } else {
-        console.log('🔗 [AFFILIATE DEBUG] Affiliate not found or not active for code:', affiliateCode);
-      }
-    } else {
-      console.log('🔗 [AFFILIATE DEBUG] No affiliate code provided in request');
-    }
+    // ===== AFFILIATE & VENDOR COMMISSIONS =====
+    // Affiliate code is stored on order (affiliateCode field) and commissions
+    // (both vendor and affiliate) are created after payment verification
+    // in razorpayController.createCommissionsAfterPayment()
+    // This ensures commissions are only created for successfully paid orders.
 
     // Clear cart (only for authenticated users)
     if (req.user) {

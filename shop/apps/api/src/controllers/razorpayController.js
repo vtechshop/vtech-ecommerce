@@ -355,9 +355,14 @@ exports.verifyPayment = async (req, res, next) => {
 
     await order.save();
 
-    // Process automatic transfers to vendors and affiliates (Razorpay Route)
+    // Create commission records and process automatic transfers after payment
     if (payment.status === 'captured') {
-      // Process transfers asynchronously - don't wait for completion
+      // Create commission records (vendor + affiliate) for all orders
+      createCommissionsAfterPayment(order).catch(error => {
+        logger.error(`Failed to create commissions for order ${order._id}:`, error);
+      });
+
+      // Process Razorpay Route transfers for vendors with connected accounts
       processAutomaticTransfers(order, razorpayPaymentId).catch(error => {
         logger.error(`Failed to process automatic transfers for order ${order._id}:`, error);
       });
@@ -1183,7 +1188,11 @@ async function createCommissionsAfterPayment(order) {
             commissionPercentage = vendor.defaultCommissionPercentage || 15;
           }
 
-          const commissionAmount = (item.priceSnapshot * item.qty * commissionPercentage) / 100;
+          // commissionPercentage = platform's cut (e.g. 15%)
+          // Vendor earns (100 - platformCut)% of the item total
+          const itemTotal = item.priceSnapshot * item.qty;
+          const vendorEarningsPercentage = 100 - commissionPercentage;
+          const vendorEarnings = (itemTotal * vendorEarningsPercentage) / 100;
 
           commissionRecords.push({
             type: 'vendor',
@@ -1191,9 +1200,9 @@ async function createCommissionsAfterPayment(order) {
             subjectModel: 'Vendor',
             orderId: order._id,
             orderItemId: item._id,
-            amount: commissionAmount,
-            percentage: commissionPercentage,
-            status: 'pending', // Will be updated when transfer is processed
+            amount: vendorEarnings,
+            percentage: commissionPercentage, // Platform's commission %
+            status: 'pending',
           });
         }
 
@@ -1285,39 +1294,33 @@ async function createCommissionsAfterPayment(order) {
 }
 
 /**
- * Process automatic transfers to vendors and affiliates
- * This function calculates commissions and creates transfers via Razorpay Route
+ * Process automatic Razorpay Route transfers to vendors and affiliates
+ * Commission records are created separately by createCommissionsAfterPayment().
+ * This function only handles Razorpay transfers and updates existing commission records.
  */
 async function processAutomaticTransfers(order, razorpayPaymentId) {
   try {
     logger.info(`Processing automatic transfers for order ${order._id}`);
 
     const transfers = [];
-    const commissionRecords = [];
 
-    // Get unique vendors from order items (for multi-vendor orders)
-    // Group items by vendorId and calculate subtotal per vendor
+    // Group items by vendorId
     const vendorSubtotals = {};
     if (order.items && order.items.length > 0) {
       for (const item of order.items) {
         if (item.vendorId) {
           const vendorIdStr = item.vendorId.toString();
-          if (!vendorSubtotals[vendorIdStr]) {
-            vendorSubtotals[vendorIdStr] = 0;
-          }
-          // Calculate item subtotal (price * qty)
+          if (!vendorSubtotals[vendorIdStr]) vendorSubtotals[vendorIdStr] = 0;
           vendorSubtotals[vendorIdStr] += (item.priceSnapshot || 0) * (item.qty || 1);
         }
       }
     }
 
-    // Process each vendor's transfer
-    const vendorIds = Object.keys(vendorSubtotals);
-    for (const vendorIdStr of vendorIds) {
+    // Process each vendor's transfer (only for vendors with Razorpay accounts)
+    for (const vendorIdStr of Object.keys(vendorSubtotals)) {
       const vendor = await Vendor.findById(vendorIdStr);
 
       if (vendor && vendor.razorpay?.accountId && vendor.razorpay?.accountStatus === 'activated') {
-        // Calculate vendor commission based on their items' subtotal
         const vendorCommissionPercentage = vendor.razorpay.settlementPercentage || 85;
         const vendorItemsSubtotal = vendorSubtotals[vendorIdStr];
         const vendorAmount = (vendorItemsSubtotal * vendorCommissionPercentage) / 100;
@@ -1335,29 +1338,17 @@ async function processAutomaticTransfers(order, razorpayPaymentId) {
           },
         });
 
-        // Create commission record
-        commissionRecords.push({
-          type: 'vendor',
-          subjectId: vendor._id,
-          subjectModel: 'Vendor',
-          orderId: order._id,
-          amount: vendorAmount,
-          percentage: vendorCommissionPercentage,
-          status: 'pending', // Will be updated when transfer is processed
-        });
-
-        logger.info(`Added vendor transfer: ${vendor.storeName} - ₹${vendorAmount} (from ₹${vendorItemsSubtotal} subtotal)`);
+        logger.info(`Added vendor transfer: ${vendor.storeName} - ₹${vendorAmount}`);
       } else {
         logger.warn(`Vendor ${vendorIdStr} doesn't have activated Razorpay account. Skipping automatic transfer.`);
       }
     }
 
-    // Check if order has affiliate tracking
+    // Check if order has affiliate with Razorpay account
     if (order.affiliateCode) {
       const affiliate = await Affiliate.findOne({ code: order.affiliateCode });
 
       if (affiliate && affiliate.razorpay?.accountId && affiliate.razorpay?.accountStatus === 'activated') {
-        // Calculate affiliate commission
         const affiliateCommissionPercentage = affiliate.commissionPercentage || 5;
         const affiliateAmount = (order.totals.subtotal * affiliateCommissionPercentage) / 100;
 
@@ -1374,124 +1365,77 @@ async function processAutomaticTransfers(order, razorpayPaymentId) {
           },
         });
 
-        // Create commission record
-        commissionRecords.push({
-          type: 'affiliate',
-          subjectId: affiliate._id,
-          subjectModel: 'Affiliate',
-          orderId: order._id,
-          amount: affiliateAmount,
-          percentage: affiliateCommissionPercentage,
-          status: 'pending',
-        });
-
         logger.info(`Added affiliate transfer: ${affiliate.code} - ₹${affiliateAmount}`);
       }
     }
 
-    // If there are transfers to process, create them via Razorpay
-    if (transfers.length > 0) {
-      logger.info(`Creating ${transfers.length} transfer(s) for payment ${razorpayPaymentId}`);
+    if (transfers.length === 0) {
+      logger.info(`No Razorpay transfers to process for order ${order._id}`);
+      return { success: true, message: 'No transfers needed' };
+    }
 
-      try {
-        const transferResult = await createTransfers(razorpayPaymentId, transfers);
+    logger.info(`Creating ${transfers.length} transfer(s) for payment ${razorpayPaymentId}`);
 
-        if (transferResult.success) {
-          logger.info(`Successfully created ${transferResult.successfulTransfers.length} transfer(s)`);
+    try {
+      const transferResult = await createTransfers(razorpayPaymentId, transfers);
 
-          // Update commission records with transfer details
-          for (let i = 0; i < transferResult.successfulTransfers.length; i++) {
-            const transfer = transferResult.successfulTransfers[i];
-            commissionRecords[i].transfer = {
+      if (transferResult.success && transferResult.successfulTransfers?.length > 0) {
+        logger.info(`Successfully created ${transferResult.successfulTransfers.length} transfer(s)`);
+
+        // Update existing commission records with transfer details
+        for (const transfer of transferResult.successfulTransfers) {
+          const commissionType = transfer.notes.type;
+          const updateData = {
+            transfer: {
               transferId: transfer.transferId,
               status: transfer.status,
               processedAt: new Date(),
               linkedAccountId: transfer.accountId,
-            };
-            commissionRecords[i].status = 'approved';
-            commissionRecords[i].approvedAt = new Date();
+            },
+            status: transfer.status === 'processed' ? 'paid' : 'approved',
+            approvedAt: new Date(),
+          };
+          if (transfer.status === 'processed') updateData.paidAt = new Date();
 
-            // If transfer is already processed, mark as paid
-            if (transfer.status === 'processed') {
-              commissionRecords[i].status = 'paid';
-              commissionRecords[i].paidAt = new Date();
-            }
-          }
-
-          // Save commission records with error handling
           try {
-            await Commission.insertMany(commissionRecords);
-            logger.info(`Commission records saved successfully`);
-          } catch (commissionError) {
-            logger.error(`Failed to save commission records: ${commissionError.message}`, commissionError);
-            // Continue processing even if commission save fails
-          }
-
-          // Update vendor/affiliate earnings with error handling
-          for (const transfer of transferResult.successfulTransfers) {
-            try {
-              const commissionType = transfer.notes.type;
-              if (commissionType === 'vendor_commission') {
-                await Vendor.findByIdAndUpdate(transfer.notes.vendorId, {
-                  $inc: { pendingEarnings: transfer.amount },
-                  'razorpay.lastSettlementAt': new Date(),
-                });
-                logger.info(`Updated earnings for vendor ${transfer.notes.vendorId}`);
-              } else if (commissionType === 'affiliate_commission') {
-                await Affiliate.findByIdAndUpdate(transfer.notes.affiliateId, {
-                  $inc: { pendingEarnings: transfer.amount },
-                  'razorpay.lastSettlementAt': new Date(),
-                });
-                logger.info(`Updated earnings for affiliate ${transfer.notes.affiliateId}`);
-              }
-            } catch (earningsError) {
-              logger.error(`Failed to update earnings for ${commissionType}: ${earningsError.message}`, earningsError);
-              // Continue processing other transfers
+            if (commissionType === 'vendor_commission') {
+              await Commission.findOneAndUpdate(
+                { orderId: order._id, subjectId: transfer.notes.vendorId, type: 'vendor' },
+                { $set: updateData }
+              );
+              await Vendor.findByIdAndUpdate(transfer.notes.vendorId, {
+                $inc: { pendingEarnings: transfer.amount },
+                'razorpay.lastSettlementAt': new Date(),
+              });
+            } else if (commissionType === 'affiliate_commission') {
+              await Commission.findOneAndUpdate(
+                { orderId: order._id, subjectId: transfer.notes.affiliateId, type: 'affiliate' },
+                { $set: updateData }
+              );
+              await Affiliate.findByIdAndUpdate(transfer.notes.affiliateId, {
+                $inc: { pendingEarnings: transfer.amount },
+                'razorpay.lastSettlementAt': new Date(),
+              });
             }
-          }
-
-          logger.info(`Commission records created and earnings updated`);
-        } else {
-          logger.error(`Transfer creation failed: ${transferResult.error}`);
-          // Save commission records as pending even if transfer failed
-          try {
-            await Commission.insertMany(commissionRecords);
-            logger.info(`Commission records saved as pending after transfer failure`);
-          } catch (commissionError) {
-            logger.error(`Failed to save commission records after transfer failure: ${commissionError.message}`, commissionError);
+          } catch (updateError) {
+            logger.error(`Failed to update commission for ${commissionType}: ${updateError.message}`);
           }
         }
-
-        // Log failed transfers with detailed information
-        if (transferResult.failedTransfers && transferResult.failedTransfers.length > 0) {
-          logger.error(`Failed transfers (${transferResult.failedTransfers.length}):`);
-          transferResult.failedTransfers.forEach((failedTransfer, index) => {
-            logger.error(`  ${index + 1}. Account: ${failedTransfer.accountId}, Amount: ₹${failedTransfer.amount}, Error: ${failedTransfer.error || 'Unknown'}`);
-          });
-        }
-
-        return transferResult;
-
-      } catch (transferError) {
-        logger.error(`Critical error during transfer processing: ${transferError.message}`, transferError);
-
-        // Save commission records as pending on critical error
-        try {
-          await Commission.insertMany(commissionRecords);
-          logger.info(`Commission records saved as pending after critical transfer error`);
-        } catch (commissionError) {
-          logger.error(`Failed to save commission records after critical error: ${commissionError.message}`, commissionError);
-        }
-
-        return {
-          success: false,
-          error: `Transfer processing failed: ${transferError.message}`,
-          commissionRecordsSaved: true
-        };
+      } else if (!transferResult.success) {
+        logger.error(`Transfer creation failed: ${transferResult.error}`);
       }
-    } else {
-      logger.info(`No transfers to process for order ${order._id}`);
-      return { success: true, message: 'No transfers needed' };
+
+      if (transferResult.failedTransfers?.length > 0) {
+        logger.error(`Failed transfers (${transferResult.failedTransfers.length}):`);
+        transferResult.failedTransfers.forEach((ft, i) => {
+          logger.error(`  ${i + 1}. Account: ${ft.accountId}, Amount: ₹${ft.amount}, Error: ${ft.error || 'Unknown'}`);
+        });
+      }
+
+      return transferResult;
+    } catch (transferError) {
+      logger.error(`Critical error during transfer processing: ${transferError.message}`, transferError);
+      return { success: false, error: `Transfer processing failed: ${transferError.message}` };
     }
   } catch (error) {
     logger.error(`Error processing automatic transfers: ${error.message}`, error);

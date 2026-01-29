@@ -393,6 +393,94 @@ const reverseTransfer = async (transferId, amount = null) => {
   }
 };
 
+/**
+ * Create a Razorpay Payout (RazorpayX) to a bank account
+ * Used for admin-initiated payouts to vendors/affiliates
+ * Requires RazorpayX to be enabled on the account
+ * @param {object} payoutData - Payout details
+ * @returns {Promise<object>} Payout result
+ */
+const createPayout = async (payoutData) => {
+  if (!isConfigured) {
+    return {
+      success: false,
+      error: 'Razorpay is not configured',
+    };
+  }
+
+  try {
+    const {
+      accountNumber, // Razorpay account number (RazorpayX)
+      amount,
+      currency = 'INR',
+      mode = 'NEFT', // NEFT, RTGS, IMPS, UPI
+      purpose = 'payout',
+      beneficiaryName,
+      beneficiaryAccountNumber,
+      beneficiaryIfsc,
+      referenceId,
+      narration,
+    } = payoutData;
+
+    // RazorpayX Fund Account + Payout via API
+    const axios = require('axios');
+    const auth = Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Basic ${auth}`,
+    };
+
+    // Step 1: Create a contact
+    const contactRes = await axios.post('https://api.razorpay.com/v1/contacts', {
+      name: beneficiaryName,
+      type: 'vendor',
+      reference_id: referenceId,
+    }, { headers });
+
+    const contactId = contactRes.data.id;
+
+    // Step 2: Create a fund account
+    const fundAccountRes = await axios.post('https://api.razorpay.com/v1/fund_accounts', {
+      contact_id: contactId,
+      account_type: 'bank_account',
+      bank_account: {
+        name: beneficiaryName,
+        ifsc: beneficiaryIfsc,
+        account_number: beneficiaryAccountNumber,
+      },
+    }, { headers });
+
+    const fundAccountId = fundAccountRes.data.id;
+
+    // Step 3: Create payout
+    const payoutRes = await axios.post('https://api.razorpay.com/v1/payouts', {
+      account_number: accountNumber || process.env.RAZORPAY_ACCOUNT_NUMBER,
+      fund_account_id: fundAccountId,
+      amount: Math.round(amount * 100), // paise
+      currency,
+      mode,
+      purpose,
+      narration: narration || `Commission payout - ${referenceId}`,
+      reference_id: referenceId,
+    }, { headers });
+
+    return {
+      success: true,
+      payout: payoutRes.data,
+      payoutId: payoutRes.data.id,
+      status: payoutRes.data.status,
+      contactId,
+      fundAccountId,
+    };
+  } catch (error) {
+    logger.error('Razorpay payout error:', error.response?.data || error.message);
+    return {
+      success: false,
+      error: error.response?.data?.error?.description || error.message || 'Failed to create payout',
+    };
+  }
+};
+
 module.exports = {
   razorpay,
   isConfigured,
@@ -407,4 +495,6 @@ module.exports = {
   createTransfers,
   fetchTransfer,
   reverseTransfer,
+  // RazorpayX Payouts
+  createPayout,
 };

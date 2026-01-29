@@ -86,6 +86,7 @@ router.post('/affiliates/:id/payout', validateObjectId('id'), admin.recordAffili
 // Commissions / Payouts - SECURITY: Added ObjectId validation
 router.get('/commissions', admin.getCommissions);
 router.get('/commissions/stats', admin.getCommissionStats);
+router.get('/commissions/export', admin.exportVendorCommissions);
 router.put('/commissions/:id/approve', validateObjectId('id'), admin.approveCommission);
 router.put('/commissions/:id/reject', validateObjectId('id'), admin.rejectCommission);
 router.put('/commissions/:id/pay', validateObjectId('id'), admin.payCommission);

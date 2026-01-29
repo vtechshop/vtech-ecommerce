@@ -95,6 +95,7 @@ const orderSchema = new mongoose.Schema({
     events: [{ code: String, description: String, location: String, timestamp: Date }],
   },
   invoices: [{ url: String, generatedAt: Date }],
+  affiliateCode: String, // Affiliate code used during order placement
   customerNotes: String,
   internalNotes: String,
   cancellation: {

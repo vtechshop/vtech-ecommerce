@@ -16,6 +16,7 @@ const { getPaginationMeta, slugify, generateSKU } = require('../utils/helpers');
 const logger = require('../config/logger');
 const warrantyService = require('../services/warrantyService');
 const notificationHelper = require('../services/notificationHelper');
+const payoutService = require('../services/payoutService');
 
 // Helper function to activate warranties after payment
 const activateWarrantiesForOrder = async (order) => {
@@ -1107,6 +1108,71 @@ exports.getCommissions = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+exports.exportVendorCommissions = async (req, res, next) => {
+  try {
+    const { vendorId, startDate, endDate, status } = req.query;
+
+    const query = { type: 'vendor' };
+    if (vendorId) query.subjectId = vendorId;
+    if (status && status !== 'all') query.status = status;
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
+    const commissions = await Commission.find(query)
+      .populate({ path: 'orderId', select: 'orderId totals createdAt' })
+      .populate({ path: 'subjectId', populate: { path: 'userId', select: 'name email' } })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const headers = ['Vendor', 'Vendor Email', 'Order ID', 'Date', 'Order Total', 'Commission %', 'Commission Amount', 'Status', 'Paid Date', 'Payment Ref'];
+    const rows = commissions.map(c => [
+      c.subjectId?.storeName || c.subjectId?.userId?.name || 'N/A',
+      c.subjectId?.userId?.email || 'N/A',
+      c.orderId?.orderId || 'N/A',
+      c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN') : '',
+      c.orderId?.totals?.total != null ? c.orderId.totals.total.toFixed(2) : '',
+      c.percentage != null ? `${c.percentage}%` : '',
+      c.amount.toFixed(2),
+      c.status,
+      c.paidAt ? new Date(c.paidAt).toLocaleDateString('en-IN') : '',
+      c.paymentRef || '',
+    ]);
+
+    // Summary
+    const totalAmount = commissions.reduce((s, c) => s + c.amount, 0);
+    const pendingTotal = commissions.filter(c => c.status === 'pending').reduce((s, c) => s + c.amount, 0);
+    const approvedTotal = commissions.filter(c => c.status === 'approved').reduce((s, c) => s + c.amount, 0);
+    const paidTotal = commissions.filter(c => c.status === 'paid').reduce((s, c) => s + c.amount, 0);
+
+    rows.push([]);
+    rows.push(['Summary']);
+    rows.push(['Total Records', commissions.length]);
+    rows.push(['Total Commission', '', '', '', '', '', totalAmount.toFixed(2)]);
+    rows.push(['Pending', '', '', '', '', '', pendingTotal.toFixed(2)]);
+    rows.push(['Approved', '', '', '', '', '', approvedTotal.toFixed(2)]);
+    rows.push(['Paid', '', '', '', '', '', paidTotal.toFixed(2)]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const vendorName = vendorId ? (commissions[0]?.subjectId?.storeName || 'vendor') : 'all-vendors';
+    const filename = `commissions_${vendorName.replace(/\s+/g, '-')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvContent);
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getCommissionStats = async (req, res, next) => {
   try {
     const { type } = req.query;
@@ -1154,34 +1220,63 @@ exports.approveCommission = async (req, res, next) => {
 
 exports.payCommission = async (req, res, next) => {
   try {
-    const row = await Commission.findByIdAndUpdate(
-      req.params.id,
-      { status: 'paid', paidAt: new Date(), paymentRef: req.body.paymentRef },
-      { new: true }
-    );
-    if (!row) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Commission not found' } });
-    if (row.type === 'affiliate') {
-      const affiliate = await Affiliate.findByIdAndUpdate(
-        row.subjectId,
-        { $inc: { paidEarnings: row.amount, pendingEarnings: -row.amount } }
-      ).populate('userId');
+    const commission = await Commission.findById(req.params.id);
+    if (!commission) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Commission not found' } });
+
+    if (commission.status !== 'approved') {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_STATUS', message: 'Commission must be approved before paying' } });
+    }
+
+    let payoutResult;
+
+    if (commission.type === 'vendor') {
+      // Process vendor payout via Razorpay (or manual fallback)
+      payoutResult = await payoutService.processVendorPayout(
+        commission.subjectId,
+        commission.amount,
+        [commission._id]
+      );
+    } else if (commission.type === 'affiliate') {
+      // Process affiliate payout via Razorpay (or manual fallback)
+      payoutResult = await payoutService.processAffiliatePayout(
+        commission.subjectId,
+        commission.amount,
+        [commission._id]
+      );
 
       // Notify affiliate of payment
+      const affiliate = await Affiliate.findById(commission.subjectId).populate('userId');
       if (affiliate && affiliate.userId) {
         try {
           await notificationHelper.notifyAffiliateCommissionPaid({
             affiliateUserId: affiliate.userId._id || affiliate.userId,
-            commission: row,
-            amount: row.amount,
+            commission,
+            amount: commission.amount,
           });
-          logger.info(`Affiliate notified of commission payment: ${row._id}`);
+          logger.info(`Affiliate notified of commission payment: ${commission._id}`);
         } catch (notifError) {
           logger.error('Failed to notify affiliate of commission payment:', notifError);
         }
       }
+    } else {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_TYPE', message: 'Unknown commission type' } });
     }
-    logger.info(`Commission paid: ${row._id}`);
-    res.json({ success: true, data: row });
+
+    // Reload updated commission
+    const updated = await Commission.findById(req.params.id);
+
+    logger.info(`Commission paid: ${commission._id} via ${payoutResult.method}`);
+    res.json({
+      success: true,
+      data: updated,
+      payout: {
+        method: payoutResult.method,
+        transferId: payoutResult.transferId,
+        status: payoutResult.status || 'processed',
+        note: payoutResult.note,
+        bankDetails: payoutResult.bankDetails,
+      },
+    });
   } catch (error) { next(error); }
 };
 
