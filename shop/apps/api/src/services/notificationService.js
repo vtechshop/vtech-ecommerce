@@ -37,7 +37,7 @@ class NotificationService {
     try {
       // Parse from email and name
       const fromMatch = env.MAIL_FROM.match(/^(.+?)\s*<(.+?)>$/);
-      const fromName = fromMatch ? fromMatch[1].trim() : 'VTech Shop';
+      const fromName = fromMatch ? fromMatch[1].trim() : 'V-Tech';
       const fromEmail = fromMatch ? fromMatch[2].trim() : env.MAIL_FROM;
 
       const sentFrom = new Sender(fromEmail, fromName);
@@ -407,7 +407,7 @@ class NotificationService {
               <a href="${env.CLIENT_URL}/vendor-dashboard/orders/${order._id}" class="button">View Order Details</a>
             </p>
 
-            <p style="margin-top: 30px;"><em>- Vtech Shop Team</em></p>
+            <p style="margin-top: 30px;"><em>- V-Tech Team</em></p>
           </div>
         </div>
       </body>
@@ -460,7 +460,7 @@ class NotificationService {
           </div>
           <div class="content">
             <p>Hi Admin,</p>
-            <p>A new order has been placed on Vtech Shop containing products from vendor: <strong>${vendorDisplayName}</strong></p>
+            <p>A new order has been placed on V-Tech containing products from vendor: <strong>${vendorDisplayName}</strong></p>
 
             <div class="order-id">Order #${order.orderId}</div>
 
@@ -506,7 +506,7 @@ class NotificationService {
               <a href="${env.CLIENT_URL}/admin-dashboard/orders" class="button">View Order in Admin Panel</a>
             </p>
 
-            <p style="margin-top: 30px;"><em>- Vtech Shop System</em></p>
+            <p style="margin-top: 30px;"><em>- V-Tech System</em></p>
           </div>
         </div>
       </body>
@@ -599,7 +599,7 @@ class NotificationService {
               <a href="${env.CLIENT_URL}/orders/${order.orderId}" class="button">View Order Details</a>
             </p>
 
-            <p style="margin-top: 30px;"><em>- Vtech Shop Team</em></p>
+            <p style="margin-top: 30px;"><em>- V-Tech Team</em></p>
           </div>
         </div>
       </body>
@@ -690,7 +690,7 @@ class NotificationService {
               <a href="${env.CLIENT_URL}/vendor-dashboard/orders" class="button">View Orders</a>
             </p>
 
-            <p style="margin-top: 30px;"><em>- Vtech Shop Team</em></p>
+            <p style="margin-top: 30px;"><em>- V-Tech Team</em></p>
           </div>
         </div>
       </body>
@@ -789,7 +789,7 @@ class NotificationService {
               <a href="${env.CLIENT_URL}/orders/${order.orderId}" class="button">View Order Details</a>
             </p>
 
-            <p style="margin-top: 30px;"><em>- Vtech Shop Team</em></p>
+            <p style="margin-top: 30px;"><em>- V-Tech Team</em></p>
           </div>
         </div>
       </body>

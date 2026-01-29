@@ -187,7 +187,7 @@ class EmailService {
     try {
       // Parse from email and name
       const fromMatch = emailData.from.match(/^(.+?)\s*<(.+?)>$/);
-      const fromName = fromMatch ? fromMatch[1].trim() : 'VTech Shop';
+      const fromName = fromMatch ? fromMatch[1].trim() : 'V-Tech';
       const fromEmail = fromMatch ? fromMatch[2].trim() : emailData.from;
 
       const sentFrom = new Sender(fromEmail, fromName);

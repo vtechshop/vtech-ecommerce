@@ -70,7 +70,7 @@ const activateWarranties = async (order) => {
           warrantyPeriodDays: warrantyPeriodDays,
           warrantyType: 'manufacturer',
           extraInfo: {
-            store: 'V-Tech Ecommerce',
+            store: 'V-Tech',
             invoiceNo: order.orderId,
             remarks: item.warranty.description || ''
           }

@@ -127,7 +127,7 @@ const Privacy = () => {
               <div className="bg-blue-100 rounded-lg p-6">
                 <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
-                <p className="text-gray-700"><strong>Address:</strong> V-Tech Shop, 464, Sathy Rd, Ganapathy, Coimbatore, Tamil Nadu 641006</p>
+                <p className="text-gray-700"><strong>Address:</strong> V-Tech, 9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore - 641006, Tamil Nadu</p>
               </div>
             </section>
           </div>

@@ -10,7 +10,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8 xl:gap-12">
           {/* Company info */}
           <div>
-            <h3 className="text-white text-lg font-bold mb-4">V-Tech Shop</h3>
+            <h3 className="text-white text-lg font-bold mb-4">V-Tech</h3>
             <p className="text-sm mb-4">
               Your trusted multi-vendor marketplace for quality products at great prices.
             </p>
@@ -115,7 +115,7 @@ const Footer = () => {
         {/* Bottom bar */}
         <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row items-center justify-center gap-4">
           <p className="text-sm">
-            © {currentYear} V-Tech Shop. All rights reserved.
+            © {currentYear} V-Tech. All rights reserved.
           </p>
          
         </div>

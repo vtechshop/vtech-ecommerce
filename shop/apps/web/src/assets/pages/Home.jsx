@@ -48,10 +48,10 @@ const Home = React.memo(() => {
 
   useEffect(() => {
     updateMetaTags({
-      title: 'V-Tech Shop - Multi-Vendor Marketplace',
+      title: 'V-Tech - Multi-Vendor Marketplace',
       description: 'Discover amazing products from trusted vendors. Free shipping on orders over ₹500.',
       canonical: window.location.origin,
-      ogTitle: 'V-Tech Shop - Multi-Vendor Marketplace',
+      ogTitle: 'V-Tech - Multi-Vendor Marketplace',
       ogDescription: 'Discover amazing products from trusted vendors.',
       ogUrl: window.location.origin,
     });

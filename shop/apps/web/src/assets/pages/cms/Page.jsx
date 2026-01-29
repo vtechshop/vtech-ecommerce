@@ -21,7 +21,7 @@ const Page = () => {
   useEffect(() => {
     if (page) {
       updateMetaTags({
-        title: `${page.title} - Shop`,
+        title: `${page.title} - V-Tech`,
         description: page.excerpt || page.content?.substring(0, 160),
         canonical: `${window.location.origin}/page/${slug}`,
       });
@@ -52,7 +52,7 @@ const Page = () => {
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
       <div className="max-w-5xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">{page.title}</h1>
-        <div className="prose prose-lg max-w-none">
+        <div className="prose prose-lg max-w-none overflow-hidden break-words [word-break:break-word]">
           <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(page.content || '') }} />
         </div>
       </div>

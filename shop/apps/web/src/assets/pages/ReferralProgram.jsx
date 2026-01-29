@@ -66,7 +66,7 @@ const ReferralProgram = () => {
   };
 
   const handleShare = (platform) => {
-    const text = `Join V-Tech Shop using my referral code ${referralData.referralCode} and get ₹${(referralData.refereeReward / 100).toFixed(2)} off your first purchase!`;
+    const text = `Join V-Tech using my referral code ${referralData.referralCode} and get ₹${(referralData.refereeReward / 100).toFixed(2)} off your first purchase!`;
     const url = referralLink;
 
     let shareUrl = '';
@@ -82,7 +82,7 @@ const ReferralProgram = () => {
         shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
         break;
       case 'email':
-        shareUrl = `mailto:?subject=${encodeURIComponent('Join V-Tech Shop!')}&body=${encodeURIComponent(`${text}\n\n${url}`)}`;
+        shareUrl = `mailto:?subject=${encodeURIComponent('Join V-Tech!')}&body=${encodeURIComponent(`${text}\n\n${url}`)}`;
         break;
       default:
         return;

@@ -92,7 +92,7 @@ const defaultSettings = [
   },
   {
     key: 'contact_address',
-    value: '464 Sathy Main Road, Ballannagar, Ganapathy Pudur, Ganapathy, Coimbatore, Tamil Nadu, India - 641006',
+    value: '9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore - 641006, Tamil Nadu, India',
     type: 'string',
     category: 'general',
     description: 'Business address',

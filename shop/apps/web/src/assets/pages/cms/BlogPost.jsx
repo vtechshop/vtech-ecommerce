@@ -222,7 +222,7 @@ const BlogPost = () => {
   useEffect(() => {
     if (post) {
       updateMetaTags({
-        title: `${post.title} - V-Tech Shop Blog`,
+        title: `${post.title} - V-Tech Blog`,
         description: post.excerpt || post.content?.substring(0, 160),
         canonical: `${window.location.origin}/blog/${slug}`,
         ogTitle: post.title,

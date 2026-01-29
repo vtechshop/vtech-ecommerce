@@ -193,9 +193,9 @@ const Contact = () => {
                 <MapPin className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
                 <div>
                   <p className="text-gray-700 leading-relaxed">
-                    V-Tech Shop<br />
-                    464, Sathy Rd, Ganapathy<br />
-                    Coimbatore, Tamil Nadu 641006<br />
+                    V-Tech<br />
+                    9/83, E, 4th Street, T.Balan Nagar<br />
+                    Ganapathipudur, Coimbatore - 641006, Tamil Nadu<br />
                     India<br />
                     Phone: +91 99445 56683
                   </p>

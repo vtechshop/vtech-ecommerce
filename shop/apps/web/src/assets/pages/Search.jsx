@@ -32,7 +32,7 @@ const Search = () => {
 
   useEffect(() => {
     updateMetaTags({
-      title: view === 'categories' ? 'Shop by Category - V-Tech Shop' : query ? `Search results for "${query}" - V-Tech Shop` : 'Search Products - V-Tech Shop',
+      title: view === 'categories' ? 'Shop by Category - V-Tech' : query ? `Search results for "${query}" - V-Tech` : 'Search Products - V-Tech',
       description: 'Search for products from thousands of trusted vendors',
     });
   }, [query, view]);

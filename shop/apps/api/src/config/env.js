@@ -35,7 +35,7 @@ module.exports = {
   JWT_REFRESH_TTL: process.env.JWT_REFRESH_TTL || process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
   
   MAILERSEND_API_KEY: process.env.MAILERSEND_API_KEY,
-  MAIL_FROM: process.env.MAIL_FROM || 'VTech Shop <noreply@vtechshop.com>',
+  MAIL_FROM: process.env.MAIL_FROM || 'V-Tech <noreply@vtechkitchen.com>',
   REPLY_TO_EMAIL: process.env.REPLY_TO_EMAIL,
   REPLY_TO_NAME: process.env.REPLY_TO_NAME || 'VTech Support',
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'vtechshop.customercare@gmail.com',

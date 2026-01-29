@@ -28,7 +28,7 @@ export const translations = {
     'nav.signOut': 'Sign Out',
 
     // Header
-    'header.shopName': 'V-Tech Shop',
+    'header.shopName': 'V-Tech',
 
     // Home Page
     'home.heroTitle': 'Discover Amazing Products',
