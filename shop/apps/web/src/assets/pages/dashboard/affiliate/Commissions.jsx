@@ -224,7 +224,6 @@ const Commissions = () => {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-<<<<<<< HEAD
         {commissions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4">
             <DollarSign className="w-16 h-16 text-gray-300 mb-4" />
@@ -245,74 +244,48 @@ const Commissions = () => {
               <tr>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Order ID</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Date</th>
-                <th className="text-left py-3 px-4 font-semibold text-sm">Amount</th>
-                <th className="text-left py-3 px-4 font-semibold text-sm">Rate</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Commission</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">TDS (2%)</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Net Payout</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Paid Date</th>
               </tr>
             </thead>
             <tbody>
-              {commissions.map((commission) => (
-=======
-        <table className="w-full">
-          <thead className="bg-blue-100 border-b">
-            <tr>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Order ID</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Date</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Commission</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">TDS (2%)</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Net Payout</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
-              <th className="text-left py-3 px-4 font-semibold text-sm">Paid Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {commissions.map((commission) => {
-              const tdsAmt = commission.tds?.amount || 0;
-              const netAmt = commission.tds?.netAmount || commission.amount;
-              return (
->>>>>>> fc4361f (feat: Commission system overhaul - Razorpay payouts, TDS, CSV exports)
-                <tr key={commission._id} className="border-b last:border-b-0">
-                  <td className="py-3 px-4 font-mono text-sm">
-                    {commission.orderId?.orderId || 'N/A'}
-                  </td>
-                  <td className="py-3 px-4 text-sm">{formatDate(commission.createdAt)}</td>
-<<<<<<< HEAD
-                  <td className="py-3 px-4 font-semibold">{formatCurrency(commission.amount)}</td>
-                  <td className="py-3 px-4 text-sm">{commission.percentage}%</td>
-=======
-                  <td className="py-3 px-4 font-semibold text-green-700">{formatCurrency(commission.amount)}</td>
-                  <td className="py-3 px-4 text-sm text-red-600">
-                    {commission.status === 'paid' && tdsAmt > 0 ? `-${formatCurrency(tdsAmt)}` : '-'}
-                  </td>
-                  <td className="py-3 px-4 font-semibold">
-                    {commission.status === 'paid' && tdsAmt > 0 ? formatCurrency(netAmt) : formatCurrency(commission.amount)}
-                  </td>
->>>>>>> fc4361f (feat: Commission system overhaul - Razorpay payouts, TDS, CSV exports)
-                  <td className="py-3 px-3 sm:px-4">
-                    <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                      commission.status === 'paid' ? 'bg-green-100 text-green-800' :
-                      commission.status === 'approved' ? 'bg-primary-100 text-primary-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {commission.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm">
-                    {commission.paidAt ? formatDate(commission.paidAt) : '-'}
-                  </td>
-                </tr>
-<<<<<<< HEAD
-              ))}
+              {commissions.map((commission) => {
+                const tdsAmt = commission.tds?.amount || 0;
+                const netAmt = commission.tds?.netAmount || commission.amount;
+                return (
+                  <tr key={commission._id} className="border-b last:border-b-0">
+                    <td className="py-3 px-4 font-mono text-sm">
+                      {commission.orderId?.orderId || 'N/A'}
+                    </td>
+                    <td className="py-3 px-4 text-sm">{formatDate(commission.createdAt)}</td>
+                    <td className="py-3 px-4 font-semibold text-green-700">{formatCurrency(commission.amount)}</td>
+                    <td className="py-3 px-4 text-sm text-red-600">
+                      {commission.status === 'paid' && tdsAmt > 0 ? `-${formatCurrency(tdsAmt)}` : '-'}
+                    </td>
+                    <td className="py-3 px-4 font-semibold">
+                      {commission.status === 'paid' && tdsAmt > 0 ? formatCurrency(netAmt) : formatCurrency(commission.amount)}
+                    </td>
+                    <td className="py-3 px-3 sm:px-4">
+                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
+                        commission.status === 'paid' ? 'bg-green-100 text-green-800' :
+                        commission.status === 'approved' ? 'bg-primary-100 text-primary-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {commission.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-sm">
+                      {commission.paidAt ? formatDate(commission.paidAt) : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
-=======
-              );
-            })}
-          </tbody>
-        </table>
->>>>>>> fc4361f (feat: Commission system overhaul - Razorpay payouts, TDS, CSV exports)
       </div>
 
       {totalPages > 1 && (
