@@ -844,6 +844,22 @@ exports.getPendingKYC = async (req, res, next) => {
 
 exports.approveVendorKYC = async (req, res, next) => {
   try {
+    // Check GST verification before approval
+    const vendorCheck = await Vendor.findById(req.params.id);
+    if (!vendorCheck) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor not found' }
+      });
+    }
+
+    if (!vendorCheck.kyc.gstVerified) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'GST_NOT_VERIFIED', message: 'Cannot approve vendor KYC without GST verification. Vendor must verify their GST number first.' }
+      });
+    }
+
     const vendor = await Vendor.findByIdAndUpdate(
       req.params.id,
       {
@@ -854,13 +870,6 @@ exports.approveVendorKYC = async (req, res, next) => {
       },
       { new: true }
     );
-
-    if (!vendor) {
-      return res.status(404).json({
-        success: false,
-        error: { code: 'NOT_FOUND', message: 'Vendor not found' }
-      });
-    }
 
     logger.info(`Vendor KYC approved: ${vendor.storeName} by admin ${req.user._id}`);
     res.json({ success: true, data: vendor });

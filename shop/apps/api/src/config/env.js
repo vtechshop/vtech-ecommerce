@@ -65,6 +65,9 @@ module.exports = {
 
   AFFILIATE_WINDOW_DAYS: parseInt(process.env.AFFILIATE_WINDOW_DAYS) || 30,
 
+  // AppyFlow GST Verification
+  APPYFLOW_KEY_SECRET: process.env.APPYFLOW_KEY_SECRET || '',
+
   // Order settings (configurable)
   DEFAULT_TAX_RATE: parseFloat(process.env.DEFAULT_TAX_RATE) || 0.10, // 10% default
   DEFAULT_SHIPPING_COST: parseFloat(process.env.DEFAULT_SHIPPING_COST) || 5.99,

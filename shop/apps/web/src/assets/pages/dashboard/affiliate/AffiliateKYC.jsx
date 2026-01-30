@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, Upload, X, FileText, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Shield, Upload, X, FileText, AlertCircle, CheckCircle, Clock, BadgeCheck, Loader2 } from 'lucide-react';
 import api from '../../../utils/api';
 import { useToast } from '../../../components/common/ToastContainer';
 
 const AffiliateKYC = () => {
   const toast = useToast();
   const queryClient = useQueryClient();
+  const [gstNumber, setGstNumber] = useState('');
+  const [gstVerifying, setGstVerifying] = useState(false);
+  const [gstVerified, setGstVerified] = useState(false);
+  const [gstDetails, setGstDetails] = useState(null);
+  const [gstError, setGstError] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
     address: '',
@@ -48,6 +53,11 @@ const AffiliateKYC = () => {
           idType: data.kyc.idType || '',
           idNumber: data.kyc.idNumber || '',
         });
+        if (data.kyc.gstNumber) setGstNumber(data.kyc.gstNumber);
+        if (data.kyc.gstVerified) {
+          setGstVerified(true);
+          setGstDetails(data.kyc.gstDetails || null);
+        }
       }
       if (data.paymentDetails) {
         setPaymentData({
@@ -110,9 +120,38 @@ const AffiliateKYC = () => {
     },
   });
 
+  const handleVerifyGST = async () => {
+    const gst = gstNumber.trim();
+    if (!gst) {
+      setGstError('Please enter a GST number');
+      return;
+    }
+    setGstVerifying(true);
+    setGstError('');
+    try {
+      const response = await api.post('/gst/verify', { gstNumber: gst });
+      const { data, active } = response.data;
+      setGstVerified(true);
+      setGstDetails(data);
+      toast.success(active ? 'GST verified successfully' : 'GST verified but currently inactive');
+    } catch (error) {
+      setGstError(error.response?.data?.error?.message || 'GST verification failed');
+      setGstVerified(false);
+      setGstDetails(null);
+    } finally {
+      setGstVerifying(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    updateKYCMutation.mutate(formData);
+    const payload = { ...formData };
+    if (gstNumber.trim()) {
+      payload.gstNumber = gstNumber.trim().toUpperCase();
+      payload.gstVerified = gstVerified;
+      payload.gstDetails = gstDetails;
+    }
+    updateKYCMutation.mutate(payload);
   };
 
   const handleFileUpload = async (e, docType) => {
@@ -386,6 +425,53 @@ const AffiliateKYC = () => {
                 required
               />
             </div>
+          </div>
+
+          {/* Optional GST Verification */}
+          <div className="border-t border-gray-200 pt-4 mt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">GST Number (Optional)</h3>
+            <p className="text-xs text-gray-500 mb-3">If you have a GST number, you can verify it here</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={gstNumber}
+                onChange={(e) => {
+                  setGstNumber(e.target.value.toUpperCase());
+                  if (gstVerified) { setGstVerified(false); setGstDetails(null); }
+                }}
+                placeholder="e.g. 33AABCU9603R1ZM"
+                className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${gstVerified ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                maxLength={15}
+              />
+              <button
+                type="button"
+                onClick={handleVerifyGST}
+                disabled={gstVerifying || gstVerified || !gstNumber.trim()}
+                className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap inline-flex items-center gap-2 ${
+                  gstVerified
+                    ? 'bg-green-100 text-green-700 border border-green-300 cursor-default'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
+                }`}
+              >
+                {gstVerifying ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
+                ) : gstVerified ? (
+                  <><BadgeCheck className="w-4 h-4" /> Verified</>
+                ) : (
+                  'Verify GST'
+                )}
+              </button>
+            </div>
+            {gstError && <p className="text-red-600 text-sm mt-1">{gstError}</p>}
+            {gstVerified && gstDetails && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {gstDetails.tradeName && <div><span className="font-medium text-gray-700">Trade Name:</span> {gstDetails.tradeName}</div>}
+                  {gstDetails.legalName && <div><span className="font-medium text-gray-700">Legal Name:</span> {gstDetails.legalName}</div>}
+                  {gstDetails.status && <div><span className="font-medium text-gray-700">Status:</span> <span className={gstDetails.status === 'Active' ? 'text-green-700 font-medium' : 'text-amber-700 font-medium'}>{gstDetails.status}</span></div>}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end pt-4">

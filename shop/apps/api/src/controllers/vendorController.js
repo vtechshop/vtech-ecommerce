@@ -555,7 +555,7 @@ async function getKYC(req, res, next) {
 
 async function updateKYC(req, res, next) {
   try {
-    const { businessName, businessType, businessAddress, taxId, phoneNumber } = req.body;
+    const { businessName, businessType, businessAddress, taxId, phoneNumber, gstVerified, gstDetails } = req.body;
 
     const vendor = await Vendor.findOne({ userId: req.user._id });
 
@@ -570,8 +570,17 @@ async function updateKYC(req, res, next) {
     if (businessName !== undefined) vendor.kyc.businessName = businessName;
     if (businessType !== undefined) vendor.kyc.businessType = businessType;
     if (businessAddress !== undefined) vendor.kyc.businessAddress = businessAddress;
-    if (taxId !== undefined) vendor.kyc.taxId = taxId;
+    if (taxId !== undefined) {
+      vendor.kyc.taxId = taxId;
+      // Reset GST verification if taxId changes
+      if (vendor.kyc.taxId !== taxId) {
+        vendor.kyc.gstVerified = false;
+        vendor.kyc.gstDetails = undefined;
+      }
+    }
     if (phoneNumber !== undefined) vendor.kyc.phoneNumber = phoneNumber;
+    if (gstVerified !== undefined) vendor.kyc.gstVerified = gstVerified;
+    if (gstDetails !== undefined) vendor.kyc.gstDetails = gstDetails;
 
     // If KYC was rejected and user is updating, reset to pending
     if (vendor.kyc.status === 'rejected') {

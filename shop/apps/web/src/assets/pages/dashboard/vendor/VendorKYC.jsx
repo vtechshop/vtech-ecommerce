@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, Upload, X, FileText, AlertCircle, CheckCircle, Clock, RefreshCw } from 'lucide-react';
+import { Shield, Upload, X, FileText, AlertCircle, CheckCircle, Clock, RefreshCw, BadgeCheck, Loader2 } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
@@ -14,6 +14,10 @@ const VendorKYC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [gstVerifying, setGstVerifying] = useState(false);
+  const [gstVerified, setGstVerified] = useState(false);
+  const [gstDetails, setGstDetails] = useState(null);
+  const [gstError, setGstError] = useState('');
 
   // Manual refresh user session to get latest KYC status
   const refreshUserSession = async () => {
@@ -53,6 +57,10 @@ const VendorKYC = () => {
           taxId: data.kyc.taxId || '',
           phoneNumber: data.kyc.phoneNumber || '',
         });
+        if (data.kyc.gstVerified) {
+          setGstVerified(true);
+          setGstDetails(data.kyc.gstDetails || null);
+        }
       }
     },
     retry: false, // Don't retry if vendor profile not found
@@ -105,9 +113,47 @@ const VendorKYC = () => {
     },
   });
 
+  const handleVerifyGST = async () => {
+    const gstNumber = formData.taxId.trim();
+    if (!gstNumber) {
+      setGstError('Please enter a GST number first');
+      return;
+    }
+    setGstVerifying(true);
+    setGstError('');
+    try {
+      const response = await api.post('/gst/verify', { gstNumber });
+      const { data, active } = response.data;
+      setGstVerified(true);
+      setGstDetails(data);
+      if (!active) {
+        toast.info('GST is verified but currently inactive');
+      } else {
+        toast.success('GST verified successfully');
+      }
+      // Auto-fill business name and address from verified data
+      setFormData(prev => ({
+        ...prev,
+        businessName: data.tradeName || data.legalName || prev.businessName,
+        businessAddress: data.address || prev.businessAddress,
+      }));
+    } catch (error) {
+      const msg = error.response?.data?.error?.message || 'GST verification failed';
+      setGstError(msg);
+      setGstVerified(false);
+      setGstDetails(null);
+    } finally {
+      setGstVerifying(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    updateKYCMutation.mutate(formData);
+    if (!gstVerified) {
+      toast.error('Please verify your GST number before submitting');
+      return;
+    }
+    updateKYCMutation.mutate({ ...formData, gstVerified, gstDetails });
   };
 
   const handleFileUpload = async (e, docType) => {
@@ -303,15 +349,49 @@ const VendorKYC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tax ID / EIN *
+                GST Number *
               </label>
-              <input
-                type="text"
-                value={formData.taxId}
-                onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={formData.taxId}
+                  onChange={(e) => {
+                    setFormData({ ...formData, taxId: e.target.value.toUpperCase() });
+                    if (gstVerified) {
+                      setGstVerified(false);
+                      setGstDetails(null);
+                    }
+                  }}
+                  placeholder="e.g. 33AABCU9603R1ZM"
+                  className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent ${gstVerified ? 'border-green-400 bg-green-50' : 'border-gray-300'}`}
+                  required
+                  maxLength={15}
+                />
+                <button
+                  type="button"
+                  onClick={handleVerifyGST}
+                  disabled={gstVerifying || gstVerified}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap inline-flex items-center gap-2 ${
+                    gstVerified
+                      ? 'bg-green-100 text-green-700 border border-green-300 cursor-default'
+                      : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'
+                  }`}
+                >
+                  {gstVerifying ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Verifying...</>
+                  ) : gstVerified ? (
+                    <><BadgeCheck className="w-4 h-4" /> Verified</>
+                  ) : (
+                    'Verify GST'
+                  )}
+                </button>
+              </div>
+              {gstError && (
+                <p className="text-red-600 text-sm mt-1">{gstError}</p>
+              )}
+              {!gstVerified && !gstError && (
+                <p className="text-amber-600 text-xs mt-1">GST verification is mandatory for vendor KYC approval</p>
+              )}
             </div>
 
             <div>
@@ -331,7 +411,7 @@ const VendorKYC = () => {
           <div className="flex justify-end pt-4">
             <button
               type="submit"
-              disabled={updateKYCMutation.isLoading}
+              disabled={updateKYCMutation.isLoading || !gstVerified}
               className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {updateKYCMutation.isLoading ? 'Saving...' : 'Save Information'}
@@ -339,6 +419,38 @@ const VendorKYC = () => {
           </div>
         </form>
       </div>
+
+      {/* GST Verified Details */}
+      {gstVerified && gstDetails && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
+            <BadgeCheck className="w-5 h-5" /> GST Verification Details
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            {gstDetails.tradeName && (
+              <div><span className="font-medium text-gray-700">Trade Name:</span> <span className="text-gray-900">{gstDetails.tradeName}</span></div>
+            )}
+            {gstDetails.legalName && (
+              <div><span className="font-medium text-gray-700">Legal Name:</span> <span className="text-gray-900">{gstDetails.legalName}</span></div>
+            )}
+            {gstDetails.gstNumber && (
+              <div><span className="font-medium text-gray-700">GST Number:</span> <span className="text-gray-900">{gstDetails.gstNumber}</span></div>
+            )}
+            {gstDetails.status && (
+              <div><span className="font-medium text-gray-700">Status:</span> <span className={gstDetails.status === 'Active' ? 'text-green-700 font-medium' : 'text-amber-700 font-medium'}>{gstDetails.status}</span></div>
+            )}
+            {gstDetails.businessType && (
+              <div><span className="font-medium text-gray-700">Business Type:</span> <span className="text-gray-900">{gstDetails.businessType}</span></div>
+            )}
+            {gstDetails.registrationDate && (
+              <div><span className="font-medium text-gray-700">Registration Date:</span> <span className="text-gray-900">{gstDetails.registrationDate}</span></div>
+            )}
+            {gstDetails.address && (
+              <div className="sm:col-span-2"><span className="font-medium text-gray-700">Address:</span> <span className="text-gray-900">{gstDetails.address}</span></div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Documents */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">

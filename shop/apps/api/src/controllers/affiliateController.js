@@ -380,6 +380,9 @@ exports.updateKYC = async (req, res, next) => {
       phoneNumber,
       idType,
       idNumber,
+      gstNumber,
+      gstVerified,
+      gstDetails,
     } = req.body;
 
     let affiliate = await Affiliate.findOne({ userId: req.user._id });
@@ -418,6 +421,9 @@ exports.updateKYC = async (req, res, next) => {
     if (phoneNumber !== undefined) affiliate.kyc.phoneNumber = phoneNumber;
     if (idType !== undefined) affiliate.kyc.idType = idType;
     if (idNumber !== undefined) affiliate.kyc.idNumber = idNumber;
+    if (gstNumber !== undefined) affiliate.kyc.gstNumber = gstNumber;
+    if (gstVerified !== undefined) affiliate.kyc.gstVerified = gstVerified;
+    if (gstDetails !== undefined) affiliate.kyc.gstDetails = gstDetails;
 
     // If KYC was rejected and user is updating, reset to pending
     if (affiliate.kyc.status === 'rejected') {

@@ -51,6 +51,8 @@ const vendorSchema = new mongoose.Schema({
       filename: String,
       uploadedAt: { type: Date, default: Date.now }
     }],
+    gstVerified: { type: Boolean, default: false },
+    gstDetails: { type: mongoose.Schema.Types.Mixed }, // Cached AppyFlow response
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
     verifiedAt: Date,
     verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

@@ -31,6 +31,7 @@ const blogRoutes = require('./blog');
 const loyaltyRoutes = require('./loyalty');
 const newsletterRoutes = require('./newsletter');
 const gdprRoutes = require('./gdpr');
+const gstRoutes = require('./gst');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -61,6 +62,7 @@ router.use('/blog', blogRoutes);
 router.use('/loyalty', loyaltyRoutes);
 router.use('/newsletter', newsletterRoutes);
 router.use('/gdpr', gdprRoutes);
+router.use('/gst', gstRoutes);
 
 // Chatbot routes - with optional authentication for personalized responses
 const { optionalAuth } = require('../middleware/auth');

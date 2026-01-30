@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, Eye, CheckCircle, XCircle, FileText, Clock, Store, Users } from 'lucide-react';
+import { Shield, Eye, CheckCircle, XCircle, FileText, Clock, Store, Users, BadgeCheck, AlertTriangle } from 'lucide-react';
 import api from '../../../utils/api';
 import { useToast } from '../../../components/common/ToastContainer';
 
@@ -243,6 +243,9 @@ const KYCReview = () => {
                   Documents
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  GST
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -285,6 +288,19 @@ const KYCReview = () => {
                     <div className="text-sm text-gray-700">
                       {submission.kyc?.documents?.length || 0} file(s)
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {submission.kyc?.gstVerified ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                        <BadgeCheck className="w-3 h-3" /> Verified
+                      </span>
+                    ) : submission.type === 'vendor' ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-100 px-2 py-1 rounded-full">
+                        <AlertTriangle className="w-3 h-3" /> Not Verified
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">N/A</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
@@ -403,6 +419,66 @@ const KYCReview = () => {
                   )}
                 </div>
               </div>
+
+              {/* GST Verification Status */}
+              {(selectedKYC.type === 'vendor' || selectedKYC.kyc?.gstNumber) && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">GST Verification</h3>
+                  {selectedKYC.kyc?.gstVerified ? (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BadgeCheck className="w-5 h-5 text-green-600" />
+                        <span className="font-medium text-green-800">GST Verified</span>
+                      </div>
+                      {selectedKYC.kyc?.gstDetails && (
+                        <div className="space-y-2 text-sm">
+                          {selectedKYC.kyc.gstDetails.gstNumber && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">GST Number:</span>
+                              <span className="font-medium">{selectedKYC.kyc.gstDetails.gstNumber}</span>
+                            </div>
+                          )}
+                          {selectedKYC.kyc.gstDetails.tradeName && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Trade Name:</span>
+                              <span className="font-medium">{selectedKYC.kyc.gstDetails.tradeName}</span>
+                            </div>
+                          )}
+                          {selectedKYC.kyc.gstDetails.legalName && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Legal Name:</span>
+                              <span className="font-medium">{selectedKYC.kyc.gstDetails.legalName}</span>
+                            </div>
+                          )}
+                          {selectedKYC.kyc.gstDetails.status && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Status:</span>
+                              <span className={`font-medium ${selectedKYC.kyc.gstDetails.status === 'Active' ? 'text-green-700' : 'text-amber-700'}`}>
+                                {selectedKYC.kyc.gstDetails.status}
+                              </span>
+                            </div>
+                          )}
+                          {selectedKYC.kyc.gstDetails.address && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Address:</span>
+                              <span className="font-medium text-right max-w-xs">{selectedKYC.kyc.gstDetails.address}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={`${selectedKYC.type === 'vendor' ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'} border rounded-lg p-4 flex items-center gap-2`}>
+                      <AlertTriangle className={`w-5 h-5 ${selectedKYC.type === 'vendor' ? 'text-red-500' : 'text-gray-400'}`} />
+                      <span className={selectedKYC.type === 'vendor' ? 'text-red-700 font-medium' : 'text-gray-500'}>
+                        {selectedKYC.type === 'vendor'
+                          ? 'GST NOT verified - Cannot approve vendor KYC without GST verification'
+                          : 'GST not provided (optional for affiliates)'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Documents */}
               <div>
