@@ -356,6 +356,11 @@ exports.getKYC = async (req, res, next) => {
       data: {
         kyc: affiliate.kyc,
         status: affiliate.status,
+        panNumber: affiliate.panNumber,
+        panVerified: affiliate.panVerified,
+        paymentMethod: affiliate.paymentMethod,
+        paymentDetails: affiliate.paymentDetails,
+        bankVerified: affiliate.bankDetails?.verified || false,
       },
     });
   } catch (error) {
@@ -735,6 +740,24 @@ exports.updatePaymentDetails = async (req, res, next) => {
     // Update payment information
     affiliate.paymentMethod = paymentMethod;
     affiliate.paymentDetails = paymentDetails;
+
+    // Also store in structured bankDetails for payouts
+    if (paymentMethod === 'bank' && paymentDetails) {
+      affiliate.bankDetails = affiliate.bankDetails || {};
+      if (paymentDetails.accountHolderName) affiliate.bankDetails.accountHolderName = paymentDetails.accountHolderName;
+      if (paymentDetails.bankName) affiliate.bankDetails.bankName = paymentDetails.bankName;
+      if (paymentDetails.accountNumber) {
+        affiliate.bankDetails.accountNumber = paymentDetails.accountNumber;
+        affiliate.bankDetails.lastFourDigits = paymentDetails.accountNumber.slice(-4);
+      }
+      if (paymentDetails.ifscCode) affiliate.bankDetails.ifscCode = paymentDetails.ifscCode.toUpperCase();
+      if (paymentDetails.upiId) affiliate.bankDetails.upiId = paymentDetails.upiId;
+    }
+
+    // Save PAN if provided
+    if (req.body.panNumber) {
+      affiliate.panNumber = req.body.panNumber.toUpperCase();
+    }
 
     await affiliate.save();
 

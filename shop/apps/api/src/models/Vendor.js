@@ -59,6 +59,19 @@ const vendorSchema = new mongoose.Schema({
   // SECURITY WARNING: Bank details - sensitive financial data
   // RECOMMENDATION: Use Stripe Connect instead and only store last 4 digits
   // For PCI-DSS/GDPR compliance, consider field-level encryption or external vault
+  // PAN for TDS compliance
+  panNumber: {
+    type: String,
+    uppercase: true,
+    validate: {
+      validator: function (v) {
+        if (!v) return true;
+        return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v);
+      },
+      message: 'Invalid PAN format (e.g. ABCDE1234F)',
+    },
+  },
+  panVerified: { type: Boolean, default: false },
   bank: {
     accountName: String,
     accountNumber: { type: String, select: false }, // SECURITY: Hide by default - sensitive
@@ -68,6 +81,8 @@ const vendorSchema = new mongoose.Schema({
     ifscCode: String, // For India
     accountHolderName: String,
     lastFourDigits: String, // Safe to display (last 4 digits only)
+    verified: { type: Boolean, default: false },
+    verifiedAt: Date,
   },
   // Stripe Connect for automatic payouts
   stripeAccountId: String,

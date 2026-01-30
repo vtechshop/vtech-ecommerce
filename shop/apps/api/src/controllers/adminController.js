@@ -533,7 +533,6 @@ exports.updateOrderStatus = async (req, res, next) => {
 
     // Auto-approve commissions when order is delivered
     if (status === 'delivered') {
-      const payoutService = require('../services/payoutService');
       await payoutService.autoApproveCommissions(order._id);
       logger.info(`Auto-approved commissions for delivered order: ${order.orderId}`);
     }
@@ -2050,7 +2049,6 @@ exports.respondToReview = async (req, res, next) => {
 };
 
 // ---------- Enhanced Payout Management ----------
-const payoutService = require('../services/payoutService');
 
 exports.getVendorPendingPayouts = async (req, res, next) => {
   try {

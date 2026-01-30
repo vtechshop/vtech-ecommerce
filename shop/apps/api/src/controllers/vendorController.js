@@ -756,7 +756,7 @@ async function updateProfile(req, res, next) {
 // Update bank details
 async function updateBank(req, res, next) {
   try {
-    const { accountHolderName, bankName, accountNumber, ifscCode, swiftCode } = req.body;
+    const { accountHolderName, bankName, accountNumber, ifscCode, swiftCode, panNumber } = req.body;
 
     const vendor = await Vendor.findOne({ userId: req.user._id });
     if (!vendor) {
@@ -777,6 +777,11 @@ async function updateBank(req, res, next) {
     }
     if (ifscCode !== undefined) vendor.bank.ifscCode = ifscCode.toUpperCase();
     if (swiftCode !== undefined) vendor.bank.swiftCode = swiftCode.toUpperCase();
+
+    // Save PAN number for TDS compliance
+    if (panNumber !== undefined) {
+      vendor.panNumber = panNumber.toUpperCase();
+    }
 
     await vendor.save();
 

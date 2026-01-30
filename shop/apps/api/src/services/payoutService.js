@@ -66,13 +66,23 @@ class PayoutService {
    */
   async processVendorPayout(vendorId, amount, commissionIds) {
     try {
-      const vendor = await Vendor.findById(vendorId);
+      const vendor = await Vendor.findById(vendorId).select('+bank.accountNumber');
       if (!vendor) {
         throw new Error('Vendor not found');
       }
 
       if (!vendor.bank?.accountNumber || !vendor.bank?.ifscCode) {
         throw new Error('Vendor bank account not configured. Please ask the vendor to add bank details in Settings.');
+      }
+
+      // KYC verification gate - PAN required for TDS compliance
+      if (!vendor.panNumber) {
+        throw new Error('Vendor PAN not provided. PAN is mandatory for payouts (TDS compliance). Please ask the vendor to add PAN in Settings.');
+      }
+
+      // Bank verification check
+      if (vendor.bank.verified === false && vendor.panVerified === false) {
+        logger.warn(`Vendor ${vendor.storeName}: Bank/PAN not verified yet. Proceeding with payout (admin-initiated).`);
       }
 
       // Try Razorpay payout first
@@ -161,7 +171,7 @@ class PayoutService {
    */
   async processAffiliatePayout(affiliateId, amount, commissionIds) {
     try {
-      const affiliate = await Affiliate.findById(affiliateId).populate('userId', 'name email');
+      const affiliate = await Affiliate.findById(affiliateId).select('+bankDetails.accountNumber').populate('userId', 'name email');
       if (!affiliate) {
         throw new Error('Affiliate not found');
       }
@@ -173,6 +183,11 @@ class PayoutService {
 
       if (!affiliate.bankDetails?.accountNumber || !affiliate.bankDetails?.ifscCode) {
         throw new Error('Affiliate bank account not configured. Please ask the affiliate to add bank details.');
+      }
+
+      // KYC verification gate - PAN required for TDS compliance
+      if (!affiliate.panNumber) {
+        throw new Error('Affiliate PAN not provided. PAN is mandatory for payouts (TDS compliance). Please ask the affiliate to add PAN in KYC settings.');
       }
 
       // Calculate 2% TDS (Tax Deducted at Source) as per Indian Income Tax rules

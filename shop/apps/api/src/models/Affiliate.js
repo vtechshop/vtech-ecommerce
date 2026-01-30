@@ -77,7 +77,31 @@ const affiliateSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  // Payment info
+  // PAN for TDS compliance
+  panNumber: {
+    type: String,
+    uppercase: true,
+    validate: {
+      validator: function (v) {
+        if (!v) return true;
+        return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v);
+      },
+      message: 'Invalid PAN format (e.g. ABCDE1234F)',
+    },
+  },
+  panVerified: { type: Boolean, default: false },
+  // Bank details for payouts
+  bankDetails: {
+    accountHolderName: String,
+    bankName: String,
+    accountNumber: { type: String, select: false },
+    ifscCode: String,
+    upiId: String,
+    lastFourDigits: String,
+    verified: { type: Boolean, default: false },
+    verifiedAt: Date,
+  },
+  // Payment info (legacy)
   paymentMethod: {
     type: String,
     enum: ['bank', 'paypal', 'stripe', 'razorpay'],

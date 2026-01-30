@@ -24,6 +24,7 @@ const AffiliateKYC = () => {
     accountNumber: '',
     ifscCode: '',
     upiId: '',
+    panNumber: '',
   });
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
@@ -55,6 +56,7 @@ const AffiliateKYC = () => {
           accountNumber: data.paymentDetails.accountNumber || '',
           ifscCode: data.paymentDetails.ifscCode || '',
           upiId: data.paymentDetails.upiId || '',
+          panNumber: data.panNumber || '',
         });
       }
     },
@@ -604,6 +606,23 @@ const AffiliateKYC = () => {
             />
           </div>
 
+          <div className="border-t border-gray-200 pt-4 mt-2">
+            <h3 className="text-md font-semibold text-gray-900 mb-1">PAN Details (Required for Payouts)</h3>
+            <p className="text-sm text-gray-500 mb-3">PAN is mandatory for TDS compliance. 2% TDS will be deducted on all payouts.</p>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              PAN Number *
+            </label>
+            <input
+              type="text"
+              value={paymentData.panNumber}
+              onChange={(e) => setPaymentData({ ...paymentData, panNumber: e.target.value.toUpperCase() })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="e.g., ABCDE1234F"
+              maxLength={10}
+              required
+            />
+          </div>
+
           <button
             type="button"
             onClick={async () => {
@@ -612,11 +631,16 @@ const AffiliateKYC = () => {
                 toast.error('Please fill all required bank details');
                 return;
               }
+              if (!paymentData.panNumber || !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(paymentData.panNumber)) {
+                toast.error('Please enter a valid PAN number (e.g., ABCDE1234F)');
+                return;
+              }
 
               try {
                 await api.put('/affiliates/payment-details', {
                   paymentMethod: 'bank',
                   paymentDetails: paymentData,
+                  panNumber: paymentData.panNumber,
                 });
                 queryClient.invalidateQueries({ queryKey: ['affiliate-kyc'] });
                 toast.success('Bank details saved successfully');

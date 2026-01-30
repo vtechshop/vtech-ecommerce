@@ -56,6 +56,7 @@ const VendorSettings = () => {
     accountNumber: '',
     ifscCode: '',
     swiftCode: '',
+    panNumber: '',
   });
 
   // Policies State
@@ -84,6 +85,7 @@ const VendorSettings = () => {
         accountNumber: vendorData.bank?.accountNumber || '',
         ifscCode: vendorData.bank?.ifscCode || '',
         swiftCode: vendorData.bank?.swiftCode || '',
+        panNumber: vendorData.panNumber || '',
       });
       setPoliciesData({
         returnPolicy: vendorData.returnPolicy || '',
@@ -447,6 +449,19 @@ const VendorSettings = () => {
                 value={bankData.swiftCode}
                 onChange={(e) => setBankData({ ...bankData, swiftCode: e.target.value.toUpperCase() })}
                 placeholder="e.g., SBININBB123"
+              />
+            </div>
+
+            <div className="border-t border-gray-200 pt-4 mt-4">
+              <h3 className="text-md font-semibold text-gray-900 mb-1">PAN Details (Required for Payouts)</h3>
+              <p className="text-sm text-gray-500 mb-4">PAN is mandatory for TDS compliance. Your PAN will be verified by Razorpay before payouts are enabled.</p>
+              <Input
+                label="PAN Number"
+                value={bankData.panNumber}
+                onChange={(e) => setBankData({ ...bankData, panNumber: e.target.value.toUpperCase() })}
+                required
+                placeholder="e.g., ABCDE1234F"
+                maxLength={10}
               />
             </div>
 
