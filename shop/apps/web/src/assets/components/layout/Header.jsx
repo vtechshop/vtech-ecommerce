@@ -5,12 +5,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '@/store/slices/authSlice';
 import useAuth from '@/hooks/useAuth';
 import SearchAutocomplete from '@/components/common/SearchAutocomplete';
-import LanguageSwitcher from '@/components/common/LanguageSwitcher';
-import useTranslation from '@/hooks/useTranslation';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 
 const Header = ({ onMobileMenuToggle }) => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -89,7 +86,7 @@ const Header = ({ onMobileMenuToggle }) => {
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-            {t('header.shopName')}
+            V-Tech
           </Link>
 
           {/* Search with Autocomplete */}
@@ -97,8 +94,6 @@ const Header = ({ onMobileMenuToggle }) => {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
-            {/* Language Switcher */}
-            <LanguageSwitcher />
 
             {/* User menu */}
             {isAuthenticated ? (

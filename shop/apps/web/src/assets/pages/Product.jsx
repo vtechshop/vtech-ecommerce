@@ -503,19 +503,7 @@ const Product = () => {
             )}
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-snug fade-in-down">{product.title}</h1>
 
-            {/* Product Tags - Compact Pills */}
-            {product.tags && product.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {product.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 bg-primary-100 text-primary-700 rounded-md text-xs font-medium border border-primary-200 hover:bg-primary-200 transition-colors"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
+            {/* Tags hidden - used only for SEO keywords */}
 
             {/* Vendor Name */}
             {product.vendorId && (

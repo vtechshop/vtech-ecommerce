@@ -17,7 +17,7 @@ import { captureAffiliateFromURL } from './assets/utils/affiliateTracking';
 const PublicLayout = lazy(() => import('./assets/components/layout/PublicLayout'));
 const DashboardLayout = lazy(() => import('./assets/components/layout/DashboardLayout'));
 const CookieBanner = lazy(() => import('./assets/components/consent/CookieBanner'));
-const ChatWidget = lazy(() => import('./assets/components/chatbot/ChatWidget'));
+const WhatsAppButton = lazy(() => import('./assets/components/common/WhatsAppButton'));
 
 // Lazy load public pages
 const Home = lazy(() => import('./assets/pages/Home'));
@@ -381,7 +381,7 @@ function App() {
         </Routes>
 
         <CookieBanner />
-        <ChatWidget />
+        <WhatsAppButton />
       </Suspense>
     </ToastProvider>
   );

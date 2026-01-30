@@ -302,7 +302,16 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
               <select
                 required
                 value={address.area}
-                onChange={(e) => onChange({ ...address, area: e.target.value })}
+                onChange={(e) => {
+                  const selectedPO = postOffices.find(po => po.Name === e.target.value);
+                  onChange({
+                    ...address,
+                    area: e.target.value,
+                    district: selectedPO?.District || address.district,
+                    city: selectedPO?.District || address.city,
+                    state: selectedPO?.State || address.state,
+                  });
+                }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 {postOffices.map((po) => (
@@ -331,15 +340,19 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
             placeholder="Area, Colony (optional)"
           />
 
-          {/* Auto-filled: District, City, State */}
+          {/* District, City, State - auto-filled from pincode but always editable */}
+          {pincodeSuccess && (
+            <p className="md:col-span-2 text-xs text-gray-500 -mb-2">
+              Auto-filled from pincode. You can edit if incorrect.
+            </p>
+          )}
           <Input
             label="District"
             name="district"
             required
             value={address.district || ''}
             onChange={(e) => onChange({ ...address, district: e.target.value })}
-            placeholder={pincodeLoading ? 'Loading...' : 'District'}
-            disabled={pincodeLoading}
+            placeholder="Type your district"
           />
           <Input
             label="City"
@@ -347,8 +360,7 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
             required
             value={address.city}
             onChange={(e) => onChange({ ...address, city: e.target.value })}
-            placeholder={pincodeLoading ? 'Loading...' : 'City'}
-            disabled={pincodeLoading}
+            placeholder="Type your city"
           />
           <div className="md:col-span-2">
             <Input
@@ -357,8 +369,7 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
               required
               value={address.state}
               onChange={(e) => onChange({ ...address, state: e.target.value })}
-              placeholder={pincodeLoading ? 'Loading...' : 'State'}
-              disabled={pincodeLoading}
+              placeholder="Type your state"
             />
           </div>
         </>
