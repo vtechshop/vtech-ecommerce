@@ -167,6 +167,7 @@ app.use((req, res, next) => {
     '/api/blog',       // Protected by JWT authentication
     '/api/contact',    // Public contact form - rate limited separately
     '/api/checkout',   // Checkout flow - needs to work for guests
+    '/api/gst',        // GST verification - protected by JWT + role check + rate limited
     '/api/ads',        // Ad tracking (impressions/clicks) - public analytics
     '/api/upload',     // File uploads - protected by JWT authentication
     '/api/user',       // User profile/addresses - protected by JWT authentication
