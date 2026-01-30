@@ -9,11 +9,11 @@ const { authorize } = require('../middleware/auth');
 const { webhookLimiter } = require('../middleware/rateLimiter');
 const shippingController = require('../controllers/shippingController');
 
-// Set carrier and AWB (ADMIN ONLY) - SECURITY: Only admin can assign carriers
+// Set carrier and AWB (Admin or Vendor) - Vendors can assign courier for their own orders
 router.post(
   '/orders/:orderId/carrier',
   authenticate,
-  authorize(['admin']),
+  authorize(['admin', 'vendor']),
   validateObjectId('orderId'),
   [
     body('carrier').notEmpty().withMessage('Carrier is required'),
@@ -106,11 +106,11 @@ router.get(
 
 // ==================== ADMIN CARRIER SELECTION ROUTES ====================
 
-// Get all available carriers (Admin)
+// Get all available carriers (Admin or Vendor)
 router.get(
   '/carriers',
   authenticate,
-  authorize(['admin']),
+  authorize(['admin', 'vendor']),
   shippingController.getAvailableCarriers
 );
 
@@ -123,11 +123,11 @@ router.get(
   shippingController.getShippingQuotesForOrder
 );
 
-// Assign carrier to order and create shipment (ADMIN ONLY) - SECURITY: Only admin assigns carriers
+// Assign carrier to order and create shipment (Admin or Vendor)
 router.post(
   '/orders/:orderId/assign-carrier',
   authenticate,
-  authorize(['admin']),
+  authorize(['admin', 'vendor']),
   validateObjectId('orderId'),
   [
     body('carrier').notEmpty().withMessage('Carrier is required'),
@@ -136,11 +136,11 @@ router.post(
   shippingController.assignCarrierToOrder
 );
 
-// Get recommended carrier for order (ADMIN ONLY) - SECURITY: Only admin gets recommendations
+// Get recommended carrier for order (Admin or Vendor)
 router.get(
   '/orders/:orderId/recommended',
   authenticate,
-  authorize(['admin']),
+  authorize(['admin', 'vendor']),
   validateObjectId('orderId'),
   shippingController.getRecommendedCarrier
 );
