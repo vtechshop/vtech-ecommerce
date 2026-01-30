@@ -66,6 +66,46 @@ router.use('/gdpr', gdprRoutes);
 const { optionalAuth } = require('../middleware/auth');
 router.post('/chatbot/message', optionalAuth, require('../controllers/chatbotController').handleMessage);
 
+// Address validation endpoint (public - for guest checkout too)
+router.post('/address/validate', (req, res) => {
+  const { fullName, phone, addressLine1, city, state, zipCode, country } = req.body;
+  const errors = [];
+
+  if (!fullName?.trim()) errors.push('Full name is required');
+  if (!phone?.trim()) errors.push('Phone number is required');
+  else if (!/^[0-9+\-\s()]{10,15}$/.test(phone.trim())) errors.push('Invalid phone number');
+  if (!addressLine1?.trim()) errors.push('Address line 1 is required');
+  if (!city?.trim()) errors.push('City is required');
+  if (!state?.trim()) errors.push('State is required');
+  if (!zipCode?.trim()) errors.push('ZIP/Postal code is required');
+  if (!country?.trim()) errors.push('Country is required');
+
+  // India-specific: pincode must be 6 digits
+  if (country === 'IN' && zipCode && !/^\d{6}$/.test(zipCode.trim())) {
+    errors.push('Indian pincode must be 6 digits');
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({ success: false, errors });
+  }
+
+  // Normalize
+  const normalized = {
+    fullName: fullName.trim(),
+    phone: phone.trim(),
+    addressLine1: addressLine1.trim(),
+    addressLine2: req.body.addressLine2?.trim() || '',
+    city: city.trim(),
+    district: req.body.district?.trim() || '',
+    area: req.body.area?.trim() || '',
+    state: state.trim(),
+    zipCode: zipCode.trim(),
+    country: country.trim().toUpperCase(),
+  };
+
+  res.json({ success: true, data: normalized });
+});
+
 // Public settings endpoint (for ad placements, etc.)
 router.get('/settings/public', require('../controllers/adPlacementController').getPublicSettings);
 

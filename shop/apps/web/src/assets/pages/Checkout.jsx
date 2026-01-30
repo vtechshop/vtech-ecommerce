@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/Checkout.jsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -12,7 +12,8 @@ import AdBanner from '@/components/common/AdBanner';
 import ShinyButton from '@/components/animations/ShinyButton';
 import { formatCurrency } from '@/utils/format';
 import { trackBeginCheckout } from '@/utils/analytics';
-import { COUNTRIES, DEFAULT_COUNTRY, getStatesForCountry } from '@/utils/locationData';
+import { DEFAULT_COUNTRY } from '@/utils/locationData';
+import SmartAddressForm from '@/components/checkout/SmartAddressForm';
 import { useToast } from '@/components/common/ToastContainer';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
@@ -35,6 +36,8 @@ const Checkout = () => {
     addressLine1: '',
     addressLine2: '',
     city: '',
+    district: '',
+    area: '',
     state: '',
     zipCode: '',
     country: DEFAULT_COUNTRY, // 'IN' for India
@@ -62,10 +65,6 @@ const Checkout = () => {
     trackBeginCheckout({ items, totals });
   }, [items, totals, navigate, orderPlaced]);
 
-  // Dynamically get states based on selected country
-  const availableStates = useMemo(() => {
-    return getStatesForCountry(newAddress.country);
-  }, [newAddress.country]);
 
   // Fetch user addresses
   const { data: addresses } = useQuery({
@@ -452,110 +451,13 @@ const Checkout = () => {
 
                 {/* New Address Form */}
                 <form onSubmit={handleAddressSubmit}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Guest Email Field */}
-                    {!user && (
-                      <Input
-                        label="Email"
-                        name="email"
-                        type="email"
-                        required
-                        placeholder="For order confirmation"
-                        className="md:col-span-2"
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                      />
-                    )}
-
-                    <Input
-                      label="Full Name"
-                      name="fullName"
-                      required
-                      value={newAddress.fullName}
-                      onChange={(e) => setNewAddress({ ...newAddress, fullName: e.target.value })}
-                    />
-                    <Input
-                      label="Phone"
-                      name="phone"
-                      type="tel"
-                      required
-                      value={newAddress.phone}
-                      onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
-                    />
-                    <Input
-                      label="Address Line 1"
-                      name="address"
-                      required
-                      fullWidth
-                      className="md:col-span-2"
-                      value={newAddress.addressLine1}
-                      onChange={(e) => setNewAddress({ ...newAddress, addressLine1: e.target.value })}
-                    />
-                    <Input
-                      label="Address Line 2 (Optional)"
-                      name="addressLine2"
-                      fullWidth
-                      className="md:col-span-2"
-                      value={newAddress.addressLine2}
-                      onChange={(e) => setNewAddress({ ...newAddress, addressLine2: e.target.value })}
-                    />
-                    <Input
-                      label="City"
-                      name="city"
-                      required
-                      value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                    />
-                    <div>
-                      <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                        State/Province <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        id="state"
-                        name="state"
-                        required
-                        value={newAddress.state}
-                        onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        disabled={!newAddress.country}
-                      >
-                        <option value="">
-                          {!newAddress.country ? 'Select country first' : 'Select State/Province'}
-                        </option>
-                        {availableStates.map((state) => (
-                          <option key={state.value} value={state.value}>
-                            {state.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <Input
-                      label="ZIP/Postal Code"
-                      name="zipCode"
-                      required
-                      value={newAddress.zipCode}
-                      onChange={(e) => setNewAddress({ ...newAddress, zipCode: e.target.value })}
-                    />
-                    <div>
-                      <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                        Country <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        id="country"
-                        name="country"
-                        required
-                        value={newAddress.country}
-                        onChange={(e) => setNewAddress({ ...newAddress, country: e.target.value, state: '' })}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                      >
-                        {COUNTRIES.map((country) => (
-                          <option key={country.value} value={country.value}>
-                            {country.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                  <SmartAddressForm
+                    address={newAddress}
+                    onChange={setNewAddress}
+                    guestEmail={guestEmail}
+                    onGuestEmailChange={setGuestEmail}
+                    user={user}
+                  />
 
                   {/* Save Address Checkbox - Only for logged-in users */}
                   {user && (

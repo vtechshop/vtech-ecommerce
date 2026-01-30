@@ -45,6 +45,8 @@ const userSchema = new mongoose.Schema(
         addressLine1: String,
         addressLine2: String,
         city: String,
+        district: String,
+        area: String,
         state: String,
         zipCode: String,
         country: String,
