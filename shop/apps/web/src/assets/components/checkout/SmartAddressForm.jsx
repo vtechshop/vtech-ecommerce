@@ -62,7 +62,7 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
   }, []);
 
   // ─── India: Pincode lookup ──────────────────────────────────
-  const lookupPincode = useCallback(async (pincode) => {
+  const lookupPincode = useCallback(async (pincode, currentAddress) => {
     if (!pincode || pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
       setPincodeError(pincode.length === 6 ? 'Enter a valid 6-digit pincode' : '');
       setPincodeSuccess('');
@@ -85,9 +85,10 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
         setPostOffices(offices);
         setPincodeSuccess(`${first.District}, ${first.State}`);
 
-        // Auto-fill state, district, city
+        // Auto-fill state, district, city - use currentAddress to avoid stale closure
         onChange({
-          ...address,
+          ...currentAddress,
+          zipCode: pincode, // Ensure pincode is preserved
           state: first.State,
           city: first.District,
           district: first.District,
@@ -101,7 +102,7 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
     } finally {
       setPincodeLoading(false);
     }
-  }, [address, onChange]);
+  }, [onChange]);
 
   // ─── International: Load states when country changes ────────
   useEffect(() => {
@@ -188,9 +189,10 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
   // ─── Handle pincode input ───────────────────────────────────
   const handlePincodeChange = (value) => {
     const cleaned = value.replace(/\D/g, '').slice(0, 6);
-    onChange({ ...address, zipCode: cleaned });
+    const updatedAddress = { ...address, zipCode: cleaned };
+    onChange(updatedAddress);
     if (cleaned.length === 6) {
-      lookupPincode(cleaned);
+      lookupPincode(cleaned, updatedAddress);
     } else {
       setPincodeError('');
       setPincodeSuccess('');
