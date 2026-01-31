@@ -1,7 +1,7 @@
 // API base URL - update for production
 export const API_BASE_URL = __DEV__
   ? 'http://10.0.2.2:8080/api' // Android emulator -> localhost
-  : 'https://your-production-api.com/api';
+  : 'https://vtech-ecommerce.onrender.com/api';
 
 // For iOS simulator, use: http://localhost:8080/api
 // For physical device on same WiFi, use your computer's local IP:
