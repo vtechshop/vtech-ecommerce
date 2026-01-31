@@ -1,7 +1,14 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const WhatsAppButton = () => {
   const [showNumbers, setShowNumbers] = useState(false);
+  const { pathname } = useLocation();
+
+  // Hide on all dashboard pages
+  if (pathname.startsWith('/vendor-dashboard') || pathname.startsWith('/admin-dashboard') || pathname.startsWith('/dashboard') || pathname.startsWith('/affiliate-dashboard')) {
+    return null;
+  }
   const message = encodeURIComponent('Hi, I have a question about your products.');
 
   const numbers = [

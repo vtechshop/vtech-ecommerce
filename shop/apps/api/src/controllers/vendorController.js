@@ -93,15 +93,22 @@ async function getDashboardStats(req, res, next) {
       });
     }
 
-    const [totalProducts, activeProducts, totalOrders, pendingOrders, totalCommissions] =
+    const [totalProducts, activeProducts, totalOrders, pendingOrders, totalCommissions, salesAgg] =
       await Promise.all([
         Product.countDocuments({ vendorId: vendor._id }),
         Product.countDocuments({ vendorId: vendor._id, published: true }),
         Order.countDocuments({ 'items.vendorId': vendor._id }),
         Order.countDocuments({ 'items.vendorId': vendor._id, status: { $in: ['placed', 'paid'] } }),
         Commission.aggregate([
-          { $match: { subjectId: vendor._id, type: 'vendor', status: 'approved' } },
-          { $group: { _id: null, total: { $sum: '$amount' } } },
+          { $match: { subjectId: vendor._id, type: 'vendor' } },
+          { $group: { _id: null, total: { $sum: '$amount' }, paid: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] } } } },
+        ]),
+        // Calculate actual sales from paid orders containing this vendor's items
+        Order.aggregate([
+          { $match: { 'items.vendorId': vendor._id, status: { $nin: ['pending', 'pending_payment', 'cancelled'] } } },
+          { $unwind: '$items' },
+          { $match: { 'items.vendorId': vendor._id } },
+          { $group: { _id: null, total: { $sum: { $multiply: ['$items.priceSnapshot', '$items.qty'] } } } },
         ]),
       ]);
 
@@ -113,7 +120,8 @@ async function getDashboardStats(req, res, next) {
         totalOrders,
         pendingOrders,
         totalEarnings: totalCommissions[0]?.total || 0,
-        totalSales: vendor.totalSales,
+        paidEarnings: totalCommissions[0]?.paid || 0,
+        totalSales: salesAgg[0]?.total || 0,
       },
     });
   } catch (error) {
