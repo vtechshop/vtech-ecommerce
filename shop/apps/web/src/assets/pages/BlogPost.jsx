@@ -266,7 +266,7 @@ const BlogPost = () => {
       toast.success('Subscribed successfully!');
       setSubscribeEmail('');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to subscribe');
+      toast.error(error.response?.data?.error?.message || error.response?.data?.message || 'Failed to subscribe');
     } finally {
       setSubscribing(false);
     }
