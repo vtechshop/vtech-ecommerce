@@ -17,7 +17,7 @@ import SmartAddressForm from '@/components/checkout/SmartAddressForm';
 import { useToast } from '@/components/common/ToastContainer';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
-import { getAffiliateCode } from '@/utils/affiliateTracking';
+import { getAffiliateCode, clearAffiliateCode } from '@/utils/affiliateTracking';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -269,8 +269,9 @@ const Checkout = () => {
                   toast.success('Payment successful!');
                   // Set flag to prevent cart redirect
                   setOrderPlaced(true);
-                  // Clear cart
+                  // Clear cart and affiliate cookie (prevent repeat commission on future orders)
                   dispatch(clearCart());
+                  clearAffiliateCode();
                   // Navigate to order confirmation page (consistent with failure path)
                   navigate(`/order-confirmation/${orderForPayment._id}`);
                 },

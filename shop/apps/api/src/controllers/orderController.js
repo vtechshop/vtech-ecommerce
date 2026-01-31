@@ -530,6 +530,11 @@ exports.createOrder = async (req, res, next) => {
   // See razorpayController.js verifyPayment() and handlePaymentCaptured() webhook
   logger.info(`Order(s) created with pending payment - vendor/admin notifications will be sent after payment verification`);
 
+  // ===== CLEAR AFFILIATE COOKIE after order creation to prevent repeat commissions =====
+  if (affiliateCode) {
+    res.clearCookie('affiliate', { path: '/' });
+  }
+
   // ===== RETURN ALL VENDOR ORDERS =====
   res.status(201).json({
     success: true,
