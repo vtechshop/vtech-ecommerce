@@ -1,5 +1,5 @@
 // FILE: apps/web/src/components/layout/Header.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '@/store/slices/authSlice';
@@ -47,16 +47,25 @@ const Header = ({ onMobileMenuToggle }) => {
     }
   }, [cartItemCount]);
 
-  // Handle scroll effect
+  // Handle scroll effect with passive listener and RAF throttle
+  const rafRef = useRef(null);
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      setIsScrolled(scrollTop > 50);
+      if (rafRef.current) return;
+      rafRef.current = requestAnimationFrame(() => {
+        setIsScrolled(window.scrollY > 50);
+        // Close dropdown on scroll
+        if (userMenuOpen) setUserMenuOpen(false);
+        rafRef.current = null;
+      });
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [userMenuOpen]);
 
   const handleLogout = async () => {
     await dispatch(logout());

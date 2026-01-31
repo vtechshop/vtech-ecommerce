@@ -643,6 +643,76 @@ exports.deleteComment = async (req, res, next) => {
   }
 };
 
+// Edit own comment
+exports.editComment = async (req, res, next) => {
+  try {
+    const { commentId } = req.params;
+    const { content } = req.body;
+    const userId = req.user._id;
+
+    if (!content || !content.trim()) {
+      throw new AppError('Comment content is required', 400, 'VALIDATION_ERROR');
+    }
+
+    const comment = await BlogComment.findById(commentId);
+
+    if (!comment) {
+      throw new AppError('Comment not found', 404, 'COMMENT_NOT_FOUND');
+    }
+
+    if (comment.userId.toString() !== userId.toString()) {
+      throw new AppError('You can only edit your own comments', 403, 'UNAUTHORIZED');
+    }
+
+    comment.comment = content.trim();
+    comment.edited = true;
+    await comment.save();
+
+    await comment.populate('userId', 'name avatar');
+
+    logger.info(`Comment ${commentId} edited by user ${userId}`);
+
+    res.json({
+      success: true,
+      data: comment,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete own comment
+exports.deleteOwnComment = async (req, res, next) => {
+  try {
+    const { commentId } = req.params;
+    const userId = req.user._id;
+
+    const comment = await BlogComment.findById(commentId);
+
+    if (!comment) {
+      throw new AppError('Comment not found', 404, 'COMMENT_NOT_FOUND');
+    }
+
+    if (comment.userId.toString() !== userId.toString()) {
+      throw new AppError('You can only delete your own comments', 403, 'UNAUTHORIZED');
+    }
+
+    // Delete the comment and all its replies
+    await BlogComment.deleteMany({
+      $or: [{ _id: commentId }, { parentId: commentId }],
+    });
+
+    logger.info(`Comment ${commentId} deleted by owner ${userId}`);
+
+    res.json({
+      success: true,
+      message: 'Comment deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Like/Unlike a comment
 exports.likeComment = async (req, res, next) => {
   try {

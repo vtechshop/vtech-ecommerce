@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
@@ -11,37 +11,24 @@ import SponsorAd from '@/components/ads/SponsorAd';
 import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
-import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
-import ShinyButton from '@/components/animations/ShinyButton';
-
-// Admin settings for ad placements
-const AD_PLACEMENT_SETTINGS = {
-  homepage_banner: 'ads.placement.homepage_banner.enabled',
-  homepage_sidebar_left: 'ads.placement.homepage_sidebar_left.enabled',
-  homepage_sidebar_right: 'ads.placement.homepage_sidebar_right.enabled',
-};
 
 const Home = React.memo(() => {
   const { t } = useTranslation();
   const { user } = useSelector((state) => state.auth);
 
-  // Use new sponsor ads hooks
+  // Sponsor ads - now using React Query (cached, no duplicate fetches)
   const { ad: bannerAd, loading: bannerLoading } = useSponsorAds('homepage_banner', {
-    refreshInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+    refreshInterval: 5 * 60 * 1000,
   });
-
   const { ad: leftAd, loading: leftLoading } = useSponsorAds('homepage_sidebar_left', {
     refreshInterval: 5 * 60 * 1000,
   });
-
   const { ad: rightAd, loading: rightLoading } = useSponsorAds('homepage_sidebar_right', {
     refreshInterval: 5 * 60 * 1000,
   });
-
   const { ad: middleAd, loading: middleLoading } = useSponsorAds('homepage_middle', {
     refreshInterval: 5 * 60 * 1000,
   });
-
   const { ad: bottomAd, loading: bottomLoading } = useSponsorAds('homepage_bottom', {
     refreshInterval: 5 * 60 * 1000,
   });
@@ -57,28 +44,24 @@ const Home = React.memo(() => {
     });
   }, []);
 
-  // Featured products - always fetch from API for consistency
+  // Featured products
   const { data: featuredProducts, isLoading } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
       const { data } = await api.get('/catalog/products?featured=true&limit=8');
-      return data.data; // Return the actual data array
+      return data.data;
     },
-    staleTime: 10 * 60 * 1000, // 10 minutes for featured products
+    staleTime: 10 * 60 * 1000,
   });
 
-  // Use real API data for all environments
-  const displayFeaturedProducts = featuredProducts;
-  const displayIsLoading = isLoading;
-
-  // Categories
+  // Categories (shared cache with Footer)
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
       const { data } = await api.get('/catalog/categories?limit=6');
-      return data.data; // Return the actual data array
+      return data.data;
     },
-    staleTime: 30 * 60 * 1000, // 30 minutes for categories (static data)
+    staleTime: 30 * 60 * 1000,
   });
 
   // Active flash sales
@@ -86,15 +69,14 @@ const Home = React.memo(() => {
     queryKey: ['active-flash-sales'],
     queryFn: async () => {
       const { data } = await api.get('/flash-sales/active');
-      return data.data; // Return the actual data array
+      return data.data;
     },
-    refetchInterval: 60000, // Refetch every minute to update countdown
-    staleTime: 30 * 1000, // 30 seconds for flash sales
+    refetchInterval: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
-
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-primary-600 to-primary-200 fade-in">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-16 max-w-screen-2xl">
@@ -128,7 +110,7 @@ const Home = React.memo(() => {
             ? 'lg:grid-cols-4'
             : 'lg:grid-cols-1'
         }`}>
-          {/* Left Sidebar - Only show if ad exists */}
+          {/* Left Sidebar */}
           {!leftLoading && leftAd && (
             <aside className="lg:col-span-1">
               <SponsorAd ad={leftAd} variant="sidebar" />
@@ -167,9 +149,9 @@ const Home = React.memo(() => {
                 <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 ${
                   leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
                 }`}>
-                  {categories.map((category, index) => (
-                    <Link key={category.slug} to={`/category/${category.slug}`} className={`group fade-in stagger-${Math.min(index + 1, 6)}`}>
-                      <div className="bg-white rounded-lg p-6 text-center hover:shadow-xl transition-all duration-300 border border-gray-200 hover-lift card-tilt">
+                  {categories.map((category) => (
+                    <Link key={category.slug} to={`/category/${category.slug}`} className="group">
+                      <div className="bg-white rounded-lg p-6 text-center hover:shadow-xl transition-all duration-300 border border-gray-200 hover-lift">
                         <div className="w-16 h-16 mx-auto mb-3 bg-primary-100 rounded-full flex items-center justify-center group-hover:bg-primary-200 group-hover:scale-110 transition-all duration-300">
                           <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -187,25 +169,25 @@ const Home = React.memo(() => {
             <section className="mb-8">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl md:text-2xl font-bold">{t('home.featuredProducts')}</h2>
-                <Link to="/search?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold btn-scale transition-transform duration-300">
+                <Link to="/search?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold">
                   {t('home.viewAll')}
                 </Link>
               </div>
 
-              {displayIsLoading ? (
-                <div className="flex justify-center py-12 fade-in">
+              {isLoading ? (
+                <div className="flex justify-center py-12">
                   <Spinner size="lg" />
                 </div>
-              ) : displayFeaturedProducts?.length > 0 ? (
+              ) : featuredProducts?.length > 0 ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
-                  {displayFeaturedProducts.map((p, index) => (
-                    <div key={p._id} className={`fade-in stagger-${Math.min(index + 1, 6)}`}>
+                  {featuredProducts.map((p) => (
+                    <div key={p._id}>
                       <ProductCard product={p} />
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 text-gray-500 fade-in">
+                <div className="text-center py-12 text-gray-500">
                   <p>{t('home.noFeaturedProducts')}</p>
                 </div>
               )}
@@ -218,7 +200,7 @@ const Home = React.memo(() => {
               </section>
             )}
 
-            {/* Join as Vendor or Affiliate - Only show if user doesn't have the role */}
+            {/* Join as Vendor or Affiliate */}
             {(user?.role !== 'vendor' || user?.role !== 'affiliate') && (
               <section className="mb-8">
                 <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
@@ -227,9 +209,8 @@ const Home = React.memo(() => {
                     ? 'md:grid-cols-1 max-w-2xl mx-auto'
                     : 'md:grid-cols-2'
                 }`}>
-                  {/* Become a Vendor - Hide if already a vendor */}
                   {user?.role !== 'vendor' && (
-                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow slide-in-left">
+                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow">
                       <div className="flex items-center mb-4">
                         <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-4">
                           <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -238,9 +219,7 @@ const Home = React.memo(() => {
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeVendor')}</h3>
                       </div>
-                      <p className="text-gray-700 mb-6 leading-relaxed">
-                        {t('home.vendorDesc')}
-                      </p>
+                      <p className="text-gray-700 mb-6 leading-relaxed">{t('home.vendorDesc')}</p>
                       <ul className="space-y-2 mb-6">
                         <li className="flex items-center text-gray-700">
                           <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -269,17 +248,15 @@ const Home = React.memo(() => {
                       </ul>
                       <Link
                         to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
-                        className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg will-change-auto"
-                        style={{ transform: 'translateZ(0)' }}
+                        className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg"
                       >
                         {t('home.startSelling')}
                       </Link>
                     </div>
                   )}
 
-                  {/* Become an Affiliate - Hide if already an affiliate */}
                   {user?.role !== 'affiliate' && (
-                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow slide-in-right">
+                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow">
                       <div className="flex items-center mb-4">
                         <div className="w-12 h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-4">
                           <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -288,9 +265,7 @@ const Home = React.memo(() => {
                         </div>
                         <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeAffiliate')}</h3>
                       </div>
-                      <p className="text-gray-700 mb-6 leading-relaxed">
-                        {t('home.affiliateDesc')}
-                      </p>
+                      <p className="text-gray-700 mb-6 leading-relaxed">{t('home.affiliateDesc')}</p>
                       <ul className="space-y-2 mb-6">
                         <li className="flex items-center text-gray-700">
                           <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -319,8 +294,7 @@ const Home = React.memo(() => {
                       </ul>
                       <Link
                         to={user && user.role !== 'affiliate' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
-                        className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors duration-200 shadow-md hover:shadow-lg will-change-auto"
-                        style={{ transform: 'translateZ(0)' }}
+                        className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors duration-200 shadow-md hover:shadow-lg"
                       >
                         {t('home.joinAffiliate')}
                       </Link>
@@ -360,7 +334,7 @@ const Home = React.memo(() => {
             )}
           </main>
 
-          {/* Right Sidebar - Only show if ad exists */}
+          {/* Right Sidebar */}
           {!rightLoading && rightAd && (
             <aside className="lg:col-span-1">
               <SponsorAd ad={rightAd} variant="sidebar" />

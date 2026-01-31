@@ -1,8 +1,19 @@
 // FILE: apps/web/src/components/layout/Footer.jsx
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/utils/api';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data } = await api.get('/catalog/categories?limit=8');
+      return data.data;
+    },
+    staleTime: 30 * 60 * 1000,
+  });
 
   return (
     <footer className="bg-gray-900 text-gray-300">
@@ -37,13 +48,13 @@ const Footer = () => {
           <div>
             <h3 className="text-white text-lg font-bold mb-4">Shop</h3>
             <ul className="space-y-2 text-sm">
-              <li>
-                <Link to="/category/electronics" className="hover:text-white transition-colors">
-                  Electronics
-                </Link>
-              </li>
-              
-             
+              {categories.map((cat) => (
+                <li key={cat._id}>
+                  <Link to={`/category/${cat.slug}`} className="hover:text-white transition-colors">
+                    {cat.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

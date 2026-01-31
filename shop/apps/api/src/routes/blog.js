@@ -16,6 +16,8 @@ router.post('/:slug/like', authenticate, contentInteractionLimiter, blogControll
 router.post('/:slug/share', authenticate, contentInteractionLimiter, blogController.shareBlog); // SECURITY: Added authentication to prevent spam
 router.post('/:slug/comments', authenticate, contentInteractionLimiter, blogController.addComment);
 router.post('/comments/:commentId/like', authenticate, contentInteractionLimiter, blogController.likeComment);
+router.put('/comments/:commentId', authenticate, blogController.editComment);
+router.delete('/comments/:commentId', authenticate, blogController.deleteOwnComment);
 
 // Admin routes
 router.get('/admin/all', authenticate, authorize(['admin']), blogController.adminGetBlogs);

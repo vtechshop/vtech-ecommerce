@@ -9,7 +9,7 @@ import Spinner from '@/components/common/Spinner';
 import AdBanner from '@/components/common/AdBanner';
 import {
   Clock, Eye, Heart, Share2, Calendar, User, Tag, ArrowLeft,
-  MessageCircle, Send
+  MessageCircle, Send, Pencil, Trash2, X, Check
 } from 'lucide-react';
 import { formatDate } from '@/utils/format';
 import useAuth from '@/hooks/useAuth';
@@ -24,6 +24,9 @@ const BlogPost = () => {
   const [comment, setComment] = useState('');
   const [replyingTo, setReplyingTo] = useState(null); // Stores { user, commentId }
   const [commentLikes, setCommentLikes] = useState({});
+  const [editingComment, setEditingComment] = useState(null); // { id, text }
+  const [subscribeEmail, setSubscribeEmail] = useState('');
+  const [subscribing, setSubscribing] = useState(false);
 
   // Fetch blog post
   const { data, isLoading } = useQuery({
@@ -57,17 +60,27 @@ const BlogPost = () => {
     },
   });
 
-  // Like blog mutation
+  // Like blog mutation with optimistic update
   const likeMutation = useMutation({
     mutationFn: async () => {
       const response = await api.post(`/blog/${slug}/like`);
       return response.data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['blog', slug]);
-      toast.success('Blog liked!');
+    onMutate: async () => {
+      await queryClient.cancelQueries(['blog', slug]);
+      const previous = queryClient.getQueryData(['blog', slug]);
+      queryClient.setQueryData(['blog', slug], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          hasLiked: !old.hasLiked,
+          likes: old.hasLiked ? (old.likes || 1) - 1 : (old.likes || 0) + 1,
+        };
+      });
+      return { previous };
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      queryClient.setQueryData(['blog', slug], context?.previous);
       toast.error(error.response?.data?.message || 'Please login to like');
     },
   });
@@ -77,9 +90,6 @@ const BlogPost = () => {
     mutationFn: async () => {
       const response = await api.post(`/blog/${slug}/share`);
       return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['blog', slug]);
     },
   });
 
@@ -104,27 +114,78 @@ const BlogPost = () => {
     },
   });
 
-  // Like comment mutation
+  // Like comment mutation with optimistic update
   const likeCommentMutation = useMutation({
     mutationFn: async (commentId) => {
       const response = await api.post(`/blog/comments/${commentId}/like`);
       return response.data;
     },
-    onSuccess: (data, commentId) => {
-      setCommentLikes(prev => ({
-        ...prev,
-        [commentId]: data.data.liked
-      }));
-      // Update the like count in the UI
-      queryClient.invalidateQueries(['blog-comments', slug]);
-      toast.success(data.data.liked ? 'Comment liked!' : 'Like removed');
+    onMutate: async (commentId) => {
+      await queryClient.cancelQueries(['blog-comments', slug]);
+      const previous = queryClient.getQueryData(['blog-comments', slug]);
+      const wasLiked = commentLikes[commentId] || false;
+      setCommentLikes(prev => ({ ...prev, [commentId]: !wasLiked }));
+      queryClient.setQueryData(['blog-comments', slug], (old) => {
+        if (!old) return old;
+        return old.map(c => {
+          if (c._id === commentId) {
+            return { ...c, likes: wasLiked ? (c.likes || 1) - 1 : (c.likes || 0) + 1, hasLiked: !wasLiked };
+          }
+          if (c.replies) {
+            return {
+              ...c,
+              replies: c.replies.map(r =>
+                r._id === commentId
+                  ? { ...r, likes: wasLiked ? (r.likes || 1) - 1 : (r.likes || 0) + 1, hasLiked: !wasLiked }
+                  : r
+              ),
+            };
+          }
+          return c;
+        });
+      });
+      return { previous, wasLiked };
     },
-    onError: (error) => {
+    onError: (error, commentId, context) => {
+      queryClient.setQueryData(['blog-comments', slug], context?.previous);
+      setCommentLikes(prev => ({ ...prev, [commentId]: context?.wasLiked }));
       if (error.response?.status === 401) {
         toast.error('Please login to like comments');
       } else {
         toast.error('Failed to like comment');
       }
+    },
+  });
+
+  // Edit comment mutation
+  const editCommentMutation = useMutation({
+    mutationFn: async ({ commentId, content }) => {
+      const response = await api.put(`/blog/comments/${commentId}`, { content });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['blog-comments', slug]);
+      setEditingComment(null);
+      toast.success('Comment updated!');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to edit comment');
+    },
+  });
+
+  // Delete comment mutation
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId) => {
+      const response = await api.delete(`/blog/comments/${commentId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['blog-comments', slug]);
+      queryClient.invalidateQueries(['blog', slug]);
+      toast.success('Comment deleted!');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.message || 'Failed to delete comment');
     },
   });
 
@@ -179,6 +240,36 @@ const BlogPost = () => {
       return;
     }
     likeCommentMutation.mutate(commentId);
+  };
+
+  const handleEditComment = (commentId, currentText) => {
+    setEditingComment({ id: commentId, text: currentText });
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingComment?.text?.trim()) return;
+    editCommentMutation.mutate({ commentId: editingComment.id, content: editingComment.text.trim() });
+  };
+
+  const handleDeleteComment = (commentId) => {
+    if (window.confirm('Are you sure you want to delete this comment?')) {
+      deleteCommentMutation.mutate(commentId);
+    }
+  };
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!subscribeEmail.trim()) return;
+    setSubscribing(true);
+    try {
+      await api.post('/newsletter/subscribe', { email: subscribeEmail.trim(), source: 'blog' });
+      toast.success('Subscribed successfully!');
+      setSubscribeEmail('');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to subscribe');
+    } finally {
+      setSubscribing(false);
+    }
   };
 
   if (isLoading) {
@@ -326,9 +417,9 @@ const BlogPost = () => {
                     <button
                       onClick={handleLike}
                       disabled={likeMutation.isPending}
-                      className="flex items-center gap-2 px-4 py-2 bg-primary-50 text-blue-700 rounded-lg hover:bg-primary-100 transition-colors"
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${data.hasLiked ? 'bg-red-50 text-red-600' : 'bg-primary-50 text-blue-700 hover:bg-primary-100'}`}
                     >
-                      <Heart className="w-5 h-5" />
+                      <Heart className={`w-5 h-5 ${data.hasLiked ? 'fill-current text-red-500' : ''}`} />
                       <span>{data.likes || 0} Likes</span>
                     </button>
                     <button
@@ -445,34 +536,73 @@ const BlogPost = () => {
 
                                 {/* Content */}
                                 <div className="flex-1 min-w-0">
-                                  {/* Username and Comment Text */}
-                                  <div className="text-sm leading-relaxed">
-                                    <span className="font-semibold text-gray-900">
-                                      {c.userId?.name || 'Anonymous'}
-                                    </span>
-                                    {' '}
-                                    <span className="text-gray-700">
-                                      {c.comment || c.content}
-                                    </span>
-                                  </div>
+                                  {editingComment?.id === c._id ? (
+                                    <div>
+                                      <textarea
+                                        value={editingComment.text}
+                                        onChange={(e) => setEditingComment(prev => ({ ...prev, text: e.target.value }))}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                                        rows={2}
+                                      />
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <button onClick={handleSaveEdit} disabled={editCommentMutation.isPending} className="text-xs text-green-600 font-semibold hover:text-green-700 flex items-center gap-1">
+                                          <Check className="w-3 h-3" /> Save
+                                        </button>
+                                        <button onClick={() => setEditingComment(null)} className="text-xs text-gray-500 font-semibold hover:text-gray-700 flex items-center gap-1">
+                                          <X className="w-3 h-3" /> Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {/* Username and Comment Text */}
+                                      <div className="text-sm leading-relaxed">
+                                        <span className="font-semibold text-gray-900">
+                                          {c.userId?.name || 'Anonymous'}
+                                        </span>
+                                        {' '}
+                                        <span className="text-gray-700">
+                                          {c.comment || c.content}
+                                        </span>
+                                        {c.edited && <span className="text-gray-400 text-xs ml-1">(edited)</span>}
+                                      </div>
 
-                                  {/* Actions - Instagram style */}
-                                  <div className="flex items-center gap-3 mt-2 text-xs">
-                                    <span className="text-gray-500">{formatDate(c.createdAt)}</span>
-                                    {c.likes > 0 && (
-                                      <span className="text-gray-500 font-semibold">
-                                        {c.likes} {c.likes === 1 ? 'like' : 'likes'}
-                                      </span>
-                                    )}
-                                    {user && (
-                                      <button
-                                        onClick={() => handleReply(c.userId, c._id)}
-                                        className="text-gray-500 font-semibold hover:text-gray-700 transition-colors"
-                                      >
-                                        Reply
-                                      </button>
-                                    )}
-                                  </div>
+                                      {/* Actions - Instagram style */}
+                                      <div className="flex items-center gap-3 mt-2 text-xs">
+                                        <span className="text-gray-500">{formatDate(c.createdAt)}</span>
+                                        {c.likes > 0 && (
+                                          <span className="text-gray-500 font-semibold">
+                                            {c.likes} {c.likes === 1 ? 'like' : 'likes'}
+                                          </span>
+                                        )}
+                                        {user && (
+                                          <button
+                                            onClick={() => handleReply(c.userId, c._id)}
+                                            className="text-gray-500 font-semibold hover:text-gray-700 transition-colors"
+                                          >
+                                            Reply
+                                          </button>
+                                        )}
+                                        {user && c.userId?._id === user._id && (
+                                          <>
+                                            <button
+                                              onClick={() => handleEditComment(c._id, c.comment || c.content)}
+                                              className="text-gray-400 hover:text-blue-600 transition-colors"
+                                            >
+                                              <Pencil className="w-3 h-3" />
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteComment(c._id)}
+                                              disabled={deleteCommentMutation.isPending}
+                                              className="text-gray-400 hover:text-red-600 transition-colors"
+                                            >
+                                              <Trash2 className="w-3 h-3" />
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    </>
+                                  )}
                                 </div>
 
                                 {/* Like Button - Heart icon aligned to top */}
@@ -513,34 +643,73 @@ const BlogPost = () => {
 
                                         {/* Reply Content */}
                                         <div className="flex-1 min-w-0">
-                                          {/* Username and Reply Text */}
-                                          <div className="text-sm leading-relaxed">
-                                            <span className="font-semibold text-gray-900">
-                                              {reply.userId?.name || 'Anonymous'}
-                                            </span>
-                                            {' '}
-                                            <span className="text-gray-700">
-                                              {reply.comment || reply.content}
-                                            </span>
-                                          </div>
+                                          {editingComment?.id === reply._id ? (
+                                            <div>
+                                              <textarea
+                                                value={editingComment.text}
+                                                onChange={(e) => setEditingComment(prev => ({ ...prev, text: e.target.value }))}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                                                rows={2}
+                                              />
+                                              <div className="flex items-center gap-2 mt-1">
+                                                <button onClick={handleSaveEdit} disabled={editCommentMutation.isPending} className="text-xs text-green-600 font-semibold hover:text-green-700 flex items-center gap-1">
+                                                  <Check className="w-3 h-3" /> Save
+                                                </button>
+                                                <button onClick={() => setEditingComment(null)} className="text-xs text-gray-500 font-semibold hover:text-gray-700 flex items-center gap-1">
+                                                  <X className="w-3 h-3" /> Cancel
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <>
+                                              {/* Username and Reply Text */}
+                                              <div className="text-sm leading-relaxed">
+                                                <span className="font-semibold text-gray-900">
+                                                  {reply.userId?.name || 'Anonymous'}
+                                                </span>
+                                                {' '}
+                                                <span className="text-gray-700">
+                                                  {reply.comment || reply.content}
+                                                </span>
+                                                {reply.edited && <span className="text-gray-400 text-xs ml-1">(edited)</span>}
+                                              </div>
 
-                                          {/* Reply Actions */}
-                                          <div className="flex items-center gap-3 mt-2 text-xs">
-                                            <span className="text-gray-500">{formatDate(reply.createdAt)}</span>
-                                            {reply.likes > 0 && (
-                                              <span className="text-gray-500 font-semibold">
-                                                {reply.likes} {reply.likes === 1 ? 'like' : 'likes'}
-                                              </span>
-                                            )}
-                                            {user && (
-                                              <button
-                                                onClick={() => handleReply(reply.userId, c._id)}
-                                                className="text-gray-500 font-semibold hover:text-gray-700 transition-colors"
-                                              >
-                                                Reply
-                                              </button>
-                                            )}
-                                          </div>
+                                              {/* Reply Actions */}
+                                              <div className="flex items-center gap-3 mt-2 text-xs">
+                                                <span className="text-gray-500">{formatDate(reply.createdAt)}</span>
+                                                {reply.likes > 0 && (
+                                                  <span className="text-gray-500 font-semibold">
+                                                    {reply.likes} {reply.likes === 1 ? 'like' : 'likes'}
+                                                  </span>
+                                                )}
+                                                {user && (
+                                                  <button
+                                                    onClick={() => handleReply(reply.userId, c._id)}
+                                                    className="text-gray-500 font-semibold hover:text-gray-700 transition-colors"
+                                                  >
+                                                    Reply
+                                                  </button>
+                                                )}
+                                                {user && reply.userId?._id === user._id && (
+                                                  <>
+                                                    <button
+                                                      onClick={() => handleEditComment(reply._id, reply.comment || reply.content)}
+                                                      className="text-gray-400 hover:text-blue-600 transition-colors"
+                                                    >
+                                                      <Pencil className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                      onClick={() => handleDeleteComment(reply._id)}
+                                                      disabled={deleteCommentMutation.isPending}
+                                                      className="text-gray-400 hover:text-red-600 transition-colors"
+                                                    >
+                                                      <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                  </>
+                                                )}
+                                              </div>
+                                            </>
+                                          )}
                                         </div>
 
                                         {/* Reply Like Button */}
@@ -588,18 +757,21 @@ const BlogPost = () => {
               <AdBanner placement="blog_sidebar" position="right" />
 
               {/* Newsletter Signup */}
-              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-lg p-6 text-white">
+              <form onSubmit={handleSubscribe} className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-lg p-6 text-white">
                 <h3 className="font-bold text-xl mb-2">Stay Updated</h3>
                 <p className="text-gray-300 text-sm mb-4">Subscribe to our newsletter for the latest tech news and exclusive offers.</p>
                 <input
                   type="email"
+                  value={subscribeEmail}
+                  onChange={(e) => setSubscribeEmail(e.target.value)}
                   placeholder="Enter your email"
+                  required
                   className="w-full px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 mb-3 focus:outline-none focus:ring-2 focus:ring-white/50"
                 />
-                <button className="w-full px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-blue-100 transition-colors font-medium">
-                  Subscribe
+                <button type="submit" disabled={subscribing} className="w-full px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-blue-100 transition-colors font-medium disabled:opacity-50">
+                  {subscribing ? 'Subscribing...' : 'Subscribe'}
                 </button>
-              </div>
+              </form>
 
               {/* Related Products */}
               {data.relatedProducts && data.relatedProducts.length > 0 && (

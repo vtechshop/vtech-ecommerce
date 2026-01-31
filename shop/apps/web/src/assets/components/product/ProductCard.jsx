@@ -79,6 +79,8 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
           <img
             src={normalizeImageUrl(product.images[0])}
             alt={product.seo?.title || product.title}
+            loading="lazy"
+            decoding="async"
             className="etsy-image w-full h-full object-contain p-3"
           />
         ) : (

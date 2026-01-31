@@ -1,5 +1,5 @@
 // FILE: apps/web/src/hooks/useTranslation.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { translations } from '@/i18n/translations';
 
 const useTranslation = () => {
@@ -8,7 +8,6 @@ const useTranslation = () => {
   );
 
   useEffect(() => {
-    // Listen for language change events
     const handleLanguageChange = (event) => {
       setLanguage(event.detail.language);
     };
@@ -17,10 +16,10 @@ const useTranslation = () => {
     return () => window.removeEventListener('languageChange', handleLanguageChange);
   }, []);
 
-  const t = (key) => {
+  const t = useCallback((key) => {
     const lang = translations[language] || translations.en;
     return lang[key] || key;
-  };
+  }, [language]);
 
   return { t, language, setLanguage };
 };

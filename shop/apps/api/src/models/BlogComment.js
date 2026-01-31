@@ -33,6 +33,10 @@ const blogCommentSchema = new mongoose.Schema(
       enum: ['pending', 'approved', 'rejected', 'spam'],
       default: 'approved', // Auto-approve by default, can change to 'pending'
     },
+    edited: {
+      type: Boolean,
+      default: false,
+    },
     // Engagement
     likes: {
       type: Number,
