@@ -19,7 +19,8 @@ const AdminOrderDetail = () => {
   const [newStatus, setNewStatus] = useState('');
   const [awbNumber, setAwbNumber] = useState('');
   const [carrier, setCarrier] = useState('Shiprocket');
-  const [showCarrierForm, setShowCarrierForm] = useState(false);
+  const [showCarrierForm, setShowCarrierForm] = useState(true);
+  const [assignMode, setAssignMode] = useState('manual');
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['admin-order', id],
@@ -45,19 +46,16 @@ const AdminOrderDetail = () => {
   const { data: recommendedCarrier } = useQuery({
     queryKey: ['recommended-carrier', id],
     queryFn: async () => {
-      const response = await api.get(`/shipping/orders/${id}/recommended?priority=cost`);
+      const response = await api.get(`/shipping/orders/${order?._id || id}/recommended?priority=cost`);
       return response.data.data;
     },
     enabled: !order?.shipment?.awb && !!order,
   });
 
-  // Mutation for assigning carrier and AWB
+  // Manual carrier + AWB assignment
   const assignCarrierMutation = useMutation({
     mutationFn: async ({ awb, carrier }) => {
-      const response = await api.post(`/shipping/orders/${order.orderId}/carrier`, {
-        awb,
-        carrier,
-      });
+      const response = await api.post(`/shipping/orders/${id}/carrier`, { awb, carrier });
       return response.data;
     },
     onSuccess: () => {
@@ -65,11 +63,35 @@ const AdminOrderDetail = () => {
       queryClient.invalidateQueries({ queryKey: ['admin-order', id] });
       queryClient.invalidateQueries({ queryKey: ['tracking', order?.orderId] });
       setAwbNumber('');
-      setShowCarrierForm(false);
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to assign carrier');
     },
+  });
+
+  // Auto carrier assignment via API (Delhivery etc)
+  const autoCarrierMutation = useMutation({
+    mutationFn: async (carrierName) => {
+      const response = await api.post(`/shipping/orders/${id}/assign-carrier`, { carrier: carrierName });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Shipment created! AWB: ${data.data?.awb || 'assigned'}`);
+      queryClient.invalidateQueries({ queryKey: ['admin-order', id] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to create shipment');
+    },
+  });
+
+  // Fetch available carriers for auto-assign
+  const { data: availableCarriers } = useQuery({
+    queryKey: ['carriers'],
+    queryFn: async () => {
+      const response = await api.get('/shipping/carriers');
+      return response.data.data || [];
+    },
+    enabled: !!order && !order.shipment?.awb,
   });
 
   const updateStatusMutation = useMutation({
@@ -239,51 +261,44 @@ const AdminOrderDetail = () => {
       {/* Carrier Assignment Section */}
       {!order.shipment?.awb && order.status !== 'cancelled' && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-6">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">🚚 Assign Delivery Carrier</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">Assign Delivery Carrier</h2>
 
-          {/* Recommended Carrier */}
-          {recommendedCarrier?.recommended && !showCarrierForm && (
-            <div className="mb-6 p-4 bg-white rounded-lg border-2 border-green-300">
-              <h3 className="font-semibold text-gray-900 mb-3">Recommended Carrier (Best Cost)</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-lg font-bold text-gray-900">{recommendedCarrier.recommended?.carrier || 'N/A'}</p>
-                  <p className="text-sm text-gray-600">
-                    Rate: {formatCurrency(recommendedCarrier.recommended?.rate || 0)} |
-                    Delivery: {recommendedCarrier.recommended?.estimatedDays || 'N/A'} days
-                  </p>
-                </div>
-                <Button onClick={handleUseRecommended} variant="primary">
-                  Use This Carrier
-                </Button>
-              </div>
-            </div>
-          )}
+          {/* Toggle: Manual vs Auto */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setAssignMode('manual')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                assignMode === 'manual'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+              }`}
+            >
+              Manual Entry
+            </button>
+            <button
+              onClick={() => setAssignMode('auto')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                assignMode === 'auto'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+              }`}
+            >
+              Auto (API)
+            </button>
+          </div>
 
-          {/* Manual Carrier Selection */}
-          {!showCarrierForm && (
-            <div className="text-center">
-              <p className="text-gray-700 mb-4">or</p>
-              <Button onClick={() => setShowCarrierForm(true)} variant="outline">
-                Assign Carrier Manually
-              </Button>
-            </div>
-          )}
-
-          {/* Carrier Assignment Form */}
-          {showCarrierForm && (
+          {assignMode === 'manual' ? (
             <div className="space-y-4">
+              <p className="text-sm text-gray-600">Enter the courier name and tracking number manually.</p>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Delivery Carrier *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Carrier *</label>
                 <select
                   value={carrier}
                   onChange={(e) => setCarrier(e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
-                  <option value="Shiprocket">Shiprocket</option>
                   <option value="Delhivery">Delhivery</option>
+                  <option value="Shiprocket">Shiprocket</option>
                   <option value="BlueDart">BlueDart</option>
                   <option value="DTDC">DTDC</option>
                   <option value="FedEx">FedEx</option>
@@ -293,9 +308,7 @@ const AdminOrderDetail = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  AWB / Tracking Number *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">AWB / Tracking Number *</label>
                 <input
                   type="text"
                   value={awbNumber}
@@ -304,22 +317,73 @@ const AdminOrderDetail = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              <div className="flex gap-3">
-                <Button
-                  onClick={() => setShowCarrierForm(false)}
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAssignCarrier}
-                  variant="primary"
-                  fullWidth
-                  loading={assignCarrierMutation.isPending}
-                >
-                  Assign Carrier
-                </Button>
-              </div>
+              <Button
+                onClick={handleAssignCarrier}
+                variant="primary"
+                fullWidth
+                loading={assignCarrierMutation.isPending}
+                disabled={!awbNumber.trim()}
+              >
+                Assign Carrier
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-gray-600">Auto-create shipment via carrier API. AWB will be generated automatically.</p>
+
+              {/* Recommended carrier */}
+              {recommendedCarrier?.recommended && (
+                <div className="p-4 bg-white rounded-lg border-2 border-green-300">
+                  <h3 className="font-semibold text-gray-900 mb-2">Recommended (Best Cost)</h3>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-gray-900">{recommendedCarrier.recommended?.carrier || 'N/A'}</p>
+                      <p className="text-sm text-gray-600">
+                        Rate: {formatCurrency(recommendedCarrier.recommended?.rate || 0)} |
+                        Delivery: {recommendedCarrier.recommended?.estimatedDays || 'N/A'} days
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => autoCarrierMutation.mutate(recommendedCarrier.recommended.carrier)}
+                      variant="primary"
+                      loading={autoCarrierMutation.isPending}
+                    >
+                      Use This
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {availableCarriers && availableCarriers.length > 0 ? (
+                <div className="space-y-2">
+                  {availableCarriers.map((c) => (
+                    <button
+                      key={c.name || c}
+                      onClick={() => autoCarrierMutation.mutate(c.name || c)}
+                      disabled={autoCarrierMutation.isPending}
+                      className="w-full flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                    >
+                      <div>
+                        <span className="font-semibold text-sm capitalize">{c.name || c}</span>
+                        {c.description && <p className="text-xs text-gray-500">{c.description}</p>}
+                      </div>
+                      <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 bg-white rounded-lg text-center">
+                  <p className="text-sm text-gray-600">No carrier APIs configured.</p>
+                  <p className="text-xs text-gray-500 mt-1">Configure Delhivery/Shiprocket API keys in environment variables, or use manual entry.</p>
+                </div>
+              )}
+              {autoCarrierMutation.isPending && (
+                <div className="flex items-center gap-2 text-sm text-blue-600">
+                  <Spinner size="sm" /> Creating shipment...
+                </div>
+              )}
             </div>
           )}
         </div>
