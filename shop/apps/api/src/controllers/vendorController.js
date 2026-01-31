@@ -921,23 +921,16 @@ async function updateOrderStatus(req, res, next) {
       });
     }
 
-    // IMPORTANT: Prevent status updates before carrier assignment (vendor only)
-    // Admin can update status anytime
-    if (req.user.role === 'vendor') {
-      // Check if trying to update to packed/shipped/delivered
-      const statusesRequiringCarrier = ['packed', 'shipped', 'delivered'];
-
-      if (statusesRequiringCarrier.includes(status)) {
-        // Check if carrier has been assigned
-        if (!order.shipment || !order.shipment.awb || !order.shipment.carrier) {
-          return res.status(400).json({
-            success: false,
-            error: {
-              code: 'CARRIER_NOT_ASSIGNED',
-              message: 'Cannot update order status. Admin must assign delivery carrier first.',
-            },
-          });
-        }
+    // Only "shipped" requires carrier assignment
+    if (status === 'shipped') {
+      if (!order.shipment || !order.shipment.awb || !order.shipment.carrier) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'CARRIER_NOT_ASSIGNED',
+            message: 'Assign a courier before marking as shipped.',
+          },
+        });
       }
     }
 

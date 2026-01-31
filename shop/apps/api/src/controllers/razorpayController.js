@@ -341,12 +341,12 @@ exports.verifyPayment = async (req, res, next) => {
 
     // Update order status if payment is successful
     if (payment.status === 'captured') {
-      // Change from pending_payment to placed (confirmed)
-      if (order.status === 'pending' || order.status === 'pending_payment') {
-        order.status = 'placed';
+      // Change from pending_payment to paid
+      if (order.status === 'pending' || order.status === 'pending_payment' || order.status === 'placed') {
+        order.status = 'paid';
         // Add event to order history
         order.events.push({
-          status: 'placed',
+          status: 'paid',
           description: 'Payment verified successfully',
           timestamp: new Date(),
         });
@@ -675,12 +675,12 @@ async function handlePaymentCaptured(payload) {
     order.payment.status = 'paid';
     order.payment.paidAt = new Date();
 
-    // Update status from pending_payment to placed
-    if (order.status === 'pending' || order.status === 'pending_payment') {
-      order.status = 'placed';
+    // Update status from pending_payment to paid
+    if (order.status === 'pending' || order.status === 'pending_payment' || order.status === 'placed') {
+      order.status = 'paid';
       order.events.push({
-        status: 'placed',
-        description: 'Payment captured successfully via webhook',
+        status: 'paid',
+        description: 'Payment captured successfully',
         timestamp: new Date(),
       });
     }

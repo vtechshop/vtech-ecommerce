@@ -130,10 +130,10 @@ const AdminOrderDetail = () => {
     );
   }
 
+  const statusFlow = ['pending', 'pending_payment', 'placed', 'paid', 'packed', 'shipped', 'out_for_delivery', 'delivered'];
+  const currentIndex = statusFlow.indexOf(order?.status);
+
   const statusOptions = [
-    { value: 'pending', label: 'Pending' },
-    { value: 'pending_payment', label: 'Pending Payment' },
-    { value: 'placed', label: 'Placed' },
     { value: 'paid', label: 'Paid' },
     { value: 'packed', label: 'Packed' },
     { value: 'shipped', label: 'Shipped' },
@@ -236,8 +236,8 @@ const AdminOrderDetail = () => {
         </div>
       </div>
 
-      {/* Carrier Assignment Section - ADMIN ONLY */}
-      {!order.shipment?.awb && order.status !== 'cancelled' && order.payment?.status === 'paid' && (
+      {/* Carrier Assignment Section */}
+      {!order.shipment?.awb && order.status !== 'cancelled' && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-6">
           <h2 className="text-2xl font-bold mb-4 text-gray-900">🚚 Assign Delivery Carrier</h2>
 
@@ -358,7 +358,17 @@ const AdminOrderDetail = () => {
             <CustomSelect
               value={newStatus}
               onChange={(value) => setNewStatus(value)}
-              options={statusOptions}
+              options={statusOptions.filter(opt => {
+                if (opt.value === order.status) return false;
+                // Allow cancel/return anytime
+                if (['cancelled', 'returned'].includes(opt.value)) return true;
+                // Only show forward statuses
+                const optIndex = statusFlow.indexOf(opt.value);
+                if (optIndex <= currentIndex) return false;
+                // Block shipped if no carrier
+                if (!order.shipment?.awb && opt.value === 'shipped') return false;
+                return true;
+              })}
               placeholder="Select new status"
             />
           </div>

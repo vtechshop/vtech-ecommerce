@@ -138,12 +138,15 @@ const VendorOrderDetail = () => {
     );
   }
 
+  // Sequential order flow - vendor can only move forward
+  const statusFlow = ['placed', 'paid', 'packed', 'shipped', 'delivered'];
+  const currentIndex = statusFlow.indexOf(order?.status);
+
   const statusOptions = [
-    { value: 'placed', label: 'Placed' },
-    { value: 'paid', label: 'Paid' },
     { value: 'packed', label: 'Packed' },
     { value: 'shipped', label: 'Shipped' },
     { value: 'delivered', label: 'Delivered' },
+    { value: 'cancelled', label: 'Cancelled' },
   ];
 
   return (
@@ -436,6 +439,10 @@ const VendorOrderDetail = () => {
                   onChange={setNewStatus}
                   options={statusOptions.filter(opt => {
                     if (opt.value === order.status) return false;
+                    // Only show forward statuses
+                    if (opt.value === 'cancelled') return true;
+                    const optIndex = statusFlow.indexOf(opt.value);
+                    if (optIndex <= currentIndex) return false;
                     // Block "shipped" if no carrier assigned
                     if (!order.shipment?.awb && opt.value === 'shipped') return false;
                     return true;
