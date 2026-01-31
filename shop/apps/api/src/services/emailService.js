@@ -163,6 +163,55 @@ class EmailService {
     return this.send(emailData);
   }
 
+  async sendNewsletterWelcomeEmail(email, unsubscribeToken) {
+    const unsubscribeUrl = `${env.CLIENT_URL}/newsletter/unsubscribe?token=${unsubscribeToken}`;
+
+    const emailData = {
+      from: env.MAIL_FROM,
+      to: email,
+      toName: email,
+      subject: 'Welcome to V-Tech Newsletter!',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); color: white; padding: 30px; text-align: center; border-radius: 5px 5px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }
+            .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Welcome to V-Tech!</h1>
+            </div>
+            <div class="content">
+              <p>Thank you for subscribing to our newsletter!</p>
+              <p>You'll now receive updates about:</p>
+              <ul>
+                <li>New product launches</li>
+                <li>Exclusive deals and offers</li>
+                <li>Kitchen tips and recipes</li>
+              </ul>
+              <p>Happy shopping!</p>
+              <p>— The V-Tech Team</p>
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} V-Tech Kitchen. All rights reserved.</p>
+              <p><a href="${unsubscribeUrl}" style="color: #666;">Unsubscribe</a></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    };
+
+    return this.send(emailData);
+  }
+
   async send(emailData) {
     if (!this.mailerSend) {
       // In development without MailerSend API key, just log the email

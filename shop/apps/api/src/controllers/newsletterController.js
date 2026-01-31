@@ -1,6 +1,7 @@
 // FILE: apps/api/src/controllers/newsletterController.js
 const Newsletter = require('../models/Newsletter');
 const NewsletterCampaign = require('../models/NewsletterCampaign');
+const emailService = require('../services/emailService');
 const logger = require('../config/logger');
 const crypto = require('crypto');
 
@@ -58,6 +59,11 @@ exports.subscribe = async (req, res, next) => {
     });
 
     logger.info(`New newsletter subscription: ${email}`);
+
+    // Send welcome email (non-blocking)
+    emailService.sendNewsletterWelcomeEmail(email, subscriber.unsubscribeToken).catch(err => {
+      logger.error('Failed to send newsletter welcome email:', err);
+    });
 
     res.status(201).json({
       success: true,
