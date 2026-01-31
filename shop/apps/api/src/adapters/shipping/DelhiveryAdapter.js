@@ -61,7 +61,7 @@ class DelhiveryAdapter extends ShippingAdapter {
       };
 
       const response = await axios.post(
-        `${this.surfaceApiUrl}/cmu/create.json`,
+        `${this.apiUrl}/cmu/create.json`,
         `format=json&data=${JSON.stringify(payload)}`,
         {
           headers: {
