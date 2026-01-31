@@ -65,7 +65,7 @@ class DelhiveryAdapter extends ShippingAdapter {
         `format=json&data=${JSON.stringify(payload)}`,
         {
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
             'Authorization': `Token ${this.apiKey}`
           }
         }
