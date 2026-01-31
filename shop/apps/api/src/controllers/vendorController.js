@@ -125,7 +125,6 @@ async function getDashboardStats(req, res, next) {
         totalEarnings: totalCommissions[0]?.total || 0,
         paidEarnings: totalCommissions[0]?.paid || 0,
         totalSales: salesAgg[0]?.total || 0,
-        _debug: { vendorId: vendor._id, storeName: vendor.storeName, userId: req.user._id },
       },
     });
   } catch (error) {

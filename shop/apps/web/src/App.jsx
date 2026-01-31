@@ -201,6 +201,7 @@ function App() {
       queryClient.removeQueries({ queryKey: ['tickets'] });
       queryClient.removeQueries({ queryKey: ['commissions'] });
       queryClient.removeQueries({ queryKey: ['settlements'] });
+      queryClient.removeQueries({ queryKey: ['vendor-stats'] });
       // Don't clear sessionStorage - preserve UI state like pagination/filters
     }
 
@@ -210,6 +211,7 @@ function App() {
       queryClient.removeQueries({ queryKey: ['wishlist'] });
       queryClient.removeQueries({ queryKey: ['orders'] });
       queryClient.removeQueries({ queryKey: ['vendor'] });
+      queryClient.removeQueries({ queryKey: ['vendor-stats'] });
       queryClient.removeQueries({ queryKey: ['affiliate'] });
       queryClient.removeQueries({ queryKey: ['admin'] });
       queryClient.removeQueries({ queryKey: ['tickets'] });

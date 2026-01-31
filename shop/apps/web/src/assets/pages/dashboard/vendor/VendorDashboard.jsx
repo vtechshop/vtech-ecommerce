@@ -1,14 +1,16 @@
 // FILE: apps/web/src/pages/dashboard/vendor/VendorDashboard.jsx
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import api from '@/utils/api';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const VendorDashboard = () => {
+  const { user } = useSelector((state) => state.auth);
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['vendor-stats'],
+    queryKey: ['vendor-stats', user?._id],
     queryFn: async () => {
       const response = await api.get('/vendors/dashboard/stats');
       return response.data.data;
@@ -38,15 +40,6 @@ const VendorDashboard = () => {
   return (
     <div>
       <h1 className="text-3xl md:text-4xl font-bold mb-8 fade-in-down">Vendor Dashboard</h1>
-
-      {/* Debug: Remove after verification */}
-      {stats?._debug && (
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-xs font-mono">
-          <p>VendorID: {stats._debug.vendorId}</p>
-          <p>Store: {stats._debug.storeName}</p>
-          <p>UserID: {stats._debug.userId}</p>
-        </div>
-      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
