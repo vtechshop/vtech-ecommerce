@@ -78,7 +78,7 @@ const VendorOrderDetail = () => {
     queryKey: ['carriers'],
     queryFn: async () => {
       const response = await api.get('/shipping/carriers');
-      return response.data.data || [];
+      return response.data.data?.carriers || response.data.data || [];
     },
     enabled: !!order && !order.shipment?.awb,
   });
@@ -292,14 +292,22 @@ const VendorOrderDetail = () => {
 
               {assignMode === 'manual' ? (
                 <div className="space-y-3">
-                  <p className="text-sm text-gray-600">Enter the courier name and tracking number manually.</p>
-                  <input
-                    type="text"
+                  <p className="text-sm text-gray-600">Select the courier and enter the tracking number.</p>
+                  <select
                     value={carrierName}
                     onChange={(e) => setCarrierName(e.target.value)}
-                    placeholder="Courier name (e.g., Delhivery, BlueDart, DTDC, India Post)"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
+                  >
+                    <option value="">Select Courier</option>
+                    <option value="Delhivery">Delhivery</option>
+                    <option value="Shiprocket">Shiprocket</option>
+                    <option value="BlueDart">BlueDart</option>
+                    <option value="DTDC">DTDC</option>
+                    <option value="FedEx">FedEx</option>
+                    <option value="DHL">DHL</option>
+                    <option value="India Post">India Post</option>
+                    <option value="Other">Other</option>
+                  </select>
                   <input
                     type="text"
                     value={awbNumber}

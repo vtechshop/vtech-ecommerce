@@ -89,7 +89,7 @@ const AdminOrderDetail = () => {
     queryKey: ['carriers'],
     queryFn: async () => {
       const response = await api.get('/shipping/carriers');
-      return response.data.data || [];
+      return response.data.data?.carriers || response.data.data || [];
     },
     enabled: !!order && !order.shipment?.awb,
   });
