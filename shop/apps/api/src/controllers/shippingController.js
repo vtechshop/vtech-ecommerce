@@ -220,7 +220,13 @@ exports.assignCarrierToOrder = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('Error assigning carrier to order:', error);
-    next(error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'SHIPMENT_CREATION_FAILED',
+        message: error.message || 'Failed to create shipment with carrier',
+      },
+    });
   }
 };
 
