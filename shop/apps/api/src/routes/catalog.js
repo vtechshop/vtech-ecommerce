@@ -59,6 +59,57 @@ router.get('/products/:slug', async (req, res, next) => {
   }
 });
 
+// GET /catalog/autocomplete?q=mix - Amazon-style search suggestions
+router.get('/autocomplete', async (req, res, next) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.json({ success: true, data: { suggestions: [], products: [], categories: [] } });
+    }
+
+    const searchTerm = q.trim();
+    const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(escapedTerm, 'i');
+
+    // Run all queries in parallel
+    const [products, categories, textSuggestions] = await Promise.all([
+      // Top 5 matching products with images and prices
+      Product.find({ published: true, title: regex })
+        .sort({ sold: -1 })
+        .limit(5)
+        .select('title slug price images')
+        .lean(),
+
+      // Matching categories
+      Category.find({ isActive: true, name: regex })
+        .limit(4)
+        .select('name slug image')
+        .lean(),
+
+      // Text-based keyword suggestions from product titles
+      Product.aggregate([
+        { $match: { published: true, title: regex } },
+        { $group: { _id: null, titles: { $addToSet: '$title' } } },
+        { $project: { _id: 0, titles: { $slice: ['$titles', 8] } } },
+      ]),
+    ]);
+
+    // Build keyword suggestions from product titles
+    const titles = textSuggestions[0]?.titles || [];
+    const suggestions = titles
+      .map(t => t.toLowerCase())
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .slice(0, 5);
+
+    res.json({
+      success: true,
+      data: { suggestions, products, categories },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /catalog/categories?limit=6
 router.get('/categories', async (req, res, next) => {
   try {
