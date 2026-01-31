@@ -171,6 +171,7 @@ app.use((req, res, next) => {
     '/api/ads',        // Ad tracking (impressions/clicks) - public analytics
     '/api/upload',     // File uploads - protected by JWT authentication
     '/api/user',       // User profile/addresses - protected by JWT authentication
+    '/api/shipping',   // Shipping/carrier operations - protected by JWT + role check
     '/health',         // Health check
   ];
 
