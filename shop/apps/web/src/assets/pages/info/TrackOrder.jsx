@@ -25,15 +25,13 @@ const TrackOrder = () => {
 
     try {
       // Fetch tracking information
-      const response = await api.get('/shipping/tracking', {
-        params: {
-          orderId: orderNumber,
-          email: email
-        }
+      const response = await api.post('/orders/track', {
+        orderId: orderNumber,
+        email: email
       });
 
       if (response.data.success) {
-        setTracking(response.data);
+        setTracking(response.data.data);
       }
     } catch (err) {
       if (err.response?.status === 404) {
@@ -112,17 +110,29 @@ const TrackOrder = () => {
           <div className="bg-white rounded-lg shadow-md p-8">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Order #{tracking.order?.orderId}
+                Order #{tracking.orderId}
               </h2>
-              {tracking.message && (
-                <p className="text-gray-600 text-sm">{tracking.message}</p>
+              <p className="text-gray-600 text-sm">
+                Status: <span className="font-medium capitalize">{tracking.status}</span>
+              </p>
+              {tracking.shipment?.awb && (
+                <p className="text-gray-600 text-sm mt-1">
+                  AWB: <span className="font-medium">{tracking.shipment.awb}</span>
+                  {tracking.shipment.carrier && (
+                    <span> ({tracking.shipment.carrier})</span>
+                  )}
+                </p>
               )}
             </div>
 
             {/* Tracking Timeline */}
             <TrackingTimeline
-              tracking={tracking.tracking}
-              order={tracking.order}
+              tracking={null}
+              order={{
+                status: tracking.status,
+                shipment: tracking.shipment,
+                events: tracking.events,
+              }}
             />
 
             {/* Help Section */}

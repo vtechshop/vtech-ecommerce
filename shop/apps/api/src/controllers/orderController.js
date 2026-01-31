@@ -747,9 +747,11 @@ exports.trackOrder = async (req, res, next) => {
       createdAt: order.createdAt,
       events: order.events,
       shipment: order.shipment ? {
-        trackingNumber: order.shipment.trackingNumber,
+        awb: order.shipment.awb,
         carrier: order.shipment.carrier,
+        trackingUrl: order.shipment.trackingUrl,
         estimatedDelivery: order.shipment.estimatedDelivery,
+        events: order.shipment.events,
       } : null,
       totals: {
         subtotal: order.totals.subtotal,
