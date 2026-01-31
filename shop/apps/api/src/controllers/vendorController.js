@@ -112,6 +112,9 @@ async function getDashboardStats(req, res, next) {
         ]),
       ]);
 
+    // Debug: log vendor identity for data isolation verification
+    logger.info(`Dashboard stats for vendor: ${vendor._id} (${vendor.storeName}), userId: ${req.user._id}, products: ${totalProducts}, orders: ${totalOrders}`);
+
     res.json({
       success: true,
       data: {
@@ -122,6 +125,7 @@ async function getDashboardStats(req, res, next) {
         totalEarnings: totalCommissions[0]?.total || 0,
         paidEarnings: totalCommissions[0]?.paid || 0,
         totalSales: salesAgg[0]?.total || 0,
+        _debug: { vendorId: vendor._id, storeName: vendor.storeName, userId: req.user._id },
       },
     });
   } catch (error) {

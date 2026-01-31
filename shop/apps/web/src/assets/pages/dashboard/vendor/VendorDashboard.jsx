@@ -39,6 +39,15 @@ const VendorDashboard = () => {
     <div>
       <h1 className="text-3xl md:text-4xl font-bold mb-8 fade-in-down">Vendor Dashboard</h1>
 
+      {/* Debug: Remove after verification */}
+      {stats?._debug && (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-xs font-mono">
+          <p>VendorID: {stats._debug.vendorId}</p>
+          <p>Store: {stats._debug.storeName}</p>
+          <p>UserID: {stats._debug.userId}</p>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-1 hover-lift">
