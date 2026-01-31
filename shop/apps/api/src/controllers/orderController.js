@@ -772,6 +772,59 @@ exports.trackOrder = async (req, res, next) => {
   }
 };
 
+// Track order by AWB (public)
+exports.trackOrderByAwb = async (req, res, next) => {
+  try {
+    const { awb } = req.body;
+
+    if (!awb || !awb.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'VALIDATION_ERROR', message: 'AWB number is required' },
+      });
+    }
+
+    const order = await Order.findOne({ 'shipment.awb': awb.trim() }).lean();
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'No order found with this AWB number' },
+      });
+    }
+
+    // SECURITY: Only return necessary tracking information
+    const trackingInfo = {
+      orderId: order.orderId,
+      status: order.status,
+      createdAt: order.createdAt,
+      events: order.events,
+      shipment: order.shipment ? {
+        awb: order.shipment.awb,
+        carrier: order.shipment.carrier,
+        trackingUrl: order.shipment.trackingUrl,
+        estimatedDelivery: order.shipment.estimatedDelivery,
+        events: order.shipment.events,
+      } : null,
+      totals: {
+        subtotal: order.totals.subtotal,
+        shipping: order.totals.shipping,
+        tax: order.totals.tax,
+        discount: order.totals.discount,
+        total: order.totals.total,
+      },
+      itemCount: order.items?.length || 0,
+    };
+
+    res.json({
+      success: true,
+      data: trackingInfo,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Cancel order
 exports.cancelOrder = async (req, res, next) => {
   try {

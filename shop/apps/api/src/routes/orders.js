@@ -7,6 +7,7 @@ const { checkoutLimiter, orderTrackingLimiter, orderCreationLimiter } = require(
 
 // Public - Stricter rate limiting to prevent email enumeration (10 attempts per 15 min)
 router.post('/track', orderTrackingLimiter, orderController.trackOrder);
+router.post('/track-awb', orderTrackingLimiter, orderController.trackOrderByAwb);
 
 // SECURITY: Create order - supports both authenticated and guest checkout with strict rate limiting
 router.post('/', orderCreationLimiter, optionalAuth, orderController.createOrder);

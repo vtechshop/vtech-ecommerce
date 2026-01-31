@@ -4,8 +4,10 @@ import { Search, Package, Truck, CheckCircle, MapPin, Clock, Box, CircleDot } fr
 import api from '../../utils/api';
 
 const TrackOrder = () => {
+  const [trackMode, setTrackMode] = useState('order'); // 'order' or 'awb'
   const [orderNumber, setOrderNumber] = useState('');
   const [email, setEmail] = useState('');
+  const [awbNumber, setAwbNumber] = useState('');
   const [tracking, setTracking] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,26 +18,40 @@ const TrackOrder = () => {
     setTracking(null);
     setLoading(true);
 
-    if (!orderNumber || !email) {
-      setError('Please enter both order number and email address');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const response = await api.post('/orders/track', {
-        orderId: orderNumber,
-        email: email
-      });
+      let response;
+
+      if (trackMode === 'order') {
+        if (!orderNumber || !email) {
+          setError('Please enter both order number and email address');
+          setLoading(false);
+          return;
+        }
+        response = await api.post('/orders/track', {
+          orderId: orderNumber,
+          email: email
+        });
+      } else {
+        if (!awbNumber) {
+          setError('Please enter AWB / tracking number');
+          setLoading(false);
+          return;
+        }
+        response = await api.post('/orders/track-awb', {
+          awb: awbNumber
+        });
+      }
 
       if (response.data.success) {
         setTracking(response.data.data);
       }
     } catch (err) {
       if (err.response?.status === 404) {
-        setError('Order not found. Please check your order number and email address.');
+        setError(trackMode === 'order'
+          ? 'Order not found. Please check your order number and email address.'
+          : 'No order found with this AWB number. Please check and try again.');
       } else if (err.response?.status === 403) {
-        setError('Access denied. Please verify your email address matches the order.');
+        setError('Access denied. Please verify your details.');
       } else {
         setError('Failed to track order. Please try again later.');
       }
@@ -117,7 +133,6 @@ const TrackOrder = () => {
 
     return (
       <div className="py-4">
-        {/* Step labels and progress bar */}
         <div className="relative">
           {/* Background bar */}
           <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200 mx-8" />
@@ -135,7 +150,6 @@ const TrackOrder = () => {
 
               return (
                 <div key={step.key} className="flex flex-col items-center" style={{ width: `${100 / progressSteps.length}%` }}>
-                  {/* Circle */}
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center z-10 border-2 transition-all ${
                       isCompleted
@@ -149,7 +163,6 @@ const TrackOrder = () => {
                       <CircleDot className="w-4 h-4 text-gray-400" />
                     )}
                   </div>
-                  {/* Label */}
                   <span className={`mt-2 text-xs font-medium text-center ${
                     isCompleted ? 'text-green-700' : 'text-gray-500'
                   } ${isCurrent ? 'font-bold' : ''}`}>
@@ -178,7 +191,6 @@ const TrackOrder = () => {
 
     return (
       <div className="relative ml-4">
-        {/* Vertical line */}
         <div className="absolute left-3 top-2 bottom-2 w-0.5 bg-gray-200" />
 
         <div className="space-y-0">
@@ -186,14 +198,12 @@ const TrackOrder = () => {
             const isLatest = index === 0;
             return (
               <div key={index} className="relative flex items-start pb-6 last:pb-0">
-                {/* Dot */}
                 <div className={`relative z-10 flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
                   isLatest ? 'bg-green-500' : 'bg-gray-300'
                 }`}>
-                  <div className={`w-2 h-2 rounded-full ${isLatest ? 'bg-white' : 'bg-white'}`} />
+                  <div className="w-2 h-2 rounded-full bg-white" />
                 </div>
 
-                {/* Content */}
                 <div className="ml-4 flex-1 min-w-0">
                   <p className={`text-sm font-medium ${isLatest ? 'text-gray-900' : 'text-gray-600'}`}>
                     {event.description || event.code}
@@ -220,70 +230,119 @@ const TrackOrder = () => {
     );
   };
 
+  const switchMode = (mode) => {
+    setTrackMode(mode);
+    setError('');
+    setTracking(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-3xl">
 
         {/* Search Form */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-1">Track Your Order</h1>
-          <p className="text-sm text-gray-600 mb-4">
-            Enter your order number and email to see the latest status
-          </p>
-
-          <form onSubmit={handleTrack} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="orderNumber" className="block text-xs font-medium text-gray-700 mb-1">
-                  Order Number
-                </label>
-                <input
-                  type="text"
-                  id="orderNumber"
-                  value={orderNumber}
-                  onChange={(e) => setOrderNumber(e.target.value)}
-                  placeholder="e.g., ORD-12345"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@example.com"
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-                {error}
-              </div>
-            )}
-
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200">
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full sm:w-auto bg-amber-400 hover:bg-amber-500 text-gray-900 py-2.5 px-8 rounded-md font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => switchMode('order')}
+              className={`flex-1 py-3 px-4 text-sm font-medium text-center transition-colors ${
+                trackMode === 'order'
+                  ? 'text-amber-700 border-b-2 border-amber-500 bg-amber-50'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
             >
-              <Search className="w-4 h-4" />
-              {loading ? 'Tracking...' : 'Track Order'}
+              Track by Order ID
             </button>
-          </form>
+            <button
+              onClick={() => switchMode('awb')}
+              className={`flex-1 py-3 px-4 text-sm font-medium text-center transition-colors ${
+                trackMode === 'awb'
+                  ? 'text-amber-700 border-b-2 border-amber-500 bg-amber-50'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              Track by AWB Number
+            </button>
+          </div>
+
+          <div className="p-6">
+            <h1 className="text-xl font-bold text-gray-900 mb-1">Track Your Order</h1>
+            <p className="text-sm text-gray-600 mb-4">
+              {trackMode === 'order'
+                ? 'Enter your order number and email to see the latest status'
+                : 'Enter your AWB / tracking number to see shipment status'}
+            </p>
+
+            <form onSubmit={handleTrack} className="space-y-4">
+              {trackMode === 'order' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="orderNumber" className="block text-xs font-medium text-gray-700 mb-1">
+                      Order Number
+                    </label>
+                    <input
+                      type="text"
+                      id="orderNumber"
+                      value={orderNumber}
+                      onChange={(e) => setOrderNumber(e.target.value)}
+                      placeholder="e.g., ORD-12345"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your.email@example.com"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="awb" className="block text-xs font-medium text-gray-700 mb-1">
+                    AWB / Tracking Number
+                  </label>
+                  <input
+                    type="text"
+                    id="awb"
+                    value={awbNumber}
+                    onChange={(e) => setAwbNumber(e.target.value)}
+                    placeholder="e.g., 19598910000066"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm font-mono focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                  />
+                </div>
+              )}
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto bg-amber-400 hover:bg-amber-500 text-gray-900 py-2.5 px-8 rounded-md font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Search className="w-4 h-4" />
+                {loading ? 'Tracking...' : 'Track Order'}
+              </button>
+            </form>
+          </div>
         </div>
 
-        {/* Tracking Results - Amazon Style */}
+        {/* Tracking Results */}
         {tracking && (
           <div className="space-y-4">
             {/* Main Status Card */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              {/* Green header bar */}
               <div className={`px-6 py-3 ${
                 tracking.status === 'delivered' ? 'bg-green-600' :
                 tracking.status === 'cancelled' || tracking.status === 'returned' ? 'bg-red-600' :
@@ -331,7 +390,6 @@ const TrackOrder = () => {
                   )}
                 </div>
 
-                {/* Tracking URL link */}
                 {tracking.shipment?.trackingUrl && (
                   <a
                     href={tracking.shipment.trackingUrl}
@@ -402,12 +460,13 @@ const TrackOrder = () => {
           </div>
         )}
 
-        {/* Help Text - before search */}
+        {/* Help Text */}
         {!tracking && !error && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 mt-2">
             <h3 className="font-semibold text-gray-900 mb-2">Can't find your order number?</h3>
             <ul className="text-sm text-gray-700 space-y-1.5">
               <li>- Check your email confirmation for the order number</li>
+              <li>- You can also track using the AWB number from your shipping notification</li>
               <li>- Log in to your account to view all your orders</li>
               <li>- Contact customer support at vtechshop.customercare@gmail.com</li>
             </ul>
