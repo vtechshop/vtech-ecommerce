@@ -13,7 +13,6 @@ import api from './api';
 const trackAffiliateClick = async (affiliateCode) => {
   try {
     await api.post('/affiliates/track/click', { affId: affiliateCode });
-    console.log('📊 Affiliate click tracked:', affiliateCode);
   } catch (error) {
     // Don't block the user experience if tracking fails
     console.warn('Failed to track affiliate click:', error.message);

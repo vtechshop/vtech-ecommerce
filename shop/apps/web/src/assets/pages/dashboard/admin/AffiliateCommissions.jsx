@@ -6,8 +6,8 @@ import { formatCurrency } from '@/utils/format';
 import Button from '@/components/common/Button';
 import {
   DollarSign, User, ShoppingCart, Calendar,
-  Check, X, Clock, Filter, Download, Eye,
-  TrendingUp, Users, CheckCircle, AlertCircle
+  Check, Clock, Filter, Download,
+  Users, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
 import PendingBadge from '@/components/common/PendingBadge';
@@ -103,17 +103,17 @@ const AffiliateCommissions = () => {
     toast.success('CSV exported successfully!');
   };
 
-  // Pay all pending commissions
-  const handlePayAllPending = () => {
-    if (window.confirm('Are you sure you want to pay all pending commissions?')) {
-      const pendingIds = data?.commissions
-        ?.filter(c => c.status === 'pending')
+  // Pay all approved commissions
+  const handlePayAllApproved = () => {
+    if (window.confirm('Are you sure you want to pay all approved commissions?')) {
+      const approvedIds = data?.commissions
+        ?.filter(c => c.status === 'approved')
         ?.map(c => c._id) || [];
 
-      if (pendingIds.length > 0) {
-        bulkPayMutation.mutate(pendingIds);
+      if (approvedIds.length > 0) {
+        bulkPayMutation.mutate(approvedIds);
       } else {
-        toast.info('No pending commissions to pay');
+        toast.info('No approved commissions to pay');
       }
     }
   };
@@ -121,15 +121,17 @@ const AffiliateCommissions = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'approved': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'paid': return 'bg-green-100 text-green-800 border-green-200';
       case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-blue-100 text-gray-900 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending': return <Clock className="w-4 h-4" />;
+      case 'approved': return <CheckCircle className="w-4 h-4" />;
       case 'paid': return <CheckCircle className="w-4 h-4" />;
       case 'cancelled': return <AlertCircle className="w-4 h-4" />;
       default: return null;
@@ -167,11 +169,11 @@ const AffiliateCommissions = () => {
           <Button
             variant="primary"
             size="sm"
-            onClick={handlePayAllPending}
+            onClick={handlePayAllApproved}
             disabled={bulkPayMutation.isPending}
           >
             <DollarSign className="w-4 h-4 mr-2" />
-            Pay All Pending
+            Pay All Approved
           </Button>
         </div>
       </div>
@@ -349,7 +351,7 @@ const AffiliateCommissions = () => {
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      {(commission.status === 'pending' || commission.status === 'approved') && (
+                      {commission.status === 'approved' && (
                         <Button
                           variant="success"
                           size="sm"

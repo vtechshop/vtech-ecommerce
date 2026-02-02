@@ -1393,9 +1393,9 @@ exports.bulkPayCommissions = async (req, res, next) => {
     }
 
     const paidAt = new Date();
-    // Allow paying commissions that are either 'pending' OR 'approved'
+    // Only pay commissions that are approved (must be approved before paying)
     const result = await Commission.updateMany(
-      { _id: { $in: commissionIds }, status: { $in: ['pending', 'approved'] } },
+      { _id: { $in: commissionIds }, status: 'approved' },
       { status: 'paid', paidAt }
     );
 

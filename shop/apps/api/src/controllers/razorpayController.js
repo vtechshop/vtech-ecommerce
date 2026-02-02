@@ -15,6 +15,103 @@ const notificationHelper = require('../services/notificationHelper');
 const notificationService = require('../services/notificationService');
 
 /**
+ * Send order confirmation + vendor/admin notifications after payment
+ * Shared by verifyPayment and handlePaymentCaptured webhook
+ */
+async function sendPostPaymentNotifications(order) {
+  // Send order confirmation email (only if not already sent)
+  if (!order.confirmationEmailSent) {
+    try {
+      const User = require('../models/User');
+
+      let userInfo;
+      if (order.userId && !order.isGuest) {
+        const user = await User.findById(order.userId);
+        if (user) {
+          userInfo = { name: user.name, email: user.email };
+        }
+      } else if (order.isGuest && order.guestEmail) {
+        userInfo = { name: order.shipTo?.fullName || 'Guest', email: order.guestEmail };
+      }
+
+      if (userInfo) {
+        await notificationService.sendOrderConfirmation(userInfo, order);
+        order.confirmationEmailSent = true;
+        order.confirmationEmailSentAt = new Date();
+        await order.save();
+        logger.info(`Order confirmation email sent: ${userInfo.email}`);
+      }
+    } catch (emailError) {
+      logger.error('Failed to send order confirmation email:', emailError);
+    }
+  }
+
+  // Send vendor and admin notifications (only if not already sent)
+  if (!order.vendorNotificationSent) {
+    try {
+      const vendorItemsMap = {};
+      for (const item of order.items) {
+        if (item.vendorId) {
+          const vendorIdStr = item.vendorId.toString();
+          if (!vendorItemsMap[vendorIdStr]) vendorItemsMap[vendorIdStr] = [];
+          vendorItemsMap[vendorIdStr].push(item);
+        }
+      }
+
+      for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
+        try {
+          const vendor = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
+          if (vendor && vendor.userId?.email) {
+            await notificationService.sendVendorOrderNotification(vendor, order, vendorItems);
+            logger.info(`Vendor email notification sent to ${vendor.storeName} (${vendor.userId.email})`);
+
+            await notificationHelper.notifyVendorNewOrder({
+              vendorUserId: vendor.userId._id,
+              order: { _id: order._id, orderNumber: order.orderId },
+              items: vendorItems.map(item => ({ quantity: item.qty, price: item.priceSnapshot })),
+            });
+          }
+          await notificationService.sendAdminOrderNotification(order, vendorItems, vendor?.userId, vendor);
+        } catch (vendorError) {
+          logger.error(`Failed to send vendor notification to ${vendorIdStr}:`, vendorError);
+        }
+      }
+
+      // Single admin in-app notification
+      try {
+        const vendorNames = Object.keys(vendorItemsMap).length > 0
+          ? (await Promise.all(
+              Object.keys(vendorItemsMap).map(async (vid) => {
+                const v = await Vendor.findById(vid).select('storeName').lean();
+                return v?.storeName;
+              })
+            )).filter(Boolean).join(', ')
+          : 'Direct Sale';
+
+        await notificationHelper.notifyAdminNewOrder({
+          order: {
+            _id: order._id,
+            orderNumber: order.orderId,
+            shippingAddress: { name: order.shipTo?.fullName },
+            totalAmount: order.totals?.total,
+          },
+          vendorName: vendorNames,
+        });
+      } catch (adminNotifError) {
+        logger.error('Failed to create admin in-app notification:', adminNotifError);
+      }
+
+      order.vendorNotificationSent = true;
+      order.vendorNotificationSentAt = new Date();
+      await order.save();
+      logger.info(`Vendor/admin notifications sent for order ${order.orderId}`);
+    } catch (notifError) {
+      logger.error('Failed to send vendor/admin notifications:', notifError);
+    }
+  }
+}
+
+/**
  * Helper function to restore stock when payment fails
  * @param {Object} order - Order object
  */
@@ -365,124 +462,8 @@ exports.verifyPayment = async (req, res, next) => {
           logger.error(`Failed to create commissions/transfers for order ${order._id}:`, error);
         });
 
-      // CRITICAL: Send order confirmation email AFTER payment is verified (only if not already sent)
-      if (!order.confirmationEmailSent) {
-        try {
-          const notificationService = require('../services/notificationService');
-          const User = require('../models/User');
-
-          // Prepare user info for email
-          let userInfo;
-          if (order.userId && !order.isGuest) {
-            const user = await User.findById(order.userId);
-            if (user) {
-              userInfo = {
-                name: user.name,
-                email: user.email,
-              };
-            }
-          } else if (order.isGuest && order.guestEmail) {
-            userInfo = {
-              name: order.shipTo?.fullName || 'Guest',
-              email: order.guestEmail,
-            };
-          }
-
-          // Send order confirmation email
-          if (userInfo) {
-            await notificationService.sendOrderConfirmation(userInfo, order);
-            // Mark email as sent to prevent duplicates
-            order.confirmationEmailSent = true;
-            order.confirmationEmailSentAt = new Date();
-            await order.save();
-            logger.info(`Order confirmation email sent after payment verification: ${userInfo.email}`);
-          }
-        } catch (emailError) {
-          logger.error('Failed to send order confirmation email after payment:', emailError);
-          // Don't fail the payment verification if email fails
-        }
-      }
-
-      // Send vendor and admin notifications (only if not already sent)
-      if (!order.vendorNotificationSent) {
-        try {
-          // Get unique vendors from order items
-          const vendorItemsMap = {};
-          for (const item of order.items) {
-            if (item.vendorId) {
-              const vendorIdStr = item.vendorId.toString();
-              if (!vendorItemsMap[vendorIdStr]) {
-                vendorItemsMap[vendorIdStr] = [];
-              }
-              vendorItemsMap[vendorIdStr].push(item);
-            }
-          }
-
-          // Send notification to each vendor
-          for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
-            try {
-              const vendor = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
-              if (vendor && vendor.userId?.email) {
-                // Send email notification to vendor
-                await notificationService.sendVendorOrderNotification(vendor, order, vendorItems);
-                logger.info(`Vendor email notification sent to ${vendor.storeName} (${vendor.userId.email})`);
-
-                // Create in-app notification for vendor
-                await notificationHelper.notifyVendorNewOrder({
-                  vendorUserId: vendor.userId._id,
-                  order: {
-                    _id: order._id,
-                    orderNumber: order.orderId,
-                  },
-                  items: vendorItems.map(item => ({
-                    quantity: item.qty,
-                    price: item.priceSnapshot,
-                  })),
-                });
-                logger.info(`Vendor in-app notification created for ${vendor.storeName}`);
-              }
-
-              // Send admin email notification for each vendor's items
-              await notificationService.sendAdminOrderNotification(order, vendorItems, vendor?.userId, vendor);
-            } catch (vendorError) {
-              logger.error(`Failed to send vendor notification to ${vendorIdStr}:`, vendorError);
-            }
-          }
-
-          // Create single in-app notification for admins (outside vendor loop to avoid duplicates)
-          try {
-            const vendorNames = Object.keys(vendorItemsMap).length > 0
-              ? (await Promise.all(
-                  Object.keys(vendorItemsMap).map(async (vid) => {
-                    const v = await Vendor.findById(vid).select('storeName').lean();
-                    return v?.storeName;
-                  })
-                )).filter(Boolean).join(', ')
-              : 'Direct Sale';
-
-            await notificationHelper.notifyAdminNewOrder({
-              order: {
-                _id: order._id,
-                orderNumber: order.orderId,
-                shippingAddress: { name: order.shipTo?.fullName },
-                totalAmount: order.totals?.total,
-              },
-              vendorName: vendorNames,
-            });
-            logger.info(`Admin in-app notification created for order ${order.orderId}`);
-          } catch (adminNotifError) {
-            logger.error(`Failed to create admin in-app notification:`, adminNotifError);
-          }
-
-          // Mark vendor notifications as sent
-          order.vendorNotificationSent = true;
-          order.vendorNotificationSentAt = new Date();
-          await order.save();
-          logger.info(`Vendor/admin notifications sent after payment verification for order ${order.orderId}`);
-        } catch (notifError) {
-          logger.error('Failed to send vendor/admin notifications after payment:', notifError);
-        }
-      }
+      // Send order confirmation + vendor/admin notifications
+      await sendPostPaymentNotifications(order);
     }
 
     res.json({
@@ -708,121 +689,8 @@ async function handlePaymentCaptured(payload) {
       }
     }
 
-    // Send order confirmation email after webhook payment confirmation (only if not already sent)
-    if (!order.confirmationEmailSent) {
-      try {
-        const notificationService = require('../services/notificationService');
-        const User = require('../models/User');
-
-        let userInfo;
-        if (order.userId && !order.isGuest) {
-          const user = await User.findById(order.userId);
-          if (user) {
-            userInfo = {
-              name: user.name,
-              email: user.email,
-            };
-          }
-        } else if (order.isGuest && order.guestEmail) {
-          userInfo = {
-            name: order.shipTo?.fullName || 'Guest',
-            email: order.guestEmail,
-          };
-        }
-
-        if (userInfo) {
-          await notificationService.sendOrderConfirmation(userInfo, order);
-          // Mark email as sent to prevent duplicates
-          order.confirmationEmailSent = true;
-          order.confirmationEmailSentAt = new Date();
-          await order.save();
-          logger.info(`Order confirmation email sent via webhook: ${userInfo.email}`);
-        }
-      } catch (emailError) {
-        logger.error('Failed to send email via webhook:', emailError);
-      }
-    }
-
-    // Send vendor and admin notifications (only if not already sent)
-    if (!order.vendorNotificationSent) {
-      try {
-        // Get unique vendors from order items
-        const vendorItemsMap = {};
-        for (const item of order.items) {
-          if (item.vendorId) {
-            const vendorIdStr = item.vendorId.toString();
-            if (!vendorItemsMap[vendorIdStr]) {
-              vendorItemsMap[vendorIdStr] = [];
-            }
-            vendorItemsMap[vendorIdStr].push(item);
-          }
-        }
-
-        // Send notification to each vendor
-        for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
-          try {
-            const vendor = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
-            if (vendor && vendor.userId?.email) {
-              // Send email notification to vendor
-              await notificationService.sendVendorOrderNotification(vendor, order, vendorItems);
-              logger.info(`Vendor email notification sent via webhook to ${vendor.storeName} (${vendor.userId.email})`);
-
-              // Create in-app notification for vendor
-              await notificationHelper.notifyVendorNewOrder({
-                vendorUserId: vendor.userId._id,
-                order: {
-                  _id: order._id,
-                  orderNumber: order.orderId,
-                },
-                items: vendorItems.map(item => ({
-                  quantity: item.qty,
-                  price: item.priceSnapshot,
-                })),
-              });
-              logger.info(`Vendor in-app notification created via webhook for ${vendor.storeName}`);
-            }
-
-            // Send admin email notification for each vendor's items
-            await notificationService.sendAdminOrderNotification(order, vendorItems, vendor?.userId, vendor);
-          } catch (vendorError) {
-            logger.error(`Failed to send vendor notification to ${vendorIdStr}:`, vendorError);
-          }
-        }
-
-        // Create single in-app notification for admins (outside vendor loop to avoid duplicates)
-        try {
-          const vendorNames = Object.keys(vendorItemsMap).length > 0
-            ? (await Promise.all(
-                Object.keys(vendorItemsMap).map(async (vid) => {
-                  const v = await Vendor.findById(vid).select('storeName').lean();
-                  return v?.storeName;
-                })
-              )).filter(Boolean).join(', ')
-            : 'Direct Sale';
-
-          await notificationHelper.notifyAdminNewOrder({
-            order: {
-              _id: order._id,
-              orderNumber: order.orderId,
-              shippingAddress: { name: order.shipTo?.fullName },
-              totalAmount: order.totals?.total,
-            },
-            vendorName: vendorNames,
-          });
-          logger.info(`Admin in-app notification created via webhook for order ${order.orderId}`);
-        } catch (adminNotifError) {
-          logger.error(`Failed to create admin in-app notification via webhook:`, adminNotifError);
-        }
-
-        // Mark vendor notifications as sent
-        order.vendorNotificationSent = true;
-        order.vendorNotificationSentAt = new Date();
-        await order.save();
-        logger.info(`Vendor/admin notifications sent via webhook for order ${order.orderId}`);
-      } catch (notifError) {
-        logger.error('Failed to send vendor/admin notifications via webhook:', notifError);
-      }
-    }
+    // Send order confirmation + vendor/admin notifications
+    await sendPostPaymentNotifications(order);
   } catch (error) {
     logger.error('Error handling payment captured:', error);
   }
@@ -1083,141 +951,6 @@ async function handleAccountStatusChange(event, payload) {
     logger.warn(`No vendor or affiliate found for Razorpay account ${accountId}`);
   } catch (error) {
     logger.error('Error handling account status change:', error);
-  }
-}
-
-/**
- * Determine if a failed transfer should be retried
- * @param {string} errorCode - Razorpay error code
- * @param {string} failureReason - Failure reason description
- * @returns {boolean} Whether the transfer should be retried
- */
-function shouldRetryTransfer(errorCode, failureReason) {
-  // Retry for temporary network/server errors, but not for permanent issues
-  const retryableErrors = [
-    'GATEWAY_ERROR',
-    'SERVER_ERROR',
-    'NETWORK_ERROR',
-    'TIMEOUT_ERROR',
-    'RATE_LIMIT_ERROR'
-  ];
-
-  const nonRetryableReasons = [
-    'insufficient funds',
-    'account suspended',
-    'invalid account',
-    'account not found',
-    'kyc pending',
-    'kyc failed'
-  ];
-
-  // Check if error code suggests retry
-  if (errorCode && retryableErrors.includes(errorCode)) {
-    return true;
-  }
-
-  // Check if failure reason suggests no retry
-  if (failureReason) {
-    const lowerReason = failureReason.toLowerCase();
-    if (nonRetryableReasons.some(reason => lowerReason.includes(reason))) {
-      return false;
-    }
-  }
-
-  // Default to retry for unknown errors (they might be temporary)
-  return true;
-}
-
-/**
- * Retry a failed transfer
- * @param {Object} commission - Commission record to retry
- */
-async function retryFailedTransfer(commission) {
-  try {
-    logger.info(`Retrying failed transfer for commission ${commission._id}`);
-
-    // Check if commission is still in pending status (not manually processed)
-    if (commission.status !== 'pending') {
-      logger.info(`Commission ${commission._id} is no longer pending, skipping retry`);
-      return;
-    }
-
-    // Check retry count to prevent infinite loops
-    const retryCount = commission.transfer?.retryCount || 0;
-    if (retryCount >= 3) {
-      logger.warn(`Commission ${commission._id} has exceeded maximum retry attempts (${retryCount})`);
-      return;
-    }
-
-    // Get order to recreate transfer
-    const Order = require('../models/Order');
-    const order = await Order.findById(commission.orderId);
-    if (!order) {
-      logger.error(`Order not found for commission retry: ${commission.orderId}`);
-      return;
-    }
-
-    // Get payment ID from order
-    const razorpayPaymentId = order.payment?.razorpayPaymentId;
-    if (!razorpayPaymentId) {
-      logger.error(`Payment ID not found for order ${order._id}`);
-      return;
-    }
-
-    // Recreate the transfer
-    const transferData = {
-      accountId: commission.transfer?.linkedAccountId,
-      amount: commission.amount,
-      currency: 'INR',
-      notes: {
-        orderId: order._id.toString(),
-        orderNumber: order.orderId,
-        commissionId: commission._id.toString(),
-        retryAttempt: retryCount + 1,
-        type: commission.type === 'vendor' ? 'vendor_commission' : 'affiliate_commission',
-      },
-    };
-
-    const { createTransfers } = require('../utils/razorpay');
-    const transferResult = await createTransfers(razorpayPaymentId, [transferData]);
-
-    if (transferResult.success && transferResult.successfulTransfers.length > 0) {
-      const newTransfer = transferResult.successfulTransfers[0];
-
-      // Update commission with new transfer details
-      commission.transfer.transferId = newTransfer.transferId;
-      commission.transfer.status = newTransfer.status;
-      commission.transfer.retryCount = retryCount + 1;
-      commission.transfer.lastRetryAt = new Date();
-
-      if (newTransfer.status === 'processed') {
-        commission.status = 'paid';
-        commission.paidAt = new Date();
-      } else {
-        commission.status = 'approved';
-        commission.approvedAt = new Date();
-      }
-
-      await commission.save();
-      logger.info(`Successfully retried transfer for commission ${commission._id}`);
-    } else {
-      // Update retry count and schedule next retry if under limit
-      commission.transfer.retryCount = retryCount + 1;
-      commission.transfer.lastRetryAt = new Date();
-      await commission.save();
-
-      if (retryCount + 1 < 3) {
-        // Schedule next retry with exponential backoff (5 minutes, 15 minutes, 45 minutes)
-        const delays = [5 * 60 * 1000, 15 * 60 * 1000, 45 * 60 * 1000];
-        setTimeout(() => retryFailedTransfer(commission), delays[retryCount]);
-        logger.info(`Scheduled next retry for commission ${commission._id} in ${delays[retryCount] / 1000 / 60} minutes`);
-      } else {
-        logger.warn(`Maximum retries exceeded for commission ${commission._id}`);
-      }
-    }
-
-  } catch (error) {
-    logger.error(`Failed to retry transfer for commission ${commission._id}:`, error);
   }
 }
 

@@ -5,7 +5,6 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
-// import { ReactQueryDevtools } from '@tanstack/react-query-devtools'; // Disabled in production
 import axios from 'axios';
 
 import App from './App';
@@ -32,41 +31,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Register service worker for PWA support
-// TODO: Re-enable after generating PWA icons (72x72, 96x96, 128x128, 144x144, 152x152, 192x192, 384x384, 512x512)
-// Run: node generate-icons.js for instructions
-/*
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('[PWA] Service Worker registered successfully');
-
-        // Check for updates every hour
-        setInterval(() => {
-          registration.update();
-        }, 60 * 60 * 1000);
-
-        // Listen for updates
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New content available, notify user
-              if (confirm('New version available! Reload to update?')) {
-                window.location.reload();
-              }
-            }
-          });
-        });
-      })
-      .catch((error) => {
-        console.error('[PWA] Service Worker registration failed:', error);
-      });
-  });
-}
-*/
-
 const rootElement = document.getElementById('root');
 
 const AppWrapper = (
@@ -77,8 +41,6 @@ const AppWrapper = (
           <QueryClientProvider client={queryClient}>
             <HelmetProvider>
               <App />
-              {/* DevTools removed - uncomment line below for debugging */}
-              {/* <ReactQueryDevtools initialIsOpen={false} /> */}
             </HelmetProvider>
           </QueryClientProvider>
         </BrowserRouter>

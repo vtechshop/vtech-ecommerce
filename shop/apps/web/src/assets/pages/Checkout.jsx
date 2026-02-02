@@ -155,13 +155,11 @@ const Checkout = () => {
       }
     }
 
-    console.log('📝 New address set:', newAddress);
     setSelectedAddress(newAddress);
     setStep(2); // Go directly to payment
   };
 
   const handleSelectExistingAddress = (address) => {
-    console.log('📍 Selected existing address:', address);
     setSelectedAddress(address);
     setStep(2); // Go directly to payment
   };
@@ -194,9 +192,6 @@ const Checkout = () => {
           productId = item._id;
         }
 
-        console.log('🔍 Cart item:', item);
-        console.log('📋 Extracted productId:', productId);
-
         return {
           productId,
           variantId: item.variantId,
@@ -213,22 +208,15 @@ const Checkout = () => {
       ...(affiliateCode && { affiliateCode }),
     };
 
-    console.log('📦 Final orderData:', orderData);
-
     // For Razorpay, create order first then initiate payment
     if (paymentMethod === 'razorpay') {
       try {
         // Import dynamically to avoid loading Razorpay on initial page load
-        console.log('💳 Loading Razorpay module...');
         const { initiateRazorpayPayment } = await import('@/utils/razorpay');
-        console.log('✅ Razorpay module loaded');
 
         // Create order first
-        console.log('📝 Creating order with data:', orderData);
         createOrderMutation.mutate(orderData, {
           onSuccess: async (response) => {
-            console.log('✅ Order API response:', response);
-
             // Backend returns vendorOrders array for multi-vendor support
             // Extract the first order for payment (or use the main order if single vendor)
             let orderForPayment;
@@ -236,7 +224,6 @@ const Checkout = () => {
             if (response.vendorOrders && response.vendorOrders.length > 0) {
               // Multi-vendor order: use first vendor order for payment
               orderForPayment = response.vendorOrders[0];
-              console.log('✅ Using first vendor order for payment:', orderForPayment);
             } else if (response._id) {
               // Single order response
               orderForPayment = response;
@@ -255,7 +242,6 @@ const Checkout = () => {
 
             try {
               // Initiate Razorpay payment
-              console.log('🚀 Initiating Razorpay payment for order:', orderForPayment._id);
               await initiateRazorpayPayment({
                 orderId: orderForPayment._id,
                 amount: orderForPayment.totals.total,
@@ -265,7 +251,6 @@ const Checkout = () => {
                   phone: selectedAddress.phone,
                 },
                 onSuccess: (paymentResult) => {
-                  console.log('✅ Payment successful:', paymentResult);
                   toast.success('Payment successful!');
                   // Set flag to prevent cart redirect
                   setOrderPlaced(true);

@@ -199,18 +199,12 @@ const AdsManagement = () => {
 
       // Amazon-style: Automatically inherit campaign settings for seamless upload
       const placementValue = campaign?.placement || 'search_sponsored_products';
-      console.log('🎨 [CREATIVE DEBUG] Campaign object:', campaign);
-      console.log('🎨 [CREATIVE DEBUG] Campaign placement:', campaign?.placement);
-      console.log('🎨 [CREATIVE DEBUG] Using placement:', placementValue);
-
       const creativeData = {
         imageUrl: uploadResponse.data.data.url,
         title: file.name,
         placement: placementValue,
         status: 'active', // Auto-activate creative
       };
-
-      console.log('🎨 [CREATIVE DEBUG] Creative data being sent:', creativeData);
 
       const response = await api.post(`/ads/campaigns/${campaignId}/creatives`, creativeData);
       return response.data;
@@ -457,7 +451,6 @@ const AdsManagement = () => {
       },
     };
 
-    console.log('🎯 [ADMIN DEBUG] Submitting campaign with targeting:', dataToSend.targeting);
     saveMutation.mutate(dataToSend);
   };
 

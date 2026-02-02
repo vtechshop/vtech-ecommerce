@@ -82,13 +82,7 @@ const Search = () => {
           _ts: Date.now(), // Cache busting parameter
         };
 
-        console.log('🔍 [AD DEBUG] Auction Request:', requestPayload);
-
         const response = await api.post('/ads/auction', requestPayload);
-
-        console.log('🔍 [AD DEBUG] Auction Response:', response.data);
-        console.log('🔍 [AD DEBUG] Ads Array:', response.data.data?.ads);
-        console.log('🔍 [AD DEBUG] Ads Count:', response.data.data?.ads?.length || 0);
 
         if (response.data.data?.ads && response.data.data.ads.length > 0) {
           // Amazon-style: Filter out ads with invalid product data
@@ -98,20 +92,11 @@ const Search = () => {
             const hasName = ad.product?.name;
 
             if (!hasProduct || !hasPrice || !hasName) {
-              console.warn('⚠️ [AD DEBUG] Filtering out invalid ad:', {
-                campaignId: ad.campaignId,
-                hasProduct,
-                hasPrice,
-                hasName,
-                productData: ad.product
-              });
               return false;
             }
             return true;
           });
 
-          console.log('✅ [AD DEBUG] Valid ads after filtering:', validAds.length);
-          console.log('✅ [AD DEBUG] Setting sponsored ads:', validAds);
           setSponsoredAds(validAds);
 
           // Track impressions only for valid ads
@@ -124,7 +109,6 @@ const Search = () => {
             }).catch(() => {}); // Silent fail for impression tracking
           });
         } else {
-          console.warn('⚠️ [AD DEBUG] No ads returned - setting empty array');
           setSponsoredAds([]);
         }
       } catch (error) {
