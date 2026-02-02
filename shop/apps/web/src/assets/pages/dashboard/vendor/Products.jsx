@@ -377,6 +377,7 @@ const Products = () => {
               </button>
             </div>
 
+            <div className="flex-1 overflow-y-auto">
             {/* Create/Edit Form */}
             <form onSubmit={handleCategorySubmit} className="p-6 border-b space-y-4">
               {/* Image Upload - Amazon style */}
@@ -479,7 +480,7 @@ const Products = () => {
             </form>
 
             {/* Category List */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="p-6">
               {allCategories.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">No categories yet. Create one above.</p>
               ) : (
@@ -522,6 +523,7 @@ const Products = () => {
                   ))}
                 </div>
               )}
+            </div>
             </div>
           </div>
         </div>
