@@ -240,7 +240,7 @@ exports.renderPage = async (req, res, next) => {
     if (pathParts[0] === 'product' && pathParts[1]) {
       const product = await Product.findOne({ slug: pathParts[1], published: true })
         .populate('vendorId', 'storeName')
-        .populate('category', 'name')
+        .populate('categoryIds', 'name')
         .lean();
 
       if (product) {
@@ -251,7 +251,7 @@ exports.renderPage = async (req, res, next) => {
         pageData.content = `
           <h1>${product.title}</h1>
           <p><strong>Price:</strong> ₹${product.price?.toLocaleString('en-IN')}</p>
-          <p><strong>Category:</strong> ${product.category?.name || 'Kitchen Products'}</p>
+          <p><strong>Category:</strong> ${product.categoryIds?.[0]?.name || 'Kitchen Products'}</p>
           <p><strong>Availability:</strong> ${product.stock > 0 ? 'In Stock' : 'Out of Stock'}</p>
           <p>${product.description || ''}</p>
           ${product.features?.length ? `<h2>Features</h2><ul>${product.features.map(f => `<li>${f}</li>`).join('')}</ul>` : ''}
@@ -278,7 +278,7 @@ exports.renderPage = async (req, res, next) => {
     // Category page
     else if (pathParts[0] === 'category' && pathParts[1]) {
       const category = await Category.findOne({ slug: pathParts[1], isActive: true }).lean();
-      const products = await Product.find({ category: category?._id, published: true })
+      const products = await Product.find({ categoryIds: category?._id, published: true })
         .select('title slug price images')
         .limit(20)
         .lean();
@@ -318,6 +318,38 @@ exports.renderPage = async (req, res, next) => {
             ${products.map(p => `<li><a href="${clientUrl}/product/${p.slug}">${p.title} - ₹${p.price?.toLocaleString('en-IN')}</a></li>`).join('')}
           </ul>
         `;
+      }
+    }
+
+    // Blog post page
+    else if (pathParts[0] === 'blog' && pathParts[1]) {
+      const post = await Post.findOne({ slug: pathParts[1], published: true })
+        .populate('author', 'name')
+        .lean();
+
+      if (post) {
+        pageData.title = `${post.title} - V-Tech Kitchen Blog`;
+        pageData.description = post.excerpt || post.content?.substring(0, 160) || `Read ${post.title} on V-Tech Kitchen Blog.`;
+        pageData.image = post.featuredImage || pageData.image;
+        pageData.type = 'article';
+        pageData.content = `
+          <h1>${post.title}</h1>
+          <p><strong>By:</strong> ${post.author?.name || 'V-Tech Kitchen'}</p>
+          <p><strong>Published:</strong> ${new Date(post.createdAt).toLocaleDateString()}</p>
+          ${post.excerpt ? `<p>${post.excerpt}</p>` : ''}
+          <div>${post.content || ''}</div>
+        `;
+        pageData.schema = {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: post.title,
+          description: pageData.description,
+          image: post.featuredImage,
+          author: { '@type': 'Person', name: post.author?.name || 'V-Tech Kitchen' },
+          datePublished: post.createdAt,
+          dateModified: post.updatedAt,
+          url: fullUrl,
+        };
       }
     }
 

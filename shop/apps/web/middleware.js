@@ -22,7 +22,7 @@ const CRAWLER_USER_AGENTS = [
 ];
 
 // Routes to intercept for crawlers
-const SEO_ROUTES = ['/product/', '/category/', '/vendor/', '/page/', '/search'];
+const SEO_ROUTES = ['/product/', '/category/', '/vendor/', '/page/', '/blog/', '/search'];
 
 export default async function middleware(request) {
   const url = new URL(request.url);
@@ -76,6 +76,7 @@ export const config = {
     '/category/:path*',
     '/vendor/:path*',
     '/page/:path*',
+    '/blog/:path*',
     '/search',
   ],
 };
