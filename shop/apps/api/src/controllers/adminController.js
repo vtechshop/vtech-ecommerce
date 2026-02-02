@@ -105,6 +105,52 @@ exports.getDashboardStats = async (req, res, next) => {
       Affiliate.countDocuments({ status: 'pending' }),
     ]);
 
+    // Commission stats - vendor, affiliate, and overall
+    const [vendorCommissions, affiliateCommissions, allCommissions] = await Promise.all([
+      Commission.aggregate([
+        { $match: { type: 'vendor' } },
+        { $group: {
+          _id: '$status',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }}
+      ]),
+      Commission.aggregate([
+        { $match: { type: 'affiliate' } },
+        { $group: {
+          _id: '$status',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }}
+      ]),
+      Commission.aggregate([
+        { $group: {
+          _id: '$status',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 }
+        }}
+      ]),
+    ]);
+
+    const mapStats = (agg) => {
+      const result = { total: 0, pending: 0, approved: 0, paid: 0, pendingCount: 0, approvedCount: 0, paidCount: 0 };
+      agg.forEach(item => {
+        result.total += item.total;
+        if (item._id === 'pending') { result.pending = item.total; result.pendingCount = item.count; }
+        if (item._id === 'approved') { result.approved = item.total; result.approvedCount = item.count; }
+        if (item._id === 'paid') { result.paid = item.total; result.paidCount = item.count; }
+      });
+      return result;
+    };
+
+    const totalRevenue = revenueAgg[0]?.total || 0;
+    const vendorComm = mapStats(vendorCommissions);
+    const affiliateComm = mapStats(affiliateCommissions);
+    const allComm = mapStats(allCommissions);
+
+    // Admin commission = Total Revenue - All Commissions (vendor + affiliate)
+    const adminCommission = totalRevenue - allComm.total;
+
     res.json({
       success: true,
       data: {
@@ -112,8 +158,14 @@ exports.getDashboardStats = async (req, res, next) => {
         totalVendors,
         totalProducts,
         totalOrders,
-        totalRevenue: revenueAgg[0]?.total || 0,
+        totalRevenue,
         pendingApprovals: (pendingVendors || 0) + (pendingAffiliates || 0),
+        commissions: {
+          vendor: vendorComm,
+          affiliate: affiliateComm,
+          admin: adminCommission > 0 ? adminCommission : 0,
+          total: allComm.total,
+        },
       },
     });
   } catch (error) {
