@@ -1184,10 +1184,10 @@ async function createCategory(req, res, next) {
       description,
       image,
       parentId: parentId || null,
-      createdBy: req.user.userId,
+      createdBy: req.user._id,
     });
 
-    logger.info(`Category created by vendor ${req.user.userId}: ${name}`);
+    logger.info(`Category created by vendor ${req.user._id}: ${name}`);
     res.status(201).json({ success: true, data: category });
   } catch (error) {
     next(error);
@@ -1200,7 +1200,7 @@ async function updateCategory(req, res, next) {
     if (!category) {
       return res.status(404).json({ success: false, error: { message: 'Category not found' } });
     }
-    if (!category.createdBy || category.createdBy.toString() !== req.user.userId) {
+    if (!category.createdBy || category.createdBy.toString() !== req.user._id) {
       return res.status(403).json({ success: false, error: { message: 'You can only edit categories you created' } });
     }
 
@@ -1226,17 +1226,31 @@ async function deleteCategory(req, res, next) {
     if (!category) {
       return res.status(404).json({ success: false, error: { message: 'Category not found' } });
     }
-    if (!category.createdBy || category.createdBy.toString() !== req.user.userId) {
-      return res.status(403).json({ success: false, error: { message: 'You can only delete categories you created' } });
+
+    // Vendors can only request deletion of their own categories
+    if (req.user.role !== 'admin') {
+      if (!category.createdBy || category.createdBy.toString() !== req.user._id) {
+        return res.status(403).json({ success: false, error: { message: 'You can only request deletion of categories you created' } });
+      }
+      if (category.deleteRequested) {
+        return res.status(400).json({ success: false, error: { message: 'Delete request already submitted for this category' } });
+      }
+      category.deleteRequested = true;
+      category.deleteRequestedBy = req.user._id;
+      category.deleteRequestedAt = new Date();
+      await category.save();
+      logger.info(`Category delete requested by vendor ${req.user._id}: ${category.name}`);
+      return res.json({ success: true, message: 'Delete request submitted. Admin will review it.' });
     }
 
+    // Admin can directly delete
     const productCount = await Product.countDocuments({ categoryIds: category._id });
     if (productCount > 0) {
       return res.status(400).json({ success: false, error: { message: `Cannot delete: ${productCount} products are using this category` } });
     }
 
     await Category.findByIdAndDelete(req.params.id);
-    logger.info(`Category deleted by vendor ${req.user.userId}: ${category.name}`);
+    logger.info(`Category deleted by admin ${req.user._id}: ${category.name}`);
     res.json({ success: true, message: 'Category deleted successfully' });
   } catch (error) {
     next(error);

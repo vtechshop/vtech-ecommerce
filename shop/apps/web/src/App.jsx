@@ -109,6 +109,7 @@ const Inventory = lazy(() => import('./assets/pages/dashboard/vendor/Inventory')
 const VendorOrders = lazy(() => import('./assets/pages/dashboard/vendor/VendorOrders'));
 const VendorOrderDetail = lazy(() => import('./assets/pages/dashboard/vendor/VendorOrderDetail'));
 const Settlements = lazy(() => import('./assets/pages/dashboard/vendor/Settlements'));
+const VendorCategories = lazy(() => import('./assets/pages/dashboard/vendor/Categories'));
 const VendorAds = lazy(() => import('./assets/pages/dashboard/vendor/Ads'));
 const VendorSettings = lazy(() => import('./assets/pages/dashboard/vendor/VendorSettings'));
 const VendorSupport = lazy(() => import('./assets/pages/dashboard/vendor/Support'));
@@ -304,6 +305,7 @@ function App() {
             {/* Protected vendor routes - require KYC approval */}
             <Route index element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorDashboard /></ProtectedRoute>} />
             <Route path="products" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorProducts /></ProtectedRoute>} />
+            <Route path="categories" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorCategories /></ProtectedRoute>} />
             <Route path="inventory" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><Inventory /></ProtectedRoute>} />
             <Route path="orders" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorOrders /></ProtectedRoute>} />
             <Route path="orders/:id" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorOrderDetail /></ProtectedRoute>} />

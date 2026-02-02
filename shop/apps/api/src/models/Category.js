@@ -15,6 +15,9 @@ const categorySchema = new mongoose.Schema({
   }],
   seo: { title: String, description: String, keywords: [String] },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  deleteRequested: { type: Boolean, default: false },
+  deleteRequestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  deleteRequestedAt: { type: Date, default: null },
   isActive: { type: Boolean, default: true },
   sortOrder: { type: Number, default: 0 },
 }, { timestamps: true });
