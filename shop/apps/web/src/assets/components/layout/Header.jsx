@@ -232,7 +232,7 @@ const Header = ({ onMobileMenuToggle }) => {
             if (to === '/blog') return path.startsWith('/blog');
             return path.startsWith(to);
           };
-          const navClass = (to) => `text-white hover:text-primary-300 transition-colors no-underline ${isActive(to) ? '!text-primary-400 font-semibold border-b-2 border-primary-400 pb-1' : ''}`;
+          const navClass = (to) => `text-white hover:text-primary-300 transition-colors no-underline ${isActive(to) ? '!text-primary-400 font-semibold' : ''}`;
           return (
           <nav className="hidden md:flex items-center gap-6 mt-4 pt-4 border-t dark:border-gray-700">
             <Link to="/" className={navClass('/')}>Home</Link>
