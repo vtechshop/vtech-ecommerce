@@ -145,23 +145,27 @@ const Home = React.memo(() => {
             {/* Categories */}
             {categories?.length > 0 && (
               <section className="mb-8">
-                <h2 className="text-xl md:text-2xl font-bold mb-8">{t('home.shopByCategory')}</h2>
+                <h2 className="text-xl md:text-2xl font-bold mb-6">{t('home.shopByCategory')}</h2>
                 <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 ${
                   leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
                 }`}>
                   {categories.map((category) => (
                     <Link key={category.slug} to={`/category/${category.slug}`} className="group">
-                      <div className="bg-white rounded-lg p-4 text-center hover:shadow-xl transition-all duration-300 border border-gray-200 hover-lift">
-                        <div className="w-20 h-20 mx-auto mb-3 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center group-hover:scale-105 transition-all duration-300">
-                          {category.image ? (
-                            <img src={category.image} alt={category.name} className="w-full h-full object-cover" loading="lazy" />
-                          ) : (
-                            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                          )}
+                      <div className="bg-white rounded-lg overflow-hidden hover:shadow-md transition-all duration-300 border border-gray-200">
+                        <div className="flex items-center justify-center py-4 px-4">
+                          <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                            {category.image ? (
+                              <img src={category.image} alt={category.name} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                            ) : (
+                              <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                              </svg>
+                            )}
+                          </div>
                         </div>
-                        <h3 className="font-semibold text-sm">{category.name}</h3>
+                        <div className="py-2 px-3 text-center">
+                          <h3 className="font-medium text-sm text-gray-900 group-hover:text-primary-600 transition-colors">{category.name}</h3>
+                        </div>
                       </div>
                     </Link>
                   ))}

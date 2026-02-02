@@ -352,7 +352,7 @@ const validateFileUpload = (maxSizeMB = 5) => {
       }
 
       // Check file type (whitelist approach)
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/bmp', 'image/tiff', 'image/avif', 'image/heic', 'image/heif'];
       if (!allowedTypes.includes(file.mimetype)) {
         return res.status(400).json({
           success: false,

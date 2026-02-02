@@ -7,7 +7,7 @@ import Button from '@/components/common/Button';
 import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
-import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, FolderTree } from 'lucide-react';
+import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, FolderTree, ZoomIn, Upload } from 'lucide-react';
 
 const Products = () => {
   const queryClient = useQueryClient();
@@ -27,6 +27,7 @@ const Products = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryForm, setCategoryForm] = useState({ name: '', description: '', parentId: '', image: '' });
   const [categoryImageUploading, setCategoryImageUploading] = useState(false);
+  const [categoryImageZoom, setCategoryImageZoom] = useState(false);
 
   // Fetch categories for category management
   const { data: allCategoriesData } = useQuery({
@@ -98,7 +99,7 @@ const Products = () => {
     setCategoryImageUploading(true);
     try {
       const formData = new FormData();
-      formData.append('images', file);
+      formData.append('files', file);
       const response = await api.post('/upload/multiple', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       const url = response?.data?.data?.[0]?.url;
       if (url) setCategoryForm(prev => ({ ...prev, image: url }));
@@ -377,10 +378,61 @@ const Products = () => {
             </div>
 
             {/* Create/Edit Form */}
-            <form onSubmit={handleCategorySubmit} className="p-6 border-b space-y-3">
+            <form onSubmit={handleCategorySubmit} className="p-6 border-b space-y-4">
+              {/* Image Upload - Amazon style */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Category Image</label>
+                {categoryForm.image ? (
+                  <div className="relative border-2 border-gray-200 rounded-lg overflow-hidden bg-white">
+                    <div className="relative w-full h-32 flex items-center justify-center bg-gray-50">
+                      <img src={categoryForm.image} alt="Category" className="max-w-full max-h-full object-contain" />
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-t">
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => setCategoryImageZoom(true)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-100 transition-colors">
+                          <ZoomIn className="w-3.5 h-3.5" /> Preview
+                        </button>
+                        <label className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-100 transition-colors cursor-pointer">
+                          <Upload className="w-3.5 h-3.5" /> Replace
+                          <input type="file" accept="image/*" onChange={handleCategoryImageUpload} disabled={categoryImageUploading} className="hidden" />
+                        </label>
+                      </div>
+                      <button type="button" onClick={() => setCategoryForm({ ...categoryForm, image: '' })} className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" /> Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors">
+                    <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                    <span className="text-sm font-medium text-gray-600">Click to upload image</span>
+                    <span className="text-xs text-gray-400">JPG, PNG, WebP, SVG supported</span>
+                    <input type="file" accept="image/*" onChange={handleCategoryImageUpload} disabled={categoryImageUploading} className="hidden" />
+                  </label>
+                )}
+                {categoryImageUploading && (
+                  <div className="flex items-center gap-2 mt-2 text-sm text-primary-600">
+                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" /></svg>
+                    Uploading...
+                  </div>
+                )}
+              </div>
+
+              {/* Image Zoom Modal */}
+              {categoryImageZoom && categoryForm.image && (
+                <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" onClick={() => setCategoryImageZoom(false)}>
+                  <div className="relative max-w-3xl max-h-[85vh] w-full" onClick={(e) => e.stopPropagation()}>
+                    <button type="button" onClick={() => setCategoryImageZoom(false)} className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors">
+                      <X className="w-6 h-6" />
+                    </button>
+                    <img src={categoryForm.image} alt="Category Preview" className="w-full h-full object-contain rounded-lg" />
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
                     value={categoryForm.name}
@@ -391,7 +443,7 @@ const Products = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Parent Category</label>
                   <select
                     value={categoryForm.parentId}
                     onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value })}
@@ -404,33 +456,15 @@ const Products = () => {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <input
-                    type="text"
-                    value={categoryForm.description}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                    placeholder="Optional description"
-                    className="input w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
-                  <div className="flex items-center gap-2">
-                    {categoryForm.image && (
-                      <img src={categoryForm.image} alt="" className="w-10 h-10 object-cover rounded" />
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleCategoryImageUpload}
-                      disabled={categoryImageUploading}
-                      className="input w-full text-sm"
-                    />
-                  </div>
-                  {categoryImageUploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
-                </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={categoryForm.description}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                  placeholder="Optional description"
+                  className="input w-full"
+                />
               </div>
               <div className="flex gap-2">
                 <Button type="submit" variant="primary" disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}>
@@ -454,7 +488,11 @@ const Products = () => {
                     <div key={cat._id}>
                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div className="flex items-center gap-2">
-                          <FolderTree className="w-4 h-4 text-blue-600" />
+                          {cat.image ? (
+                            <img src={cat.image} alt={cat.name} className="w-8 h-8 object-cover rounded" />
+                          ) : (
+                            <FolderTree className="w-4 h-4 text-blue-600" />
+                          )}
                           <span className="font-medium">{cat.name}</span>
                           <span className="text-xs text-gray-400">/{cat.slug}</span>
                         </div>

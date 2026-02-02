@@ -12,6 +12,7 @@ import AdBanner from '@/components/common/AdBanner';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
+import AnimatedDiv from '@/components/common/AnimatedDiv';
 
 const Search = () => {
   const { t } = useTranslation();
@@ -208,25 +209,29 @@ const Search = () => {
             <Spinner size="lg" />
           </div>
         ) : categoriesData?.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {categoriesData.map((cat) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {categoriesData.map((cat, index) => (
+              <AnimatedDiv key={cat.slug} animation="fadeInUp" delay={index * 0.08} duration={0.4}>
               <Link
-                key={cat.slug}
                 to={`/category/${cat.slug}`}
-                className="group"
+                className="group block"
               >
-                <div className="bg-white rounded-lg p-8 text-center hover:shadow-xl transition-all border border-gray-200 h-full">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-primary-100 rounded-full flex items-center justify-center group-hover:bg-primary-200 transition-colors">
-                    <svg className="w-10 h-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
+                <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 hover:-translate-y-1">
+                  <div className="aspect-square overflow-hidden bg-gray-50 flex items-center justify-center p-4">
+                    {cat.image ? (
+                      <img src={cat.image} alt={cat.name} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                    ) : (
+                      <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                    )}
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">{cat.name}</h3>
-                  {cat.seo?.keywords?.length > 0 && (
-                    <p className="text-sm text-gray-500">{cat.seo.keywords.slice(0, 3).join(', ')}</p>
-                  )}
+                  <div className="p-3 text-center">
+                    <h3 className="font-semibold text-sm text-gray-900 group-hover:text-primary-600 transition-colors">{cat.name}</h3>
+                  </div>
                 </div>
               </Link>
+              </AnimatedDiv>
             ))}
           </div>
         ) : (
