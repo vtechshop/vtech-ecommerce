@@ -116,7 +116,11 @@ const Categories = () => {
                 <tr key={parent._id} className="hover:bg-blue-100">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <FolderTree className="w-5 h-5 text-blue-600" />
+                      {parent.image ? (
+                        <img src={parent.image} alt={parent.name} className="w-8 h-8 object-cover rounded" />
+                      ) : (
+                        <FolderTree className="w-5 h-5 text-blue-600" />
+                      )}
                       <div>
                         <div className="font-medium text-gray-900">{parent.name}</div>
                         {parent.description && (
@@ -226,10 +230,29 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
     name: category?.name || '',
     slug: category?.slug || '',
     description: category?.description || '',
+    image: category?.image || '',
     parentId: category?.parentId || null,
     isActive: category?.isActive ?? true,
     sortOrder: category?.sortOrder || 0,
   });
+  const [imageUploading, setImageUploading] = useState(false);
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('images', file);
+      const response = await api.post('/upload/multiple', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const url = response?.data?.data?.[0]?.url;
+      if (url) setFormData(prev => ({ ...prev, image: url }));
+    } catch (error) {
+      alert('Image upload failed');
+    } finally {
+      setImageUploading(false);
+    }
+  };
 
   // Auto-generate slug from name
   const handleNameChange = (e) => {
@@ -330,6 +353,29 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
                 className="input w-full h-20"
                 rows={3}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+              <div className="flex items-center gap-3">
+                {formData.image && (
+                  <img src={formData.image} alt="" className="w-12 h-12 object-cover rounded border" />
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={imageUploading}
+                    className="input w-full text-sm"
+                  />
+                  {imageUploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                </div>
+                {formData.image && (
+                  <button type="button" onClick={() => setFormData({ ...formData, image: '' })} className="text-red-500 hover:text-red-700 text-xs">Remove</button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Category image shown on homepage</p>
             </div>
 
             <div>

@@ -25,7 +25,8 @@ const Products = () => {
   const [toastType, setToastType] = useState('success'); // 'success', 'error', 'warning'
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [categoryForm, setCategoryForm] = useState({ name: '', description: '', parentId: '' });
+  const [categoryForm, setCategoryForm] = useState({ name: '', description: '', parentId: '', image: '' });
+  const [categoryImageUploading, setCategoryImageUploading] = useState(false);
 
   // Fetch categories for category management
   const { data: allCategoriesData } = useQuery({
@@ -44,7 +45,7 @@ const Products = () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setShowCategoryModal(false);
       setEditingCategory(null);
-      setCategoryForm({ name: '', description: '', parentId: '' });
+      setCategoryForm({ name: '', description: '', parentId: '', image: '' });
       setToastMessage('Category created successfully');
       setToastType('success');
       setShowToast(true);
@@ -63,7 +64,7 @@ const Products = () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setShowCategoryModal(false);
       setEditingCategory(null);
-      setCategoryForm({ name: '', description: '', parentId: '' });
+      setCategoryForm({ name: '', description: '', parentId: '', image: '' });
       setToastMessage('Category updated successfully');
       setToastType('success');
       setShowToast(true);
@@ -91,9 +92,26 @@ const Products = () => {
     },
   });
 
+  const handleCategoryImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setCategoryImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('images', file);
+      const response = await api.post('/upload/multiple', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const url = response?.data?.data?.[0]?.url;
+      if (url) setCategoryForm(prev => ({ ...prev, image: url }));
+    } catch (error) {
+      setToastMessage('Image upload failed'); setToastType('error'); setShowToast(true);
+    } finally {
+      setCategoryImageUploading(false);
+    }
+  };
+
   const handleCategorySubmit = (e) => {
     e.preventDefault();
-    const payload = { name: categoryForm.name, description: categoryForm.description, parentId: categoryForm.parentId || null };
+    const payload = { name: categoryForm.name, description: categoryForm.description, parentId: categoryForm.parentId || null, image: categoryForm.image || null };
     if (editingCategory) {
       updateCategoryMutation.mutate({ id: editingCategory._id, data: payload });
     } else {
@@ -353,7 +371,7 @@ const Products = () => {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between p-6 border-b">
               <h2 className="text-xl font-bold">Manage Categories</h2>
-              <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); setCategoryForm({ name: '', description: '', parentId: '' }); }} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); setCategoryForm({ name: '', description: '', parentId: '', image: '' }); }} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -386,22 +404,40 @@ const Products = () => {
                   </select>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <input
-                  type="text"
-                  value={categoryForm.description}
-                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                  placeholder="Optional description"
-                  className="input w-full"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <input
+                    type="text"
+                    value={categoryForm.description}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                    placeholder="Optional description"
+                    className="input w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                  <div className="flex items-center gap-2">
+                    {categoryForm.image && (
+                      <img src={categoryForm.image} alt="" className="w-10 h-10 object-cover rounded" />
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleCategoryImageUpload}
+                      disabled={categoryImageUploading}
+                      className="input w-full text-sm"
+                    />
+                  </div>
+                  {categoryImageUploading && <p className="text-xs text-gray-500 mt-1">Uploading...</p>}
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button type="submit" variant="primary" disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}>
                   {editingCategory ? 'Update' : 'Create'} Category
                 </Button>
                 {editingCategory && (
-                  <Button type="button" variant="secondary" onClick={() => { setEditingCategory(null); setCategoryForm({ name: '', description: '', parentId: '' }); }}>
+                  <Button type="button" variant="secondary" onClick={() => { setEditingCategory(null); setCategoryForm({ name: '', description: '', parentId: '', image: '' }); }}>
                     Cancel Edit
                   </Button>
                 )}
@@ -424,7 +460,7 @@ const Products = () => {
                         </div>
                         {cat.createdBy && (
                           <div className="flex gap-1">
-                            <button onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, description: cat.description || '', parentId: cat.parentId || '' }); }} className="p-1.5 hover:bg-blue-100 rounded text-blue-600"><Edit className="w-4 h-4" /></button>
+                            <button onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, description: cat.description || '', parentId: cat.parentId || '', image: cat.image || '' }); }} className="p-1.5 hover:bg-blue-100 rounded text-blue-600"><Edit className="w-4 h-4" /></button>
                             <button onClick={() => { if (confirm('Delete this category?')) deleteCategoryMutation.mutate(cat._id); }} className="p-1.5 hover:bg-red-100 rounded text-red-600"><Trash2 className="w-4 h-4" /></button>
                           </div>
                         )}
@@ -438,7 +474,7 @@ const Products = () => {
                           </div>
                           {sub.createdBy && (
                             <div className="flex gap-1">
-                              <button onClick={() => { setEditingCategory(sub); setCategoryForm({ name: sub.name, description: sub.description || '', parentId: sub.parentId || '' }); }} className="p-1.5 hover:bg-blue-100 rounded text-blue-600"><Edit className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => { setEditingCategory(sub); setCategoryForm({ name: sub.name, description: sub.description || '', parentId: sub.parentId || '', image: sub.image || '' }); }} className="p-1.5 hover:bg-blue-100 rounded text-blue-600"><Edit className="w-3.5 h-3.5" /></button>
                               <button onClick={() => { if (confirm('Delete this category?')) deleteCategoryMutation.mutate(sub._id); }} className="p-1.5 hover:bg-red-100 rounded text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
                           )}
