@@ -123,6 +123,7 @@ const Categories = () => {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Slug</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sort</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
@@ -154,6 +155,7 @@ const Categories = () => {
                   <td className="px-6 py-4">
                     <code className="text-sm bg-blue-100 px-2 py-1 rounded">{parent.slug}</code>
                   </td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{parent.sortOrder || 0}</td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1">
                       <span className={`inline-block w-fit px-2 py-1 text-xs font-semibold rounded-full ${
@@ -206,6 +208,7 @@ const Categories = () => {
                     <td className="px-6 py-4">
                       <code className="text-sm bg-blue-100 px-2 py-1 rounded">{child.slug}</code>
                     </td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{child.sortOrder || 0}</td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         <span className={`inline-block w-fit px-2 py-1 text-xs font-semibold rounded-full ${
@@ -275,9 +278,12 @@ const Categories = () => {
 const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => {
   const [formData, setFormData] = useState({
     name: category?.name || '',
+    slug: category?.slug || '',
     description: category?.description || '',
     image: category?.image || '',
     parentId: category?.parentId || null,
+    isActive: category?.isActive ?? true,
+    sortOrder: category?.sortOrder || 0,
   });
   const [imageUploading, setImageUploading] = useState(false);
   const [imageZoom, setImageZoom] = useState(false);
@@ -297,6 +303,30 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
     } finally {
       setImageUploading(false);
     }
+  };
+
+  // Auto-generate slug from name
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    const autoSlug = name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    setFormData({
+      ...formData,
+      name,
+      slug: !category ? autoSlug : formData.slug
+    });
+  };
+
+  const handleSlugChange = (e) => {
+    const slug = e.target.value
+      .toLowerCase()
+      .replace(/[^\w-]/g, '')
+      .replace(/^-+|-+$/g, '');
+    setFormData({ ...formData, slug });
   };
 
   const handleSubmit = (e) => {
@@ -322,7 +352,7 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-5">
-            {/* Image Upload */}
+            {/* Image Upload Section */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Category Image</label>
               {formData.image ? (
@@ -346,15 +376,16 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
                   </div>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors">
                   <Upload className="w-8 h-8 text-gray-400 mb-2" />
                   <span className="text-sm font-medium text-gray-600">Click to upload image</span>
                   <span className="text-xs text-gray-400 mt-1">JPG, PNG, WebP, SVG supported</span>
+                  <span className="text-xs text-gray-400">Displayed on homepage & category pages</span>
                   <input type="file" accept="image/*" onChange={handleImageUpload} disabled={imageUploading} className="hidden" />
                 </label>
               )}
               {imageUploading && (
-                <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
+                <div className="flex items-center gap-2 mt-2 text-sm text-primary-600">
                   <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" /><path d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" className="opacity-75" /></svg>
                   Uploading...
                 </div>
@@ -373,32 +404,59 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
               </div>
             )}
 
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="input w-full"
-                required
-                placeholder="e.g., Electronics"
-              />
+            {/* Name & Slug */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={handleNameChange}
+                  className="input w-full"
+                  required
+                  placeholder="e.g., Electronics"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Slug <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={formData.slug}
+                  onChange={handleSlugChange}
+                  className="input w-full font-mono text-sm"
+                  required
+                  placeholder="e.g., electronics"
+                />
+                <p className="text-xs text-gray-400 mt-1">Auto-generated from name</p>
+              </div>
             </div>
 
-            {/* Parent Category */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Parent Category</label>
-              <select
-                value={formData.parentId || ''}
-                onChange={(e) => setFormData({ ...formData, parentId: e.target.value || null })}
-                className="input w-full"
-              >
-                <option value="">None (Top Level)</option>
-                {parentCategories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>{cat.name}</option>
-                ))}
-              </select>
+            {/* Parent & Sort Order */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Parent Category</label>
+                <select
+                  value={formData.parentId || ''}
+                  onChange={(e) => setFormData({ ...formData, parentId: e.target.value || null })}
+                  className="input w-full"
+                >
+                  <option value="">None (Top Level)</option>
+                  {parentCategories.map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Sort Order</label>
+                <input
+                  type="number"
+                  value={formData.sortOrder}
+                  onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+                  className="input w-full"
+                />
+              </div>
             </div>
 
             {/* Description */}
@@ -411,6 +469,24 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
                 rows={3}
                 placeholder="Brief description of this category"
               />
+            </div>
+
+            {/* Active Toggle */}
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <label htmlFor="isActive" className="text-sm font-semibold text-gray-700">Status</label>
+                <p className="text-xs text-gray-500">Inactive categories are hidden from customers</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-300 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+              </label>
             </div>
           </div>
 
