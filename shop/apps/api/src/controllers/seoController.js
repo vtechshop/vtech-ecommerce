@@ -90,6 +90,15 @@ exports.getCategorySitemap = async (req, res, next) => {
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
 
+    // Add the main products listing page
+    xml += `
+  <url>
+    <loc>${baseUrl}/products</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>`;
+
     categories.forEach(category => {
       xml += `
   <url>
@@ -194,10 +203,15 @@ Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /api/
 
-# Disallow query parameter variations (pagination, filters)
-Disallow: /*?page=
-Disallow: /*?sort=
-Disallow: /*?filter=
+# Allow important pages
+Allow: /products
+Allow: /product/
+Allow: /category/
+Allow: /blog/
+Allow: /vendor/
+Allow: /page/
+
+# Disallow query parameter variations (prevent duplicate content)
 Disallow: /*?ref=
 
 # Crawl-delay for polite crawling (optional)
