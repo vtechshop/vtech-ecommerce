@@ -132,7 +132,7 @@ const Orders = () => {
           <p className="text-gray-700 mb-6">
             {statusFilter ? `No ${statusFilter} orders` : "You haven't placed any orders yet"}
           </p>
-          <Link to="/search">
+          <Link to="/products">
             <button className="btn btn-primary">Start Shopping</button>
           </Link>
         </div>

@@ -596,7 +596,7 @@ const About = () => {
                 Join as Affiliate
               </Link>
               <Link
-                to="/search"
+                to="/products"
                 className="inline-flex items-center justify-center bg-transparent border-2 border-white text-white px-8 py-4 rounded-xl hover:bg-white hover:text-gray-600 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 Start Shopping

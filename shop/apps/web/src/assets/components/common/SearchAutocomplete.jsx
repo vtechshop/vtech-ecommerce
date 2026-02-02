@@ -132,7 +132,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
   const handleSearch = (searchQuery) => {
     if (!searchQuery.trim()) return;
     saveRecentSearch(searchQuery);
-    navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
+    navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
     setQuery('');
     setIsOpen(false);
     inputRef.current?.blur();
@@ -150,7 +150,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
     if (query.trim()) {
       // Search within category: "mixer grinder in Kitchen"
       saveRecentSearch(query.trim());
-      navigate(`/search?q=${encodeURIComponent(query.trim())}&category=${category.slug}`);
+      navigate(`/products?q=${encodeURIComponent(query.trim())}&category=${category.slug}`);
     } else {
       navigate(`/category/${category.slug}`);
     }

@@ -87,7 +87,7 @@ const Home = React.memo(() => {
             </p>
             <div className="flex gap-4 fade-in-down stagger-2">
               <Link
-                to="/search"
+                to="/products"
                 className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-100 transition-all duration-300 shadow-lg btn-scale"
               >
                 {t('home.startShopping')}
@@ -173,7 +173,7 @@ const Home = React.memo(() => {
             <section className="mb-8">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl md:text-2xl font-bold">{t('home.featuredProducts')}</h2>
-                <Link to="/search?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold">
+                <Link to="/products?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold">
                   {t('home.viewAll')}
                 </Link>
               </div>
@@ -315,7 +315,7 @@ const Home = React.memo(() => {
                   type="personalized"
                   limit={8}
                   showViewAll={true}
-                  viewAllLink="/search"
+                  viewAllLink="/products"
                 />
               </section>
             )}
@@ -326,7 +326,7 @@ const Home = React.memo(() => {
                 type="trending"
                 limit={8}
                 showViewAll={true}
-                viewAllLink="/search?sort=-sold"
+                viewAllLink="/products?sort=-sold"
               />
             </section>
 

@@ -81,7 +81,7 @@ const Cart = () => {
             </div>
             <h1 className="text-2xl font-bold mb-3 text-gray-900 fade-in-down">Your cart is empty</h1>
             <p className="text-gray-700 mb-6 fade-in stagger-1">Start shopping to add items to your cart!</p>
-            <Link to="/search" className="fade-in stagger-2">
+            <Link to="/products" className="fade-in stagger-2">
               <button className="px-4 py-2 sm:px-6 sm:py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-colors inline-flex items-center gap-2 text-sm sm:text-base btn-scale hover-lift">
                 Continue Shopping
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -269,7 +269,7 @@ const Cart = () => {
                 Proceed to Checkout
               </ShinyButton>
 
-              <Link to="/search">
+              <Link to="/products">
                 <button className="w-full bg-blue-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors btn-scale fade-in stagger-3" data-testid="continue-shopping-btn">
                   Continue Shopping
                 </button>

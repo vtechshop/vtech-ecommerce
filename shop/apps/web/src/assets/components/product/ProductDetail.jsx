@@ -172,7 +172,7 @@ const ProductDetail = () => {
         <div className="text-sm text-gray-700 mb-6">
           <Link to="/" className="hover:text-gray-600">Home</Link>
           <span className="mx-2">/</span>
-          <Link to="/search" className="hover:text-gray-600">Products</Link>
+          <Link to="/products" className="hover:text-gray-600">Products</Link>
           <span className="mx-2">/</span>
           <span className="text-gray-900">{product.title}</span>
         </div>

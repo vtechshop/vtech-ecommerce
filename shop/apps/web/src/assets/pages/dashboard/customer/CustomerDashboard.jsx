@@ -157,7 +157,7 @@ const CustomerDashboard = () => {
         ) : (
           <div className="text-center py-8 text-gray-700">
             <p>No orders yet</p>
-            <Link to="/search" className="text-blue-600 hover:underline mt-2 inline-block">
+            <Link to="/products" className="text-blue-600 hover:underline mt-2 inline-block">
               Start Shopping
             </Link>
           </div>

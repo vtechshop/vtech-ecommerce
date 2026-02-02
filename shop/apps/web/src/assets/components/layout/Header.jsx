@@ -227,8 +227,8 @@ const Header = ({ onMobileMenuToggle }) => {
           const path = location.pathname;
           const isActive = (to) => {
             if (to === '/') return path === '/';
-            if (to === '/search') return path === '/search' && !location.search.includes('view=categories');
-            if (to === '/search?view=categories') return path === '/search' && location.search.includes('view=categories');
+            if (to === '/products') return path === '/products' && !location.search.includes('view=categories');
+            if (to === '/products?view=categories') return path === '/products' && location.search.includes('view=categories');
             if (to === '/blog') return path.startsWith('/blog');
             return path.startsWith(to);
           };
@@ -236,8 +236,8 @@ const Header = ({ onMobileMenuToggle }) => {
           return (
           <nav className="hidden md:flex items-center gap-6 mt-4 pt-4 border-t dark:border-gray-700">
             <Link to="/" className={navClass('/')}>Home</Link>
-            <Link to="/search" className={navClass('/search')}>Products</Link>
-            <Link to="/search?view=categories" className={navClass('/search?view=categories')}>Categories</Link>
+            <Link to="/products" className={navClass('/products')}>Products</Link>
+            <Link to="/products?view=categories" className={navClass('/products?view=categories')}>Categories</Link>
             <Link to="/page/contact" className={navClass('/page/contact')}>Contact Us</Link>
             <Link to="/blog" className={navClass('/blog')}>Blog</Link>
             <Link to="/page/about" className={navClass('/page/about')}>About</Link>
@@ -269,8 +269,8 @@ const Header = ({ onMobileMenuToggle }) => {
           const path = location.pathname;
           const isActive = (to) => {
             if (to === '/') return path === '/';
-            if (to === '/search') return path === '/search' && !location.search.includes('view=categories');
-            if (to === '/search?view=categories') return path === '/search' && location.search.includes('view=categories');
+            if (to === '/products') return path === '/products' && !location.search.includes('view=categories');
+            if (to === '/products?view=categories') return path === '/products' && location.search.includes('view=categories');
             if (to === '/blog') return path.startsWith('/blog');
             return path.startsWith(to);
           };
@@ -280,8 +280,8 @@ const Header = ({ onMobileMenuToggle }) => {
           <div className="md:hidden border-t dark:border-gray-700 bg-white dark:bg-gray-900">
             <nav className="container mx-auto px-4 py-4 flex flex-col gap-2">
             <Link to="/" className={mobileClass('/')} onClick={() => setMobileMenuOpen(false)}>Home</Link>
-            <Link to="/search" className={mobileClass('/search')} onClick={() => setMobileMenuOpen(false)}>Products</Link>
-            <Link to="/search?view=categories" className={mobileClass('/search?view=categories')} onClick={() => setMobileMenuOpen(false)}>Categories</Link>
+            <Link to="/products" className={mobileClass('/products')} onClick={() => setMobileMenuOpen(false)}>Products</Link>
+            <Link to="/products?view=categories" className={mobileClass('/products?view=categories')} onClick={() => setMobileMenuOpen(false)}>Categories</Link>
             <Link to="/page/contact" className={mobileClass('/page/contact')} onClick={() => setMobileMenuOpen(false)}>Contact Us</Link>
             <Link to="/blog" className={mobileClass('/blog')} onClick={() => setMobileMenuOpen(false)}>Blog</Link>
             <Link to="/page/about" className={mobileClass('/page/about')} onClick={() => setMobileMenuOpen(false)}>About</Link>

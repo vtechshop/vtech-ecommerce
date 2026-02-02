@@ -231,7 +231,8 @@ function App() {
           {/* Public routes */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
-            <Route path="/search" element={<Search />} />
+            <Route path="/products" element={<Search />} />
+            <Route path="/search" element={<Navigate to="/products" replace />} />
             <Route path="/category/:slug" element={<Category />} />
             <Route path="/product/:slug" element={<Product />} />
             <Route path="/cart" element={<Cart />} />

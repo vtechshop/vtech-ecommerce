@@ -126,7 +126,7 @@ const Wishlist = () => {
           </svg>
           <h3 className="text-xl font-semibold mb-2">Your wishlist is empty</h3>
           <p className="text-gray-700 mb-6">Save your favorite items for later</p>
-          <Link to="/search">
+          <Link to="/products">
             <Button variant="primary">Start Shopping</Button>
           </Link>
         </div>

@@ -353,8 +353,8 @@ exports.renderPage = async (req, res, next) => {
       }
     }
 
-    // Search page
-    else if (pathParts[0] === 'search') {
+    // Products/Search page
+    else if (pathParts[0] === 'products' || pathParts[0] === 'search') {
       pageData.title = 'Search Products - V-Tech Kitchen';
       pageData.description = 'Search for premium kitchen appliances, cookware, and utensils at V-Tech Kitchen.';
       pageData.content = `
@@ -421,7 +421,7 @@ exports.renderPage = async (req, res, next) => {
   <header>
     <nav>
       <a href="${clientUrl}">V-Tech Kitchen</a> |
-      <a href="${clientUrl}/search">Products</a> |
+      <a href="${clientUrl}/products">Products</a> |
       <a href="${clientUrl}/blog">Blog</a> |
       <a href="${clientUrl}/page/contact">Contact</a>
     </nav>

@@ -22,14 +22,14 @@ const CRAWLER_USER_AGENTS = [
 ];
 
 // Routes to intercept for crawlers
-const SEO_ROUTES = ['/product/', '/category/', '/vendor/', '/page/', '/blog/', '/search'];
+const SEO_ROUTES = ['/product/', '/category/', '/vendor/', '/page/', '/blog/', '/products'];
 
 export default async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
 
   // Only intercept SEO-relevant routes
-  const isSeoRoute = SEO_ROUTES.some(route => pathname.startsWith(route) || pathname === '/search');
+  const isSeoRoute = SEO_ROUTES.some(route => pathname.startsWith(route) || pathname === '/products');
   if (!isSeoRoute) {
     return;
   }
@@ -77,6 +77,6 @@ export const config = {
     '/vendor/:path*',
     '/page/:path*',
     '/blog/:path*',
-    '/search',
+    '/products',
   ],
 };

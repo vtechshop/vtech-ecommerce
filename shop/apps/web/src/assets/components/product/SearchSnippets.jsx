@@ -57,7 +57,7 @@ const SearchSnippets = ({ limit = 3, className = '' }) => {
                   </p>
                 </div>
                 <Link
-                  to={`/search?q=${encodeURIComponent(snippet.query)}`}
+                  to={`/products?q=${encodeURIComponent(snippet.query)}`}
                   className="flex items-center gap-1 text-blue-600 dark:text-primary-400 hover:underline font-medium text-sm"
                 >
                   View All
