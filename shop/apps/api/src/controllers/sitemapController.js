@@ -37,11 +37,10 @@ exports.generateSitemap = async (req, res, next) => {
   try {
     const now = new Date().toISOString();
 
-    // ✅ IMPORTANT: use correct filters (no "published: true" mistake)
     const [products, categories, posts, pages, vendors] = await Promise.all([
-      Product.find({ status: 'active' }).select('slug updatedAt title images').lean(),
+      Product.find({ published: true }).select('slug updatedAt title images').lean(),
       Category.find({ isActive: true }).select('slug updatedAt name image').lean(),
-      Post.find({ status: 'published' }).select('slug updatedAt title featuredImage').lean(),
+      Post.find({ published: true }).select('slug updatedAt title featuredImage').lean(),
       Page.find({ status: 'published' }).select('slug updatedAt').lean(),
       Vendor.find({ status: 'active' }).select('slug updatedAt storeName logo').lean(),
     ]);
