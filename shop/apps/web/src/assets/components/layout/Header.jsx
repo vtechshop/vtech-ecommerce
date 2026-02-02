@@ -232,7 +232,7 @@ const Header = ({ onMobileMenuToggle }) => {
             if (to === '/blog') return path.startsWith('/blog');
             return path.startsWith(to);
           };
-          const navClass = (to) => `hover:text-primary-500 transition-colors ${isActive(to) ? 'text-primary-600 font-semibold border-b-2 border-primary-600 pb-1' : ''}`;
+          const navClass = (to) => `text-white hover:text-primary-300 transition-colors no-underline ${isActive(to) ? '!text-primary-400 font-semibold border-b-2 border-primary-400 pb-1' : ''}`;
           return (
           <nav className="hidden md:flex items-center gap-6 mt-4 pt-4 border-t dark:border-gray-700">
             <Link to="/" className={navClass('/')}>Home</Link>
@@ -274,7 +274,7 @@ const Header = ({ onMobileMenuToggle }) => {
             if (to === '/blog') return path.startsWith('/blog');
             return path.startsWith(to);
           };
-          const mobileClass = (to) => `py-2 transition-colors ${isActive(to) ? 'text-primary-600 font-semibold border-l-4 border-primary-600 pl-3' : 'hover:text-gray-600'}`;
+          const mobileClass = (to) => `py-2 text-white transition-colors no-underline ${isActive(to) ? '!text-primary-400 font-semibold border-l-4 border-primary-400 pl-3' : 'hover:text-primary-300'}`;
           return (
         <AnimatedDiv animation="slideLeft" duration={0.3}>
           <div className="md:hidden border-t dark:border-gray-700 bg-white dark:bg-gray-900">
