@@ -1,6 +1,7 @@
 // FILE: apps/api/src/controllers/vendorController.js
 const Vendor = require('../models/Vendor');
 const Product = require('../models/Product');
+const Category = require('../models/Category');
 const Order = require('../models/Order');
 const Commission = require('../models/Commission');
 const { slugify, generateSKU, getPaginationMeta } = require('../utils/helpers');
@@ -1142,6 +1143,96 @@ async function getVendorReviews(req, res, next) {
 }
 
 // ---------- EXPORTS ----------
+// ---------- CATEGORY MANAGEMENT ----------
+async function getCategories(req, res, next) {
+  try {
+    const categories = await Category.find({ isActive: true })
+      .sort({ sortOrder: 1, name: 1 })
+      .lean();
+    res.json({ success: true, data: categories });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function createCategory(req, res, next) {
+  try {
+    const { name, description, image, parentId } = req.body;
+    if (!name) {
+      return res.status(400).json({ success: false, error: { message: 'Category name is required' } });
+    }
+
+    const slug = name.toLowerCase().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
+    const existing = await Category.findOne({ slug });
+    if (existing) {
+      return res.status(400).json({ success: false, error: { message: 'Category with this name already exists' } });
+    }
+
+    const category = await Category.create({
+      name,
+      slug,
+      description,
+      image,
+      parentId: parentId || null,
+      createdBy: req.user.userId,
+    });
+
+    logger.info(`Category created by vendor ${req.user.userId}: ${name}`);
+    res.status(201).json({ success: true, data: category });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function updateCategory(req, res, next) {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ success: false, error: { message: 'Category not found' } });
+    }
+    if (!category.createdBy || category.createdBy.toString() !== req.user.userId) {
+      return res.status(403).json({ success: false, error: { message: 'You can only edit categories you created' } });
+    }
+
+    const { name, description, image, parentId } = req.body;
+    if (name) {
+      category.name = name;
+      category.slug = name.toLowerCase().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+    if (description !== undefined) category.description = description;
+    if (image !== undefined) category.image = image;
+    if (parentId !== undefined) category.parentId = parentId || null;
+
+    await category.save();
+    res.json({ success: true, data: category });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function deleteCategory(req, res, next) {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) {
+      return res.status(404).json({ success: false, error: { message: 'Category not found' } });
+    }
+    if (!category.createdBy || category.createdBy.toString() !== req.user.userId) {
+      return res.status(403).json({ success: false, error: { message: 'You can only delete categories you created' } });
+    }
+
+    const productCount = await Product.countDocuments({ categoryIds: category._id });
+    if (productCount > 0) {
+      return res.status(400).json({ success: false, error: { message: `Cannot delete: ${productCount} products are using this category` } });
+    }
+
+    await Category.findByIdAndDelete(req.params.id);
+    logger.info(`Category deleted by vendor ${req.user.userId}: ${category.name}`);
+    res.json({ success: true, message: 'Category deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getVendorBySlug,
   getVendorReviews,
@@ -1168,4 +1259,9 @@ module.exports = {
   updateBank,
   updatePolicies,
   updatePayout,
+  // Categories
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
 };

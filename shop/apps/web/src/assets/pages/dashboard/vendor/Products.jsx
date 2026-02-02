@@ -7,7 +7,7 @@ import Button from '@/components/common/Button';
 import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
-import { X, AlertCircle, ExternalLink } from 'lucide-react';
+import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, FolderTree } from 'lucide-react';
 
 const Products = () => {
   const queryClient = useQueryClient();
@@ -23,6 +23,83 @@ const Products = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success'); // 'success', 'error', 'warning'
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [categoryForm, setCategoryForm] = useState({ name: '', description: '', parentId: '' });
+
+  // Fetch categories for category management
+  const { data: allCategoriesData } = useQuery({
+    queryKey: ['vendor-categories'],
+    queryFn: async () => {
+      const response = await api.get('/vendors/categories');
+      return response.data.data;
+    },
+  });
+  const allCategories = allCategoriesData || [];
+
+  const createCategoryMutation = useMutation({
+    mutationFn: async (data) => api.post('/vendors/categories', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setShowCategoryModal(false);
+      setEditingCategory(null);
+      setCategoryForm({ name: '', description: '', parentId: '' });
+      setToastMessage('Category created successfully');
+      setToastType('success');
+      setShowToast(true);
+    },
+    onError: (error) => {
+      setToastMessage(error.response?.data?.error?.message || 'Failed to create category');
+      setToastType('error');
+      setShowToast(true);
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, data }) => api.put(`/vendors/categories/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setShowCategoryModal(false);
+      setEditingCategory(null);
+      setCategoryForm({ name: '', description: '', parentId: '' });
+      setToastMessage('Category updated successfully');
+      setToastType('success');
+      setShowToast(true);
+    },
+    onError: (error) => {
+      setToastMessage(error.response?.data?.error?.message || 'Failed to update category');
+      setToastType('error');
+      setShowToast(true);
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id) => api.delete(`/vendors/categories/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      setToastMessage('Category deleted successfully');
+      setToastType('success');
+      setShowToast(true);
+    },
+    onError: (error) => {
+      setToastMessage(error.response?.data?.error?.message || 'Failed to delete category');
+      setToastType('error');
+      setShowToast(true);
+    },
+  });
+
+  const handleCategorySubmit = (e) => {
+    e.preventDefault();
+    const payload = { name: categoryForm.name, description: categoryForm.description, parentId: categoryForm.parentId || null };
+    if (editingCategory) {
+      updateCategoryMutation.mutate({ id: editingCategory._id, data: payload });
+    } else {
+      createCategoryMutation.mutate(payload);
+    }
+  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['vendor-products', page],
@@ -165,9 +242,15 @@ const Products = () => {
 
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">My Products</h1>
-        <Button onClick={handleAddProductClick} variant="primary">
-          Add Product
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={() => setShowCategoryModal(true)} variant="secondary">
+            <FolderTree className="w-4 h-4 mr-2" />
+            Categories
+          </Button>
+          <Button onClick={handleAddProductClick} variant="primary">
+            Add Product
+          </Button>
+        </div>
       </div>
 
       {products.length === 0 ? (
@@ -262,6 +345,112 @@ const Products = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold">Manage Categories</h2>
+              <button onClick={() => { setShowCategoryModal(false); setEditingCategory(null); setCategoryForm({ name: '', description: '', parentId: '' }); }} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Create/Edit Form */}
+            <form onSubmit={handleCategorySubmit} className="p-6 border-b space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <input
+                    type="text"
+                    value={categoryForm.name}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                    placeholder="Category name"
+                    required
+                    className="input w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
+                  <select
+                    value={categoryForm.parentId}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value })}
+                    className="input w-full"
+                  >
+                    <option value="">None (Top Level)</option>
+                    {allCategories.filter(c => !c.parentId).map(cat => (
+                      <option key={cat._id} value={cat._id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={categoryForm.description}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+                  placeholder="Optional description"
+                  className="input w-full"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" variant="primary" disabled={createCategoryMutation.isPending || updateCategoryMutation.isPending}>
+                  {editingCategory ? 'Update' : 'Create'} Category
+                </Button>
+                {editingCategory && (
+                  <Button type="button" variant="secondary" onClick={() => { setEditingCategory(null); setCategoryForm({ name: '', description: '', parentId: '' }); }}>
+                    Cancel Edit
+                  </Button>
+                )}
+              </div>
+            </form>
+
+            {/* Category List */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {allCategories.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">No categories yet. Create one above.</p>
+              ) : (
+                <div className="space-y-2">
+                  {allCategories.filter(c => !c.parentId).map(cat => (
+                    <div key={cat._id}>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <FolderTree className="w-4 h-4 text-blue-600" />
+                          <span className="font-medium">{cat.name}</span>
+                          <span className="text-xs text-gray-400">/{cat.slug}</span>
+                        </div>
+                        {cat.createdBy && (
+                          <div className="flex gap-1">
+                            <button onClick={() => { setEditingCategory(cat); setCategoryForm({ name: cat.name, description: cat.description || '', parentId: cat.parentId || '' }); }} className="p-1.5 hover:bg-blue-100 rounded text-blue-600"><Edit className="w-4 h-4" /></button>
+                            <button onClick={() => { if (confirm('Delete this category?')) deleteCategoryMutation.mutate(cat._id); }} className="p-1.5 hover:bg-red-100 rounded text-red-600"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        )}
+                      </div>
+                      {/* Subcategories */}
+                      {allCategories.filter(sub => sub.parentId === cat._id).map(sub => (
+                        <div key={sub._id} className="flex items-center justify-between p-3 pl-10 bg-white border-l-2 border-blue-200 ml-4 mt-1 rounded-r-lg">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">{sub.name}</span>
+                            <span className="text-xs text-gray-400">/{sub.slug}</span>
+                          </div>
+                          {sub.createdBy && (
+                            <div className="flex gap-1">
+                              <button onClick={() => { setEditingCategory(sub); setCategoryForm({ name: sub.name, description: sub.description || '', parentId: sub.parentId || '' }); }} className="p-1.5 hover:bg-blue-100 rounded text-blue-600"><Edit className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => { if (confirm('Delete this category?')) deleteCategoryMutation.mutate(sub._id); }} className="p-1.5 hover:bg-red-100 rounded text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Add/Edit Product Modal */}

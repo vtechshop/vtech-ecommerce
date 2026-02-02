@@ -151,11 +151,15 @@ const Home = React.memo(() => {
                 }`}>
                   {categories.map((category) => (
                     <Link key={category.slug} to={`/category/${category.slug}`} className="group">
-                      <div className="bg-white rounded-lg p-6 text-center hover:shadow-xl transition-all duration-300 border border-gray-200 hover-lift">
-                        <div className="w-16 h-16 mx-auto mb-3 bg-primary-100 rounded-full flex items-center justify-center group-hover:bg-primary-200 group-hover:scale-110 transition-all duration-300">
-                          <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                          </svg>
+                      <div className="bg-white rounded-lg p-4 text-center hover:shadow-xl transition-all duration-300 border border-gray-200 hover-lift">
+                        <div className="w-20 h-20 mx-auto mb-3 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center group-hover:scale-105 transition-all duration-300">
+                          {category.image ? (
+                            <img src={category.image} alt={category.name} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                          )}
                         </div>
                         <h3 className="font-semibold text-sm">{category.name}</h3>
                       </div>

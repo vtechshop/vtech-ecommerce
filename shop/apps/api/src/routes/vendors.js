@@ -12,6 +12,12 @@ router.post('/onboard', authenticate, vendorController.onboard);
 // Dashboard stats - requires approved KYC
 router.get('/dashboard/stats', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getDashboardStats);
 
+// Category routes - allow vendors to manage categories without KYC approval
+router.get('/categories', authenticate, authorize(['vendor', 'admin']), vendorController.getCategories);
+router.post('/categories', authenticate, authorize(['vendor', 'admin']), vendorController.createCategory);
+router.put('/categories/:id', authenticate, authorize(['vendor', 'admin']), vendorController.updateCategory);
+router.delete('/categories/:id', authenticate, authorize(['vendor', 'admin']), vendorController.deleteCategory);
+
 // Product routes - allow vendors to manage products without KYC approval
 router.get('/products', authenticate, authorize(['vendor', 'admin']), vendorController.getVendorProducts);
 router.post('/products', authenticate, authorize(['vendor', 'admin']), vendorController.createProduct);
