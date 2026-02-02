@@ -223,30 +223,25 @@ const Header = ({ onMobileMenuToggle }) => {
         </div>
 
         {/* Navigation */}
-        {!isDashboardPage && (
+        {!isDashboardPage && (() => {
+          const path = location.pathname;
+          const isActive = (to) => {
+            if (to === '/') return path === '/';
+            if (to === '/search') return path === '/search' && !location.search.includes('view=categories');
+            if (to === '/search?view=categories') return path === '/search' && location.search.includes('view=categories');
+            if (to === '/blog') return path.startsWith('/blog');
+            return path.startsWith(to);
+          };
+          const navClass = (to) => `hover:text-primary-500 transition-colors ${isActive(to) ? 'text-primary-600 font-semibold border-b-2 border-primary-600 pb-1' : ''}`;
+          return (
           <nav className="hidden md:flex items-center gap-6 mt-4 pt-4 border-t dark:border-gray-700">
-
-            <Link to="/" className="hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400 font-medium">
-              Home
-            </Link>
-            <Link to="/search" className="hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400">
-              Products
-            </Link>
-            <Link to="/search?view=categories" className="hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400">
-              Categories
-            </Link>
-            <Link to="/page/contact" className="hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400">
-              Contact Us
-            </Link>
-            <Link to="/blog" className="hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400">
-              Blog
-            </Link>
-          <Link to="/page/about" className="hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400">
-              About
-            </Link>
-            <Link to="/track-order" className="hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400">
-              Track Order
-            </Link>
+            <Link to="/" className={navClass('/')}>Home</Link>
+            <Link to="/search" className={navClass('/search')}>Products</Link>
+            <Link to="/search?view=categories" className={navClass('/search?view=categories')}>Categories</Link>
+            <Link to="/page/contact" className={navClass('/page/contact')}>Contact Us</Link>
+            <Link to="/blog" className={navClass('/blog')}>Blog</Link>
+            <Link to="/page/about" className={navClass('/page/about')}>About</Link>
+            <Link to="/track-order" className={navClass('/track-order')}>Track Order</Link>
             {/* Only show Become Vendor/Affiliate for non-logged in users */}
             {!isAuthenticated && (
               <div className="ml-auto flex items-center gap-4">
@@ -265,63 +260,32 @@ const Header = ({ onMobileMenuToggle }) => {
               </div>
             )}
           </nav>
-        )}
+          );
+        })()}
       </div>
 
       {/* Mobile menu - only show on non-dashboard pages */}
-      {mobileMenuOpen && !isDashboardPage && (
+      {mobileMenuOpen && !isDashboardPage && (() => {
+          const path = location.pathname;
+          const isActive = (to) => {
+            if (to === '/') return path === '/';
+            if (to === '/search') return path === '/search' && !location.search.includes('view=categories');
+            if (to === '/search?view=categories') return path === '/search' && location.search.includes('view=categories');
+            if (to === '/blog') return path.startsWith('/blog');
+            return path.startsWith(to);
+          };
+          const mobileClass = (to) => `py-2 transition-colors ${isActive(to) ? 'text-primary-600 font-semibold border-l-4 border-primary-600 pl-3' : 'hover:text-gray-600'}`;
+          return (
         <AnimatedDiv animation="slideLeft" duration={0.3}>
           <div className="md:hidden border-t dark:border-gray-700 bg-white dark:bg-gray-900">
             <nav className="container mx-auto px-4 py-4 flex flex-col gap-2">
-            <Link
-              to="/"
-              className="py-2 hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              to="/search"
-              className="py-2 hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Products
-            </Link>
-            <Link
-              to="/search?view=categories"
-              className="py-2 hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Categories
-            </Link>
-            <Link
-              to="/page/contact"
-              className="py-2 hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Contact Us
-            </Link>
-            <Link
-              to="/blog"
-              className="py-2 hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Blog
-            </Link>
-            <Link
-              to="/page/about"
-              className="py-2 hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              About
-            </Link>
-            <Link
-              to="/track-order"
-              className="py-2 hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Track Order
-            </Link>
+            <Link to="/" className={mobileClass('/')} onClick={() => setMobileMenuOpen(false)}>Home</Link>
+            <Link to="/search" className={mobileClass('/search')} onClick={() => setMobileMenuOpen(false)}>Products</Link>
+            <Link to="/search?view=categories" className={mobileClass('/search?view=categories')} onClick={() => setMobileMenuOpen(false)}>Categories</Link>
+            <Link to="/page/contact" className={mobileClass('/page/contact')} onClick={() => setMobileMenuOpen(false)}>Contact Us</Link>
+            <Link to="/blog" className={mobileClass('/blog')} onClick={() => setMobileMenuOpen(false)}>Blog</Link>
+            <Link to="/page/about" className={mobileClass('/page/about')} onClick={() => setMobileMenuOpen(false)}>About</Link>
+            <Link to="/track-order" className={mobileClass('/track-order')} onClick={() => setMobileMenuOpen(false)}>Track Order</Link>
             {/* Only show Become Vendor/Affiliate for non-logged in users */}
             {!isAuthenticated && (
               <>
@@ -345,7 +309,8 @@ const Header = ({ onMobileMenuToggle }) => {
           </nav>
         </div>
         </AnimatedDiv>
-      )}
+          );
+      })()}
     </header>
   );
 };
