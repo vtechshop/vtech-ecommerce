@@ -163,35 +163,54 @@ const VendorGuide = () => {
               <div>
                 <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-blue-600" />
-                  Commission Workflow
+                  Commission & Payment Workflow (Razorpay Route)
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">1</div>
                     <div>
-                      <h4 className="font-semibold">Order Placed</h4>
-                      <p className="text-gray-700 text-sm">Customer completes purchase → Commission created with status "Pending"</p>
+                      <h4 className="font-semibold">Customer Pays</h4>
+                      <p className="text-gray-700 text-sm">Payment is automatically split via Razorpay Route. Your share (85%) is held securely on Razorpay. Commission record created with status "Pending".</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">2</div>
                     <div>
                       <h4 className="font-semibold">Order Delivered</h4>
-                      <p className="text-gray-700 text-sm">After successful delivery and return window expires (7-30 days)</p>
+                      <p className="text-gray-700 text-sm">Commission auto-approved after successful delivery. Status changes to "Approved". Funds remain on hold.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold">3</div>
+                    <div className="flex-shrink-0 w-8 h-8 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center font-bold">3</div>
                     <div>
-                      <h4 className="font-semibold">Admin Approval</h4>
-                      <p className="text-gray-700 text-sm">Admin reviews and approves commission → Status changes to "Approved"</p>
+                      <h4 className="font-semibold">7-Day Return Window</h4>
+                      <p className="text-gray-700 text-sm">Funds are held for 7 days after delivery. If the customer returns the product, the held amount is reversed.</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold">4</div>
                     <div>
-                      <h4 className="font-semibold">Payment Processed</h4>
-                      <p className="text-gray-700 text-sm">Payment sent to your bank account → Status changes to "Paid"</p>
+                      <h4 className="font-semibold">Payment Released</h4>
+                      <p className="text-gray-700 text-sm">After 7 days, your payment is automatically released to your Razorpay linked account. Admin can also release it manually anytime.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center font-bold">5</div>
+                    <div>
+                      <h4 className="font-semibold">Bank Settlement</h4>
+                      <p className="text-gray-700 text-sm">Razorpay settles funds to your bank account (T+2 business days). Status changes to "Paid".</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-yellow-900 mb-1">Razorpay Account Required</p>
+                      <p className="text-sm text-yellow-800">
+                        You must connect your Razorpay Linked Account from the <Link to="/vendor-dashboard/settlements" className="underline font-semibold">Settlements page</Link> in your dashboard. Razorpay will verify your business KYC before activating your account. Until activation, payouts will be processed manually by the admin.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -505,6 +524,85 @@ const VendorGuide = () => {
                 <div className="border-l-4 border-blue-500 pl-4">
                   <h3 className="font-semibold text-lg mb-2">5. Start Selling</h3>
                   <p className="text-gray-700 text-sm">Receive orders, fulfill them promptly, and earn commissions</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Payments & Settlements */}
+          <section id="payments" className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-6 text-white">
+              <div className="flex items-center gap-3">
+                <CreditCard className="w-8 h-8" />
+                <div>
+                  <h2 className="text-2xl font-bold">Payments & Settlements</h2>
+                  <p className="text-emerald-100">How you receive your money</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Razorpay Route – Automatic Splits</h3>
+                <p className="text-gray-700 mb-4">
+                  V-Tech uses Razorpay Route to automatically split every payment. When a customer purchases your product, the platform commission is deducted and your share is transferred to your Razorpay linked account — all automatically.
+                </p>
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <h4 className="font-semibold text-emerald-900 mb-2">Setup Steps:</h4>
+                  <ol className="list-decimal pl-6 text-emerald-800 space-y-1 text-sm">
+                    <li>Go to <strong>Settlements</strong> in your vendor dashboard</li>
+                    <li>Click <strong>"Connect Razorpay Account"</strong> and enter your business details</li>
+                    <li>Razorpay verifies your KYC (business name, PAN, bank account)</li>
+                    <li>Once activated, payments are automatically split on every order</li>
+                  </ol>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Payment Hold Period</h3>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-amber-900 text-sm">
+                    <strong>Your funds are held for 7 days after delivery</strong> to cover the customer return window. After this period, payment is automatically released to your Razorpay account. The admin can also release it manually at any time. Razorpay then settles to your bank account within T+2 business days.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Requirements for Payouts</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">KYC Documents</h4>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• PAN Card (mandatory for TDS compliance)</li>
+                      <li>• Bank account verification</li>
+                      <li>• Business registration (if applicable)</li>
+                    </ul>
+                  </div>
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">Razorpay Account</h4>
+                    <ul className="text-sm text-gray-700 space-y-1">
+                      <li>• Linked account in "Activated" status</li>
+                      <li>• Valid bank account linked</li>
+                      <li>• IFSC code verified</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-primary-900 mb-2">View Your Settlements</h4>
+                    <p className="text-sm text-primary-800 mb-3">
+                      Track all your earnings, held transfers, and payout history in the Settlements section.
+                    </p>
+                    <Link
+                      to="/vendor-dashboard/settlements"
+                      className="inline-block bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 transition-colors text-sm font-medium"
+                    >
+                      Go to Settlements →
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

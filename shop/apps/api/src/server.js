@@ -120,7 +120,18 @@ function setupCronJobs() {
       }
     });
 
-    logger.info('✅ Cron jobs scheduled: Abandoned carts (hourly), Inventory alerts (9 AM), Loyalty expiration (2 AM), GDPR deletions (3 AM), Payment reconciliation (every 5 min)');
+    // Daily at 10 AM - Auto-release held Razorpay Route transfers after 7-day return window
+    cron.schedule('0 10 * * *', async () => {
+      try {
+        logger.info('[Cron] Running auto-release of held transfers...');
+        const autoReleaseTransfers = require('./jobs/autoReleaseTransfers');
+        await autoReleaseTransfers();
+      } catch (error) {
+        logger.error('[Cron] Auto-release transfers failed:', error);
+      }
+    });
+
+    logger.info('✅ Cron jobs scheduled: Abandoned carts (hourly), Inventory alerts (9 AM), Loyalty expiration (2 AM), GDPR deletions (3 AM), Payment reconciliation (every 5 min), Auto-release transfers (10 AM)');
   } catch (error) {
     logger.error('Failed to set up cron jobs:', error);
   }

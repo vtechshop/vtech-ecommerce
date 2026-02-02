@@ -455,55 +455,76 @@ const AffiliateGuide = () => {
               <h2 className="text-3xl font-bold text-gray-900">Payment Information</h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Payment Schedule</h3>
-                <ul className="space-y-2 text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span><strong>Frequency:</strong> Monthly</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span><strong>Processing:</strong> Within 15 days after month-end</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span><strong>Minimum Threshold:</strong> ₹500</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span><strong>Below Threshold:</strong> Balance carries over to next month</span>
-                  </li>
-                </ul>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">How You Get Paid (Razorpay Route)</h3>
+                <p className="text-gray-700 mb-4">
+                  V-Tech uses Razorpay Route to automatically split payments. Your commission share is held on Razorpay and released after the order is delivered and the return window expires.
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <ol className="list-decimal pl-6 text-blue-800 space-y-2 text-sm">
+                    <li><strong>Customer Pays:</strong> Your commission is automatically split and held on Razorpay</li>
+                    <li><strong>Order Delivered:</strong> Commission auto-approved</li>
+                    <li><strong>7-Day Return Window:</strong> Funds remain on hold</li>
+                    <li><strong>Auto-Released:</strong> After 7 days, payment is automatically released (admin can also release manually)</li>
+                    <li><strong>TDS Deducted:</strong> 2% TDS deducted, net amount sent to your bank</li>
+                  </ol>
+                </div>
               </div>
 
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">Payment Methods</h3>
-                <ul className="space-y-2 text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span><strong>Bank Transfer</strong> (Recommended - NEFT/IMPS)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span><strong>UPI</strong> (Fast & convenient)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <span><strong>PayPal</strong> (Where available)</span>
-                  </li>
-                </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Payment Details</h3>
+                  <ul className="space-y-2 text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span><strong>Minimum Payout:</strong> ₹500</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span><strong>Below Threshold:</strong> Balance carries over</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span><strong>Method:</strong> Bank Transfer (NEFT/IMPS) via Razorpay</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span><strong>Settlement:</strong> T+2 business days after release</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Requirements</h3>
+                  <ul className="space-y-2 text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <span><strong>PAN Card</strong> (mandatory for TDS)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <span><strong>Bank Account</strong> verified via KYC</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <span><strong>KYC Approved</strong> by admin</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-6">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mt-6">
               <div className="flex items-start gap-3">
-                <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+                <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-yellow-900 mb-2">Important Tax Information</h4>
-                  <p className="text-sm text-yellow-800">
-                    You are responsible for any applicable taxes on your commission earnings. We recommend consulting with a tax professional about your affiliate income. V-Tech does not withhold taxes from affiliate payments.
+                  <h4 className="font-semibold text-amber-900 mb-2">TDS (Tax Deducted at Source) – 2%</h4>
+                  <p className="text-sm text-amber-800 mb-2">
+                    As per Section 194H of the Indian Income Tax Act, <strong>2% TDS is deducted</strong> on all affiliate commission payouts. You receive the net amount after TDS deduction.
+                  </p>
+                  <p className="text-sm text-amber-800">
+                    <strong>Example:</strong> Commission ₹500 → TDS (2%): ₹10 → You receive: ₹490. You can claim TDS credit when filing your Income Tax Return (ITR). See <Link to="/page/affiliate-terms#tds" className="underline font-semibold">Affiliate Terms Section 4.3</Link> for full details.
                   </p>
                 </div>
               </div>

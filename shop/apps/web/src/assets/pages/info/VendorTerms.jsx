@@ -90,17 +90,45 @@ const VendorTerms = () => {
 
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">5. Payments & Settlements</h2>
-              <ul className="list-disc pl-6 text-gray-700 space-y-2">
-                <li>Payments are processed on a weekly/bi-weekly basis</li>
-                <li>Minimum payout threshold: ₹500</li>
-                <li>Payments are made via bank transfer</li>
-                <li>Provide valid bank account details</li>
-                <li>Payments are subject to successful delivery and no returns</li>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">5.1 Razorpay Route – Automatic Payment Splits</h3>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                V-Tech uses <strong>Razorpay Route</strong> to automatically split payments at the time of purchase. When a customer pays for your product, the platform commission is deducted and your share is held securely with Razorpay.
+              </p>
+              <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
+                <li>You must connect your Razorpay Linked Account via the <strong>Settlements</strong> page in your vendor dashboard</li>
+                <li>Razorpay will verify your business details (KYC) before activating your account</li>
+                <li>Once activated, all future order payments are automatically split</li>
               </ul>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">5.2 Payment Hold & Release</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4">
+                <p className="text-blue-900 font-semibold mb-2">How the Payment Flow Works:</p>
+                <ol className="list-decimal pl-6 text-blue-800 space-y-2">
+                  <li><strong>Order Placed:</strong> Customer pays → Your share is automatically split and held on Razorpay (on_hold)</li>
+                  <li><strong>Order Delivered:</strong> Commission status changes to "Approved"</li>
+                  <li><strong>7-Day Return Window:</strong> Funds remain on hold for 7 days after delivery to cover potential returns</li>
+                  <li><strong>Auto-Release:</strong> After 7 days, your payment is automatically released to your Razorpay linked account. Admin can also release it manually at any time.</li>
+                  <li><strong>Funds in Your Account:</strong> Razorpay settles to your bank account (typically T+2 business days)</li>
+                </ol>
+              </div>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">5.3 Requirements</h3>
+              <ul className="list-disc pl-6 text-gray-700 space-y-2">
+                <li>Valid PAN number (mandatory for payouts – TDS compliance)</li>
+                <li>Verified bank account linked to your Razorpay account</li>
+                <li>KYC verification completed (PAN + Bank)</li>
+                <li>Razorpay linked account in "Activated" status</li>
+              </ul>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-4">5.4 Manual Payout (Fallback)</h3>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                If Razorpay Route is unavailable or your linked account is not yet activated, payouts will be processed manually via bank transfer (NEFT/IMPS/RTGS) by the admin team.
+              </p>
 
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mt-4">
                 <p className="text-yellow-900">
-                  <strong>Note:</strong> Funds may be held for 7-14 days after delivery to account for potential returns and refunds.
+                  <strong>Important:</strong> Funds are held for a minimum of 7 days after delivery to account for the return window. If an order is returned or refunded during this period, the held amount will be reversed. Payments are automatically released after the 7-day window, or the admin can release them manually.
                 </p>
               </div>
             </section>

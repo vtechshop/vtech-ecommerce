@@ -98,7 +98,7 @@ const vendorSchema = new mongoose.Schema({
     accountId: String, // Razorpay Linked Account ID (acc_XXXXX)
     accountStatus: {
       type: String,
-      enum: ['not_connected', 'created', 'activated', 'suspended'],
+      enum: ['not_connected', 'created', 'under_review', 'activated', 'suspended', 'funds_hold', 'funds_unhold'],
       default: 'not_connected'
     },
     accountEmail: String,
@@ -116,6 +116,9 @@ const vendorSchema = new mongoose.Schema({
       enum: ['instant', 'daily', 'weekly', 'monthly'],
       default: 'instant'
     },
+    // Hold configuration for Route transfers
+    holdUntilDelivery: { type: Boolean, default: true }, // Hold transfers until order delivered
+    holdDays: { type: Number, default: 7 }, // Max hold days (fallback release)
     // Metadata
     connectedAt: Date,
     lastSettlementAt: Date,

@@ -803,6 +803,112 @@ class NotificationService {
     // Implement SMS via Twilio, SNS, etc.
     logger.info(`SMS to ${phone}: ${message}`);
   }
+
+  /**
+   * Send transfer/account status alert emails
+   * Used for: transfer failures, account activation, account suspension
+   */
+  async sendTransferAlert(email, name, details) {
+    let subject, bodyContent;
+
+    switch (details.type) {
+      case 'transfer_failed':
+        subject = `Payment Transfer Failed - Action Required`;
+        bodyContent = `
+          <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <strong style="color: #dc2626;">Transfer Failed</strong>
+          </div>
+          <p>Hi ${name},</p>
+          <p>A payment transfer to your account has failed. The platform team has been notified and will process this manually.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Amount</td><td style="padding: 8px; border-bottom: 1px solid #eee;">₹${details.amount?.toFixed(2) || '0.00'}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Reason</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${details.failureReason || 'Unknown'}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Store</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${details.storeName || 'N/A'}</td></tr>
+          </table>
+          <p>No action is needed from your end. The amount will be retried or processed manually.</p>
+        `;
+        break;
+
+      case 'transfer_failed_admin':
+        subject = `[ADMIN] Transfer Failed - ${details.commissionType} commission`;
+        bodyContent = `
+          <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <strong style="color: #dc2626;">Transfer Failed - Manual Action May Be Required</strong>
+          </div>
+          <p>Hi ${name},</p>
+          <p>A Razorpay Route transfer has failed and needs attention.</p>
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Transfer ID</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${details.transferId || 'N/A'}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Type</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${details.commissionType}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Amount</td><td style="padding: 8px; border-bottom: 1px solid #eee;">₹${details.amount?.toFixed(2) || '0.00'}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Reason</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${details.failureReason || 'Unknown'}</td></tr>
+            <tr><td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Subject ID</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${details.subjectId}</td></tr>
+          </table>
+          <p style="text-align: center;">
+            <a href="${env.CLIENT_URL}/admin-dashboard/payouts" style="display: inline-block; background: #dc2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px;">Review in Dashboard</a>
+          </p>
+        `;
+        break;
+
+      case 'account_status':
+        const statusColors = {
+          activated: '#16a34a',
+          suspended: '#dc2626',
+          under_review: '#ca8a04',
+          funds_hold: '#ca8a04',
+          funds_unhold: '#16a34a',
+        };
+        const color = statusColors[details.status] || '#6b7280';
+        subject = `Razorpay Account ${details.status.charAt(0).toUpperCase() + details.status.slice(1)} - ${details.storeName}`;
+        bodyContent = `
+          <div style="background: ${color}15; border-left: 4px solid ${color}; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <strong style="color: ${color};">Account Status: ${details.status.toUpperCase()}</strong>
+          </div>
+          <p>Hi ${name},</p>
+          <p>Your Razorpay linked account status has been updated to <strong>${details.status}</strong>.</p>
+          ${details.status === 'activated' ? '<p style="color: #16a34a; font-weight: bold;">Your account is now active and payments will be automatically transferred to your bank account.</p>' : ''}
+          ${details.status === 'suspended' ? '<p style="color: #dc2626;">Please contact support if you believe this is an error. Payments will be held until the account is reactivated.</p>' : ''}
+          <p style="text-align: center;">
+            <a href="${env.CLIENT_URL}/vendor-dashboard/settlements" style="display: inline-block; background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px;">View Settlements</a>
+          </p>
+        `;
+        break;
+
+      default:
+        logger.warn(`Unknown transfer alert type: ${details.type}`);
+        return;
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #011627; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 5px 5px; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2 style="margin: 0;">V-Tech Payment Alert</h2>
+          </div>
+          <div class="content">
+            ${bodyContent}
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} V-Tech. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail(email, subject, html);
+  }
 }
 
 module.exports = new NotificationService();

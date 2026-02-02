@@ -59,19 +59,26 @@ const AffiliateTerms = () => {
 
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Payment Terms</h2>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">4.1 Payment Schedule</h3>
-              <ul className="list-disc pl-6 text-gray-700 space-y-2">
-                <li>Payments are processed monthly</li>
-                <li>Payment within 15 days after month-end</li>
-                <li>Minimum payout threshold: ₹500</li>
-                <li>If threshold not met, balance carries over to next month</li>
-              </ul>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">4.1 Payment Flow (Razorpay Route)</h3>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                V-Tech uses Razorpay Route to automatically split payments. When a customer purchases through your affiliate link, your commission share is held securely on Razorpay.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <ol className="list-decimal pl-6 text-blue-800 space-y-2">
+                  <li><strong>Order Placed:</strong> Commission created (status: Pending), your share held on Razorpay</li>
+                  <li><strong>Order Delivered:</strong> Commission auto-approved (status: Approved)</li>
+                  <li><strong>7-Day Return Window:</strong> Funds remain on hold to cover potential returns</li>
+                  <li><strong>Auto-Release:</strong> After 7 days, payment is automatically released (admin can also release manually)</li>
+                  <li><strong>Bank Settlement:</strong> Net amount (after 2% TDS) settled to your bank account</li>
+                </ol>
+              </div>
 
-              <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-4">4.2 Payment Methods</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">4.2 Payment Schedule & Methods</h3>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
-                <li>Bank Transfer (recommended)</li>
-                <li>UPI</li>
-                <li>PayPal (where available)</li>
+                <li>Minimum payout threshold: ₹500</li>
+                <li>If threshold not met, balance carries over</li>
+                <li>Payment via <strong>Bank Transfer (NEFT/IMPS)</strong> through Razorpay</li>
+                <li>You must complete KYC (PAN + Bank verification) to receive payouts</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-4" id="tds">4.3 Tax Deducted at Source (TDS)</h3>

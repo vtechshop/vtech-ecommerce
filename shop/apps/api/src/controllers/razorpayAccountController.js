@@ -33,7 +33,7 @@ exports.createVendorLinkedAccount = async (req, res, next) => {
 
     // Create linked account on Razorpay
     const accountData = {
-      email: email || vendor.kyc?.phoneNumber,
+      email: email || vendor.kyc?.email || req.user.email,
       phone: phone || vendor.kyc?.phoneNumber,
       businessName: vendor.kyc?.businessName || vendor.storeName,
       businessType: vendor.kyc?.businessType || 'individual',
@@ -112,7 +112,7 @@ exports.createAffiliateLinkedAccount = async (req, res, next) => {
 
     // Create linked account on Razorpay
     const accountData = {
-      email: email || affiliate.kyc?.phoneNumber,
+      email: email || affiliate.kyc?.email || req.user.email,
       phone: phone || affiliate.kyc?.phoneNumber,
       businessName: `Affiliate ${affiliate.code}`,
       businessType: 'individual',

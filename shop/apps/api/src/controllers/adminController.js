@@ -2452,3 +2452,148 @@ exports.cleanupOrphanedProfiles = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Release held Razorpay Route transfers for a delivered order
+ * POST /api/admin/payouts/release-transfers/:orderId
+ * Admin manually triggers this after the return window (7 days post-delivery)
+ */
+exports.releaseHeldTransfers = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+
+    const Order = require('../models/Order');
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Order not found' },
+      });
+    }
+
+    // Only allow release for delivered orders
+    if (order.status !== 'delivered') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: `Order must be delivered before releasing transfers. Current status: ${order.status}` },
+      });
+    }
+
+    // Check if delivery date has passed the return window (7 days)
+    // Admin can force-release early by passing ?force=true
+    const force = req.query.force === 'true';
+    const deliveredEvent = order.events?.find(e => e.status === 'delivered');
+    if (deliveredEvent && !force) {
+      const daysSinceDelivery = Math.floor((Date.now() - new Date(deliveredEvent.timestamp).getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceDelivery < 7) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'RETURN_WINDOW_ACTIVE',
+            message: `Return window still active. ${7 - daysSinceDelivery} days remaining. Add ?force=true to override.`,
+            daysRemaining: 7 - daysSinceDelivery,
+          },
+        });
+      }
+    }
+
+    const { releaseHeldTransfers } = require('./razorpayController');
+    const result = await releaseHeldTransfers(orderId);
+
+    if (!result.success) {
+      return res.status(500).json({
+        success: false,
+        error: { code: 'RELEASE_FAILED', message: result.error || 'Failed to release transfers' },
+      });
+    }
+
+    // Audit log
+    await AuditLog.create({
+      action: 'held_transfers_released',
+      userId: req.user._id,
+      entity: 'Order',
+      entityId: orderId,
+      changes: { released: result.released },
+    });
+
+    logger.info(`Admin ${req.user._id} released ${result.released} held transfers for order ${orderId}`);
+
+    res.json({
+      success: true,
+      data: {
+        orderId,
+        transfersReleased: result.released,
+        message: `${result.released} transfer(s) released successfully`,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update vendor Razorpay Route settlement configuration
+ * PUT /api/admin/vendors/:id/settlement-config
+ */
+exports.updateVendorSettlementConfig = async (req, res, next) => {
+  try {
+    const { settlementPercentage, holdUntilDelivery, holdDays } = req.body;
+
+    const vendor = await Vendor.findById(req.params.id);
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor not found' },
+      });
+    }
+
+    if (settlementPercentage !== undefined) {
+      if (settlementPercentage < 0 || settlementPercentage > 100) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Settlement percentage must be between 0 and 100' },
+        });
+      }
+      vendor.razorpay = vendor.razorpay || {};
+      vendor.razorpay.settlementPercentage = settlementPercentage;
+    }
+
+    if (holdUntilDelivery !== undefined) {
+      vendor.razorpay = vendor.razorpay || {};
+      vendor.razorpay.holdUntilDelivery = holdUntilDelivery;
+    }
+
+    if (holdDays !== undefined) {
+      if (holdDays < 1 || holdDays > 30) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Hold days must be between 1 and 30' },
+        });
+      }
+      vendor.razorpay = vendor.razorpay || {};
+      vendor.razorpay.holdDays = holdDays;
+    }
+
+    await vendor.save();
+
+    await AuditLog.create({
+      action: 'vendor_settlement_config_updated',
+      userId: req.user._id,
+      entity: 'Vendor',
+      entityId: vendor._id,
+      changes: { settlementPercentage, holdUntilDelivery, holdDays },
+    });
+
+    logger.info(`Vendor settlement config updated: ${vendor.storeName} - ${settlementPercentage}%`);
+
+    res.json({
+      success: true,
+      data: {
+        storeName: vendor.storeName,
+        razorpay: vendor.razorpay,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

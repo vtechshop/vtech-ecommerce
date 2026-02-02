@@ -958,6 +958,16 @@ async function updateOrderStatus(req, res, next) {
 
     await order.save();
 
+    // Auto-approve commissions on delivery (money stays on hold until admin releases)
+    if (status === 'delivered') {
+      const payoutService = require('../services/payoutService');
+      payoutService.autoApproveCommissions(order._id).catch(err => {
+        logger.error(`Auto-approve commissions failed for order ${order._id}:`, err);
+      });
+      // NOTE: Held Razorpay transfers are NOT released here.
+      // Admin must manually release via dashboard after the 7-day return window.
+    }
+
     // Send notifications for status changes (async - don't block response)
     (async () => {
       try {

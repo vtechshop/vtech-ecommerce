@@ -12,6 +12,7 @@ const Affiliate = require('../models/Affiliate');
 const crypto = require('crypto');
 const logger = require('../config/logger');
 const notificationHelper = require('../services/notificationHelper');
+const notificationService = require('../services/notificationService');
 
 /**
  * Helper function to restore stock when payment fails
@@ -357,15 +358,12 @@ exports.verifyPayment = async (req, res, next) => {
 
     // Create commission records and process automatic transfers after payment
     if (payment.status === 'captured') {
-      // Create commission records (vendor + affiliate) for all orders
-      createCommissionsAfterPayment(order).catch(error => {
-        logger.error(`Failed to create commissions for order ${order._id}:`, error);
-      });
-
-      // Process Razorpay Route transfers for vendors with connected accounts
-      processAutomaticTransfers(order, razorpayPaymentId).catch(error => {
-        logger.error(`Failed to process automatic transfers for order ${order._id}:`, error);
-      });
+      // Create commission records first, then process transfers (sequential to avoid race condition)
+      createCommissionsAfterPayment(order)
+        .then(() => processAutomaticTransfers(order, razorpayPaymentId))
+        .catch(error => {
+          logger.error(`Failed to create commissions/transfers for order ${order._id}:`, error);
+        });
 
       // CRITICAL: Send order confirmation email AFTER payment is verified (only if not already sent)
       if (!order.confirmationEmailSent) {
@@ -629,18 +627,18 @@ exports.webhook = async (req, res, next) => {
     }
 
     const event = req.body.event;
-    const payload = req.body.payload.payment.entity;
 
     // Handle different webhook events
+    // Note: payload structure varies by event type
     switch (event) {
       case 'payment.captured':
-        await handlePaymentCaptured(payload);
+        await handlePaymentCaptured(req.body.payload.payment.entity);
         break;
       case 'payment.failed':
-        await handlePaymentFailed(payload);
+        await handlePaymentFailed(req.body.payload.payment.entity);
         break;
       case 'refund.created':
-        await handleRefundCreated(payload);
+        await handleRefundCreated(req.body.payload.payment.entity);
         break;
       case 'transfer.processed':
         await handleTransferProcessed(req.body.payload.transfer.entity);
@@ -650,6 +648,13 @@ exports.webhook = async (req, res, next) => {
         break;
       case 'transfer.reversed':
         await handleTransferReversed(req.body.payload.transfer.entity);
+        break;
+      case 'account.under_review':
+      case 'account.activated':
+      case 'account.suspended':
+      case 'account.funds_hold':
+      case 'account.funds_unhold':
+        await handleAccountStatusChange(event, req.body.payload.account?.entity);
         break;
       default:
         logger.warn(`Unhandled webhook event: ${event}`);
@@ -687,6 +692,21 @@ async function handlePaymentCaptured(payload) {
 
     await order.save();
     logger.info(`Payment captured for order ${orderId}`);
+
+    // Safety net: Create commissions and transfers if not already created by verifyPayment
+    const existingCommissions = await Commission.countDocuments({ orderId: order._id });
+    if (existingCommissions === 0) {
+      logger.info(`[Webhook] No commissions found for order ${orderId}, creating now (safety net)...`);
+      try {
+        await createCommissionsAfterPayment(order);
+        const razorpayPaymentId = payload.id;
+        if (razorpayPaymentId) {
+          await processAutomaticTransfers(order, razorpayPaymentId);
+        }
+      } catch (commissionError) {
+        logger.error(`[Webhook] Failed to create commissions/transfers for order ${orderId}:`, commissionError);
+      }
+    }
 
     // Send order confirmation email after webhook payment confirmation (only if not already sent)
     if (!order.confirmationEmailSent) {
@@ -922,6 +942,42 @@ async function handleTransferFailed(payload) {
       await commission.save();
 
       logger.info(`Commission ${commission._id} marked as failed: ${failureReason}`);
+
+      // Send email alert to admin and vendor about failed transfer
+      try {
+        const User = require('../models/User');
+
+        // Notify vendor
+        if (commission.type === 'vendor') {
+          const vendor = await Vendor.findById(commission.subjectId).populate('userId', 'email name');
+          if (vendor?.userId?.email) {
+            await notificationService.sendTransferAlert(vendor.userId.email, vendor.userId.name || vendor.storeName, {
+              type: 'transfer_failed',
+              transferId,
+              amount: commission.amount,
+              failureReason,
+              storeName: vendor.storeName,
+              orderId: commission.orderId,
+            });
+          }
+        }
+
+        // Notify admins
+        const admins = await User.find({ role: 'admin' }).select('email name').lean();
+        for (const admin of admins) {
+          await notificationService.sendTransferAlert(admin.email, admin.name, {
+            type: 'transfer_failed_admin',
+            transferId,
+            amount: commission.amount,
+            failureReason,
+            commissionType: commission.type,
+            subjectId: commission.subjectId,
+            orderId: commission.orderId,
+          });
+        }
+      } catch (emailErr) {
+        logger.error(`Failed to send transfer failure email alerts:`, emailErr);
+      }
     } else {
       logger.warn(`Commission not found for failed transfer ${transferId}`);
     }
@@ -969,6 +1025,64 @@ async function handleTransferReversed(payload) {
     }
   } catch (error) {
     logger.error('Error handling transfer reversed:', error);
+  }
+}
+
+// Webhook handler for linked account status changes
+async function handleAccountStatusChange(event, payload) {
+  try {
+    if (!payload) {
+      logger.warn(`Account status webhook missing payload for event: ${event}`);
+      return;
+    }
+
+    const accountId = payload.id;
+    const newStatus = event.replace('account.', ''); // activated, suspended, etc.
+
+    logger.info(`Account status webhook: ${accountId} -> ${newStatus}`);
+
+    // Try to find vendor with this Razorpay account
+    const vendor = await Vendor.findOne({ 'razorpay.accountId': accountId });
+    if (vendor) {
+      vendor.razorpay.accountStatus = newStatus;
+      if (newStatus === 'activated') {
+        vendor.razorpay.kycStatus = 'verified';
+      } else if (newStatus === 'suspended') {
+        vendor.razorpay.kycStatus = 'rejected';
+      }
+      await vendor.save();
+      logger.info(`Vendor ${vendor.storeName} Razorpay status updated to ${newStatus}`);
+
+      // Notify vendor about account status change
+      try {
+        const User = require('../models/User');
+        const user = await User.findById(vendor.userId);
+        if (user?.email) {
+          await notificationService.sendTransferAlert(user.email, user.name || vendor.storeName, {
+            type: 'account_status',
+            status: newStatus,
+            storeName: vendor.storeName,
+            accountId,
+          });
+        }
+      } catch (emailErr) {
+        logger.error(`Failed to send account status email to vendor:`, emailErr);
+      }
+      return;
+    }
+
+    // Try affiliate
+    const affiliate = await Affiliate.findOne({ 'razorpay.accountId': accountId });
+    if (affiliate) {
+      affiliate.razorpay.accountStatus = newStatus;
+      await affiliate.save();
+      logger.info(`Affiliate ${affiliate.code} Razorpay status updated to ${newStatus}`);
+      return;
+    }
+
+    logger.warn(`No vendor or affiliate found for Razorpay account ${accountId}`);
+  } catch (error) {
+    logger.error('Error handling account status change:', error);
   }
 }
 
@@ -1325,10 +1439,19 @@ async function processAutomaticTransfers(order, razorpayPaymentId) {
         const vendorItemsSubtotal = vendorSubtotals[vendorIdStr];
         const vendorAmount = (vendorItemsSubtotal * vendorCommissionPercentage) / 100;
 
+        // Hold transfers until delivery (default: hold for 7 days or until manually released)
+        const holdUntilDelivery = vendor.razorpay.holdUntilDelivery !== false; // default true
+        const holdDays = vendor.razorpay.holdDays || 7;
+        const holdUntilTimestamp = holdUntilDelivery
+          ? Math.floor(Date.now() / 1000) + (holdDays * 24 * 60 * 60)
+          : null;
+
         transfers.push({
           accountId: vendor.razorpay.accountId,
           amount: vendorAmount,
           currency: 'INR',
+          on_hold: holdUntilDelivery,
+          on_hold_until: holdUntilTimestamp,
           notes: {
             orderId: order._id.toString(),
             orderNumber: order.orderId,
@@ -1356,6 +1479,8 @@ async function processAutomaticTransfers(order, razorpayPaymentId) {
           accountId: affiliate.razorpay.accountId,
           amount: affiliateAmount,
           currency: 'INR',
+          on_hold: true,
+          on_hold_until: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
           notes: {
             orderId: order._id.toString(),
             orderNumber: order.orderId,
@@ -1442,3 +1567,58 @@ async function processAutomaticTransfers(order, razorpayPaymentId) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Release held transfers when order is delivered
+ * Call this from order status update when status changes to 'delivered'
+ */
+async function releaseHeldTransfers(orderId) {
+  try {
+    const { fetchTransfer } = require('../utils/razorpay');
+    const axios = require('axios');
+    const auth = Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
+
+    // Find all commissions for this order that have held transfers
+    const commissions = await Commission.find({
+      orderId,
+      'transfer.transferId': { $exists: true },
+      'transfer.status': { $in: ['created', 'pending'] },
+    });
+
+    if (commissions.length === 0) {
+      logger.info(`No held transfers to release for order ${orderId}`);
+      return { success: true, released: 0 };
+    }
+
+    let released = 0;
+    for (const commission of commissions) {
+      try {
+        // Modify transfer to release hold via Razorpay API
+        await axios.patch(
+          `https://api.razorpay.com/v1/transfers/${commission.transfer.transferId}`,
+          { on_hold: false },
+          { headers: { 'Content-Type': 'application/json', 'Authorization': `Basic ${auth}` } }
+        );
+
+        commission.transfer.status = 'processed';
+        commission.transfer.processedAt = new Date();
+        commission.status = 'paid';
+        commission.paidAt = new Date();
+        await commission.save();
+
+        released++;
+        logger.info(`Released held transfer ${commission.transfer.transferId} for order ${orderId}`);
+      } catch (releaseErr) {
+        logger.error(`Failed to release transfer ${commission.transfer.transferId}:`, releaseErr.response?.data || releaseErr.message);
+      }
+    }
+
+    return { success: true, released };
+  } catch (error) {
+    logger.error(`Error releasing held transfers for order ${orderId}:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Export releaseHeldTransfers for use in order status updates
+exports.releaseHeldTransfers = releaseHeldTransfers;

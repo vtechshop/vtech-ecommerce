@@ -73,6 +73,7 @@ router.put('/vendors/:id/suspend', validateObjectId('id'), admin.suspendVendor);
 router.delete('/vendors/:id', validateObjectId('id'), admin.deleteVendor);
 router.put('/vendors/:id/commission', validateObjectId('id'), admin.updateVendorCommission);
 router.put('/vendors/:id/commission-rules', validateObjectId('id'), admin.updateVendorCommissionRules);
+router.put('/vendors/:id/settlement-config', validateObjectId('id'), admin.updateVendorSettlementConfig);
 
 // Affiliates - SECURITY: Added ObjectId validation
 router.get('/affiliates', admin.getAffiliates);
@@ -100,6 +101,9 @@ router.get('/payouts/pending', admin.getVendorPendingPayouts);
 router.post('/payouts/process', admin.processVendorPayout);
 router.post('/payouts/vendor/:vendorId/batch', validateObjectId('vendorId'), admin.batchProcessVendorPayout);
 router.get('/payouts/history', admin.getPayoutHistory);
+
+// Razorpay Route - Release held transfers
+router.post('/payouts/release-transfers/:orderId', validateObjectId('orderId'), admin.releaseHeldTransfers);
 
 // Ads - SECURITY: Added ObjectId validation
 router.get('/ads/campaigns', admin.getAdCampaigns);
