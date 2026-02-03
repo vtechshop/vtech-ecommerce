@@ -12,7 +12,7 @@ const Page = require('../models/Page');
 const Setting = require('../models/Setting');
 const AuditLog = require('../models/AuditLog');
 const Review = require('../models/Review');
-const { getPaginationMeta, slugify, generateSKU } = require('../utils/helpers');
+const { getPaginationMeta, slugify, generateSKU, generateOrderId } = require('../utils/helpers');
 const logger = require('../config/logger');
 const warrantyService = require('../services/warrantyService');
 const notificationHelper = require('../services/notificationHelper');
@@ -2645,6 +2645,176 @@ exports.updateVendorSettlementConfig = async (req, res, next) => {
         razorpay: vendor.razorpay,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ===================== MANUAL ORDERS =====================
+
+// Get all manual (in-store/phone) orders
+exports.getManualOrders = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, search, source } = req.query;
+    const filter = { source: { $in: ['in-store', 'phone'] } };
+    if (source && source !== 'all') filter.source = source;
+    if (search) {
+      filter.$or = [
+        { orderId: { $regex: search, $options: 'i' } },
+        { customerPhone: { $regex: search, $options: 'i' } },
+        { 'shipTo.fullName': { $regex: search, $options: 'i' } },
+      ];
+    }
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const [orders, total] = await Promise.all([
+      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).populate('items.productId', 'name images slug'),
+      Order.countDocuments(filter),
+    ]);
+    res.json({ success: true, data: orders, pagination: getPaginationMeta(total, parseInt(page), parseInt(limit)) });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create manual order (in-store / phone sale)
+exports.createManualOrder = async (req, res, next) => {
+  try {
+    const { customerName, customerPhone, customerEmail, items, paymentMethod, amountPaid, source = 'in-store', notes, discount = 0 } = req.body;
+    if (!customerName || !customerPhone || !items?.length) {
+      return res.status(400).json({ success: false, error: { message: 'Customer name, phone and at least one item are required' } });
+    }
+
+    // Build order items from product IDs
+    const orderItems = [];
+    let subtotal = 0;
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+      if (!product) return res.status(400).json({ success: false, error: { message: `Product not found: ${item.productId}` } });
+
+      const price = item.price || product.price;
+      const qty = item.qty || 1;
+      subtotal += price * qty;
+
+      const orderItem = {
+        productId: product._id,
+        vendorId: product.vendorId,
+        name: product.name,
+        image: product.images?.[0] || '',
+        productSlug: product.slug,
+        sku: product.sku,
+        priceSnapshot: price,
+        qty,
+      };
+
+      // Copy warranty info from product
+      if (product.hasWarranty && product.warranty) {
+        orderItem.warranty = {
+          hasWarranty: true,
+          duration: product.warranty.duration,
+          durationType: product.warranty.durationType,
+          description: product.warranty.description,
+          terms: product.warranty.terms,
+          provider: product.warranty.provider,
+          activationRequired: false, // Auto-activate for manual orders
+          warrantyCode: item.serialNumber || undefined,
+        };
+      }
+
+      orderItems.push(orderItem);
+    }
+
+    const order = await Order.create({
+      orderId: generateOrderId(),
+      items: orderItems,
+      source,
+      customerPhone,
+      shipTo: { fullName: customerName, phone: customerPhone },
+      totals: { subtotal, tax: 0, shipping: 0, discount: parseFloat(discount) || 0, total: amountPaid || (subtotal - (parseFloat(discount) || 0)) },
+      status: 'delivered',
+      payment: {
+        method: paymentMethod || 'cash',
+        status: 'paid',
+        paidAt: new Date(),
+        amount: amountPaid || subtotal,
+        currency: 'INR',
+      },
+      events: [
+        { status: 'placed', description: `Manual order created by admin (${source})`, timestamp: new Date() },
+        { status: 'paid', description: `Payment received: ${paymentMethod || 'cash'}`, timestamp: new Date() },
+        { status: 'delivered', description: 'In-store pickup / delivered', timestamp: new Date() },
+      ],
+      customerNotes: notes,
+      internalNotes: `Manual order by admin: ${req.user._id}`,
+      guestEmail: customerEmail || undefined,
+    });
+
+    // Auto-activate warranties
+    await activateWarrantiesForOrder(order);
+    await order.save();
+
+    res.status(201).json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Public: Warranty check by phone/orderId
+exports.checkWarranty = async (req, res, next) => {
+  try {
+    const { phone, orderId } = req.query;
+    if (!phone && !orderId) {
+      return res.status(400).json({ success: false, error: { message: 'Phone number or Order ID is required' } });
+    }
+
+    const filter = {};
+    if (orderId) {
+      filter.orderId = { $regex: orderId, $options: 'i' };
+    } else {
+      filter.$or = [
+        { customerPhone: phone },
+        { 'shipTo.phone': phone },
+        { 'payment.contact': phone },
+      ];
+    }
+
+    const orders = await Order.find(filter)
+      .select('orderId items source shipTo.fullName customerPhone totals.total payment.method payment.paidAt status createdAt')
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    // Extract warranty items
+    const warranties = [];
+    for (const order of orders) {
+      for (const item of order.items) {
+        if (item.warranty?.hasWarranty) {
+          warranties.push({
+            orderId: order.orderId,
+            orderDate: order.createdAt,
+            source: order.source || 'online',
+            customerName: order.shipTo?.fullName,
+            productName: item.name,
+            productImage: item.image,
+            sku: item.sku,
+            price: item.priceSnapshot,
+            warranty: {
+              duration: item.warranty.duration,
+              durationType: item.warranty.durationType,
+              description: item.warranty.description,
+              provider: item.warranty.provider,
+              isActivated: item.warranty.isActivated,
+              activatedAt: item.warranty.activatedAt,
+              expiresAt: item.warranty.expiresAt,
+              warrantyCode: item.warranty.warrantyCode,
+              status: !item.warranty.isActivated ? 'pending_activation'
+                : item.warranty.expiresAt && new Date(item.warranty.expiresAt) < new Date() ? 'expired'
+                : 'active',
+            },
+          });
+        }
+      }
+    }
+
+    res.json({ success: true, data: warranties });
   } catch (error) {
     next(error);
   }

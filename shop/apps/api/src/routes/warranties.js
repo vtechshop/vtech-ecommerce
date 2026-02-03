@@ -4,6 +4,11 @@ const warrantyService = require('../services/warrantyService');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validate');
 
+// Public warranty check - no auth required
+// GET /api/warranties/check?phone=xxx or ?orderId=xxx
+const admin = require('../controllers/adminController');
+router.get('/check', admin.checkWarranty);
+
 // Generate warranty (typically called after order completion)
 // POST /api/warranties/generate
 router.post('/generate', authenticate, authorize(['admin', 'vendor']), async (req, res, next) => {

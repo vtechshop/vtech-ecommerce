@@ -175,6 +175,10 @@ router.get('/crm/customers/:id/orders', crm.getCustomerOrders);
 router.get('/payments/stats', admin.getPaymentStats);
 router.get('/payments', admin.getPayments);
 
+// Manual Orders (In-store / Phone sales)
+router.get('/manual-orders', admin.getManualOrders);
+router.post('/manual-orders', admin.createManualOrder);
+
 // Data cleanup - Remove orphaned profiles
 router.post('/cleanup/orphaned-profiles', admin.cleanupOrphanedProfiles);
 

@@ -35,6 +35,7 @@ const DashboardLayout = () => {
         { path: '/admin-dashboard/products', label: 'Products', icon: 'package' },
         { path: '/admin-dashboard/categories', label: 'Categories', icon: 'folder' },
         { path: '/admin-dashboard/orders', label: 'Orders', icon: 'shopping-bag' },
+        { path: '/admin-dashboard/manual-orders', label: 'Manual Orders', icon: 'store' },
         { path: '/admin-dashboard/payments', label: 'Payments', icon: 'credit-card' },
         { path: '/admin-dashboard/vendors', label: 'Vendors', icon: 'store' },
         { path: '/admin-dashboard/vendor-commissions', label: 'Vendor Commissions', icon: 'dollar-sign' },

@@ -37,6 +37,7 @@ const Blog = lazy(() => import('./assets/pages/Blog'));
 const BlogPostDetail = lazy(() => import('./assets/pages/BlogPost'));
 const Page = lazy(() => import('./assets/pages/cms/Page'));
 const NotFound = lazy(() => import('./assets/pages/NotFound'));
+const WarrantyCheck = lazy(() => import('./assets/pages/WarrantyCheck'));
 
 // Lazy load info pages
 const TrackOrder = lazy(() => import('./assets/pages/info/TrackOrder'));
@@ -148,6 +149,7 @@ const CRMTickets = lazy(() => import('./assets/pages/dashboard/admin/CRMTickets'
 const VendorPayouts = lazy(() => import('./assets/pages/dashboard/admin/VendorPayouts'));
 const VendorCommissions = lazy(() => import('./assets/pages/dashboard/admin/VendorCommissions'));
 const AffiliateCommissions = lazy(() => import('./assets/pages/dashboard/admin/AffiliateCommissions'));
+const ManualOrders = lazy(() => import('./assets/pages/dashboard/admin/ManualOrders'));
 const VendorKYC = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
 const AffiliateKYC = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateKYC'));
 
@@ -244,6 +246,7 @@ function App() {
 
             {/* Info & Legal Pages */}
             <Route path="/track-order" element={<TrackOrder />} />
+            <Route path="/warranty-check" element={<WarrantyCheck />} />
             <Route path="/page/shipping" element={<Shipping />} />
             <Route path="/page/returns" element={<Returns />} />
             <Route path="/page/faq" element={<FAQ />} />
@@ -373,6 +376,7 @@ function App() {
             <Route path="contact-submissions" element={<AdminContactSubmissions />} />
             <Route path="reviews" element={<AdminReviews />} />
             <Route path="warranties" element={<AdminWarranties />} />
+            <Route path="manual-orders" element={<ManualOrders />} />
             <Route path="kyc-review" element={<KYCReview />} />
             <Route path="payouts" element={<VendorPayouts />} />
             <Route path="vendor-commissions" element={<VendorCommissions />} />

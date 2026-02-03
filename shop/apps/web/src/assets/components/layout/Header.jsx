@@ -242,6 +242,7 @@ const Header = ({ onMobileMenuToggle }) => {
             <Link to="/blog" className={navClass('/blog')}>Blog</Link>
             <Link to="/page/about" className={navClass('/page/about')}>About</Link>
             <Link to="/track-order" className={navClass('/track-order')}>Track Order</Link>
+            <Link to="/warranty-check" className={navClass('/warranty-check')}>Warranty Check</Link>
             {/* Only show Become Vendor/Affiliate for non-logged in users */}
             {!isAuthenticated && (
               <div className="ml-auto flex items-center gap-4">
