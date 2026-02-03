@@ -219,6 +219,19 @@ const Home = React.memo(() => {
               </section>
             )}
 
+            {/* 3D Carousel - Featured Brands/Categories */}
+            {carouselItems && carouselItems.length > 0 && (
+              <section className="mb-8">
+                <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
+                <ThreeDCarousel
+                  items={carouselItems.map(item => ({ ...item, id: item._id }))}
+                  autoRotate={true}
+                  rotateInterval={5000}
+                  cardHeight={560}
+                />
+              </section>
+            )}
+
             {/* Join as Vendor or Affiliate */}
             {(user?.role !== 'vendor' || user?.role !== 'affiliate') && (
               <section className="mb-8">
@@ -361,19 +374,7 @@ const Home = React.memo(() => {
           )}
         </div>
 
-        {/* 3D Carousel - Featured Brands/Categories (Full Width, Above Footer) */}
-        {carouselItems && carouselItems.length > 0 && (
-          <section className="mt-8 mb-0">
-            <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
-            <ThreeDCarousel
-              items={carouselItems.map(item => ({ ...item, id: item._id }))}
-              autoRotate={true}
-              rotateInterval={5000}
-              cardHeight={560}
-            />
-          </section>
-        )}
-      </div>
+              </div>
     </div>
   );
 });
