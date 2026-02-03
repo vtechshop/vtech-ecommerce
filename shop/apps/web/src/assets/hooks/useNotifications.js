@@ -17,8 +17,8 @@ const useNotifications = (options = {}) => {
   const { pollInterval = 30000, enabled: enabledOverride } = options;
   const { user, isAuthenticated } = useAuth();
 
-  // Only fetch for admin/vendor users
-  const shouldFetch = isAuthenticated && ['admin', 'vendor'].includes(user?.role);
+  // Fetch for all authenticated users
+  const shouldFetch = isAuthenticated && ['admin', 'vendor', 'affiliate', 'customer'].includes(user?.role);
   const enabled = enabledOverride !== undefined ? enabledOverride : shouldFetch;
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -43,7 +43,22 @@ const useNotifications = (options = {}) => {
     openTickets: 0,
     pendingVendors: 0,
     pendingAffiliates: 0,
-    pendingCommissions: 0,
+    pendingCommissions: 0, // Affiliate commissions
+    pendingAds: 0,
+    pendingProducts: 0,
+    pendingKYC: 0,
+    pendingReviews: 0,
+    pendingVendorCommissions: 0,
+    manualOrders: 0,
+    categoryDeleteRequests: 0,
+    // Vendor specific
+    pendingSettlements: 0,
+    // Affiliate specific
+    approvedCommissions: 0,
+    recentConversions: 0,
+    // Customer specific
+    activeOrders: 0,
+    unreadNotifications: 0,
     totalNotifications: 0,
   };
 

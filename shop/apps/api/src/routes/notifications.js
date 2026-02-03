@@ -4,11 +4,11 @@ const router = express.Router();
 const notificationController = require('../controllers/notificationController');
 const { authenticate, authorize } = require('../middleware/auth');
 
-// Get notification counts (admin/vendor only)
+// Get notification counts (all authenticated users)
 router.get(
   '/counts',
   authenticate,
-  authorize(['admin', 'vendor']),
+  authorize(['admin', 'vendor', 'affiliate', 'customer']),
   notificationController.getNotificationCounts
 );
 

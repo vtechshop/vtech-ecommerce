@@ -9,6 +9,9 @@ const Affiliate = require('../models/Affiliate');
 const Commission = require('../models/Commission');
 const AdCampaign = require('../models/AdCampaign');
 const Notification = require('../models/Notification');
+const Product = require('../models/Product');
+const Review = require('../models/Review');
+const Category = require('../models/Category');
 const logger = require('../config/logger');
 
 /**
@@ -30,6 +33,13 @@ exports.getNotificationCounts = async (req, res, next) => {
       pendingAds: 0,
       unreadNotifications: 0,
       totalNotifications: 0,
+      // Additional counts
+      pendingProducts: 0,
+      pendingKYC: 0,
+      pendingReviews: 0,
+      pendingVendorCommissions: 0,
+      manualOrders: 0,
+      categoryDeleteRequests: 0,
     };
 
     // Calculate time threshold for "new" items (last 24 hours)
@@ -95,6 +105,44 @@ exports.getNotificationCounts = async (req, res, next) => {
         'approval.status': 'pending',
       });
 
+      // Pending products (awaiting approval)
+      counts.pendingProducts = await Product.countDocuments({
+        status: 'pending',
+      });
+
+      // Pending KYC (vendors + affiliates needing KYC review)
+      const pendingVendorKYC = await Vendor.countDocuments({
+        'kyc.status': 'pending',
+      });
+      const pendingAffiliateKYC = await Affiliate.countDocuments({
+        'kyc.status': 'pending',
+      });
+      counts.pendingKYC = pendingVendorKYC + pendingAffiliateKYC;
+
+      // Pending reviews (awaiting moderation)
+      counts.pendingReviews = await Review.countDocuments({
+        status: 'pending',
+      });
+
+      // Pending vendor commission payments
+      counts.pendingVendorCommissions = await Commission.countDocuments({
+        status: 'pending',
+        type: 'vendor',
+      });
+
+      // Manual orders created today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      counts.manualOrders = await Order.countDocuments({
+        source: { $in: ['in-store', 'phone'] },
+        createdAt: { $gte: today },
+      });
+
+      // Categories with delete requests
+      counts.categoryDeleteRequests = await Category.countDocuments({
+        deleteRequested: true,
+      });
+
       // Unread in-app notifications for admin
       counts.unreadNotifications = await Notification.countDocuments({
         userId: user._id,
@@ -117,6 +165,25 @@ exports.getNotificationCounts = async (req, res, next) => {
         counts.pendingOrders = await Order.countDocuments({
           'items.vendorId': vendor._id,
           status: { $in: ['placed', 'processing'] },
+        });
+
+        // Vendor's products pending approval
+        counts.pendingProducts = await Product.countDocuments({
+          vendorId: vendor._id,
+          status: 'pending',
+        });
+
+        // Pending settlements (vendor commissions ready to be paid)
+        counts.pendingSettlements = await Commission.countDocuments({
+          vendorId: vendor._id,
+          type: 'vendor',
+          status: { $in: ['pending', 'approved'] },
+        });
+
+        // Open support tickets
+        counts.openTickets = await Ticket.countDocuments({
+          userId: user._id,
+          status: { $in: ['open', 'in_progress'] },
         });
 
         // Vendor-specific communications/messages
@@ -143,6 +210,24 @@ exports.getNotificationCounts = async (req, res, next) => {
           status: 'pending',
         });
 
+        // Approved commissions (ready to be paid)
+        counts.approvedCommissions = await Commission.countDocuments({
+          affiliateId: affiliate._id,
+          status: 'approved',
+        });
+
+        // Recent conversions (last 24 hours)
+        counts.recentConversions = await Commission.countDocuments({
+          affiliateId: affiliate._id,
+          createdAt: { $gte: last24Hours },
+        });
+
+        // Open support tickets
+        counts.openTickets = await Ticket.countDocuments({
+          userId: user._id,
+          status: { $in: ['open', 'in_progress'] },
+        });
+
         // Affiliate-specific communications/messages
         counts.unreadMessages = await Communication.countDocuments({
           recipientId: affiliate._id,
@@ -156,6 +241,26 @@ exports.getNotificationCounts = async (req, res, next) => {
           read: false,
         });
       }
+    } else if (user.role === 'customer') {
+      // Customer notifications
+
+      // Active orders (in transit)
+      counts.activeOrders = await Order.countDocuments({
+        userId: user._id,
+        status: { $in: ['placed', 'paid', 'packed', 'shipped', 'out_for_delivery'] },
+      });
+
+      // Recent orders (last 24 hours)
+      counts.newOrders = await Order.countDocuments({
+        userId: user._id,
+        createdAt: { $gte: last24Hours },
+      });
+
+      // Unread in-app notifications for customer
+      counts.unreadNotifications = await Notification.countDocuments({
+        userId: user._id,
+        read: false,
+      });
     }
 
     // Calculate total notifications
@@ -169,6 +274,11 @@ exports.getNotificationCounts = async (req, res, next) => {
       counts.pendingAffiliates +
       counts.pendingCommissions +
       counts.pendingAds +
+      counts.pendingProducts +
+      counts.pendingKYC +
+      counts.pendingReviews +
+      counts.pendingVendorCommissions +
+      counts.categoryDeleteRequests +
       counts.unreadNotifications;
 
     res.json({

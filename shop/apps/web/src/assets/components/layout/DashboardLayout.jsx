@@ -137,27 +137,41 @@ const DashboardLayout = () => {
 
     // Admin notifications
     if (isAdmin) {
-      if (path.includes('/orders')) return counts.newOrders || 0;
-      // Removed: /users badge - no actionable notification needed
-      if (path.includes('/vendors')) return counts.pendingVendors || 0;
-      if (path.includes('/affiliates') && !path.includes('commissions')) return counts.pendingAffiliates || 0;
-      if (path.includes('/affiliate-commissions')) return counts.pendingCommissions || 0;
-      if (path.includes('/tickets')) return counts.openTickets || 0;
-      if (path.includes('/contact-submissions')) return counts.unreadMessages || 0;
-      if (path.includes('/communications')) return counts.unreadCommunications || 0;
-      if (path.includes('/ads')) return counts.pendingAds || 0;
+      // Match exact paths first to avoid conflicts
+      if (path === '/admin-dashboard/orders') return counts.newOrders || 0;
+      if (path === '/admin-dashboard/manual-orders') return counts.manualOrders || 0;
+      if (path === '/admin-dashboard/products') return counts.pendingProducts || 0;
+      if (path === '/admin-dashboard/categories') return counts.categoryDeleteRequests || 0;
+      if (path === '/admin-dashboard/vendors') return counts.pendingVendors || 0;
+      if (path === '/admin-dashboard/vendor-commissions') return counts.pendingVendorCommissions || 0;
+      if (path === '/admin-dashboard/affiliates') return counts.pendingAffiliates || 0;
+      if (path === '/admin-dashboard/affiliate-commissions') return counts.pendingCommissions || 0;
+      if (path === '/admin-dashboard/kyc-review') return counts.pendingKYC || 0;
+      if (path === '/admin-dashboard/tickets') return counts.openTickets || 0;
+      if (path === '/admin-dashboard/contact-submissions') return counts.unreadMessages || 0;
+      if (path === '/admin-dashboard/communications') return counts.unreadCommunications || 0;
+      if (path === '/admin-dashboard/ads') return counts.pendingAds || 0;
+      if (path === '/admin-dashboard/reviews') return counts.pendingReviews || 0;
     }
 
     // Vendor notifications
     if (isVendor) {
-      if (path.includes('/orders')) return counts.newOrders || 0;
-      if (path.includes('/support')) return counts.unreadMessages || 0;
+      if (path === '/vendor-dashboard/orders') return counts.newOrders || 0;
+      if (path === '/vendor-dashboard/products') return counts.pendingProducts || 0;
+      if (path === '/vendor-dashboard/settlements') return counts.pendingSettlements || 0;
+      if (path === '/vendor-dashboard/support') return counts.openTickets || 0;
     }
 
     // Affiliate notifications
     if (isAffiliate) {
-      if (path.includes('/commissions')) return counts.pendingCommissions || 0;
-      if (path.includes('/support')) return counts.unreadMessages || 0;
+      if (path === '/affiliate-dashboard/commissions') return (counts.pendingCommissions || 0) + (counts.approvedCommissions || 0);
+      if (path === '/affiliate-dashboard/links') return counts.recentConversions || 0;
+      if (path === '/affiliate-dashboard/support') return counts.openTickets || 0;
+    }
+
+    // Customer notifications
+    if (user?.role === 'customer') {
+      if (path === '/dashboard/orders') return counts.activeOrders || 0;
     }
 
     return 0;
