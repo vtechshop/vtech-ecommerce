@@ -12,6 +12,7 @@ const Page = require('../models/Page');
 const Setting = require('../models/Setting');
 const AuditLog = require('../models/AuditLog');
 const Review = require('../models/Review');
+const Carousel = require('../models/Carousel');
 const { getPaginationMeta, slugify, generateSKU, generateOrderId } = require('../utils/helpers');
 const logger = require('../config/logger');
 const warrantyService = require('../services/warrantyService');
@@ -2984,6 +2985,153 @@ exports.checkWarranty = async (req, res, next) => {
     }
 
     res.json({ success: true, data: warranties });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ============ CAROUSEL MANAGEMENT ============
+
+// Get all carousel items (admin)
+exports.getCarouselItems = async (req, res, next) => {
+  try {
+    const items = await Carousel.find()
+      .sort({ sortOrder: 1, createdAt: -1 })
+      .populate('createdBy', 'name')
+      .lean();
+
+    res.json({ success: true, data: items });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get single carousel item
+exports.getCarouselItem = async (req, res, next) => {
+  try {
+    const item = await Carousel.findById(req.params.id).lean();
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Carousel item not found' },
+      });
+    }
+    res.json({ success: true, data: item });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create carousel item
+exports.createCarouselItem = async (req, res, next) => {
+  try {
+    const { title, brand, description, tags, imageUrl, link, sortOrder, isActive } = req.body;
+
+    // Validation
+    if (!title || !imageUrl || !link) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'Title, image URL, and link are required' },
+      });
+    }
+
+    const item = await Carousel.create({
+      title: title.trim(),
+      brand: brand?.trim(),
+      description: description?.trim(),
+      tags: tags || [],
+      imageUrl,
+      link: link.trim(),
+      sortOrder: sortOrder || 0,
+      isActive: isActive !== false,
+      createdBy: req.user._id,
+    });
+
+    logger.info(`Carousel item created: ${item.title} by admin ${req.user._id}`);
+    res.status(201).json({ success: true, data: item });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update carousel item
+exports.updateCarouselItem = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, brand, description, tags, imageUrl, link, sortOrder, isActive } = req.body;
+
+    const item = await Carousel.findById(id);
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Carousel item not found' },
+      });
+    }
+
+    // Update fields
+    if (title) item.title = title.trim();
+    if (brand !== undefined) item.brand = brand?.trim() || '';
+    if (description !== undefined) item.description = description?.trim() || '';
+    if (tags !== undefined) item.tags = tags;
+    if (imageUrl) item.imageUrl = imageUrl;
+    if (link) item.link = link.trim();
+    if (sortOrder !== undefined) item.sortOrder = sortOrder;
+    if (isActive !== undefined) item.isActive = isActive;
+    item.updatedBy = req.user._id;
+
+    await item.save();
+
+    logger.info(`Carousel item updated: ${item.title} by admin ${req.user._id}`);
+    res.json({ success: true, data: item });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete carousel item
+exports.deleteCarouselItem = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const item = await Carousel.findByIdAndDelete(id);
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Carousel item not found' },
+      });
+    }
+
+    logger.info(`Carousel item deleted: ${item.title} by admin ${req.user._id}`);
+    res.json({ success: true, message: 'Carousel item deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Reorder carousel items (bulk update sort order)
+exports.reorderCarouselItems = async (req, res, next) => {
+  try {
+    const { items } = req.body; // Array of { id, sortOrder }
+
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'Items array is required' },
+      });
+    }
+
+    // Update sort orders
+    const bulkOps = items.map(({ id, sortOrder }) => ({
+      updateOne: {
+        filter: { _id: id },
+        update: { $set: { sortOrder, updatedBy: req.user._id } },
+      },
+    }));
+
+    await Carousel.bulkWrite(bulkOps);
+
+    logger.info(`Carousel items reordered by admin ${req.user._id}`);
+    res.json({ success: true, message: 'Carousel items reordered successfully' });
   } catch (error) {
     next(error);
   }

@@ -183,4 +183,12 @@ router.post('/manual-orders', admin.createManualOrder);
 // Data cleanup - Remove orphaned profiles
 router.post('/cleanup/orphaned-profiles', admin.cleanupOrphanedProfiles);
 
+// Carousel Management
+router.get('/carousel', admin.getCarouselItems);
+router.get('/carousel/:id', validateObjectId('id'), admin.getCarouselItem);
+router.post('/carousel', admin.createCarouselItem);
+router.put('/carousel/:id', validateObjectId('id'), admin.updateCarouselItem);
+router.delete('/carousel/:id', validateObjectId('id'), admin.deleteCarouselItem);
+router.put('/carousel/reorder', admin.reorderCarouselItems);
+
 module.exports = router;

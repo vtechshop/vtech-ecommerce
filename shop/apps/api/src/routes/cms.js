@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const Page = require('../models/Page');
 const Post = require('../models/Post');
+const Carousel = require('../models/Carousel');
 
 // GET /cms/posts?page=1&limit=12
 router.get('/posts', async (req, res) => {
@@ -73,6 +74,26 @@ router.get('/pages/:slug', async (req, res) => {
     res.json({
       success: true,
       data: page,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: { code: 'SERVER_ERROR', message: error.message },
+    });
+  }
+});
+
+// GET /cms/carousel - Public endpoint for active carousel items
+router.get('/carousel', async (req, res) => {
+  try {
+    const items = await Carousel.find({ isActive: true })
+      .sort({ sortOrder: 1, createdAt: -1 })
+      .select('title brand description tags imageUrl link')
+      .lean();
+
+    res.json({
+      success: true,
+      data: items,
     });
   } catch (error) {
     res.status(500).json({

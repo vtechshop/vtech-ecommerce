@@ -13,46 +13,6 @@ import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 import ThreeDCarousel from '@/components/home/ThreeDCarousel';
 
-// Carousel items for featured brands/categories showcase
-const carouselItems = [
-  {
-    id: 1,
-    title: 'Premium Electronics',
-    brand: 'Tech Zone',
-    description: 'Discover the latest gadgets and electronics from top brands. Quality products with warranty and fast shipping.',
-    tags: ['Electronics', 'Gadgets', 'Tech'],
-    imageUrl: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800',
-    link: '/category/electronics',
-  },
-  {
-    id: 2,
-    title: 'Fashion Collection',
-    brand: 'Style Hub',
-    description: 'Explore trendy fashion wear for men, women, and kids. Affordable prices with premium quality fabrics.',
-    tags: ['Fashion', 'Clothing', 'Trends'],
-    imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
-    link: '/category/fashion',
-  },
-  {
-    id: 3,
-    title: 'Home & Living',
-    brand: 'Home Decor',
-    description: 'Transform your space with our curated home decor collection. From furniture to accessories.',
-    tags: ['Home', 'Decor', 'Living'],
-    imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800',
-    link: '/category/home-living',
-  },
-  {
-    id: 4,
-    title: 'Sports & Fitness',
-    brand: 'Active Gear',
-    description: 'Get fit with our sports equipment and fitness gear. Everything you need for an active lifestyle.',
-    tags: ['Sports', 'Fitness', 'Health'],
-    imageUrl: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800',
-    link: '/category/sports',
-  },
-];
-
 const Home = React.memo(() => {
   const { t } = useTranslation();
   const { user } = useSelector((state) => state.auth);
@@ -114,6 +74,16 @@ const Home = React.memo(() => {
     },
     refetchInterval: 5 * 60 * 1000,
     staleTime: 2 * 60 * 1000,
+  });
+
+  // Carousel items from CMS
+  const { data: carouselItems } = useQuery({
+    queryKey: ['carousel-items'],
+    queryFn: async () => {
+      const { data } = await api.get('/cms/carousel');
+      return data.data;
+    },
+    staleTime: 10 * 60 * 1000,
   });
 
   return (
@@ -392,15 +362,17 @@ const Home = React.memo(() => {
         </div>
 
         {/* 3D Carousel - Featured Brands/Categories (Full Width, Above Footer) */}
-        <section className="mt-8 mb-0">
-          <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
-          <ThreeDCarousel
-            items={carouselItems}
-            autoRotate={true}
-            rotateInterval={5000}
-            cardHeight={480}
-          />
-        </section>
+        {carouselItems && carouselItems.length > 0 && (
+          <section className="mt-8 mb-0">
+            <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
+            <ThreeDCarousel
+              items={carouselItems.map(item => ({ ...item, id: item._id }))}
+              autoRotate={true}
+              rotateInterval={5000}
+              cardHeight={480}
+            />
+          </section>
+        )}
       </div>
     </div>
   );

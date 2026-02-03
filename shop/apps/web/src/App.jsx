@@ -150,6 +150,7 @@ const VendorPayouts = lazy(() => import('./assets/pages/dashboard/admin/VendorPa
 const VendorCommissions = lazy(() => import('./assets/pages/dashboard/admin/VendorCommissions'));
 const AffiliateCommissions = lazy(() => import('./assets/pages/dashboard/admin/AffiliateCommissions'));
 const ManualOrders = lazy(() => import('./assets/pages/dashboard/admin/ManualOrders'));
+const CarouselManagement = lazy(() => import('./assets/pages/dashboard/admin/CarouselManagement'));
 const VendorKYC = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
 const AffiliateKYC = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateKYC'));
 
@@ -371,6 +372,7 @@ function App() {
             <Route path="ads" element={<AdminAds />} />
             <Route path="ads/approvals" element={<AdCampaignApprovals />} />
             <Route path="cms" element={<AdminCMS />} />
+            <Route path="carousel" element={<CarouselManagement />} />
             <Route path="blog" element={<BlogManagement />} />
             <Route path="communications" element={<AdminCommunications />} />
             <Route path="contact-submissions" element={<AdminContactSubmissions />} />
