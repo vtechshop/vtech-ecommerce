@@ -369,7 +369,7 @@ const Home = React.memo(() => {
               items={carouselItems.map(item => ({ ...item, id: item._id }))}
               autoRotate={true}
               rotateInterval={5000}
-              cardHeight={480}
+              cardHeight={560}
             />
           </section>
         )}

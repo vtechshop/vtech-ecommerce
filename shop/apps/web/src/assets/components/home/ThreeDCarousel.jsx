@@ -7,7 +7,7 @@ const ThreeDCarousel = ({
   items = [],
   autoRotate = true,
   rotateInterval = 4000,
-  cardHeight = 500,
+  cardHeight = 560,
 }) => {
   const [active, setActive] = useState(0);
   const carouselRef = useRef(null);
@@ -79,7 +79,7 @@ const ThreeDCarousel = ({
     >
       <div className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl">
         <div
-          className="relative overflow-hidden h-[550px]"
+          className="relative overflow-hidden h-[620px]"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
           onTouchStart={onTouchStart}
@@ -101,7 +101,7 @@ const ThreeDCarousel = ({
                 >
                   {/* Image Header */}
                   <div
-                    className="relative p-6 flex items-center justify-center h-48 overflow-hidden"
+                    className="relative p-6 flex items-center justify-center h-72 overflow-hidden"
                     style={{
                       backgroundImage: `url(${item.imageUrl})`,
                       backgroundSize: 'cover',
