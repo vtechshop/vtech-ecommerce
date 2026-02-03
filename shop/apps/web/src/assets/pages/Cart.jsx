@@ -6,7 +6,7 @@ import { updateCartItem, removeCartItem, loadCart } from '@/store/slices/cartSli
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import Button from '@/components/common/Button';
 import AdBanner from '@/components/common/AdBanner';
-import ShinyButton from '@/components/animations/ShinyButton';
+import '@/components/common/RippleButton.css';
 import { formatCurrency } from '@/utils/format';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
@@ -260,19 +260,29 @@ const Cart = () => {
                 </div>
               </div>
 
-              <ShinyButton
+              <button
                 onClick={handleCheckout}
-                variant="primary"
-                size="md"
-                className="w-full mb-3 fade-in stagger-2"
+                className="ripple-btn w-full bg-primary-600 text-white mb-3"
               >
-                Proceed to Checkout
-              </ShinyButton>
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-text">Proceed to Checkout</span>
+              </button>
 
-              <Link to="/products">
-                <button className="w-full bg-blue-100 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-200 transition-colors btn-scale fade-in stagger-3" data-testid="continue-shopping-btn">
-                  Continue Shopping
-                </button>
+              <Link
+                to="/products"
+                className="ripple-btn w-full bg-gray-100 text-gray-700"
+                data-testid="continue-shopping-btn"
+              >
+                <span className="ripple-circle bg-gray-300"></span>
+                <span className="ripple-circle bg-gray-300"></span>
+                <span className="ripple-circle bg-gray-300"></span>
+                <span className="ripple-circle bg-gray-300"></span>
+                <span className="ripple-circle bg-gray-300"></span>
+                <span className="ripple-text">Continue Shopping</span>
               </Link>
 
               {/* Trust Badges */}

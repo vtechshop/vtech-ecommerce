@@ -6,6 +6,7 @@ import { logout } from '@/store/slices/authSlice';
 import useAuth from '@/hooks/useAuth';
 import SearchAutocomplete from '@/components/common/SearchAutocomplete';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
+import '@/components/common/RippleButton.css';
 
 const Header = ({ onMobileMenuToggle }) => {
   const navigate = useNavigate();
@@ -271,15 +272,25 @@ const Header = ({ onMobileMenuToggle }) => {
               <div className="ml-auto flex items-center gap-4">
                 <Link
                   to="/register?role=vendor"
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                  className="ripple-btn bg-primary-600 text-white text-sm"
                 >
-                  Become a Vendor
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-text">Become a Vendor</span>
                 </Link>
                 <Link
                   to="/register?role=affiliate"
-                  className="px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors font-medium shadow-md hover:shadow-lg"
+                  className="ripple-btn bg-secondary-600 text-white text-sm"
                 >
-                  Become an Affiliate
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-text">Become an Affiliate</span>
                 </Link>
               </div>
             )}
@@ -316,17 +327,27 @@ const Header = ({ onMobileMenuToggle }) => {
                 <hr className="my-2" />
                 <Link
                   to="/register?role=vendor"
-                  className="py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium text-center"
+                  className="ripple-btn w-full bg-primary-600 text-white"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Become a Vendor
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-circle bg-primary-400"></span>
+                  <span className="ripple-text">Become a Vendor</span>
                 </Link>
                 <Link
                   to="/register?role=affiliate"
-                  className="py-2 px-4 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors font-medium text-center"
+                  className="ripple-btn w-full bg-secondary-600 text-white"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Become an Affiliate
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-circle bg-secondary-400"></span>
+                  <span className="ripple-text">Become an Affiliate</span>
                 </Link>
               </>
             )}
