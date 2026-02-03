@@ -30,6 +30,7 @@ router.get('/inventory', authenticate, authorize(['vendor', 'admin']), vendorCon
 router.put('/inventory/:productId', authenticate, authorize(['vendor', 'admin']), vendorController.updateInventory);
 
 // Order routes - require approved KYC
+router.get('/orders/counts', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getVendorOrderCounts);
 router.get('/orders', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getVendorOrders);
 router.put('/orders/:id/status', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.updateOrderStatus);
 router.get('/settlements', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getSettlements);

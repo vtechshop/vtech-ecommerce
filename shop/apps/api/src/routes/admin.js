@@ -61,6 +61,7 @@ router.put('/categories/:id', validateObjectId('id'), admin.updateCategory);
 router.delete('/categories/:id', validateObjectId('id'), admin.deleteCategory);
 
 // Orders - SECURITY: Added ObjectId validation
+router.get('/orders/counts', admin.getOrderCounts);
 router.get('/orders', admin.getOrders);
 router.get('/orders/:id', validateObjectId('id'), admin.getOrderById);
 router.put('/orders/:id/status', validateObjectId('id'), admin.updateOrderStatus);

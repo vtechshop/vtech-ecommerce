@@ -40,24 +40,20 @@ const WarrantyCheck = () => {
     setSubmitted(true);
   };
 
-  // Calculate days remaining
-  const getDaysRemaining = (expiresAt) => {
-    if (!expiresAt) return null;
-    const now = new Date();
-    const expiry = new Date(expiresAt);
-    const diffTime = expiry - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-
-  // Get status info based on warranty state
+  // Get status info based on warranty state (uses backend-calculated values)
   const getWarrantyStatus = (warranty) => {
-    if (!warranty.isActivated) {
-      return { label: 'Pending Activation', color: 'yellow', icon: Clock };
+    const daysLeft = warranty.daysRemaining;
+
+    // Check backend status first
+    if (warranty.status === 'pending_activation') {
+      return { label: 'Pending Activation', color: 'yellow', icon: Clock, daysLeft: daysLeft, canClaim: true, isPending: true };
     }
 
-    const daysLeft = getDaysRemaining(warranty.expiresAt);
+    if (warranty.status === 'expired') {
+      return { label: 'Warranty Expired', color: 'red', icon: XCircle, daysLeft: 0, canClaim: false };
+    }
 
+    // Active warranty
     if (warranty.durationType === 'lifetime' || daysLeft === null) {
       return { label: 'Lifetime Warranty', color: 'green', icon: ShieldCheck, daysLeft: null, canClaim: true };
     }
@@ -118,7 +114,7 @@ const WarrantyCheck = () => {
             ) : myWarranties?.length > 0 ? (
               <div className="space-y-3">
                 {myWarranties.map((item, idx) => (
-                  <WarrantyCard key={idx} item={item} getWarrantyStatus={getWarrantyStatus} getDaysRemaining={getDaysRemaining} />
+                  <WarrantyCard key={idx} item={item} getWarrantyStatus={getWarrantyStatus} />
                 ))}
               </div>
             ) : (
@@ -140,7 +136,7 @@ const WarrantyCheck = () => {
               {searchResults?.length > 0 && (
                 <div className="space-y-3 mt-4">
                   {searchResults.map((item, idx) => (
-                    <WarrantyCard key={idx} item={item} getWarrantyStatus={getWarrantyStatus} getDaysRemaining={getDaysRemaining} />
+                    <WarrantyCard key={idx} item={item} getWarrantyStatus={getWarrantyStatus} />
                   ))}
                 </div>
               )}
@@ -169,7 +165,7 @@ const WarrantyCheck = () => {
             {searchResults?.length > 0 && (
               <div className="space-y-3">
                 {searchResults.map((item, idx) => (
-                  <WarrantyCard key={idx} item={item} getWarrantyStatus={getWarrantyStatus} getDaysRemaining={getDaysRemaining} />
+                  <WarrantyCard key={idx} item={item} getWarrantyStatus={getWarrantyStatus} />
                 ))}
               </div>
             )}
@@ -181,7 +177,7 @@ const WarrantyCheck = () => {
 };
 
 // Amazon-style Warranty Card with expandable details and support options
-const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
+const WarrantyCard = ({ item, getWarrantyStatus }) => {
   const [expanded, setExpanded] = useState(false);
   const status = getWarrantyStatus(item.warranty);
   const StatusIcon = status.icon;
@@ -231,17 +227,25 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
 
           {/* Days Remaining - Prominent */}
           <div className="text-right flex-shrink-0">
-            {status.daysLeft !== null && status.daysLeft !== undefined ? (
+            {item.warranty.durationType === 'lifetime' ? (
+              // Lifetime warranty
+              <>
+                <div className="text-2xl font-bold text-green-600">∞</div>
+                <div className="text-xs text-gray-500">lifetime</div>
+              </>
+            ) : status.daysLeft !== null && status.daysLeft !== undefined && status.daysLeft > 0 ? (
+              // Has days remaining
               <>
                 <div className={`text-2xl font-bold ${daysColors[status.color]}`}>
                   {status.daysLeft}
                 </div>
                 <div className="text-xs text-gray-500">days left</div>
               </>
-            ) : status.label === 'Lifetime Warranty' ? (
+            ) : status.daysLeft === 0 ? (
+              // Expired
               <>
-                <div className="text-2xl font-bold text-green-600">∞</div>
-                <div className="text-xs text-gray-500">lifetime</div>
+                <div className="text-2xl font-bold text-red-600">0</div>
+                <div className="text-xs text-gray-500">expired</div>
               </>
             ) : (
               <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border ${statusColors[status.color]}`}>
@@ -322,7 +326,32 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
             {/* Support Actions - Amazon style "Get product support" */}
             <div className="pt-3 border-t border-gray-200">
               <h4 className="text-xs text-gray-500 uppercase font-medium mb-3">Get Product Support</h4>
-              {status.canClaim ? (
+              {status.isPending ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    <Clock className="w-4 h-4 inline mr-1" />
+                    Your warranty is pending activation. It will be automatically activated or you can contact support to activate it manually.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <a
+                      href={getWhatsAppLink()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Activate via WhatsApp
+                    </a>
+                    <a
+                      href="tel:+919876543210"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                      <Phone className="w-4 h-4" />
+                      Call Support
+                    </a>
+                  </div>
+                </div>
+              ) : status.canClaim ? (
                 <div className="flex flex-wrap gap-2">
                   <a
                     href={getWhatsAppLink()}
@@ -341,7 +370,7 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
                     Call Support
                   </a>
                   <Link
-                    to="/contact"
+                    to="/page/contact"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                   >
                     <HelpCircle className="w-4 h-4" />
@@ -352,7 +381,7 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                   <p className="text-sm text-red-700">
                     <XCircle className="w-4 h-4 inline mr-1" />
-                    Warranty has expired. For out-of-warranty support, please <a href="/contact" className="underline">contact us</a>.
+                    Warranty has expired. For out-of-warranty support, please <Link to="/page/contact" className="underline">contact us</Link>.
                   </p>
                 </div>
               )}

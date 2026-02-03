@@ -410,9 +410,40 @@ async function updateInventory(req, res, next) {
   }
 }
 
+async function getVendorOrderCounts(req, res, next) {
+  try {
+    // SECURITY: Explicit vendor verification
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    // Get counts for each status
+    const [total, paid, packed, shipped, out_for_delivery, delivered, cancelled] = await Promise.all([
+      Order.countDocuments({ 'items.vendorId': vendor._id }),
+      Order.countDocuments({ 'items.vendorId': vendor._id, status: 'paid' }),
+      Order.countDocuments({ 'items.vendorId': vendor._id, status: 'packed' }),
+      Order.countDocuments({ 'items.vendorId': vendor._id, status: 'shipped' }),
+      Order.countDocuments({ 'items.vendorId': vendor._id, status: 'out_for_delivery' }),
+      Order.countDocuments({ 'items.vendorId': vendor._id, status: 'delivered' }),
+      Order.countDocuments({ 'items.vendorId': vendor._id, status: 'cancelled' }),
+    ]);
+
+    res.json({
+      success: true,
+      data: { total, paid, packed, shipped, out_for_delivery, delivered, cancelled },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function getVendorOrders(req, res, next) {
   try {
-    const { page = 1, limit = 20, status } = req.query;
+    const { page = 1, limit = 20, status, search } = req.query;
 
     // SECURITY: Explicit vendor verification
     const vendor = await Vendor.findOne({ userId: req.user._id });
@@ -425,6 +456,7 @@ async function getVendorOrders(req, res, next) {
 
     const query = { 'items.vendorId': vendor._id };
     if (status) query.status = status;
+    if (search) query.orderId = { $regex: search, $options: 'i' };
 
     // SECURITY: Enforce maximum limit
     const safeLimit = Math.min(parseInt(limit) || 20, 100);
@@ -1285,6 +1317,7 @@ module.exports = {
   importProducts,
   getInventory,
   updateInventory,
+  getVendorOrderCounts,
   getVendorOrders,
   updateOrderStatus,
   getSettlements,

@@ -495,6 +495,30 @@ exports.deleteCategory = async (req, res, next) => {
 };
 
 // ---------- Orders ----------
+exports.getOrderCounts = async (req, res, next) => {
+  try {
+    const [total, pending, pending_payment, paid, packed, shipped, out_for_delivery, delivered, cancelled, refunded] = await Promise.all([
+      Order.countDocuments(),
+      Order.countDocuments({ status: 'pending' }),
+      Order.countDocuments({ status: 'pending_payment' }),
+      Order.countDocuments({ status: 'paid' }),
+      Order.countDocuments({ status: 'packed' }),
+      Order.countDocuments({ status: 'shipped' }),
+      Order.countDocuments({ status: 'out_for_delivery' }),
+      Order.countDocuments({ status: 'delivered' }),
+      Order.countDocuments({ status: 'cancelled' }),
+      Order.countDocuments({ status: 'refunded' }),
+    ]);
+
+    res.json({
+      success: true,
+      data: { total, pending, pending_payment, paid, packed, shipped, out_for_delivery, delivered, cancelled, refunded },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getOrders = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, status, vendorId, search } = req.query;
@@ -2804,6 +2828,55 @@ exports.checkWarranty = async (req, res, next) => {
         .sort({ createdAt: -1 })
         .limit(50);
 
+      // Helper to calculate warranty status and expiry
+      const getWarrantyDetails = (warranty, orderDate) => {
+        const now = new Date();
+        const deliveryDate = new Date(orderDate);
+
+        // Calculate expiry date if not set
+        let expiresAt = warranty.expiresAt;
+        if (!expiresAt && warranty.durationType !== 'lifetime') {
+          const expiry = new Date(deliveryDate);
+          if (warranty.durationType === 'years') {
+            expiry.setFullYear(expiry.getFullYear() + warranty.duration);
+          } else { // months
+            expiry.setMonth(expiry.getMonth() + warranty.duration);
+          }
+          expiresAt = expiry;
+        }
+
+        // Determine status - only pending if explicitly requires activation
+        let status = 'active';
+        if (warranty.activationRequired && !warranty.isActivated) {
+          status = 'pending_activation';
+        } else if (warranty.durationType !== 'lifetime' && expiresAt && new Date(expiresAt) < now) {
+          status = 'expired';
+        }
+
+        // Calculate days remaining
+        let daysRemaining = null;
+        if (warranty.durationType === 'lifetime') {
+          daysRemaining = null; // Infinite
+        } else if (expiresAt) {
+          const diffTime = new Date(expiresAt) - now;
+          daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        }
+
+        return {
+          duration: warranty.duration,
+          durationType: warranty.durationType,
+          description: warranty.description,
+          provider: warranty.provider,
+          isActivated: warranty.activationRequired ? warranty.isActivated : true,
+          activatedAt: warranty.activatedAt || deliveryDate,
+          expiresAt: expiresAt,
+          warrantyCode: warranty.warrantyCode,
+          activationRequired: warranty.activationRequired || false,
+          status,
+          daysRemaining,
+        };
+      };
+
       const warranties = [];
       for (const order of userOrders) {
         for (const item of order.items) {
@@ -2817,19 +2890,7 @@ exports.checkWarranty = async (req, res, next) => {
               productImage: item.image,
               sku: item.sku,
               price: item.priceSnapshot,
-              warranty: {
-                duration: item.warranty.duration,
-                durationType: item.warranty.durationType,
-                description: item.warranty.description,
-                provider: item.warranty.provider,
-                isActivated: item.warranty.isActivated,
-                activatedAt: item.warranty.activatedAt,
-                expiresAt: item.warranty.expiresAt,
-                warrantyCode: item.warranty.warrantyCode,
-                status: !item.warranty.isActivated ? 'pending_activation'
-                  : item.warranty.expiresAt && new Date(item.warranty.expiresAt) < new Date() ? 'expired'
-                  : 'active',
-              },
+              warranty: getWarrantyDetails(item.warranty, order.createdAt),
             });
           }
         }
@@ -2853,6 +2914,55 @@ exports.checkWarranty = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .limit(50);
 
+    // Helper to calculate warranty status and expiry (same as above)
+    const getWarrantyDetails = (warranty, orderDate) => {
+      const now = new Date();
+      const deliveryDate = new Date(orderDate);
+
+      // Calculate expiry date if not set
+      let expiresAt = warranty.expiresAt;
+      if (!expiresAt && warranty.durationType !== 'lifetime') {
+        const expiry = new Date(deliveryDate);
+        if (warranty.durationType === 'years') {
+          expiry.setFullYear(expiry.getFullYear() + warranty.duration);
+        } else { // months
+          expiry.setMonth(expiry.getMonth() + warranty.duration);
+        }
+        expiresAt = expiry;
+      }
+
+      // Determine status - only pending if explicitly requires activation
+      let status = 'active';
+      if (warranty.activationRequired && !warranty.isActivated) {
+        status = 'pending_activation';
+      } else if (warranty.durationType !== 'lifetime' && expiresAt && new Date(expiresAt) < now) {
+        status = 'expired';
+      }
+
+      // Calculate days remaining
+      let daysRemaining = null;
+      if (warranty.durationType === 'lifetime') {
+        daysRemaining = null; // Infinite
+      } else if (expiresAt) {
+        const diffTime = new Date(expiresAt) - now;
+        daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+      }
+
+      return {
+        duration: warranty.duration,
+        durationType: warranty.durationType,
+        description: warranty.description,
+        provider: warranty.provider,
+        isActivated: warranty.activationRequired ? warranty.isActivated : true,
+        activatedAt: warranty.activatedAt || deliveryDate,
+        expiresAt: expiresAt,
+        warrantyCode: warranty.warrantyCode,
+        activationRequired: warranty.activationRequired || false,
+        status,
+        daysRemaining,
+      };
+    };
+
     // Extract warranty items
     const warranties = [];
     for (const order of orders) {
@@ -2867,19 +2977,7 @@ exports.checkWarranty = async (req, res, next) => {
             productImage: item.image,
             sku: item.sku,
             price: item.priceSnapshot,
-            warranty: {
-              duration: item.warranty.duration,
-              durationType: item.warranty.durationType,
-              description: item.warranty.description,
-              provider: item.warranty.provider,
-              isActivated: item.warranty.isActivated,
-              activatedAt: item.warranty.activatedAt,
-              expiresAt: item.warranty.expiresAt,
-              warrantyCode: item.warranty.warrantyCode,
-              status: !item.warranty.isActivated ? 'pending_activation'
-                : item.warranty.expiresAt && new Date(item.warranty.expiresAt) < new Date() ? 'expired'
-                : 'active',
-            },
+            warranty: getWarrantyDetails(item.warranty, order.createdAt),
           });
         }
       }
