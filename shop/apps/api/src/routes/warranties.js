@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const warrantyService = require('../services/warrantyService');
-const { authenticate, authorize } = require('../middleware/auth');
+const { authenticate, authorize, optionalAuth } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validate');
 
-// Public warranty check - no auth required
-// GET /api/warranties/check?phone=xxx or ?orderId=xxx
+// Warranty check - optionalAuth so logged-in users get their data, guests can search by orderId
+// GET /api/warranties/check?orderId=xxx or ?phone=my-account (for logged-in users)
 const admin = require('../controllers/adminController');
-router.get('/check', admin.checkWarranty);
+router.get('/check', optionalAuth, admin.checkWarranty);
 
 // Generate warranty (typically called after order completion)
 // POST /api/warranties/generate

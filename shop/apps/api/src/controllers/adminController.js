@@ -2773,27 +2773,60 @@ exports.createManualOrder = async (req, res, next) => {
   }
 };
 
-// Public: Warranty check by phone/orderId/warrantyCode
+// Warranty check by orderId (Amazon-style: simple Order ID lookup)
 exports.checkWarranty = async (req, res, next) => {
   try {
-    const { phone, orderId, warrantyCode } = req.query;
-    if (!phone && !orderId && !warrantyCode) {
-      return res.status(400).json({ success: false, error: { message: 'Phone number, Order ID, or Warranty Code is required' } });
+    const { phone, orderId } = req.query;
+
+    // Special case: "my-account" = fetch all warranties for logged-in user
+    if (phone === 'my-account' && req.user) {
+      const userOrders = await Order.find({
+        userId: req.user._id,
+        'items.warranty.hasWarranty': true
+      })
+        .select('orderId items source shipTo.fullName customerPhone totals.total payment.method payment.paidAt status createdAt')
+        .sort({ createdAt: -1 })
+        .limit(50);
+
+      const warranties = [];
+      for (const order of userOrders) {
+        for (const item of order.items) {
+          if (item.warranty?.hasWarranty) {
+            warranties.push({
+              orderId: order.orderId,
+              orderDate: order.createdAt,
+              source: order.source || 'online',
+              customerName: order.shipTo?.fullName,
+              productName: item.name,
+              productImage: item.image,
+              sku: item.sku,
+              price: item.priceSnapshot,
+              warranty: {
+                duration: item.warranty.duration,
+                durationType: item.warranty.durationType,
+                description: item.warranty.description,
+                provider: item.warranty.provider,
+                isActivated: item.warranty.isActivated,
+                activatedAt: item.warranty.activatedAt,
+                expiresAt: item.warranty.expiresAt,
+                warrantyCode: item.warranty.warrantyCode,
+                status: !item.warranty.isActivated ? 'pending_activation'
+                  : item.warranty.expiresAt && new Date(item.warranty.expiresAt) < new Date() ? 'expired'
+                  : 'active',
+              },
+            });
+          }
+        }
+      }
+      return res.json({ success: true, data: warranties });
     }
 
-    const filter = {};
-    if (warrantyCode) {
-      // Search by warranty code in items
-      filter['items.warranty.warrantyCode'] = { $regex: warrantyCode, $options: 'i' };
-    } else if (orderId) {
-      filter.orderId = { $regex: orderId, $options: 'i' };
-    } else {
-      filter.$or = [
-        { customerPhone: phone },
-        { 'shipTo.phone': phone },
-        { 'payment.contact': phone },
-      ];
+    // Order ID search (public - anyone can check with valid order ID)
+    if (!orderId) {
+      return res.status(400).json({ success: false, error: { message: 'Order ID is required' } });
     }
+
+    const filter = { orderId: { $regex: orderId, $options: 'i' } };
 
     const orders = await Order.find(filter)
       .select('orderId items source shipTo.fullName customerPhone totals.total payment.method payment.paidAt status createdAt')
