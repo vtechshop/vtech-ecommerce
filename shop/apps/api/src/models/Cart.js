@@ -99,7 +99,13 @@ cartSchema.methods.calculateTotals = function() {
   this.totals.shipping = 0;
 
   this.totals.discount = this.coupons.reduce((sum, coupon) => sum + coupon.discount, 0);
-  this.totals.total = this.totals.subtotal + this.totals.tax + this.totals.shipping - this.totals.discount;
+
+  // SECURITY: Ensure discount never exceeds order value (prevents negative totals)
+  const maxDiscount = this.totals.subtotal + this.totals.tax + this.totals.shipping;
+  this.totals.discount = Math.min(this.totals.discount, maxDiscount);
+
+  // Calculate total (guaranteed non-negative due to discount cap above)
+  this.totals.total = Math.max(0, this.totals.subtotal + this.totals.tax + this.totals.shipping - this.totals.discount);
 
   return this.totals;
 };

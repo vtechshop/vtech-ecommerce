@@ -200,13 +200,24 @@ exports.updateItem = async (req, res, next) => {
       });
     }
 
-    // Validate quantity
+    // Validate quantity (same limits as addItem)
+    const MAX_QUANTITY = 100;
     if (!Number.isInteger(quantity) || quantity < 1) {
       return res.status(400).json({
         success: false,
         error: {
           code: 'INVALID_QUANTITY',
           message: 'Quantity must be a positive integer',
+        },
+      });
+    }
+
+    if (quantity > MAX_QUANTITY) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MAX_QUANTITY_EXCEEDED',
+          message: `Maximum ${MAX_QUANTITY} items allowed per product`,
         },
       });
     }
@@ -226,7 +237,8 @@ exports.updateItem = async (req, res, next) => {
     }
 
     // Check stock for variant or main product
-    const variant = item.variantId ? product.variants.id(item.variantId) : null;
+    // SECURITY: Use optional chaining to prevent crash if variants array is undefined
+    const variant = item.variantId ? product.variants?.id(item.variantId) : null;
     const availableStock = variant ? variant.stock : product.stock;
 
     if (availableStock < quantity) {
@@ -347,19 +359,82 @@ exports.applyCoupon = async (req, res, next) => {
       });
     }
 
+    // SECURITY: Check perUserLimit - validate user hasn't exceeded their personal limit
+    if (coupon.perUserLimit && userId) {
+      const Order = require('../models/Order');
+      const userCouponUsage = await Order.countDocuments({
+        userId,
+        'coupons.code': coupon.code,
+        status: { $nin: ['cancelled'] }
+      });
+      if (userCouponUsage >= coupon.perUserLimit) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'COUPON_USER_LIMIT', message: `You have already used this coupon ${coupon.perUserLimit} time(s)` },
+        });
+      }
+    }
+
+    // SECURITY: Check if coupon is already applied to this cart
+    if (cart.coupons.some(c => c.code === coupon.code)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'COUPON_ALREADY_APPLIED', message: 'This coupon is already applied to your cart' },
+      });
+    }
+
+    // SECURITY: Validate coupon applicability (products, categories, vendors)
+    if (coupon.applicableProducts && coupon.applicableProducts.length > 0) {
+      const applicableProductIds = coupon.applicableProducts.map(p => p.toString());
+      const hasApplicableProduct = cart.items.some(item =>
+        applicableProductIds.includes(item.productId._id?.toString() || item.productId.toString())
+      );
+      if (!hasApplicableProduct) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'COUPON_NOT_APPLICABLE', message: 'This coupon is not applicable to any product in your cart' },
+        });
+      }
+    }
+
+    if (coupon.applicableCategories && coupon.applicableCategories.length > 0) {
+      const applicableCatIds = coupon.applicableCategories.map(c => c.toString());
+      const hasApplicableCategory = cart.items.some(item => {
+        const productCategoryId = item.productId.categoryId?.toString();
+        return productCategoryId && applicableCatIds.includes(productCategoryId);
+      });
+      if (!hasApplicableCategory) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'COUPON_NOT_APPLICABLE', message: 'This coupon is not applicable to any category in your cart' },
+        });
+      }
+    }
+
+    if (coupon.applicableVendors && coupon.applicableVendors.length > 0) {
+      const applicableVendorIds = coupon.applicableVendors.map(v => v.toString());
+      const hasApplicableVendor = cart.items.some(item => {
+        const productVendorId = item.productId.vendorId?.toString();
+        return productVendorId && applicableVendorIds.includes(productVendorId);
+      });
+      if (!hasApplicableVendor) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'COUPON_NOT_APPLICABLE', message: 'This coupon is not applicable to any vendor in your cart' },
+        });
+      }
+    }
+
     // Check usage limit and increment atomically to prevent race condition
+    // FIXED: Combined $or conditions properly using $and to avoid duplicate key issue
     const updatedCoupon = await Coupon.findOneAndUpdate(
       {
         code: code.toUpperCase(),
         isActive: true,
-        startDate: { $lte: now },
-        $or: [
-          { endDate: { $gte: now } },
-          { endDate: null }
-        ],
-        $or: [
-          { usageLimit: null },
-          { $expr: { $lt: ['$usageCount', '$usageLimit'] } }
+        $and: [
+          { $or: [{ startDate: { $lte: now } }, { startDate: null }] },
+          { $or: [{ endDate: { $gte: now } }, { endDate: null }] },
+          { $or: [{ usageLimit: null }, { $expr: { $lt: ['$usageCount', '$usageLimit'] } }] }
         ],
       },
       { $inc: { usageCount: 1 } },
@@ -373,19 +448,13 @@ exports.applyCoupon = async (req, res, next) => {
       });
     }
 
-    // Old check - replaced by atomic operation above
-    /*if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'COUPON_EXHAUSTED', message: 'Coupon usage limit reached' },
-      });
-    }*/
-
     // Check min order value
     if (coupon.minOrderValue && cart.totals.subtotal < coupon.minOrderValue) {
+      // Rollback usage count since we're rejecting
+      await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usageCount: -1 } });
       return res.status(400).json({
         success: false,
-        error: { code: 'MIN_ORDER_NOT_MET', message: 'Minimum order value not met' },
+        error: { code: 'MIN_ORDER_NOT_MET', message: `Minimum order value of ₹${coupon.minOrderValue} not met` },
       });
     }
 
@@ -406,8 +475,6 @@ exports.applyCoupon = async (req, res, next) => {
       type: coupon.type,
     });
     await cart.save(); // Pre-save hook calculates totals
-
-    // Usage count already incremented atomically above - no need to save again
 
     res.json({
       success: true,

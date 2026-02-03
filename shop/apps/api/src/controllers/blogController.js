@@ -172,12 +172,24 @@ exports.addComment = async (req, res, next) => {
       throw new AppError('Comments are disabled for this post', 403, 'COMMENTS_DISABLED');
     }
 
+    // SECURITY: Sanitize comment to prevent XSS attacks
+    const sanitizedComment = (content || comment || '')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .trim();
+
+    if (!sanitizedComment || sanitizedComment.length < 3) {
+      throw new AppError('Comment must be at least 3 characters', 400, 'INVALID_COMMENT');
+    }
+
     const newComment = await BlogComment.create({
       blogId: blog._id,
       userId: req.user._id,
       userName: req.user.name,
       userEmail: req.user.email,
-      comment: content || comment, // Support both 'content' and 'comment' field names
+      comment: sanitizedComment,
       parentId: parentId || null,
     });
 
@@ -364,9 +376,11 @@ exports.adminGetBlogs = async (req, res, next) => {
     if (type) query.type = type;
     if (author) query.author = author;
     if (search) {
+      // SECURITY: Escape regex to prevent ReDoS attacks (same as public getBlogs)
+      const escapedSearch = escapeRegex(search);
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { excerpt: { $regex: search, $options: 'i' } },
+        { title: { $regex: escapedSearch, $options: 'i' } },
+        { excerpt: { $regex: escapedSearch, $options: 'i' } },
       ];
     }
 

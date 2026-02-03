@@ -53,12 +53,14 @@ exports.changePassword = async (req, res, next) => {
       });
     }
 
-    if (newPassword.length < 8) {
+    // SECURITY: Enforce same password complexity as registration
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+=\-[\]{}|;:'"<>,.\/\\])[A-Za-z\d@$!%*?&#^()_+=\-[\]{}|;:'"<>,.\/\\]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
       return res.status(400).json({
         success: false,
         error: {
-          code: 'INVALID_PASSWORD',
-          message: 'New password must be at least 8 characters long',
+          code: 'WEAK_PASSWORD',
+          message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character',
         },
       });
     }

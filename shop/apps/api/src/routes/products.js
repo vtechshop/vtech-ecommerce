@@ -123,11 +123,29 @@ router.post('/:productId/reviews', authenticate, async (req, res, next) => {
       });
     }
 
-    // Validate input
-    if (!rating || rating < 1 || rating > 5) {
+    // SECURITY: Verify user has purchased this product before allowing review
+    const Order = require('../models/Order');
+    const hasPurchased = await Order.findOne({
+      $or: [
+        { userId: userId },
+        { guestEmail: req.user.email, isGuest: true }
+      ],
+      'items.productId': productId,
+      status: { $in: ['delivered', 'shipped', 'out_for_delivery'] }
+    });
+
+    if (!hasPurchased) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'PURCHASE_REQUIRED', message: 'You can only review products you have purchased' }
+      });
+    }
+
+    // SECURITY: Validate rating is a number and within range (prevent type coercion attacks)
+    if (typeof rating !== 'number' || !Number.isInteger(rating) || rating < 1 || rating > 5) {
       return res.status(400).json({
         success: false,
-        error: { code: 'INVALID_RATING', message: 'Rating must be between 1 and 5' }
+        error: { code: 'INVALID_RATING', message: 'Rating must be an integer between 1 and 5' }
       });
     }
 

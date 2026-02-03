@@ -933,6 +933,14 @@ const { id } = req.params;
 const { startDate, endDate } = req.query;
 const vendor = await Vendor.findOne({ userId: req.user._id });
 
+// SECURITY: Verify vendor exists before accessing properties
+if (!vendor) {
+  return res.status(404).json({
+    success: false,
+    error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+  });
+}
+
 const campaign = await AdCampaign.findOne({
   _id: id,
   vendorId: vendor._id,
@@ -1246,6 +1254,14 @@ exports.getWalletTransactions = async (req, res, next) => {
 try {
 const { page = 1, limit = 20 } = req.query;
 const vendor = await Vendor.findOne({ userId: req.user._id });
+
+// SECURITY: Verify vendor exists before accessing properties
+if (!vendor) {
+  return res.status(404).json({
+    success: false,
+    error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
+  });
+}
 
 const wallet = await AdWallet.findOne({ vendorId: vendor._id });
 
