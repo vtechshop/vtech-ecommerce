@@ -303,6 +303,16 @@ exports.createOrder = async (req, res, next) => {
     // ===== NEW: GROUP ITEMS BY VENDOR =====
     const vendorGroups = {};
     for (const item of orderItems) {
+      // Validate vendorId exists (required for multi-vendor order splitting)
+      if (!item.vendorId) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_VENDOR',
+            message: `Product "${item.name}" is missing vendor information. Please contact support.`,
+          },
+        });
+      }
       const vendorIdStr = item.vendorId.toString();
       if (!vendorGroups[vendorIdStr]) {
         vendorGroups[vendorIdStr] = [];
