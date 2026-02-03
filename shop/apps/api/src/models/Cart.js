@@ -76,36 +76,40 @@ cartSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Methods
 cartSchema.methods.calculateTotals = function() {
-  this.totals.subtotal = this.items.reduce((sum, item) => {
+  // FIX: Round to 2 decimal places to avoid floating point precision errors
+  this.totals.subtotal = Math.round(this.items.reduce((sum, item) => {
     return sum + (item.priceSnapshot * item.qty);
-  }, 0);
+  }, 0) * 100) / 100;
 
   // Calculate tax based on item tax settings
-  this.totals.tax = this.items.reduce((sum, item) => {
+  // FIX: Round each item tax and final sum to avoid floating point precision errors
+  this.totals.tax = Math.round(this.items.reduce((sum, item) => {
     // Skip if tax is already included in price
     if (item.taxIncluded) {
       return sum;
     }
     // Calculate tax if item is taxable
     if (item.taxable && item.taxRate > 0) {
-      const itemTax = (item.priceSnapshot * item.qty) * (item.taxRate / 100);
+      const itemTax = Math.round((item.priceSnapshot * item.qty) * (item.taxRate / 100) * 100) / 100;
       return sum + itemTax;
     }
     return sum;
-  }, 0);
+  }, 0) * 100) / 100;
 
   // Shipping is included in product price (no separate shipping charge)
   // Platform fee/commission is handled internally when paying vendors
   this.totals.shipping = 0;
 
-  this.totals.discount = this.coupons.reduce((sum, coupon) => sum + coupon.discount, 0);
+  // FIX: Round discount to 2 decimal places
+  this.totals.discount = Math.round(this.coupons.reduce((sum, coupon) => sum + coupon.discount, 0) * 100) / 100;
 
   // SECURITY: Ensure discount never exceeds order value (prevents negative totals)
-  const maxDiscount = this.totals.subtotal + this.totals.tax + this.totals.shipping;
+  const maxDiscount = Math.round((this.totals.subtotal + this.totals.tax + this.totals.shipping) * 100) / 100;
   this.totals.discount = Math.min(this.totals.discount, maxDiscount);
 
   // Calculate total (guaranteed non-negative due to discount cap above)
-  this.totals.total = Math.max(0, this.totals.subtotal + this.totals.tax + this.totals.shipping - this.totals.discount);
+  // FIX: Round final total to 2 decimal places
+  this.totals.total = Math.round(Math.max(0, this.totals.subtotal + this.totals.tax + this.totals.shipping - this.totals.discount) * 100) / 100;
 
   return this.totals;
 };

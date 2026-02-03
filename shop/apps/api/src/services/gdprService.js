@@ -20,8 +20,10 @@ class GDPRService {
     try {
       logger.info(`[GDPR] Starting data export for user: ${userId}`);
 
+      // FIX: Use correct field names for each model (userId vs user)
+      const user = await User.findById(userId).select('-password -refreshToken').lean();
+
       const [
-        user,
         orders,
         reviews,
         cart,
@@ -33,17 +35,16 @@ class GDPRService {
         tickets,
         loginActivity,
       ] = await Promise.all([
-        User.findById(userId).select('-password -refreshToken').lean(),
-        Order.find({ user: userId }).populate('items.product', 'title sku').lean(),
-        Review.find({ user: userId }).populate('product', 'title').lean(),
-        Cart.findOne({ user: userId }).populate('items.product', 'title price').lean(),
-        Wishlist.findOne({ user: userId }).populate('products', 'title price images').lean(),
-        LoyaltyPoints.findOne({ user: userId }).lean(),
-        LoyaltyTransaction.find({ user: userId }).sort({ createdAt: -1 }).lean(),
+        Order.find({ userId: userId }).populate('items.productId', 'title sku').lean(),
+        Review.find({ userId: userId }).populate('productId', 'title').lean(),
+        Cart.findOne({ userId: userId }).populate('items.productId', 'title price').lean(),
+        Wishlist.findOne({ userId: userId }).populate('products', 'title price images').lean(),
+        LoyaltyPoints.findOne({ user: userId }).lean(), // LoyaltyPoints uses 'user'
+        LoyaltyTransaction.find({ user: userId }).sort({ createdAt: -1 }).lean(), // uses 'user'
         Newsletter.findOne({ email: user?.email }).lean(),
-        Notification.find({ user: userId }).sort({ createdAt: -1 }).limit(100).lean(),
-        Ticket.find({ user: userId }).populate('assignedTo', 'name').lean(),
-        LoginActivity.find({ user: userId }).sort({ timestamp: -1 }).limit(50).lean(),
+        Notification.find({ userId: userId }).sort({ createdAt: -1 }).limit(100).lean(),
+        Ticket.find({ userId: userId }).populate('assignedTo', 'name').lean(),
+        LoginActivity.find({ userId: userId }).sort({ createdAt: -1 }).limit(50).lean(),
       ]);
 
       const exportData = {
@@ -61,9 +62,9 @@ class GDPRService {
             updatedAt: user.updatedAt,
           },
           addresses: user.addresses || [],
-          preferences: user.preferences || {},
-          emailVerified: user.isEmailVerified,
-          phoneVerified: user.isPhoneVerified,
+          preferences: user.emailPreferences || {},
+          emailVerified: user.emailVerified || false, // FIX: correct field name
+          isActive: user.isActive,
         },
         orders: {
           total: orders.length,
@@ -87,12 +88,11 @@ class GDPRService {
         reviews: {
           total: reviews.length,
           data: reviews.map(review => ({
-            product: review.product?.title,
+            product: review.productId?.title, // FIX: correct field name
             rating: review.rating,
             comment: review.comment,
             status: review.status,
-            helpful: review.helpful,
-            unhelpful: review.unhelpful,
+            helpfulCount: review.helpfulCount || 0,
             createdAt: review.createdAt,
           })),
         },
@@ -196,21 +196,21 @@ class GDPRService {
       const anonymousId = `deleted_user_${Date.now()}`;
       const anonymousEmail = `${anonymousId}@deleted.local`;
 
-      // Anonymize user record
+      // Anonymize user record - FIX: Use correct field names
       user.name = 'Deleted User';
       user.email = anonymousEmail;
       user.phone = null;
       user.avatar = null;
       user.addresses = [];
-      user.preferences = {};
-      user.isEmailVerified = false;
-      user.isPhoneVerified = false;
+      user.emailPreferences = {};
+      user.emailVerified = false;
+      user.isActive = false;
       user.deletedAt = new Date();
       await user.save();
 
-      // Anonymize orders (keep for accounting)
+      // Anonymize orders (keep for accounting) - FIX: Use correct field name
       await Order.updateMany(
-        { user: userId },
+        { userId: userId },
         {
           $set: {
             'shippingAddress.name': 'Deleted User',
@@ -223,14 +223,14 @@ class GDPRService {
         }
       );
 
-      // Delete reviews
-      await Review.deleteMany({ user: userId });
+      // Delete reviews - FIX: Use correct field name
+      await Review.deleteMany({ userId: userId });
 
-      // Delete cart
-      await Cart.deleteMany({ user: userId });
+      // Delete cart - FIX: Use correct field name
+      await Cart.deleteMany({ userId: userId });
 
-      // Delete wishlist
-      await Wishlist.deleteMany({ user: userId });
+      // Delete wishlist - FIX: Use correct field name
+      await Wishlist.deleteMany({ userId: userId });
 
       // Keep loyalty points for accounting, but mark as deleted
       await LoyaltyPoints.updateMany(
@@ -244,17 +244,17 @@ class GDPRService {
         { $set: { status: 'unsubscribed', unsubscribedAt: new Date() } }
       );
 
-      // Delete notifications
-      await Notification.deleteMany({ user: userId });
+      // Delete notifications - FIX: Use correct field name
+      await Notification.deleteMany({ userId: userId });
 
-      // Anonymize tickets
+      // Anonymize tickets - FIX: Use correct field name
       await Ticket.updateMany(
-        { user: userId },
-        { $set: { 'user': null, anonymized: true } }
+        { userId: userId },
+        { $set: { 'userId': null, anonymized: true } }
       );
 
-      // Delete login activity
-      await LoginActivity.deleteMany({ user: userId });
+      // Delete login activity - FIX: Use correct field name
+      await LoginActivity.deleteMany({ userId: userId });
 
       logger.info(`[GDPR] Data anonymization completed for user: ${userId}`);
 
@@ -280,17 +280,17 @@ class GDPRService {
       // Delete user
       await User.findByIdAndDelete(userId);
 
-      // Delete all associated data
+      // Delete all associated data - FIX: Use correct field names for each model
       await Promise.all([
-        Order.deleteMany({ user: userId }),
-        Review.deleteMany({ user: userId }),
-        Cart.deleteMany({ user: userId }),
-        Wishlist.deleteMany({ user: userId }),
-        LoyaltyPoints.deleteMany({ user: userId }),
-        LoyaltyTransaction.deleteMany({ user: userId }),
-        Notification.deleteMany({ user: userId }),
-        Ticket.deleteMany({ user: userId }),
-        LoginActivity.deleteMany({ user: userId }),
+        Order.deleteMany({ userId: userId }),
+        Review.deleteMany({ userId: userId }),
+        Cart.deleteMany({ userId: userId }),
+        Wishlist.deleteMany({ userId: userId }),
+        LoyaltyPoints.deleteMany({ user: userId }), // uses 'user'
+        LoyaltyTransaction.deleteMany({ user: userId }), // uses 'user'
+        Notification.deleteMany({ userId: userId }),
+        Ticket.deleteMany({ userId: userId }),
+        LoginActivity.deleteMany({ userId: userId }),
       ]);
 
       logger.warn(`[GDPR] PERMANENT DELETION completed for user: ${userId}`);

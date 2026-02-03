@@ -156,9 +156,78 @@ exports.getAddresses = async (req, res, next) => {
 // Add address
 exports.addAddress = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id);
+    const { fullName, phone, addressLine1, city, state, zipCode, country } = req.body;
 
-    user.addresses.push(req.body);
+    // SECURITY: Validate required address fields
+    if (!fullName || typeof fullName !== 'string' || fullName.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ADDRESS', message: 'Full name is required' },
+      });
+    }
+
+    if (!addressLine1 || typeof addressLine1 !== 'string' || addressLine1.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ADDRESS', message: 'Address line 1 is required' },
+      });
+    }
+
+    if (!city || typeof city !== 'string' || city.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ADDRESS', message: 'City is required' },
+      });
+    }
+
+    if (!state || typeof state !== 'string' || state.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ADDRESS', message: 'State is required' },
+      });
+    }
+
+    if (!zipCode || typeof zipCode !== 'string' || !/^\d{5,10}$/.test(zipCode.replace(/\s/g, ''))) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ADDRESS', message: 'Valid ZIP/Postal code is required (5-10 digits)' },
+      });
+    }
+
+    // SECURITY: Validate phone format if provided
+    if (phone && !/^[+]?[\d\s()-]{10,15}$/.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PHONE', message: 'Invalid phone number format' },
+      });
+    }
+
+    // SECURITY: Limit number of addresses per user
+    const MAX_ADDRESSES = 10;
+    const user = await User.findById(req.user._id);
+    if (user.addresses.length >= MAX_ADDRESSES) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'MAX_ADDRESSES', message: `Maximum ${MAX_ADDRESSES} addresses allowed` },
+      });
+    }
+
+    // Sanitize and add address
+    const sanitizedAddress = {
+      fullName: fullName.trim(),
+      phone: phone?.trim() || '',
+      addressLine1: addressLine1.trim(),
+      addressLine2: req.body.addressLine2?.trim() || '',
+      city: city.trim(),
+      district: req.body.district?.trim() || '',
+      area: req.body.area?.trim() || '',
+      state: state.trim(),
+      zipCode: zipCode.trim(),
+      country: country?.trim() || 'India',
+      isDefault: user.addresses.length === 0 ? true : (req.body.isDefault || false),
+    };
+
+    user.addresses.push(sanitizedAddress);
     await user.save();
 
     res.status(201).json({

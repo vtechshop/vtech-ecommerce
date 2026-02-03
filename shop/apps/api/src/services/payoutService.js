@@ -112,9 +112,10 @@ class PayoutService {
             }
           );
 
-          vendor.totalEarnings = (vendor.totalEarnings || 0) + amount;
-          vendor.pendingEarnings = Math.max(0, (vendor.pendingEarnings || 0) - amount);
-          await vendor.save();
+          // FIX: Use atomic $inc to prevent race conditions
+          await Vendor.findByIdAndUpdate(vendor._id, {
+            $inc: { totalEarnings: amount, pendingEarnings: -amount }
+          });
 
           logger.info(`Razorpay payout processed for vendor ${vendor.storeName}: ₹${amount} (${payoutResult.payoutId})`);
 
@@ -142,11 +143,17 @@ class PayoutService {
         }
       );
 
-      vendor.totalEarnings = (vendor.totalEarnings || 0) + amount;
-      vendor.pendingEarnings = Math.max(0, (vendor.pendingEarnings || 0) - amount);
-      await vendor.save();
+      // FIX: Use atomic $inc to prevent race conditions
+      await Vendor.findByIdAndUpdate(vendor._id, {
+        $inc: { totalEarnings: amount, pendingEarnings: -amount }
+      });
 
       logger.info(`Manual payout marked for vendor ${vendor.storeName}: ₹${amount}`);
+
+      // FIX: Mask bank account number in response (show only last 4 digits)
+      const maskedAccountNumber = vendor.bank.accountNumber
+        ? '****' + vendor.bank.accountNumber.slice(-4)
+        : 'N/A';
 
       return {
         success: true,
@@ -156,7 +163,7 @@ class PayoutService {
         vendor: vendor.storeName,
         note: 'Razorpay payout not available. Please transfer funds manually to vendor bank account.',
         bankDetails: {
-          accountNumber: vendor.bank.accountNumber,
+          accountNumber: maskedAccountNumber,
           ifscCode: vendor.bank.ifscCode,
           accountHolder: vendor.bank.accountHolderName,
         },
@@ -232,9 +239,10 @@ class PayoutService {
             }
           );
 
-          affiliate.totalEarnings = (affiliate.totalEarnings || 0) + netAmount;
-          affiliate.pendingEarnings = Math.max(0, (affiliate.pendingEarnings || 0) - amount);
-          await affiliate.save();
+          // FIX: Use atomic $inc to prevent race conditions
+          await Affiliate.findByIdAndUpdate(affiliate._id, {
+            $inc: { totalEarnings: netAmount, pendingEarnings: -amount }
+          });
 
           logger.info(`Razorpay payout processed for affiliate ${affiliate.code}: Gross ₹${amount}, TDS ₹${tdsAmount}, Net ₹${netAmount}`);
 
@@ -267,9 +275,10 @@ class PayoutService {
         }
       );
 
-      affiliate.totalEarnings = (affiliate.totalEarnings || 0) + netAmount;
-      affiliate.pendingEarnings = Math.max(0, (affiliate.pendingEarnings || 0) - amount);
-      await affiliate.save();
+      // FIX: Use atomic $inc to prevent race conditions
+      await Affiliate.findByIdAndUpdate(affiliate._id, {
+        $inc: { totalEarnings: netAmount, pendingEarnings: -amount }
+      });
 
       logger.info(`Manual payout marked for affiliate ${affiliate.code}: Gross ₹${amount}, TDS ₹${tdsAmount}, Net ₹${netAmount}`);
 
