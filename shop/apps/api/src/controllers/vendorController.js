@@ -223,6 +223,14 @@ async function updateProduct(req, res, next) {
   try {
     const { id } = req.params;
     const vendor = await Vendor.findOne({ userId: req.user._id });
+
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'You must be a vendor to update products' },
+      });
+    }
+
     const product = await Product.findOne({ _id: id, vendorId: vendor._id });
 
     if (!product) {
@@ -266,6 +274,14 @@ async function deleteProduct(req, res, next) {
   try {
     const { id } = req.params;
     const vendor = await Vendor.findOne({ userId: req.user._id });
+
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'You must be a vendor to delete products' },
+      });
+    }
+
     const product = await Product.findOneAndDelete({ _id: id, vendorId: vendor._id });
 
     if (!product) {

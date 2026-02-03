@@ -261,7 +261,7 @@ exports.deleteUser = async (req, res, next) => {
       const affiliate = await Affiliate.findOne({ userId: req.params.id });
       if (affiliate) {
         // Delete all commissions for this affiliate
-        await Commission.deleteMany({ affiliateId: affiliate._id });
+        await Commission.deleteMany({ subjectId: affiliate._id, type: 'affiliate' });
         logger.info(`Commissions deleted for affiliate: ${user.email}`);
 
         // Delete the affiliate profile
@@ -695,7 +695,7 @@ exports.deleteVendor = async (req, res, next) => {
     await Product.deleteMany({ vendorId: vendor._id });
 
     // Delete all commissions for this vendor
-    await Commission.deleteMany({ vendorId: vendor._id });
+    await Commission.deleteMany({ subjectId: vendor._id, type: 'vendor' });
 
     // Delete the vendor profile
     await Vendor.findByIdAndDelete(req.params.id);
@@ -1086,7 +1086,7 @@ exports.deleteAffiliate = async (req, res, next) => {
     if (!affiliate) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Affiliate not found' } });
 
     // Delete all commissions for this affiliate
-    await Commission.deleteMany({ affiliateId: affiliate._id });
+    await Commission.deleteMany({ subjectId: affiliate._id, type: 'affiliate' });
 
     // Delete the affiliate profile
     await Affiliate.findByIdAndDelete(req.params.id);
