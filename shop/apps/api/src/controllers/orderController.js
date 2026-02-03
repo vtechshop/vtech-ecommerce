@@ -353,14 +353,14 @@ exports.createOrder = async (req, res, next) => {
     let vendorOrders = [];
     let vendorOrderIds = [];
 
+    // Extract affiliate code early so we can store it on orders (outside try block for later cookie clearing)
+    const affiliateCode = req.body.affiliateCode || req.cookies?.affiliate || null;
+
     // Helper for optional session parameter
     const sessionOpt = useTransaction ? { session } : {};
 
     try {
       // ===== NEW: CREATE SEPARATE ORDER FOR EACH VENDOR =====
-
-      // Extract affiliate code early so we can store it on orders
-      const affiliateCode = req.body.affiliateCode || req.cookies?.affiliate || null;
 
       for (const [vendorIdStr, vendorItems] of Object.entries(vendorGroups)) {
       // Calculate vendor-specific totals directly from items
