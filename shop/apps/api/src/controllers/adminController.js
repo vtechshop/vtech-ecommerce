@@ -2777,11 +2777,25 @@ exports.createManualOrder = async (req, res, next) => {
 exports.checkWarranty = async (req, res, next) => {
   try {
     const { phone, orderId } = req.query;
+    const mongoose = require('mongoose');
 
     // Special case: "my-account" = fetch all warranties for logged-in user
-    if (phone === 'my-account' && req.user) {
+    if (phone === 'my-account') {
+      // Must be logged in with valid user ID
+      if (!req.user || !req.user._id) {
+        return res.json({ success: true, data: [] });
+      }
+
+      // Ensure we have a valid ObjectId for the user
+      const userIdStr = req.user._id.toString();
+      if (!mongoose.Types.ObjectId.isValid(userIdStr)) {
+        return res.json({ success: true, data: [] });
+      }
+
+      const userId = new mongoose.Types.ObjectId(userIdStr);
+
       const userOrders = await Order.find({
-        userId: req.user._id,
+        userId: userId,
         'items.warranty.hasWarranty': true
       })
         .select('orderId items source shipTo.fullName customerPhone totals.total payment.method payment.paidAt status createdAt')
