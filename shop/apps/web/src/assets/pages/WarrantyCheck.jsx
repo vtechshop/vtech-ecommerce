@@ -99,7 +99,7 @@ const WarrantyCheck = () => {
                   <p className="text-sm text-gray-500">{myWarranties?.length || 0} delivered product(s) with warranty</p>
                 </div>
               </div>
-              <Link to="/account/orders" className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
+              <Link to="/dashboard/orders" className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
                 <Truck className="w-4 h-4" />
                 View Orders
               </Link>
@@ -405,7 +405,7 @@ const EmptyState = ({ isLoggedIn }) => (
     {isLoggedIn ? (
       <>
         <p className="text-gray-400 text-sm mt-1">Warranties appear here once your order is delivered</p>
-        <Link to="/account/orders" className="inline-flex items-center gap-2 mt-4 text-primary-600 hover:text-primary-700 text-sm font-medium">
+        <Link to="/dashboard/orders" className="inline-flex items-center gap-2 mt-4 text-primary-600 hover:text-primary-700 text-sm font-medium">
           <Truck className="w-4 h-4" />
           Track your orders
         </Link>
