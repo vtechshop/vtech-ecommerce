@@ -2890,3 +2890,6 @@ exports.checkWarranty = async (req, res, next) => {
     next(error);
   }
 };
+
+// Export internal helper for use in other controllers
+exports.activateWarrantiesForOrder = activateWarrantiesForOrder;

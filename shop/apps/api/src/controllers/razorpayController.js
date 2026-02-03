@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const logger = require('../config/logger');
 const notificationHelper = require('../services/notificationHelper');
 const notificationService = require('../services/notificationService');
+const { activateWarrantiesForOrder } = require('./adminController');
 
 /**
  * Send order confirmation + vendor/admin notifications after payment
@@ -437,24 +438,35 @@ exports.verifyPayment = async (req, res, next) => {
       contact: payment.contact,
     };
 
-    // Update order status if payment is successful
-    if (payment.status === 'captured') {
+    // Update order status if payment is successful (captured or authorized)
+    // Note: With payment_capture: 1, payments should auto-capture, but handle 'authorized' for edge cases
+    const isPaymentSuccessful = payment.status === 'captured' || payment.status === 'authorized';
+
+    if (isPaymentSuccessful) {
       // Change from pending_payment to paid
       if (order.status === 'pending' || order.status === 'pending_payment' || order.status === 'placed') {
         order.status = 'paid';
         // Add event to order history
         order.events.push({
           status: 'paid',
-          description: 'Payment verified successfully',
+          description: `Payment ${payment.status} successfully`,
           timestamp: new Date(),
         });
+      }
+
+      // Activate warranties for products in this order
+      try {
+        await activateWarrantiesForOrder(order);
+        logger.info(`Warranties activated for order ${order.orderId}`);
+      } catch (warrantyError) {
+        logger.error(`Failed to activate warranties for order ${order.orderId}:`, warrantyError);
       }
     }
 
     await order.save();
 
     // Create commission records and process automatic transfers after payment
-    if (payment.status === 'captured') {
+    if (isPaymentSuccessful) {
       // Create commission records first, then process transfers (sequential to avoid race condition)
       createCommissionsAfterPayment(order)
         .then(() => processAutomaticTransfers(order, razorpayPaymentId))
@@ -669,6 +681,14 @@ async function handlePaymentCaptured(payload) {
         description: 'Payment captured successfully',
         timestamp: new Date(),
       });
+
+      // Activate warranties for products in this order (safety net if not done in verifyPayment)
+      try {
+        await activateWarrantiesForOrder(order);
+        logger.info(`[Webhook] Warranties activated for order ${orderId}`);
+      } catch (warrantyError) {
+        logger.error(`[Webhook] Failed to activate warranties for order ${orderId}:`, warrantyError);
+      }
     }
 
     await order.save();

@@ -41,6 +41,7 @@ const createOrder = async (amount, currency = 'INR', options = {}) => {
       currency,
       receipt: options.receipt || `receipt_${Date.now()}`,
       notes: options.notes || {},
+      payment_capture: 1, // Auto-capture payment immediately (1 = true, 0 = false)
       ...options,
     };
 
