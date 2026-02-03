@@ -5,6 +5,7 @@ const Commission = require('../models/Commission');
 const Vendor = require('../models/Vendor');
 const Affiliate = require('../models/Affiliate');
 const { createPayout, isConfigured: razorpayConfigured } = require('../utils/razorpay');
+const AppError = require('../utils/AppError');
 
 class PayoutService {
   /**
@@ -68,16 +69,16 @@ class PayoutService {
     try {
       const vendor = await Vendor.findById(vendorId).select('+bank.accountNumber');
       if (!vendor) {
-        throw new Error('Vendor not found');
+        throw AppError.notFound('Vendor');
       }
 
       if (!vendor.bank?.accountNumber || !vendor.bank?.ifscCode) {
-        throw new Error('Vendor bank account not configured. Please ask the vendor to add bank details in Settings.');
+        throw AppError.badRequest('Vendor bank account not configured. Please ask the vendor to add bank details in Settings.', 'BANK_NOT_CONFIGURED');
       }
 
       // KYC verification gate - PAN required for TDS compliance
       if (!vendor.panNumber) {
-        throw new Error('Vendor PAN not provided. PAN is mandatory for payouts (TDS compliance). Please ask the vendor to add PAN in Settings.');
+        throw AppError.badRequest('Vendor PAN not provided. PAN is mandatory for payouts (TDS compliance). Please ask the vendor to add PAN in Settings.', 'PAN_NOT_PROVIDED');
       }
 
       // Bank verification check
@@ -173,21 +174,21 @@ class PayoutService {
     try {
       const affiliate = await Affiliate.findById(affiliateId).select('+bankDetails.accountNumber').populate('userId', 'name email');
       if (!affiliate) {
-        throw new Error('Affiliate not found');
+        throw AppError.notFound('Affiliate');
       }
 
       const MIN_PAYOUT = 500;
       if (amount < MIN_PAYOUT) {
-        throw new Error(`Minimum payout amount is ₹${MIN_PAYOUT}`);
+        throw AppError.badRequest(`Minimum payout amount is ₹${MIN_PAYOUT}`, 'MIN_PAYOUT_NOT_MET');
       }
 
       if (!affiliate.bankDetails?.accountNumber || !affiliate.bankDetails?.ifscCode) {
-        throw new Error('Affiliate bank account not configured. Please ask the affiliate to add bank details.');
+        throw AppError.badRequest('Affiliate bank account not configured. Please ask the affiliate to add bank details.', 'BANK_NOT_CONFIGURED');
       }
 
       // KYC verification gate - PAN required for TDS compliance
       if (!affiliate.panNumber) {
-        throw new Error('Affiliate PAN not provided. PAN is mandatory for payouts (TDS compliance). Please ask the affiliate to add PAN in KYC settings.');
+        throw AppError.badRequest('Affiliate PAN not provided. PAN is mandatory for payouts (TDS compliance). Please ask the affiliate to add PAN in KYC settings.', 'PAN_NOT_PROVIDED');
       }
 
       // Calculate 2% TDS (Tax Deducted at Source) as per Indian Income Tax rules
@@ -327,7 +328,7 @@ class PayoutService {
       });
 
       if (commissions.length === 0) {
-        throw new Error('No approved commissions to payout');
+        throw AppError.badRequest('No approved commissions to payout', 'NO_COMMISSIONS');
       }
 
       const totalAmount = commissions.reduce((sum, c) => sum + c.amount, 0);
