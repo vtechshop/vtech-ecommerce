@@ -1432,23 +1432,91 @@ exports.bulkPayCommissions = async (req, res, next) => {
       });
     }
 
-    const paidAt = new Date();
-    // Only pay commissions that are approved (must be approved before paying)
-    const result = await Commission.updateMany(
-      { _id: { $in: commissionIds }, status: 'approved' },
-      { status: 'paid', paidAt }
-    );
+    // Get all approved commissions
+    const commissions = await Commission.find({
+      _id: { $in: commissionIds },
+      status: 'approved'
+    });
 
-    // Update affiliate earnings for all affected commissions
-    const commissions = await Commission.find({ _id: { $in: commissionIds }, type: 'affiliate' });
-    for (const comm of commissions) {
-      await Affiliate.findByIdAndUpdate(comm.subjectId, {
-        $inc: { paidEarnings: comm.amount, pendingEarnings: -comm.amount }
+    if (commissions.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_APPROVED', message: 'No approved commissions found to pay' }
       });
     }
 
-    logger.info(`Bulk pay: ${result.modifiedCount} commissions paid`);
-    res.json({ success: true, data: { count: result.modifiedCount } });
+    // Group commissions by type and subjectId for batch processing
+    const vendorPayouts = {};
+    const affiliatePayouts = {};
+
+    for (const comm of commissions) {
+      const subjectKey = comm.subjectId.toString();
+      if (comm.type === 'vendor') {
+        if (!vendorPayouts[subjectKey]) {
+          vendorPayouts[subjectKey] = { amount: 0, commissionIds: [] };
+        }
+        vendorPayouts[subjectKey].amount += comm.amount;
+        vendorPayouts[subjectKey].commissionIds.push(comm._id);
+      } else if (comm.type === 'affiliate') {
+        if (!affiliatePayouts[subjectKey]) {
+          affiliatePayouts[subjectKey] = { amount: 0, commissionIds: [] };
+        }
+        affiliatePayouts[subjectKey].amount += comm.amount;
+        affiliatePayouts[subjectKey].commissionIds.push(comm._id);
+      }
+    }
+
+    const results = { success: [], failed: [] };
+
+    // Process vendor payouts via Razorpay
+    for (const [vendorId, data] of Object.entries(vendorPayouts)) {
+      try {
+        await payoutService.processVendorPayout(vendorId, data.amount, data.commissionIds);
+        results.success.push({ type: 'vendor', subjectId: vendorId, amount: data.amount, count: data.commissionIds.length });
+        logger.info(`Bulk pay: Vendor ${vendorId} paid ₹${data.amount} for ${data.commissionIds.length} commissions`);
+      } catch (err) {
+        results.failed.push({ type: 'vendor', subjectId: vendorId, error: err.message });
+        logger.error(`Bulk pay: Vendor ${vendorId} payout failed:`, err);
+      }
+    }
+
+    // Process affiliate payouts via Razorpay
+    for (const [affiliateId, data] of Object.entries(affiliatePayouts)) {
+      try {
+        await payoutService.processAffiliatePayout(affiliateId, data.amount, data.commissionIds);
+        results.success.push({ type: 'affiliate', subjectId: affiliateId, amount: data.amount, count: data.commissionIds.length });
+        logger.info(`Bulk pay: Affiliate ${affiliateId} paid ₹${data.amount} for ${data.commissionIds.length} commissions`);
+
+        // Notify affiliate of payment
+        const affiliate = await Affiliate.findById(affiliateId).populate('userId');
+        if (affiliate && affiliate.userId) {
+          try {
+            await notificationHelper.notifyAffiliateCommissionPaid({
+              affiliateUserId: affiliate.userId._id || affiliate.userId,
+              amount: data.amount,
+            });
+          } catch (notifError) {
+            logger.error('Failed to notify affiliate of bulk commission payment:', notifError);
+          }
+        }
+      } catch (err) {
+        results.failed.push({ type: 'affiliate', subjectId: affiliateId, error: err.message });
+        logger.error(`Bulk pay: Affiliate ${affiliateId} payout failed:`, err);
+      }
+    }
+
+    const totalPaid = results.success.reduce((sum, r) => sum + r.count, 0);
+    const totalFailed = results.failed.length;
+
+    logger.info(`Bulk pay complete: ${totalPaid} commissions paid, ${totalFailed} failed`);
+    res.json({
+      success: true,
+      data: {
+        paidCount: totalPaid,
+        failedCount: totalFailed,
+        results
+      }
+    });
   } catch (error) { next(error); }
 };
 
