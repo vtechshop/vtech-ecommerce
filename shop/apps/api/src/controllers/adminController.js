@@ -2794,9 +2794,11 @@ exports.checkWarranty = async (req, res, next) => {
 
       const userId = new mongoose.Types.ObjectId(userIdStr);
 
+      // Amazon-style: Only show warranties for DELIVERED orders
       const userOrders = await Order.find({
         userId: userId,
-        'items.warranty.hasWarranty': true
+        'items.warranty.hasWarranty': true,
+        status: 'delivered'
       })
         .select('orderId items source shipTo.fullName customerPhone totals.total payment.method payment.paidAt status createdAt')
         .sort({ createdAt: -1 })
@@ -2840,7 +2842,11 @@ exports.checkWarranty = async (req, res, next) => {
       return res.status(400).json({ success: false, error: { message: 'Order ID is required' } });
     }
 
-    const filter = { orderId: { $regex: orderId, $options: 'i' } };
+    // Amazon-style: Only show warranties for DELIVERED orders
+    const filter = {
+      orderId: { $regex: orderId, $options: 'i' },
+      status: 'delivered'
+    };
 
     const orders = await Order.find(filter)
       .select('orderId items source shipTo.fullName customerPhone totals.total payment.method payment.paidAt status createdAt')

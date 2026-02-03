@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/WarrantyCheck.jsx
-// Amazon-style warranty display with days remaining and expandable details
+// Amazon-style warranty display - Only shows delivered orders with support options
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -8,14 +8,14 @@ import useAuth from '@/hooks/useAuth';
 import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
-import { ShieldCheck, Search, ChevronDown, ChevronUp, Package, User, LogIn, Clock, AlertTriangle, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Search, ChevronDown, ChevronUp, Package, User, LogIn, Clock, AlertTriangle, CheckCircle, XCircle, MessageCircle, Phone, HelpCircle, Truck } from 'lucide-react';
 
 const WarrantyCheck = () => {
   const { user, isAuthenticated } = useAuth();
   const [orderId, setOrderId] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  // If logged in, auto-fetch user's warranties
+  // If logged in, auto-fetch user's warranties (only delivered orders)
   const { data: myWarranties, isLoading: loadingMy } = useQuery({
     queryKey: ['my-warranties'],
     queryFn: async () => {
@@ -59,18 +59,18 @@ const WarrantyCheck = () => {
     const daysLeft = getDaysRemaining(warranty.expiresAt);
 
     if (warranty.durationType === 'lifetime' || daysLeft === null) {
-      return { label: 'Lifetime', color: 'green', icon: ShieldCheck, daysLeft: null };
+      return { label: 'Lifetime Warranty', color: 'green', icon: ShieldCheck, daysLeft: null, canClaim: true };
     }
 
     if (daysLeft <= 0) {
-      return { label: 'Expired', color: 'red', icon: XCircle, daysLeft: 0 };
+      return { label: 'Warranty Expired', color: 'red', icon: XCircle, daysLeft: 0, canClaim: false };
     }
 
     if (daysLeft <= 30) {
-      return { label: 'Expiring Soon', color: 'orange', icon: AlertTriangle, daysLeft };
+      return { label: 'Expiring Soon', color: 'orange', icon: AlertTriangle, daysLeft, canClaim: true };
     }
 
-    return { label: 'Active', color: 'green', icon: CheckCircle, daysLeft };
+    return { label: 'Under Warranty', color: 'green', icon: CheckCircle, daysLeft, canClaim: true };
   };
 
   return (
@@ -79,8 +79,8 @@ const WarrantyCheck = () => {
       <div className="bg-gradient-to-r from-primary-700 to-primary-900 text-white py-8">
         <div className="container mx-auto px-4 text-center">
           <ShieldCheck className="w-10 h-10 mx-auto mb-2 opacity-90" />
-          <h1 className="text-2xl font-bold">Warranty Check</h1>
-          <p className="text-primary-200 text-sm">Check your product warranty status</p>
+          <h1 className="text-2xl font-bold">Product Warranty</h1>
+          <p className="text-primary-200 text-sm">View warranty status & get product support</p>
         </div>
       </div>
 
@@ -89,14 +89,28 @@ const WarrantyCheck = () => {
         {isAuthenticated ? (
           <div className="space-y-4">
             {/* Header */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-primary-100 rounded-full">
-                <User className="w-5 h-5 text-primary-700" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary-100 rounded-full">
+                  <User className="w-5 h-5 text-primary-700" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">My Warranties</h2>
+                  <p className="text-sm text-gray-500">{myWarranties?.length || 0} delivered product(s) with warranty</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">My Warranties</h2>
-                <p className="text-sm text-gray-500">{myWarranties?.length || 0} product(s) with warranty</p>
-              </div>
+              <Link to="/account/orders" className="text-sm text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                <Truck className="w-4 h-4" />
+                View Orders
+              </Link>
+            </div>
+
+            {/* Info Banner */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-3">
+              <HelpCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-800">
+                Warranty is available only for <strong>delivered orders</strong>. If your order is still in transit, warranty will appear here once delivered.
+              </p>
             </div>
 
             {loadingMy ? (
@@ -108,7 +122,7 @@ const WarrantyCheck = () => {
                 ))}
               </div>
             ) : (
-              <EmptyState />
+              <EmptyState isLoggedIn={true} />
             )}
 
             {/* Order ID Search */}
@@ -118,7 +132,10 @@ const WarrantyCheck = () => {
 
               {loadingSearch && <div className="text-center py-6"><Spinner /></div>}
               {submitted && !loadingSearch && searchResults?.length === 0 && (
-                <p className="text-gray-500 text-sm mt-4">No warranty found for this order ID</p>
+                <div className="text-center py-6 text-gray-500 text-sm">
+                  <p>No warranty found for this order.</p>
+                  <p className="text-xs mt-1">Only delivered orders with warranty products will appear here.</p>
+                </div>
               )}
               {searchResults?.length > 0 && (
                 <div className="space-y-3 mt-4">
@@ -136,11 +153,19 @@ const WarrantyCheck = () => {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Check Warranty by Order ID</h2>
               <SearchForm orderId={orderId} setOrderId={setOrderId} setSubmitted={setSubmitted} handleSubmit={handleSubmit} />
-              <p className="text-xs text-gray-500 mt-3">Find your Order ID in your receipt or order confirmation email/SMS</p>
+              <p className="text-xs text-gray-500 mt-3">Find your Order ID in your receipt or order confirmation SMS/email</p>
+            </div>
+
+            {/* Info Banner */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-3">
+              <HelpCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-800">
+                Warranty is available only for <strong>delivered orders</strong>. Pending, cancelled, or returned orders will not show warranty.
+              </p>
             </div>
 
             {loadingSearch && <div className="text-center py-12"><Spinner /></div>}
-            {submitted && !loadingSearch && searchResults?.length === 0 && <EmptyState />}
+            {submitted && !loadingSearch && searchResults?.length === 0 && <EmptyState isLoggedIn={false} />}
             {searchResults?.length > 0 && (
               <div className="space-y-3">
                 {searchResults.map((item, idx) => (
@@ -155,7 +180,7 @@ const WarrantyCheck = () => {
   );
 };
 
-// Amazon-style Warranty Card with expandable details
+// Amazon-style Warranty Card with expandable details and support options
 const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
   const [expanded, setExpanded] = useState(false);
   const status = getWarrantyStatus(item.warranty);
@@ -173,6 +198,12 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
     yellow: 'text-yellow-600',
     orange: 'text-orange-600',
     red: 'text-red-600',
+  };
+
+  // Generate WhatsApp support message
+  const getWhatsAppLink = () => {
+    const message = `Hi, I need warranty support for my order.\n\nOrder ID: ${item.orderId}\nProduct: ${item.productName}\n${item.warranty.warrantyCode ? `Serial/Code: ${item.warranty.warrantyCode}\n` : ''}Warranty Status: ${status.label}`;
+    return `https://wa.me/919876543210?text=${encodeURIComponent(message)}`;
   };
 
   return (
@@ -193,6 +224,9 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-gray-900 truncate">{item.productName}</h3>
             <p className="text-xs text-gray-500 mt-0.5">Order: {item.orderId}</p>
+            {item.warranty.warrantyCode && (
+              <p className="text-xs text-gray-400 mt-0.5">S/N: {item.warranty.warrantyCode}</p>
+            )}
           </div>
 
           {/* Days Remaining - Prominent */}
@@ -204,7 +238,7 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
                 </div>
                 <div className="text-xs text-gray-500">days left</div>
               </>
-            ) : status.label === 'Lifetime' ? (
+            ) : status.label === 'Lifetime Warranty' ? (
               <>
                 <div className="text-2xl font-bold text-green-600">∞</div>
                 <div className="text-xs text-gray-500">lifetime</div>
@@ -226,14 +260,14 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
           </button>
         </div>
 
-        {/* Status Badge - Below product info on mobile */}
+        {/* Status Badge & Date */}
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
           <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border ${statusColors[status.color]}`}>
             <StatusIcon className="w-3 h-3" />
             {status.label}
           </span>
           <span className="text-xs text-gray-500">
-            Purchased: {new Date(item.orderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            Delivered: {new Date(item.orderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
           </span>
         </div>
       </div>
@@ -241,7 +275,8 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
       {/* Expanded Details */}
       {expanded && (
         <div className="px-4 pb-4 pt-0">
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+            {/* Warranty Details Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <div className="text-xs text-gray-500 uppercase font-medium">Duration</div>
@@ -250,7 +285,7 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-500 uppercase font-medium">Purchase Date</div>
+                <div className="text-xs text-gray-500 uppercase font-medium">Delivered</div>
                 <div className="font-medium text-gray-900">
                   {new Date(item.orderDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </div>
@@ -275,9 +310,6 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
             <div className="pt-3 border-t border-gray-200 flex flex-wrap gap-4 text-xs text-gray-500">
               {item.sku && <span>SKU: {item.sku}</span>}
               <span>Price: {formatCurrency(item.price)}</span>
-              {item.warranty.warrantyCode && (
-                <span>Code: <code className="bg-white px-1 py-0.5 rounded text-gray-700">{item.warranty.warrantyCode}</code></span>
-              )}
             </div>
 
             {/* Description */}
@@ -286,6 +318,45 @@ const WarrantyCard = ({ item, getWarrantyStatus, getDaysRemaining }) => {
                 {item.warranty.description}
               </p>
             )}
+
+            {/* Support Actions - Amazon style "Get product support" */}
+            <div className="pt-3 border-t border-gray-200">
+              <h4 className="text-xs text-gray-500 uppercase font-medium mb-3">Get Product Support</h4>
+              {status.canClaim ? (
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={getWhatsAppLink()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    WhatsApp Support
+                  </a>
+                  <a
+                    href="tel:+919876543210"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    <Phone className="w-4 h-4" />
+                    Call Support
+                  </a>
+                  <Link
+                    to="/contact"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    <HelpCircle className="w-4 h-4" />
+                    Help Center
+                  </Link>
+                </div>
+              ) : (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-700">
+                    <XCircle className="w-4 h-4 inline mr-1" />
+                    Warranty has expired. For out-of-warranty support, please <a href="/contact" className="underline">contact us</a>.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -327,11 +398,21 @@ const LoginPrompt = () => (
 );
 
 // Empty State Component
-const EmptyState = () => (
+const EmptyState = ({ isLoggedIn }) => (
   <div className="text-center py-12 bg-white rounded-xl shadow-sm">
     <Package className="w-12 h-12 mx-auto text-gray-300 mb-3" />
     <p className="text-gray-500 text-lg">No warranty products found</p>
-    <p className="text-gray-400 text-sm mt-1">Products with warranty will appear here after purchase</p>
+    {isLoggedIn ? (
+      <>
+        <p className="text-gray-400 text-sm mt-1">Warranties appear here once your order is delivered</p>
+        <Link to="/account/orders" className="inline-flex items-center gap-2 mt-4 text-primary-600 hover:text-primary-700 text-sm font-medium">
+          <Truck className="w-4 h-4" />
+          Track your orders
+        </Link>
+      </>
+    ) : (
+      <p className="text-gray-400 text-sm mt-1">Make sure the order has been delivered and has warranty products</p>
+    )}
   </div>
 );
 
