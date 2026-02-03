@@ -17,6 +17,7 @@ const Header = ({ onMobileMenuToggle }) => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   // Check if we're on a dashboard page
   const isDashboardPage = location.pathname.includes('/dashboard') ||
@@ -103,6 +104,17 @@ const Header = ({ onMobileMenuToggle }) => {
 
           {/* Actions */}
           <div className="flex items-center gap-4">
+
+            {/* Mobile Search Toggle */}
+            <button
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              className="md:hidden dark:text-gray-200 hover:text-primary-600"
+              aria-label="Search"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
 
             {/* User menu */}
             {isAuthenticated ? (
@@ -221,6 +233,17 @@ const Header = ({ onMobileMenuToggle }) => {
             </button>
           </div>
         </div>
+
+        {/* Mobile Search Bar */}
+        {mobileSearchOpen && (
+          <div className="md:hidden mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <SearchAutocomplete
+              className="w-full"
+              onSelect={() => setMobileSearchOpen(false)}
+              autoFocus
+            />
+          </div>
+        )}
 
         {/* Navigation */}
         {!isDashboardPage && (() => {
