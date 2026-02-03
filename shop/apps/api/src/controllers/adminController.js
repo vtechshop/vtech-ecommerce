@@ -2773,16 +2773,19 @@ exports.createManualOrder = async (req, res, next) => {
   }
 };
 
-// Public: Warranty check by phone/orderId
+// Public: Warranty check by phone/orderId/warrantyCode
 exports.checkWarranty = async (req, res, next) => {
   try {
-    const { phone, orderId } = req.query;
-    if (!phone && !orderId) {
-      return res.status(400).json({ success: false, error: { message: 'Phone number or Order ID is required' } });
+    const { phone, orderId, warrantyCode } = req.query;
+    if (!phone && !orderId && !warrantyCode) {
+      return res.status(400).json({ success: false, error: { message: 'Phone number, Order ID, or Warranty Code is required' } });
     }
 
     const filter = {};
-    if (orderId) {
+    if (warrantyCode) {
+      // Search by warranty code in items
+      filter['items.warranty.warrantyCode'] = { $regex: warrantyCode, $options: 'i' };
+    } else if (orderId) {
       filter.orderId = { $regex: orderId, $options: 'i' };
     } else {
       filter.$or = [

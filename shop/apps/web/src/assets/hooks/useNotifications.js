@@ -24,14 +24,29 @@ const useNotifications = (options = {}) => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['notification-counts'],
     queryFn: async () => {
-      const response = await api.get('/notifications/counts');
-      return response.data.data;
+      try {
+        const response = await api.get('/notifications/counts');
+        return response.data.data;
+      } catch (err) {
+        // Silently fail on 401/403 errors (user logged out or token expired)
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          return null;
+        }
+        throw err;
+      }
     },
     enabled,
     refetchInterval: enabled ? pollInterval : false, // Auto-refetch every pollInterval ms
-    refetchIntervalInBackground: true, // Keep fetching even when tab is not active
+    refetchIntervalInBackground: false, // Don't fetch in background to avoid 401s on public pages
     staleTime: 20000, // Data is fresh for 20 seconds
-    cacheTime: 300000, // Keep in cache for 5 minutes
+    gcTime: 300000, // Keep in cache for 5 minutes (renamed from cacheTime in v5)
+    retry: (failureCount, error) => {
+      // Don't retry on 401/403 errors
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 
   const counts = data || {

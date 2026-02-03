@@ -15,8 +15,8 @@ const WarrantyCheck = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['warranty-check', searchType, searchValue],
     queryFn: async () => {
-      const params = searchType === 'phone' ? `phone=${encodeURIComponent(searchValue)}` : `orderId=${encodeURIComponent(searchValue)}`;
-      const res = await api.get(`/warranties/check?${params}`);
+      const paramKey = searchType === 'phone' ? 'phone' : searchType === 'orderId' ? 'orderId' : 'warrantyCode';
+      const res = await api.get(`/warranties/check?${paramKey}=${encodeURIComponent(searchValue)}`);
       return res.data?.data || [];
     },
     enabled: submitted && searchValue.length >= 3,
@@ -57,7 +57,7 @@ const WarrantyCheck = () => {
       <div className="container mx-auto px-4 -mt-8">
         <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl mx-auto">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => { setSearchType('phone'); setSubmitted(false); }}
@@ -76,6 +76,15 @@ const WarrantyCheck = () => {
               >
                 <Hash className="w-4 h-4" /> Order ID
               </button>
+              <button
+                type="button"
+                onClick={() => { setSearchType('warrantyCode'); setSubmitted(false); }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  searchType === 'warrantyCode' ? 'bg-primary-100 text-primary-700 ring-2 ring-primary-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4" /> Warranty Code
+              </button>
             </div>
             <div className="flex gap-3">
               <div className="relative flex-1">
@@ -85,7 +94,7 @@ const WarrantyCheck = () => {
                   value={searchValue}
                   onChange={(e) => { setSearchValue(e.target.value); setSubmitted(false); }}
                   className="input w-full pl-11 py-3 text-lg"
-                  placeholder={searchType === 'phone' ? 'Enter your phone number...' : 'Enter your order ID (e.g. ORD-...)'}
+                  placeholder={searchType === 'phone' ? 'Enter your phone number...' : searchType === 'orderId' ? 'Enter your order ID (e.g. ORD-...)' : 'Enter your warranty code (e.g. W-2025-...)'}
                   required
                 />
               </div>
@@ -103,7 +112,7 @@ const WarrantyCheck = () => {
           <div className="text-center py-12 bg-white rounded-xl shadow-sm">
             <Package className="w-12 h-12 mx-auto text-gray-300 mb-3" />
             <p className="text-gray-500 text-lg">No warranty records found</p>
-            <p className="text-gray-400 text-sm mt-1">Please check your {searchType === 'phone' ? 'phone number' : 'order ID'} and try again</p>
+            <p className="text-gray-400 text-sm mt-1">Please check your {searchType === 'phone' ? 'phone number' : searchType === 'orderId' ? 'order ID' : 'warranty code'} and try again</p>
           </div>
         )}
 
