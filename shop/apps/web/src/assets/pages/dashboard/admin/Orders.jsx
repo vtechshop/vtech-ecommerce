@@ -126,9 +126,9 @@ const Orders = () => {
           <p className="text-sm text-gray-600 mt-1">View and manage all customer orders</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           {/* Search */}
-          <div className="relative w-full sm:w-72">
+          <div className="relative flex-1 sm:flex-none sm:w-72">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -145,7 +145,7 @@ const Orders = () => {
           {/* Refresh */}
           <button
             onClick={() => refetch()}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
             title="Refresh"
           >
             <RefreshCw className="w-5 h-5" />
