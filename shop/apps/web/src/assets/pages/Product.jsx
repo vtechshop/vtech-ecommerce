@@ -21,6 +21,7 @@ import AdBanner from '@/components/common/AdBanner';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
 import SEO from '@/components/common/SEO';
+import { playWishlistAdd, playAddToCart, playError } from '@/utils/sounds';
 
 // Customer Reviews Carousel Component
 const CustomerReviewsCarousel = ({ reviews, renderStars, onEdit, onDelete, currentUser }) => {
@@ -204,9 +205,12 @@ const Product = () => {
     },
     onSuccess: () => {
       setIsWishlisted(!isWishlisted);
+      // Play sound only when adding to wishlist
+      if (!isWishlisted) playWishlistAdd();
       toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
     },
     onError: (error) => {
+      playError();
       if (error.response?.status === 401) {
         toast.error('Please log in to add items to your wishlist');
       } else {
@@ -306,12 +310,16 @@ const Product = () => {
         variantId,
       })).unwrap();
 
+      // Play add to cart sound
+      playAddToCart();
+
       // Show message - same for all users (3 seconds)
       toast.success('Added to cart!', 3000);
 
       // Reset after 2 seconds
       setTimeout(() => setAddedToCart(false), 2000);
     } catch (error) {
+      playError();
       console.error('Add to cart error:', error);
       const errorMsg = error.message || error.error?.message || 'Failed to add to cart. Please try again.';
       toast.error(errorMsg);

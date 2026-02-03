@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings, Store, CreditCard, FileText, DollarSign, Shield, Save, Upload } from 'lucide-react';
+import { Settings, Store, CreditCard, FileText, DollarSign, Shield, Save, Upload, Volume2, VolumeX, Bell } from 'lucide-react';
 import api from '../../../utils/api';
 import { useToast } from '../../../components/common/ToastContainer';
 import Button from '../../../components/common/Button';
 import Input from '../../../components/common/Input';
 import Modal from '../../../components/common/Modal';
 import Spinner from '../../../components/common/Spinner';
+import { getSoundEnabled, toggleSound, playClick } from '@/utils/sounds';
 
 const VendorSettings = () => {
   const toast = useToast();
@@ -22,6 +23,23 @@ const VendorSettings = () => {
     confirmPassword: '',
   });
   const [showLoginActivityModal, setShowLoginActivityModal] = useState(false);
+
+  // Sound preferences
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    setSoundEnabled(getSoundEnabled());
+  }, []);
+
+  const handleSoundToggle = () => {
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    toggleSound(newValue);
+    if (newValue) {
+      setTimeout(() => playClick(), 50);
+    }
+    toast.success(newValue ? 'Sound notifications enabled' : 'Sound notifications disabled');
+  };
 
   // Fetch vendor settings
   const { data: vendorData, isLoading } = useQuery({
@@ -652,6 +670,41 @@ const VendorSettings = () => {
                 </Button>
               </div>
 
+            </div>
+
+            {/* Sound Preferences */}
+            <div className="border-t border-gray-200 pt-6 mt-6">
+              <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Bell className="w-5 h-5 text-gray-700" />
+                Notification Preferences
+              </h3>
+              <div className="flex items-center justify-between p-4 bg-blue-100 rounded-lg border border-gray-200">
+                <div className="flex items-center gap-3">
+                  {soundEnabled ? (
+                    <Volume2 className="w-5 h-5 text-blue-600" />
+                  ) : (
+                    <VolumeX className="w-5 h-5 text-gray-400" />
+                  )}
+                  <div>
+                    <p className="font-medium text-gray-900">Sound Notifications</p>
+                    <p className="text-sm text-gray-700 mt-1">
+                      Play sounds for new orders and other actions
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleSoundToggle}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    soundEnabled ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      soundEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
         )}

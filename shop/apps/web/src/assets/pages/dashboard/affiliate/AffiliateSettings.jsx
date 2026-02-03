@@ -1,11 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Settings, DollarSign, Shield, CreditCard } from 'lucide-react';
+import { Settings, DollarSign, Shield, CreditCard, Volume2, VolumeX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../../utils/api';
+import { useToast } from '../../../components/common/ToastContainer';
+import { getSoundEnabled, toggleSound, playClick } from '@/utils/sounds';
 
 const AffiliateSettings = () => {
   const navigate = useNavigate();
+  const toast = useToast();
+
+  // Sound preferences
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    setSoundEnabled(getSoundEnabled());
+  }, []);
+
+  const handleSoundToggle = () => {
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    toggleSound(newValue);
+    if (newValue) {
+      setTimeout(() => playClick(), 50);
+    }
+    toast.success(newValue ? 'Sound notifications enabled' : 'Sound notifications disabled');
+  };
 
   // Fetch affiliate data
   const { data: affiliateData, isLoading } = useQuery({
@@ -180,6 +200,41 @@ const AffiliateSettings = () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Sound Preferences */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+          <Settings className="w-5 h-5 text-gray-700" />
+          Preferences
+        </h2>
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-3">
+            {soundEnabled ? (
+              <Volume2 className="w-5 h-5 text-blue-600" />
+            ) : (
+              <VolumeX className="w-5 h-5 text-gray-400" />
+            )}
+            <div>
+              <p className="font-medium text-gray-900">Sound Notifications</p>
+              <p className="text-sm text-gray-700 mt-1">
+                Play sounds for commission alerts and other actions
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleSoundToggle}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              soundEnabled ? 'bg-blue-600' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                soundEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </div>
       </div>
 

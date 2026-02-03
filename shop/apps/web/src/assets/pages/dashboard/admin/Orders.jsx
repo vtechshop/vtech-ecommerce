@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/dashboard/admin/Orders.jsx
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -9,6 +9,7 @@ import NewBadge from '@/components/common/NewBadge';
 import { formatCurrency } from '@/utils/format';
 import { getNewItemClasses, formatRelativeTime } from '@/utils/dateHelpers';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
+import { playNewOrder } from '@/utils/sounds';
 import {
   Package,
   Truck,
@@ -33,6 +34,7 @@ import {
 
 const Orders = () => {
   const navigate = useNavigate();
+  const prevOrderCountRef = useRef(null);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,7 +55,7 @@ const Orders = () => {
     },
   });
 
-  // Fetch order counts for tabs
+  // Fetch order counts for tabs (with auto-refresh every 30s)
   const { data: countsData } = useQuery({
     queryKey: ['admin-order-counts'],
     queryFn: async () => {
@@ -61,7 +63,19 @@ const Orders = () => {
       return response.data?.data || {};
     },
     staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
   });
+
+  // Play sound when new order arrives (paid orders count increases)
+  useEffect(() => {
+    if (countsData?.paid !== undefined) {
+      // Only play sound if this is not the first load and count increased
+      if (prevOrderCountRef.current !== null && countsData.paid > prevOrderCountRef.current) {
+        playNewOrder();
+      }
+      prevOrderCountRef.current = countsData.paid;
+    }
+  }, [countsData?.paid]);
 
   const statusTabs = [
     { value: '', label: 'All Orders', icon: Package, color: 'gray' },

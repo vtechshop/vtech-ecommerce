@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { logout, updateUserProfile } from '@/store/slices/authSlice';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import DeleteAccountModal from '@/components/common/DeleteAccountModal';
+import { Volume2, VolumeX } from 'lucide-react';
+import { getSoundEnabled, toggleSound, playClick } from '@/utils/sounds';
 
 const Settings = () => {
   const toast = useToast();
@@ -34,6 +36,23 @@ const Settings = () => {
     promotions: true,
     newsletter: false,
   });
+
+  // Sound preferences
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    setSoundEnabled(getSoundEnabled());
+  }, []);
+
+  const handleSoundToggle = () => {
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    toggleSound(newValue);
+    if (newValue) {
+      setTimeout(() => playClick(), 50);
+    }
+    toast.success(newValue ? 'Sound notifications enabled' : 'Sound notifications disabled');
+  };
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
@@ -309,6 +328,36 @@ const Settings = () => {
             <span className="font-medium text-gray-700">Account Status:</span>
             <span className="text-green-600 font-semibold">Active</span>
           </div>
+        </div>
+      </div>
+
+      {/* Sound Preferences */}
+      <div className="bg-white rounded-lg border p-6">
+        <h2 className="text-xl font-bold mb-4">Sound Preferences</h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {soundEnabled ? (
+              <Volume2 className="w-6 h-6 text-primary-600" />
+            ) : (
+              <VolumeX className="w-6 h-6 text-gray-400" />
+            )}
+            <div>
+              <p className="font-medium text-gray-900">Notification Sounds</p>
+              <p className="text-sm text-gray-500">Play sounds for cart, checkout, and other actions</p>
+            </div>
+          </div>
+          <button
+            onClick={handleSoundToggle}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              soundEnabled ? 'bg-primary-600' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                soundEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
         </div>
       </div>
 

@@ -1,15 +1,32 @@
 // FILE: apps/web/src/pages/dashboard/admin/Settings.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
-import { Save, RefreshCw, Globe, Mail, CreditCard, Shield, Bell } from 'lucide-react';
+import { Save, RefreshCw, Globe, Mail, CreditCard, Shield, Bell, Volume2, VolumeX } from 'lucide-react';
+import { getSoundEnabled, toggleSound, playClick } from '@/utils/sounds';
 
 const Settings = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('general');
   const [editingSettings, setEditingSettings] = useState({});
+
+  // Sound preferences
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    setSoundEnabled(getSoundEnabled());
+  }, []);
+
+  const handleSoundToggle = () => {
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    toggleSound(newValue);
+    if (newValue) {
+      setTimeout(() => playClick(), 50);
+    }
+  };
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['admin-settings', activeTab],
@@ -106,6 +123,35 @@ const Settings = () => {
           <RefreshCw className="w-4 h-4" />
           Refresh
         </Button>
+      </div>
+
+      {/* Personal Preferences */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {soundEnabled ? (
+              <Volume2 className="w-5 h-5 text-blue-600" />
+            ) : (
+              <VolumeX className="w-5 h-5 text-gray-400" />
+            )}
+            <div>
+              <p className="font-medium text-gray-900">Sound Notifications</p>
+              <p className="text-sm text-gray-700">Play sounds for new orders and other actions</p>
+            </div>
+          </div>
+          <button
+            onClick={handleSoundToggle}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              soundEnabled ? 'bg-blue-600' : 'bg-gray-300'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                soundEnabled ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

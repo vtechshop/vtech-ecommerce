@@ -8,6 +8,7 @@ import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency } from '@/utils/format';
 import { normalizeImageUrl } from '@/utils/placeholders';
 import { useAddToCartAnimation } from '@/components/animations/AddToCartAnimation';
+import { playAddToCart, playError } from '@/utils/sounds';
 
 const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const dispatch = useDispatch();
@@ -41,8 +42,12 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         triggerAnimation(product, addToCartButtonRef.current);
       }
 
+      // Play add to cart sound
+      playAddToCart();
+
       toast.success('Added to cart!');
     } catch (error) {
+      playError();
       toast.error(error?.message || 'Failed to add to cart');
     }
   }, [dispatch, product._id, product, toast, triggerAnimation]);

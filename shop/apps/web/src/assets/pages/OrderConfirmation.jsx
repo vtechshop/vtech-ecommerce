@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/OrderConfirmation.jsx
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
@@ -11,11 +11,13 @@ import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import { useToast } from '@/components/common/ToastContainer';
 import FloatingParticles from '@/components/animations/FloatingParticles';
 import Confetti from '@/components/common/Confetti';
+import { playCheckoutSuccess } from '@/utils/sounds';
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
   const { user } = useSelector((state) => state.auth);
   const toast = useToast();
+  const soundPlayedRef = useRef(false);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['order', orderId],
@@ -33,6 +35,13 @@ const OrderConfirmation = () => {
         total: order.totals.total,
         items: order.items,
       });
+
+      // Play success sound for paid orders (only once)
+      if ((order.payment?.status === 'paid' || order.payment?.status === 'captured') && !soundPlayedRef.current) {
+        soundPlayedRef.current = true;
+        // Small delay to let page render first
+        setTimeout(() => playCheckoutSuccess(), 300);
+      }
 
       // Track ad conversions (fire and forget with error handling)
       order.items.forEach(item => {

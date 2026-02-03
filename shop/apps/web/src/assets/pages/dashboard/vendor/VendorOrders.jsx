@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/dashboard/vendor/VendorOrders.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '@/utils/api';
@@ -7,6 +7,7 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
+import { playNewOrder } from '@/utils/sounds';
 import {
   Package,
   Truck,
@@ -26,6 +27,7 @@ import {
 
 const VendorOrders = () => {
   const navigate = useNavigate();
+  const prevOrderCountRef = useRef(null);
 
   // Restore page and filter from sessionStorage on component mount
   const [page, setPage] = useState(() => {
@@ -58,7 +60,7 @@ const VendorOrders = () => {
     keepPreviousData: true,
   });
 
-  // Fetch order counts for tabs
+  // Fetch order counts for tabs (with auto-refresh every 30s)
   const { data: countsData } = useQuery({
     queryKey: ['vendor-order-counts'],
     queryFn: async () => {
@@ -66,7 +68,19 @@ const VendorOrders = () => {
       return response.data?.data || {};
     },
     staleTime: 30 * 1000,
+    refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
   });
+
+  // Play sound when new order arrives (paid orders count increases)
+  useEffect(() => {
+    if (countsData?.paid !== undefined) {
+      // Only play sound if this is not the first load and count increased
+      if (prevOrderCountRef.current !== null && countsData.paid > prevOrderCountRef.current) {
+        playNewOrder();
+      }
+      prevOrderCountRef.current = countsData.paid;
+    }
+  }, [countsData?.paid]);
 
   // Save page to sessionStorage when it changes
   useEffect(() => {
