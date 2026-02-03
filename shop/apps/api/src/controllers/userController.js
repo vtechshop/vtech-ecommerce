@@ -22,9 +22,47 @@ exports.updateProfile = async (req, res, next) => {
   try {
     const { name, phone, avatar } = req.body;
 
+    // SECURITY: Validate name (required, max 100 chars)
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_NAME', message: 'Name is required and cannot be empty' },
+        });
+      }
+      if (name.length > 100) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'NAME_TOO_LONG', message: 'Name cannot exceed 100 characters' },
+        });
+      }
+    }
+
+    // SECURITY: Validate phone format (optional, 10-15 digits)
+    if (phone !== undefined && phone !== null && phone !== '') {
+      const phoneRegex = /^[+]?[\d\s-]{10,15}$/;
+      if (!phoneRegex.test(phone)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_PHONE', message: 'Phone number must be 10-15 digits' },
+        });
+      }
+    }
+
+    // SECURITY: Validate avatar URL (optional, must be valid URL or relative path)
+    if (avatar !== undefined && avatar !== null && avatar !== '') {
+      const urlRegex = /^(https?:\/\/|\/uploads\/)/i;
+      if (!urlRegex.test(avatar)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_AVATAR', message: 'Avatar must be a valid URL or upload path' },
+        });
+      }
+    }
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { name, phone, avatar },
+      { name: name?.trim(), phone, avatar },
       { new: true, runValidators: true }
     ).select('-password -refreshToken');
 
@@ -186,6 +224,23 @@ exports.setDefaultAddress = async (req, res, next) => {
     const { id } = req.params;
     const user = await User.findById(req.user._id);
 
+    // SECURITY: Null check for user
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'USER_NOT_FOUND', message: 'User not found' },
+      });
+    }
+
+    // SECURITY: Validate address exists before setting as default
+    const addressExists = user.addresses.some(addr => addr._id.toString() === id);
+    if (!addressExists) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'ADDRESS_NOT_FOUND', message: 'Address not found' },
+      });
+    }
+
     user.addresses.forEach(addr => {
       addr.isDefault = addr._id.toString() === id;
     });
@@ -219,6 +274,16 @@ exports.getWishlist = async (req, res, next) => {
 exports.toggleWishlist = async (req, res, next) => {
   try {
     const { productId } = req.params;
+    const mongoose = require('mongoose');
+
+    // SECURITY: Validate productId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PRODUCT_ID', message: 'Invalid product ID format' },
+      });
+    }
+
     const user = await User.findById(req.user._id);
 
     const index = user.wishlist.indexOf(productId);
@@ -249,6 +314,16 @@ exports.toggleWishlist = async (req, res, next) => {
 exports.addToWishlist = async (req, res, next) => {
   try {
     const { productId } = req.params;
+    const mongoose = require('mongoose');
+
+    // SECURITY: Validate productId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PRODUCT_ID', message: 'Invalid product ID format' },
+      });
+    }
+
     const user = await User.findById(req.user._id);
 
     if (!user.wishlist.includes(productId)) {
@@ -269,6 +344,16 @@ exports.addToWishlist = async (req, res, next) => {
 exports.removeFromWishlist = async (req, res, next) => {
   try {
     const { productId } = req.params;
+    const mongoose = require('mongoose');
+
+    // SECURITY: Validate productId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_PRODUCT_ID', message: 'Invalid product ID format' },
+      });
+    }
+
     const user = await User.findById(req.user._id);
 
     const index = user.wishlist.indexOf(productId);

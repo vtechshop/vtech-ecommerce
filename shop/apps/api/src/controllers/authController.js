@@ -545,6 +545,18 @@ exports.resetPassword = async (req, res, next) => {
       });
     }
 
+    // SECURITY: Enforce password complexity (same as registration and changePassword)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+=\-[\]{}|;:'"<>,.\/\\])[A-Za-z\d@$!%*?&#^()_+=\-[\]{}|;:'"<>,.\/\\]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'WEAK_PASSWORD',
+          message: 'Password must be at least 8 characters with uppercase, lowercase, number, and special character',
+        },
+      });
+    }
+
     // Hash the token from URL to compare with DB
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 

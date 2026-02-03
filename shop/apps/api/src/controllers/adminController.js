@@ -451,7 +451,22 @@ exports.getCategories = async (req, res, next) => {
 
 exports.createCategory = async (req, res, next) => {
   try {
-    const cat = await Category.create({ ...req.body, slug: slugify(req.body.name) });
+    // SECURITY: Validate required fields
+    if (!req.body.name || typeof req.body.name !== 'string' || req.body.name.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_NAME', message: 'Category name is required' }
+      });
+    }
+
+    if (req.body.name.length > 100) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NAME_TOO_LONG', message: 'Category name cannot exceed 100 characters' }
+      });
+    }
+
+    const cat = await Category.create({ ...req.body, name: req.body.name.trim(), slug: slugify(req.body.name) });
     logger.info(`Category created: ${cat.name}`);
     res.status(201).json({ success: true, data: cat });
   } catch (error) { next(error); }

@@ -218,6 +218,14 @@ router.put('/:productId/reviews/:reviewId', authenticate, async (req, res, next)
       });
     }
 
+    // SECURITY: Verify review belongs to the specified product (prevent URL manipulation)
+    if (review.productId.toString() !== productId) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'PRODUCT_MISMATCH', message: 'Review does not belong to this product' }
+      });
+    }
+
     // Check if user owns this review OR is admin
     if (review.userId.toString() !== userId.toString() && !isAdmin) {
       return res.status(403).json({
@@ -226,12 +234,14 @@ router.put('/:productId/reviews/:reviewId', authenticate, async (req, res, next)
       });
     }
 
-    // Validate input
-    if (rating && (rating < 1 || rating > 5)) {
-      return res.status(400).json({
-        success: false,
-        error: { code: 'INVALID_RATING', message: 'Rating must be between 1 and 5' }
-      });
+    // SECURITY: Validate rating is a number and within range (prevent type coercion attacks)
+    if (rating !== undefined) {
+      if (typeof rating !== 'number' || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_RATING', message: 'Rating must be an integer between 1 and 5' }
+        });
+      }
     }
 
     if (comment && comment.trim().length < 10) {
