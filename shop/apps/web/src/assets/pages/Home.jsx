@@ -12,6 +12,7 @@ import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 import ThreeDCarousel from '@/components/home/ThreeDCarousel';
+import '@/components/common/RippleButton.css';
 
 const Home = React.memo(() => {
   const { t } = useTranslation();
@@ -99,15 +100,25 @@ const Home = React.memo(() => {
             <div className="flex gap-4 fade-in-down stagger-2">
               <Link
                 to="/products"
-                className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-100 transition-all duration-300 shadow-lg btn-scale"
+                className="ripple-btn bg-white text-primary-600"
               >
-                {t('home.startShopping')}
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-circle bg-primary-400"></span>
+                <span className="ripple-text">{t('home.startShopping')}</span>
               </Link>
               <Link
                 to="/page/about"
-                className="inline-block bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-all duration-300 shadow-lg btn-scale"
+                className="ripple-btn bg-secondary-600 text-white"
               >
-                {t('home.learnMore')}
+                <span className="ripple-circle bg-secondary-400"></span>
+                <span className="ripple-circle bg-secondary-400"></span>
+                <span className="ripple-circle bg-secondary-400"></span>
+                <span className="ripple-circle bg-secondary-400"></span>
+                <span className="ripple-circle bg-secondary-400"></span>
+                <span className="ripple-text">{t('home.learnMore')}</span>
               </Link>
             </div>
           </div>
