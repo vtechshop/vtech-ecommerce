@@ -12,7 +12,6 @@ import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 import ThreeDCarousel from '@/components/home/ThreeDCarousel';
-import '@/components/common/RippleButton.css';
 
 const Home = React.memo(() => {
   const { t } = useTranslation();
@@ -100,25 +99,15 @@ const Home = React.memo(() => {
             <div className="flex gap-4 fade-in-down stagger-2">
               <Link
                 to="/products"
-                className="ripple-btn bg-white text-primary-600"
+                className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-100 transition-all duration-300 shadow-lg btn-scale"
               >
-                <span className="ripple-circle bg-primary-400"></span>
-                <span className="ripple-circle bg-primary-400"></span>
-                <span className="ripple-circle bg-primary-400"></span>
-                <span className="ripple-circle bg-primary-400"></span>
-                <span className="ripple-circle bg-primary-400"></span>
-                <span className="ripple-text">{t('home.startShopping')}</span>
+                {t('home.startShopping')}
               </Link>
               <Link
                 to="/page/about"
-                className="ripple-btn bg-secondary-600 text-white"
+                className="inline-block bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-all duration-300 shadow-lg btn-scale"
               >
-                <span className="ripple-circle bg-secondary-400"></span>
-                <span className="ripple-circle bg-secondary-400"></span>
-                <span className="ripple-circle bg-secondary-400"></span>
-                <span className="ripple-circle bg-secondary-400"></span>
-                <span className="ripple-circle bg-secondary-400"></span>
-                <span className="ripple-text">{t('home.learnMore')}</span>
+                {t('home.learnMore')}
               </Link>
             </div>
           </div>
@@ -291,14 +280,9 @@ const Home = React.memo(() => {
                       </ul>
                       <Link
                         to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
-                        className="ripple-btn w-full bg-primary-600 text-white"
+                        className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg"
                       >
-                        <span className="ripple-circle bg-primary-400"></span>
-                        <span className="ripple-circle bg-primary-400"></span>
-                        <span className="ripple-circle bg-primary-400"></span>
-                        <span className="ripple-circle bg-primary-400"></span>
-                        <span className="ripple-circle bg-primary-400"></span>
-                        <span className="ripple-text">{t('home.startSelling')}</span>
+                        {t('home.startSelling')}
                       </Link>
                     </div>
                   )}
@@ -342,14 +326,9 @@ const Home = React.memo(() => {
                       </ul>
                       <Link
                         to={user && user.role !== 'affiliate' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
-                        className="ripple-btn w-full bg-secondary-600 text-white"
+                        className="inline-block w-full text-center bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-colors duration-200 shadow-md hover:shadow-lg"
                       >
-                        <span className="ripple-circle bg-secondary-400"></span>
-                        <span className="ripple-circle bg-secondary-400"></span>
-                        <span className="ripple-circle bg-secondary-400"></span>
-                        <span className="ripple-circle bg-secondary-400"></span>
-                        <span className="ripple-circle bg-secondary-400"></span>
-                        <span className="ripple-text">{t('home.joinAffiliate')}</span>
+                        {t('home.joinAffiliate')}
                       </Link>
                     </div>
                   )}

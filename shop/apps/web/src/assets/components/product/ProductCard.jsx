@@ -9,7 +9,6 @@ import { formatCurrency } from '@/utils/format';
 import { normalizeImageUrl } from '@/utils/placeholders';
 import { useAddToCartAnimation } from '@/components/animations/AddToCartAnimation';
 import { playAddToCart, playError } from '@/utils/sounds';
-import '@/components/common/RippleButton.css';
 
 const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const dispatch = useDispatch();
@@ -180,18 +179,11 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
           ref={addToCartButtonRef}
           onClick={handleAddToCart}
           disabled={product.stock <= 0}
-          className={`ripple-btn w-full text-white text-sm ${product.stock <= 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary-600'}`}
+          className="etsy-add-to-cart etsy-btn w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-md"
           data-testid="add-to-cart-btn"
         >
-          <span className="ripple-circle bg-primary-400"></span>
-          <span className="ripple-circle bg-primary-400"></span>
-          <span className="ripple-circle bg-primary-400"></span>
-          <span className="ripple-circle bg-primary-400"></span>
-          <span className="ripple-circle bg-primary-400"></span>
-          <span className="ripple-text flex items-center gap-2">
-            <ShoppingCart className="w-4 h-4" />
-            {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
-          </span>
+          <ShoppingCart className="w-4 h-4" />
+          {product.stock <= 0 ? 'Out of Stock' : 'Add to Cart'}
         </button>
       </div>
     </Link>
