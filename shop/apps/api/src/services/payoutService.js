@@ -86,60 +86,42 @@ class PayoutService {
         logger.warn(`Vendor ${vendor.storeName}: Bank/PAN not verified yet. Proceeding with payout (admin-initiated).`);
       }
 
-      // Try Razorpay payout first
-      if (razorpayConfigured && process.env.RAZORPAY_ACCOUNT_NUMBER) {
-        const referenceId = `vendor_${vendorId}_${Date.now()}`;
-
-        const payoutResult = await createPayout({
-          amount,
-          beneficiaryName: vendor.bank.accountHolderName || vendor.storeName,
-          beneficiaryAccountNumber: vendor.bank.accountNumber,
-          beneficiaryIfsc: vendor.bank.ifscCode,
-          referenceId,
-          mode: amount >= 200000 ? 'RTGS' : 'IMPS',
-          purpose: 'payout',
-          narration: `Commission payout for ${vendor.storeName}`,
-        });
-
-        if (payoutResult.success) {
-          await Commission.updateMany(
-            { _id: { $in: commissionIds } },
-            {
-              status: 'paid',
-              paidAt: new Date(),
-              paymentRef: payoutResult.payoutId,
-              notes: `Razorpay payout: ${payoutResult.payoutId}`,
-            }
-          );
-
-          // FIX: Use atomic $inc to prevent race conditions
-          await Vendor.findByIdAndUpdate(vendor._id, {
-            $inc: { totalEarnings: amount, pendingEarnings: -amount }
-          });
-
-          logger.info(`Razorpay payout processed for vendor ${vendor.storeName}: ₹${amount} (${payoutResult.payoutId})`);
-
-          return {
-            success: true,
-            method: 'razorpay',
-            transferId: payoutResult.payoutId,
-            amount,
-            vendor: vendor.storeName,
-            status: payoutResult.status,
-          };
-        } else {
-          logger.warn(`Razorpay payout failed for vendor ${vendor.storeName}: ${payoutResult.error}. Falling back to manual.`);
-        }
+      // Check if RazorpayX is configured
+      if (!razorpayConfigured || !process.env.RAZORPAY_ACCOUNT_NUMBER) {
+        throw AppError.badRequest(
+          'RazorpayX is not configured. Please add RAZORPAY_ACCOUNT_NUMBER to environment variables to enable payouts.',
+          'RAZORPAYX_NOT_CONFIGURED'
+        );
       }
 
-      // Manual payout fallback
+      // Process Razorpay payout
+      const referenceId = `vendor_${vendorId}_${Date.now()}`;
+
+      const payoutResult = await createPayout({
+        amount,
+        beneficiaryName: vendor.bank.accountHolderName || vendor.storeName,
+        beneficiaryAccountNumber: vendor.bank.accountNumber,
+        beneficiaryIfsc: vendor.bank.ifscCode,
+        referenceId,
+        mode: amount >= 200000 ? 'RTGS' : 'IMPS',
+        purpose: 'payout',
+        narration: `Commission payout for ${vendor.storeName}`,
+      });
+
+      if (!payoutResult.success) {
+        throw AppError.badRequest(
+          `Razorpay payout failed: ${payoutResult.error}. Please try again or contact support.`,
+          'PAYOUT_FAILED'
+        );
+      }
+
       await Commission.updateMany(
         { _id: { $in: commissionIds } },
         {
           status: 'paid',
           paidAt: new Date(),
-          paymentRef: 'MANUAL_TRANSFER',
-          notes: 'Manual bank transfer - admin to process',
+          paymentRef: payoutResult.payoutId,
+          notes: `Razorpay payout: ${payoutResult.payoutId}`,
         }
       );
 
@@ -148,25 +130,15 @@ class PayoutService {
         $inc: { totalEarnings: amount, pendingEarnings: -amount }
       });
 
-      logger.info(`Manual payout marked for vendor ${vendor.storeName}: ₹${amount}`);
-
-      // FIX: Mask bank account number in response (show only last 4 digits)
-      const maskedAccountNumber = vendor.bank.accountNumber
-        ? '****' + vendor.bank.accountNumber.slice(-4)
-        : 'N/A';
+      logger.info(`Razorpay payout processed for vendor ${vendor.storeName}: ₹${amount} (${payoutResult.payoutId})`);
 
       return {
         success: true,
-        method: 'manual',
-        transferId: 'MANUAL',
+        method: 'razorpay',
+        transferId: payoutResult.payoutId,
         amount,
         vendor: vendor.storeName,
-        note: 'Razorpay payout not available. Please transfer funds manually to vendor bank account.',
-        bankDetails: {
-          accountNumber: maskedAccountNumber,
-          ifscCode: vendor.bank.ifscCode,
-          accountHolder: vendor.bank.accountHolderName,
-        },
+        status: payoutResult.status,
       };
     } catch (error) {
       logger.error('Vendor payout failed:', error);
@@ -212,65 +184,42 @@ class PayoutService {
         'tds.netAmount': netAmount,
       };
 
-      // Try Razorpay payout (send net amount after TDS)
-      if (razorpayConfigured && process.env.RAZORPAY_ACCOUNT_NUMBER) {
-        const referenceId = `affiliate_${affiliateId}_${Date.now()}`;
-
-        const payoutResult = await createPayout({
-          amount: netAmount, // Send net amount after TDS deduction
-          beneficiaryName: affiliate.bankDetails.accountHolderName || affiliate.userId?.name || 'Affiliate',
-          beneficiaryAccountNumber: affiliate.bankDetails.accountNumber,
-          beneficiaryIfsc: affiliate.bankDetails.ifscCode,
-          referenceId,
-          mode: netAmount >= 200000 ? 'RTGS' : 'IMPS',
-          purpose: 'payout',
-          narration: `Affiliate commission payout - ${affiliate.code} (TDS ${TDS_RATE}% deducted)`,
-        });
-
-        if (payoutResult.success) {
-          await Commission.updateMany(
-            { _id: { $in: commissionIds } },
-            {
-              status: 'paid',
-              paidAt: new Date(),
-              paymentRef: payoutResult.payoutId,
-              notes: `Razorpay payout: ${payoutResult.payoutId} | TDS ${TDS_RATE}%: ₹${tdsAmount} | Net paid: ₹${netAmount}`,
-              ...tdsUpdate,
-            }
-          );
-
-          // FIX: Use atomic $inc to prevent race conditions
-          await Affiliate.findByIdAndUpdate(affiliate._id, {
-            $inc: { totalEarnings: netAmount, pendingEarnings: -amount }
-          });
-
-          logger.info(`Razorpay payout processed for affiliate ${affiliate.code}: Gross ₹${amount}, TDS ₹${tdsAmount}, Net ₹${netAmount}`);
-
-          return {
-            success: true,
-            method: 'razorpay',
-            transferId: payoutResult.payoutId,
-            grossAmount: amount,
-            tdsRate: TDS_RATE,
-            tdsAmount,
-            netAmount,
-            amount: netAmount,
-            affiliate: affiliate.code,
-            status: payoutResult.status,
-          };
-        } else {
-          logger.warn(`Razorpay payout failed for affiliate ${affiliate.code}: ${payoutResult.error}. Falling back to manual.`);
-        }
+      // Check if RazorpayX is configured
+      if (!razorpayConfigured || !process.env.RAZORPAY_ACCOUNT_NUMBER) {
+        throw AppError.badRequest(
+          'RazorpayX is not configured. Please add RAZORPAY_ACCOUNT_NUMBER to environment variables to enable payouts.',
+          'RAZORPAYX_NOT_CONFIGURED'
+        );
       }
 
-      // Manual payout fallback (net amount after TDS)
+      // Process Razorpay payout (send net amount after TDS)
+      const referenceId = `affiliate_${affiliateId}_${Date.now()}`;
+
+      const payoutResult = await createPayout({
+        amount: netAmount, // Send net amount after TDS deduction
+        beneficiaryName: affiliate.bankDetails.accountHolderName || affiliate.userId?.name || 'Affiliate',
+        beneficiaryAccountNumber: affiliate.bankDetails.accountNumber,
+        beneficiaryIfsc: affiliate.bankDetails.ifscCode,
+        referenceId,
+        mode: netAmount >= 200000 ? 'RTGS' : 'IMPS',
+        purpose: 'payout',
+        narration: `Affiliate commission payout - ${affiliate.code} (TDS ${TDS_RATE}% deducted)`,
+      });
+
+      if (!payoutResult.success) {
+        throw AppError.badRequest(
+          `Razorpay payout failed: ${payoutResult.error}. Please try again or contact support.`,
+          'PAYOUT_FAILED'
+        );
+      }
+
       await Commission.updateMany(
         { _id: { $in: commissionIds } },
         {
           status: 'paid',
           paidAt: new Date(),
-          paymentRef: 'MANUAL_TRANSFER',
-          notes: `Manual transfer | TDS ${TDS_RATE}%: ₹${tdsAmount} | Net to pay: ₹${netAmount}`,
+          paymentRef: payoutResult.payoutId,
+          notes: `Razorpay payout: ${payoutResult.payoutId} | TDS ${TDS_RATE}%: ₹${tdsAmount} | Net paid: ₹${netAmount}`,
           ...tdsUpdate,
         }
       );
@@ -280,18 +229,19 @@ class PayoutService {
         $inc: { totalEarnings: netAmount, pendingEarnings: -amount }
       });
 
-      logger.info(`Manual payout marked for affiliate ${affiliate.code}: Gross ₹${amount}, TDS ₹${tdsAmount}, Net ₹${netAmount}`);
+      logger.info(`Razorpay payout processed for affiliate ${affiliate.code}: Gross ₹${amount}, TDS ₹${tdsAmount}, Net ₹${netAmount}`);
 
       return {
         success: true,
-        method: 'manual',
+        method: 'razorpay',
+        transferId: payoutResult.payoutId,
         grossAmount: amount,
         tdsRate: TDS_RATE,
         tdsAmount,
         netAmount,
         amount: netAmount,
         affiliate: affiliate.code,
-        note: 'Razorpay payout not available. Please transfer funds manually (net amount after TDS).',
+        status: payoutResult.status,
       };
     } catch (error) {
       logger.error('Affiliate payout failed:', error);
