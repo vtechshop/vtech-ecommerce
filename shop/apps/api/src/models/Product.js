@@ -7,6 +7,7 @@ const productSchema = new mongoose.Schema({
   slug: { type: String, unique: true, lowercase: true }, // unique index
   description: { type: String, required: [true, 'Product description is required'] },
   images: [String],
+  imageAlts: [String], // Alt tags for images (SEO & accessibility)
   videoUrl: { type: String, trim: true }, // YouTube video URL for product demonstration
   brand: String,
   categoryIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],

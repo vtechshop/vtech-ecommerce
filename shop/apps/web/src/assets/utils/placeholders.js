@@ -22,12 +22,39 @@ export const handleImageError = (e, placeholder = PLACEHOLDER_IMAGE) => {
 };
 
 /**
+ * Optimize Cloudinary URL with transformations for better performance
+ * @param {string} url - Cloudinary URL
+ * @param {object} options - Transformation options
+ * @returns {string} - Optimized Cloudinary URL
+ */
+const optimizeCloudinaryUrl = (url, options = {}) => {
+  const { width = 300, quality = 'auto', format = 'auto' } = options;
+
+  // Check if it's a Cloudinary URL
+  if (!url.includes('res.cloudinary.com')) {
+    return url;
+  }
+
+  // Check if transformations already exist
+  if (url.includes('/q_auto') || url.includes('/f_auto') || url.includes('/w_')) {
+    return url;
+  }
+
+  // Add transformations to Cloudinary URL
+  // Pattern: .../upload/[transformations]/...
+  const transformations = `q_${quality},f_${format},w_${width}`;
+  return url.replace('/upload/', `/upload/${transformations}/`);
+};
+
+/**
  * Normalize image URL to fix mixed content issues
  * Converts localhost URLs to production API URL and ensures HTTPS
+ * Also optimizes Cloudinary URLs for better performance
  * @param {string} url - The image URL to normalize
+ * @param {object} options - Optional optimization settings
  * @returns {string} - Normalized image URL
  */
-export const normalizeImageUrl = (url) => {
+export const normalizeImageUrl = (url, options = {}) => {
   if (!url) return PLACEHOLDER_IMAGE;
 
   // If it's already a data URL or blob, return as-is
@@ -62,6 +89,11 @@ export const normalizeImageUrl = (url) => {
       !normalizedUrl.includes('localhost') &&
       !normalizedUrl.includes('127.0.0.1')) {
     normalizedUrl = normalizedUrl.replace('http://', 'https://');
+  }
+
+  // Optimize Cloudinary URLs in production
+  if (import.meta.env.MODE === 'production') {
+    normalizedUrl = optimizeCloudinaryUrl(normalizedUrl, options);
   }
 
   return normalizedUrl;

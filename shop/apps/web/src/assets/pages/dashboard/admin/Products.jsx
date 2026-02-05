@@ -411,7 +411,6 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     tags: product?.tags ? product.tags.join(', ') : '',
     published: product?.published || false,
     featured: product?.featured || false,
-    images: product?.images || [],
     vendorCommissionPercentage: product?.vendorCommissionPercentage || '',
     affiliateCommissionPercentage: product?.affiliateCommissionPercentage || '',
     taxable: product?.taxable !== undefined ? product.taxable : true,
@@ -431,6 +430,16 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     seoTitle: product?.seo?.title || '',
     seoDescription: product?.seo?.description || '',
     seoKeywords: product?.seo?.keywords ? product.seo.keywords.join(', ') : '',
+  });
+
+  // Images with alt tags: [{url: string, alt: string}]
+  const [images, setImages] = useState(() => {
+    const existingImages = product?.images || [];
+    const existingAlts = product?.imageAlts || [];
+    return existingImages.map((url, idx) => ({
+      url: typeof url === 'string' ? url : url.url,
+      alt: existingAlts[idx] || (typeof url === 'object' ? url.alt : '') || ''
+    }));
   });
 
   const [faqs, setFaqs] = useState(product?.faqs || []);
@@ -482,19 +491,16 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     setUploadingImages(true);
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        const response = await api.post('/upload/single', formData, {
+        const fd = new FormData();
+        fd.append('file', file);
+        const response = await api.post('/upload/single', fd, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        return response.data.data.url;
+        return { url: response.data.data.url, alt: '' };
       });
-      
-      const uploadedUrls = await Promise.all(uploadPromises);
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...uploadedUrls]
-      }));
+
+      const uploadedImages = await Promise.all(uploadPromises);
+      setImages(prev => [...prev, ...uploadedImages]);
     } catch (error) {
       toast.error('Error uploading images: ' + error.message);
     } finally {
@@ -503,10 +509,15 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
   };
 
   const handleRemoveImage = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index)
-    }));
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateImageAlt = (index, alt) => {
+    setImages(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], alt };
+      return updated;
+    });
   };
 
   const handleSubmit = (e) => {
@@ -515,6 +526,9 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       ...formData,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       structuredData: schemaData, // Fixed: changed from 'schema' to 'structuredData'
+      // Images with SEO alt tags
+      images: images.map(img => img.url),
+      imageAlts: images.map(img => img.alt || ''),
       // Convert numeric fields properly - empty strings become null/undefined
       price: formData.price ? parseFloat(formData.price) : 0,
       compareAt: formData.compareAt ? parseFloat(formData.compareAt) : null,
@@ -914,8 +928,8 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Product Images
-              {formData.images.length > 0 && (
-                <span className="text-gray-500 text-xs ml-2">({formData.images.length} {formData.images.length === 1 ? 'image' : 'images'})</span>
+              {images.length > 0 && (
+                <span className="text-gray-500 text-xs ml-2">({images.length} {images.length === 1 ? 'image' : 'images'})</span>
               )}
             </label>
             {!isViewing && (
@@ -947,29 +961,52 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
               </div>
             )}
             
-            {/* Image Gallery */}
-            {formData.images.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {formData.images.map((image, index) => (
-                  <div key={index} className="relative group">
-                    <img
-                      src={image}
-                      alt={`Product ${index + 1}`}
-                      className="w-full h-24 object-cover rounded border"
-                      onError={(e) => {
-                        e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
-                      }}
-                    />
-                    {!isViewing && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Remove image"
-                      >
-                        ×
-                      </button>
-                    )}
+            {/* Image Gallery with Alt Tags */}
+            {images.length > 0 ? (
+              <div className="space-y-3">
+                {images.map((image, index) => (
+                  <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="relative group flex-shrink-0">
+                      <img
+                        src={image.url}
+                        alt={image.alt || `${formData.title || 'Product'} - Image ${index + 1}`}
+                        className="w-20 h-20 object-cover rounded border border-gray-200"
+                        onError={(e) => {
+                          e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
+                        }}
+                      />
+                      {!isViewing && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                          title="Remove image"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        Image {index + 1} Alt Tag (SEO)
+                      </label>
+                      {isViewing ? (
+                        <p className="text-sm text-gray-600">{image.alt || 'No alt tag set'}</p>
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            value={image.alt}
+                            onChange={(e) => handleUpdateImageAlt(index, e.target.value)}
+                            placeholder={`e.g., ${formData.title || 'Product name'} front view`}
+                            className="input w-full text-sm"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Describe the image for SEO & accessibility
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

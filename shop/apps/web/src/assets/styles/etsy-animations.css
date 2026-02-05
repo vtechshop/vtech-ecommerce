@@ -398,18 +398,20 @@
 }
 
 /* ============ PRICE HIGHLIGHT ============ */
+/* Using color change instead of text-shadow for better performance (GPU composited) */
 
 @keyframes price-glow {
   0%, 100% {
-    text-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+    color: #1f2937;
   }
   50% {
-    text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    color: #2563eb;
   }
 }
 
 .etsy-price-highlight {
   animation: price-glow 2s ease-in-out infinite;
+  will-change: color;
 }
 
 /* ============ ADD TO CART BUTTON ============ */

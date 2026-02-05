@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import api from '@/utils/api';
 import ProductCard from '@/components/product/ProductCard';
+import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
 import FlashSaleBanner from '@/components/flash-sale/FlashSaleBanner';
 import ProductRecommendations from '@/components/product/ProductRecommendations';
-import Spinner from '@/components/common/Spinner';
 import SponsorAd from '@/components/ads/SponsorAd';
 import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
@@ -106,6 +106,7 @@ const Home = React.memo(() => {
               <Link
                 to="/page/about"
                 className="inline-block bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-all duration-300 shadow-lg btn-scale"
+                aria-label="Learn more about V-Tech Kitchen"
               >
                 {t('home.learnMore')}
               </Link>
@@ -184,8 +185,8 @@ const Home = React.memo(() => {
               </section>
             )}
 
-            {/* Featured Products */}
-            <section className="mb-8">
+            {/* Featured Products - min-height prevents CLS */}
+            <section className="mb-8 min-h-[500px]">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl md:text-2xl font-bold">{t('home.featuredProducts')}</h2>
                 <Link to="/products?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold">
@@ -194,9 +195,7 @@ const Home = React.memo(() => {
               </div>
 
               {isLoading ? (
-                <div className="flex justify-center py-12">
-                  <Spinner size="lg" />
-                </div>
+                <ProductGridSkeleton count={8} />
               ) : featuredProducts?.length > 0 ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                   {featuredProducts.map((p) => (
@@ -232,9 +231,9 @@ const Home = React.memo(() => {
               </section>
             )}
 
-            {/* Join as Vendor or Affiliate */}
+            {/* Join as Vendor or Affiliate - min-height prevents CLS */}
             {(user?.role !== 'vendor' || user?.role !== 'affiliate') && (
-              <section className="mb-8">
+              <section className="mb-8 min-h-[400px]">
                 <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
                 <div className={`grid gap-6 ${
                   user?.role === 'vendor' || user?.role === 'affiliate'

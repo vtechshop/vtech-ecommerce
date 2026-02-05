@@ -243,7 +243,7 @@ async function updateProduct(req, res, next) {
     // SECURITY: Use whitelist approach instead of Object.assign to prevent mass assignment
     const allowedFields = [
       'title', 'description', 'price', 'compareAt', 'cost', 'stock',
-      'sku', 'barcode', 'brand', 'images', 'categoryIds', 'tags',
+      'sku', 'barcode', 'brand', 'images', 'imageAlts', 'categoryIds', 'tags',
       'variants', 'specifications', 'shippingInfo', 'published',
       'featured', 'taxable', 'taxRate', 'taxIncluded', 'seo', 'hasWarranty', 'warranty', 'faqs', 'structuredData', 'youtubeLink'
     ];

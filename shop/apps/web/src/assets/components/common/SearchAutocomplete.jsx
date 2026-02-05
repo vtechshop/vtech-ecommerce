@@ -207,18 +207,23 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
           onKeyDown={handleKeyDown}
           className="w-full px-4 py-2 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400"
           autoComplete="off"
+          aria-label="Search products"
+          role="combobox"
+          aria-expanded={shouldShowDropdown}
+          aria-autocomplete="list"
         />
         <button
           type="submit"
           className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-primary-400 transition-colors"
+          aria-label="Search products"
         >
-          <Search className="w-5 h-5" />
+          <Search className="w-5 h-5" aria-hidden="true" />
         </button>
       </form>
 
-      {/* Dropdown */}
+      {/* Dropdown - Always light background for visibility */}
       {shouldShowDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-900 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-h-[480px] overflow-y-auto z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 max-h-[480px] overflow-y-auto z-50">
 
           {/* Loading */}
           {isLoading && debouncedQuery.length >= 2 && (
@@ -240,12 +245,12 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                       <button
                         key={`s-${suggestion}`}
                         onClick={() => handleSearch(suggestion)}
-                        className={`w-full px-4 py-2 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                          selectedIndex === idx ? 'bg-gray-50 dark:bg-gray-800' : ''
+                        className={`w-full px-4 py-2 flex items-center gap-3 text-left hover:bg-gray-100 transition-colors ${
+                          selectedIndex === idx ? 'bg-gray-100' : ''
                         }`}
                       >
                         <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm text-gray-900 dark:text-gray-100 flex-1">
+                        <span className="text-sm text-gray-900 flex-1">
                           {highlightMatch(suggestion, debouncedQuery)}
                         </span>
                       </button>
@@ -256,7 +261,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
               {/* Category Suggestions - "in Kitchen Appliances" */}
               {autocomplete.categories?.length > 0 && (
-                <div className="py-1 border-t border-gray-100 dark:border-gray-800">
+                <div className="py-1 border-t border-gray-200">
                   {autocomplete.categories.map((cat) => {
                     globalIndex++;
                     const idx = globalIndex;
@@ -264,12 +269,12 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                       <button
                         key={`c-${cat._id}`}
                         onClick={() => handleSelectCategory(cat)}
-                        className={`w-full px-4 py-2 flex items-center gap-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                          selectedIndex === idx ? 'bg-gray-50 dark:bg-gray-800' : ''
+                        className={`w-full px-4 py-2 flex items-center gap-3 text-left hover:bg-gray-100 transition-colors ${
+                          selectedIndex === idx ? 'bg-gray-100' : ''
                         }`}
                       >
                         <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm text-gray-900 dark:text-gray-100 flex-1">
+                        <span className="text-sm text-gray-900 flex-1">
                           {debouncedQuery.trim()}{' '}
                           <span className="text-gray-500">in</span>{' '}
                           <span className="font-medium">{cat.name}</span>
@@ -283,8 +288,8 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
               {/* Product Suggestions with images */}
               {autocomplete.products?.length > 0 && (
-                <div className="py-1 border-t border-gray-100 dark:border-gray-800">
-                  <div className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                <div className="py-1 border-t border-gray-200">
+                  <div className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
                     Products
                   </div>
                   {autocomplete.products.map((product) => {
@@ -294,11 +299,11 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                       <button
                         key={`p-${product._id}`}
                         onClick={() => handleSelectProduct(product)}
-                        className={`search-result-item w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                          selectedIndex === idx ? 'bg-gray-50 dark:bg-gray-800' : ''
+                        className={`search-result-item w-full px-4 py-2.5 flex items-center gap-3 hover:bg-gray-100 transition-colors ${
+                          selectedIndex === idx ? 'bg-gray-100' : ''
                         }`}
                       >
-                        <div className="w-10 h-10 flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
+                        <div className="w-10 h-10 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                           {product.images?.[0] ? (
                             <img
                               src={normalizeImageUrl(product.images[0])}
@@ -312,10 +317,10 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                           )}
                         </div>
                         <div className="flex-1 text-left overflow-hidden">
-                          <p className="text-sm text-gray-900 dark:text-gray-100 truncate">
+                          <p className="text-sm text-gray-900 truncate">
                             {highlightMatch(product.title, debouncedQuery)}
                           </p>
-                          <p className="text-xs font-semibold text-blue-600 dark:text-primary-400">
+                          <p className="text-xs font-semibold text-blue-600">
                             {formatCurrency(product.price)}
                           </p>
                         </div>
@@ -327,10 +332,10 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
               {/* View All Results link */}
               {(autocomplete.products?.length > 0 || autocomplete.suggestions?.length > 0) && (
-                <div className="border-t border-gray-100 dark:border-gray-800">
+                <div className="border-t border-gray-200">
                   <button
                     onClick={() => handleSearch(debouncedQuery)}
-                    className="w-full px-4 py-2.5 text-sm text-blue-600 dark:text-primary-400 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left flex items-center gap-2"
+                    className="w-full px-4 py-2.5 text-sm text-blue-600 font-medium hover:bg-gray-100 transition-colors text-left flex items-center gap-2"
                   >
                     <Search className="w-4 h-4" />
                     See all results for "{debouncedQuery}"
@@ -341,8 +346,8 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
               {/* No Results */}
               {!isLoading && autocomplete.products?.length === 0 && autocomplete.suggestions?.length === 0 && (
                 <div className="p-6 text-center">
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">No results for "{debouncedQuery}"</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Try different keywords</p>
+                  <p className="text-gray-600 text-sm">No results for "{debouncedQuery}"</p>
+                  <p className="text-xs text-gray-500 mt-1">Try different keywords</p>
                 </div>
               )}
             </>
@@ -355,12 +360,12 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
               {recentSearches.length > 0 && (
                 <div className="py-1">
                   <div className="px-4 py-1.5 flex items-center justify-between">
-                    <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
                       Recent Searches
                     </span>
                     <button
                       onClick={clearRecentSearches}
-                      className="text-xs text-blue-600 dark:text-primary-400 hover:underline"
+                      className="text-xs text-blue-600 hover:underline"
                     >
                       Clear
                     </button>
@@ -369,12 +374,12 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                     <button
                       key={index}
                       onClick={() => handleSearch(search)}
-                      className={`w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                        selectedIndex === index ? 'bg-gray-50 dark:bg-gray-800' : ''
+                      className={`w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-100 transition-colors ${
+                        selectedIndex === index ? 'bg-gray-100' : ''
                       }`}
                     >
                       <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <span className="flex-1 text-left text-sm text-gray-900 dark:text-gray-100">
+                      <span className="flex-1 text-left text-sm text-gray-900">
                         {search}
                       </span>
                       <X
@@ -393,8 +398,8 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
               {/* Trending */}
               {trending?.length > 0 && (
-                <div className="py-1 border-t border-gray-100 dark:border-gray-800">
-                  <div className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                <div className="py-1 border-t border-gray-200">
+                  <div className="px-4 py-1.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" />
                     Trending
                   </div>
@@ -402,9 +407,9 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                     <button
                       key={product._id}
                       onClick={() => handleSelectProduct(product)}
-                      className="w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      className="w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-100 transition-colors"
                     >
-                      <div className="w-8 h-8 flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded overflow-hidden">
+                      <div className="w-8 h-8 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                         {product.images?.[0] ? (
                           <img
                             src={normalizeImageUrl(product.images[0])}
@@ -417,7 +422,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
                           </div>
                         )}
                       </div>
-                      <span className="flex-1 text-left text-sm text-gray-900 dark:text-gray-100 truncate">
+                      <span className="flex-1 text-left text-sm text-gray-900 truncate">
                         {product.title}
                       </span>
                       <TrendingUp className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />

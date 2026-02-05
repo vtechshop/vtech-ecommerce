@@ -82,8 +82,10 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
       <div className="relative aspect-square bg-gray-50 overflow-hidden">
         {product.images && product.images.length > 0 ? (
           <img
-            src={normalizeImageUrl(product.images[0])}
+            src={normalizeImageUrl(product.images[0], { width: 300 })}
             alt={product.seo?.title || product.title}
+            width={284}
+            height={284}
             loading="lazy"
             decoding="async"
             className="etsy-image w-full h-full object-contain p-3"
@@ -165,7 +167,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
             {formatCurrency(product.price)}
           </span>
           {hasDiscount && (
-            <span className="text-sm text-gray-400 line-through">
+            <span className="text-sm text-gray-600 line-through">
               {formatCurrency(product.compareAt)}
             </span>
           )}

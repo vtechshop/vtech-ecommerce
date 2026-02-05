@@ -329,7 +329,15 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
 
   const [showSchemaSection, setShowSchemaSection] = useState(false);
 
-  const [images, setImages] = useState(product?.images || []);
+  // Images with alt tags: [{url: string, alt: string}]
+  const [images, setImages] = useState(() => {
+    const existingImages = product?.images || [];
+    const existingAlts = product?.imageAlts || [];
+    return existingImages.map((url, idx) => ({
+      url: typeof url === 'string' ? url : url.url,
+      alt: existingAlts[idx] || (typeof url === 'object' ? url.alt : '') || ''
+    }));
+  });
   const [uploading, setUploading] = useState(false);
 
   // Fetch categories
@@ -381,8 +389,8 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      const uploadedUrls = response?.data?.data?.map(file => file.url) || [];
-      setImages([...images, ...uploadedUrls]);
+      const uploadedImages = response?.data?.data?.map(file => ({ url: file.url, alt: '' })) || [];
+      setImages([...images, ...uploadedImages]);
     } catch (error) {
       alert('Image upload failed: ' + (error.response?.data?.error?.message || error.message));
     } finally {
@@ -416,7 +424,8 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
       stock: parseInt(formData.stock),
       sku: formData.sku,
       brand: formData.brand,
-      images,
+      images: images.map(img => img.url), // Extract URLs only
+      imageAlts: images.map(img => img.alt || ''), // Alt tags for SEO
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       published: formData.published,
       featured: formData.featured,
@@ -532,22 +541,43 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
               />
               {uploading && <p className="text-sm text-gray-500 mt-1">Uploading images...</p>}
               {images.length > 0 && (
-                <div className="mt-3 grid grid-cols-4 gap-3">
+                <div className="mt-3 space-y-3">
                   {images.map((img, idx) => (
-                    <div key={idx} className="relative group">
-                      <img
-                        src={img}
-                        alt={`Product ${idx + 1}`}
-                        className="w-full h-24 object-cover rounded border border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(idx)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Remove image"
-                      >
-                        ×
-                      </button>
+                    <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="relative group flex-shrink-0">
+                        <img
+                          src={img.url}
+                          alt={img.alt || `${formData.title || 'Product'} - Image ${idx + 1}`}
+                          className="w-20 h-20 object-cover rounded border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                          title="Remove image"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-medium text-gray-700 mb-1">
+                          Image {idx + 1} Alt Tag (SEO)
+                        </label>
+                        <input
+                          type="text"
+                          value={img.alt}
+                          onChange={(e) => {
+                            const updated = [...images];
+                            updated[idx] = { ...updated[idx], alt: e.target.value };
+                            setImages(updated);
+                          }}
+                          placeholder={`e.g., ${formData.title || 'Product name'} front view`}
+                          className="input w-full text-sm"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Describe the image for SEO & accessibility
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
