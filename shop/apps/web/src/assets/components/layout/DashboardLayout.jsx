@@ -33,6 +33,7 @@ const DashboardLayout = () => {
         { path: '/admin-dashboard', label: 'Overview', icon: 'chart' },
         { path: '/admin-dashboard/users', label: 'Users', icon: 'users' },
         { path: '/admin-dashboard/products', label: 'Products', icon: 'package' },
+        { path: '/admin-dashboard/inventory', label: 'Inventory', icon: 'box' },
         { path: '/admin-dashboard/categories', label: 'Categories', icon: 'folder' },
         { path: '/admin-dashboard/orders', label: 'Orders', icon: 'shopping-bag' },
         { path: '/admin-dashboard/manual-orders', label: 'Manual Orders', icon: 'store' },

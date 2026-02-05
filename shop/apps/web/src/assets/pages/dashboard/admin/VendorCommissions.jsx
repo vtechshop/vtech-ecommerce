@@ -4,28 +4,31 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import { formatCurrency } from '@/utils/format';
 import Button from '@/components/common/Button';
+import CustomSelect from '@/components/common/CustomSelect';
 import {
   DollarSign, User, ShoppingCart, Calendar,
   Check, X, Clock, Filter, Download, Eye,
-  TrendingUp, Store, CheckCircle, AlertCircle
+  TrendingUp, Store, CheckCircle, AlertCircle,
+  Wallet, RefreshCw, CreditCard, PieChart,
+  Banknote, ArrowRight
 } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
 import PendingBadge from '@/components/common/PendingBadge';
 import { getPendingItemClasses, formatRelativeTime } from '@/utils/dateHelpers';
 
-const DATE_PRESETS = [
-  { label: 'Last 1 Month', months: 1 },
-  { label: 'Last 3 Months', months: 3 },
-  { label: 'Last 6 Months', months: 6 },
-  { label: 'Last 1 Year', months: 12 },
-  { label: 'All Time', months: null },
+const DATE_RANGE_OPTIONS = [
+  { value: '7', label: 'Last 7 days' },
+  { value: '30', label: 'Last 30 days' },
+  { value: '90', label: 'Last 90 days' },
+  { value: '365', label: 'Last 1 year' },
+  { value: 'all', label: 'All time' },
 ];
 
-const getPresetDates = (months) => {
-  if (!months) return { startDate: '', endDate: '' };
+const getDateRange = (days) => {
+  if (days === 'all') return { startDate: '', endDate: '' };
   const end = new Date();
   const start = new Date();
-  start.setMonth(start.getMonth() - months);
+  start.setDate(start.getDate() - parseInt(days));
   return {
     startDate: start.toISOString().slice(0, 10),
     endDate: end.toISOString().slice(0, 10),
@@ -34,6 +37,7 @@ const getPresetDates = (months) => {
 
 const VendorCommissions = () => {
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateRange, setDateRange] = useState('30'); // Default to 30 days
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -46,9 +50,12 @@ const VendorCommissions = () => {
   const [exportStatus, setExportStatus] = useState('all');
   const [downloading, setDownloading] = useState(false);
 
+  // Get date range for API calls
+  const { startDate, endDate } = getDateRange(dateRange);
+
   // Fetch commissions with filters
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin-vendor-commissions', statusFilter, page],
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['admin-vendor-commissions', statusFilter, dateRange, page],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -58,16 +65,22 @@ const VendorCommissions = () => {
       if (statusFilter !== 'all') {
         params.append('status', statusFilter);
       }
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
       const response = await api.get(`/admin/commissions?${params}`);
       return response.data.data;
     },
   });
 
-  // Fetch summary stats
-  const { data: stats } = useQuery({
-    queryKey: ['vendor-commission-stats'],
+  // Fetch summary stats with date range
+  const { data: stats, refetch: refetchStats } = useQuery({
+    queryKey: ['vendor-commission-stats', dateRange],
     queryFn: async () => {
-      const response = await api.get('/admin/commissions/stats?type=vendor');
+      const params = new URLSearchParams({ type: 'vendor' });
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      const response = await api.get(`/admin/commissions/stats?${params}`);
       return response.data.data;
     },
   });
@@ -107,7 +120,7 @@ const VendorCommissions = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
       queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
-      toast.success('Commission marked as paid!');
+      toast.success('Commission paid via Razorpay!');
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to pay commission');
@@ -145,6 +158,24 @@ const VendorCommissions = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to approve commissions');
+    },
+  });
+
+  // Bulk pay commissions mutation (batch payout)
+  const bulkPayMutation = useMutation({
+    mutationFn: async (commissionIds) => {
+      const response = await api.post('/admin/commissions/bulk-pay', {
+        commissionIds,
+      });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
+      toast.success(`Batch payout processed! ${data.data?.success?.length || 0} payouts successful`);
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to process batch payout');
     },
   });
 
@@ -208,12 +239,6 @@ const VendorCommissions = () => {
     }
   };
 
-  const handlePreset = (months) => {
-    const { startDate, endDate } = getPresetDates(months);
-    setExportStartDate(startDate);
-    setExportEndDate(endDate);
-  };
-
   // Approve all pending commissions
   const handleApproveAllPending = () => {
     if (window.confirm('Are you sure you want to approve all pending commissions?')) {
@@ -226,6 +251,22 @@ const VendorCommissions = () => {
       } else {
         toast.info('No pending commissions to approve');
       }
+    }
+  };
+
+  // Pay all approved commissions (batch payout)
+  const handlePayAllApproved = () => {
+    const approvedIds = data?.commissions
+      ?.filter(c => c.status === 'approved')
+      ?.map(c => c._id) || [];
+
+    if (approvedIds.length === 0) {
+      toast.info('No approved commissions to pay');
+      return;
+    }
+
+    if (window.confirm(`Process batch payout for ${approvedIds.length} approved commissions via Razorpay?`)) {
+      bulkPayMutation.mutate(approvedIds);
     }
   };
 
@@ -251,6 +292,9 @@ const VendorCommissions = () => {
 
   const vendorsList = vendorsData?.vendors || vendorsData || [];
 
+  // Calculate max for progress bars
+  const maxVendorAmount = Math.max(...(stats?.topVendors?.map(v => v.totalAmount) || [1]));
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -270,7 +314,18 @@ const VendorCommissions = () => {
           <h1 className="text-3xl font-bold mb-2">Vendor Commissions</h1>
           <p className="text-gray-700">Manage vendor commissions and payouts</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetch();
+              refetchStats();
+            }}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -322,19 +377,6 @@ const VendorCommissions = () => {
                 </option>
               ))}
             </select>
-          </div>
-
-          {/* Date Presets */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {DATE_PRESETS.map((preset) => (
-              <button
-                key={preset.label}
-                onClick={() => handlePreset(preset.months)}
-                className="px-3 py-1.5 text-xs font-medium rounded-full border border-gray-300 bg-gray-50 hover:bg-primary-50 hover:border-primary-300 hover:text-primary-700 transition-colors"
-              >
-                {preset.label}
-              </button>
-            ))}
           </div>
 
           {/* Custom Date Range + Status */}
@@ -395,7 +437,7 @@ const VendorCommissions = () => {
         </div>
       )}
 
-      {/* Stats Cards */}
+      {/* Stats Cards Row 1 - Main Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -407,7 +449,9 @@ const VendorCommissions = () => {
           <p className="text-3xl font-bold text-gray-900">
             {formatCurrency(stats?.totalAmount || 0)}
           </p>
-          <p className="text-xs text-gray-500 mt-2">All time</p>
+          <p className="text-xs text-gray-500 mt-2">
+            {dateRange === 'all' ? 'All time' : `Last ${dateRange} days`}
+          </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -423,6 +467,32 @@ const VendorCommissions = () => {
           <p className="text-xs text-gray-500 mt-2">{stats?.pendingCount || 0} commissions</p>
         </div>
 
+        {/* Ready to Pay (Approved) - Reserve System */}
+        <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl shadow-sm p-6 text-white">
+          <div className="flex items-center justify-between mb-4">
+            <div className="bg-white/20 p-3 rounded-lg">
+              <Wallet className="w-6 h-6 text-white" />
+            </div>
+            {(stats?.approvedCount || 0) > 0 && (
+              <Button
+                variant="outline"
+                size="xs"
+                onClick={handlePayAllApproved}
+                disabled={bulkPayMutation.isPending}
+                className="border-white/50 text-white hover:bg-white/20 text-xs"
+              >
+                <Banknote className="w-3 h-3 mr-1" />
+                Pay All
+              </Button>
+            )}
+          </div>
+          <h3 className="text-blue-100 text-sm font-medium mb-1">Ready to Pay</h3>
+          <p className="text-3xl font-bold">
+            {formatCurrency(stats?.approvedAmount || 0)}
+          </p>
+          <p className="text-xs text-blue-200 mt-2">{stats?.approvedCount || 0} approved, awaiting payout</p>
+        </div>
+
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="bg-green-100 p-3 rounded-lg">
@@ -435,43 +505,89 @@ const VendorCommissions = () => {
           </p>
           <p className="text-xs text-gray-500 mt-2">{stats?.paidCount || 0} commissions</p>
         </div>
-
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="bg-purple-100 p-3 rounded-lg">
-              <Store className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-          <h3 className="text-gray-700 text-sm font-medium mb-1">Active Vendors</h3>
-          <p className="text-3xl font-bold text-purple-600">
-            {stats?.vendorCount || 0}
-          </p>
-          <p className="text-xs text-gray-500 mt-2">Total vendors</p>
-        </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex items-center gap-3">
-          <Filter className="w-5 h-5 text-gray-400" />
-          <span className="font-medium text-gray-700">Filter by Status:</span>
-          <div className="flex gap-2 flex-wrap">
-            {['all', 'pending', 'approved', 'paid', 'cancelled'].map((status) => (
-              <button
-                key={status}
-                onClick={() => {
-                  setStatusFilter(status);
-                  setPage(1);
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  statusFilter === status
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-blue-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
-              </button>
+      {/* Commission Breakdown by Vendor */}
+      {stats?.topVendors && stats.topVendors.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <PieChart className="w-5 h-5 text-gray-600" />
+              <h3 className="font-semibold text-gray-800">Top Vendors by Commission</h3>
+            </div>
+            <span className="text-xs text-gray-500">
+              {dateRange === 'all' ? 'All time' : `Last ${dateRange} days`}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {stats.topVendors.map((vendor, idx) => (
+              <div key={vendor._id} className="flex items-center gap-4">
+                <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600">
+                  {idx + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-900 truncate">
+                      {vendor.storeName || 'Unknown Vendor'}
+                    </span>
+                    <span className="text-sm font-bold text-gray-900">
+                      {formatCurrency(vendor.totalAmount)}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-500"
+                      style={{ width: `${(vendor.totalAmount / maxVendorAmount) * 100}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">{vendor.count} commissions</p>
+                </div>
+              </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Filters Row */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Date Range Filter */}
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-gray-400" />
+            <CustomSelect
+              value={dateRange}
+              onChange={(value) => {
+                setDateRange(value);
+                setPage(1);
+              }}
+              options={DATE_RANGE_OPTIONS}
+              placeholder="Select period"
+              className="w-40"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-700">Status:</span>
+            <div className="flex gap-2 flex-wrap">
+              {['all', 'pending', 'approved', 'paid', 'cancelled'].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => {
+                    setStatusFilter(status);
+                    setPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    statusFilter === status
+                      ? 'bg-gray-800 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -480,30 +596,30 @@ const VendorCommissions = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
-            <thead className="bg-blue-100 border-b border-gray-200">
+            <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px]">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-[200px]">
                   Vendor
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-[120px]">
                   Order
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
                   Product
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-[100px]">
                   Amount
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[60px]">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-[60px]">
                   Rate
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-[100px]">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[100px]">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-[100px]">
                   Date
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[180px]">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider w-[180px]">
                   Actions
                 </th>
               </tr>
@@ -512,12 +628,12 @@ const VendorCommissions = () => {
               {data?.commissions?.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
-                    No commissions found
+                    No commissions found for the selected period
                   </td>
                 </tr>
               ) : (
                 data?.commissions?.map((commission) => (
-                  <tr key={commission._id} className={`transition-colors ${getPendingItemClasses(commission.status)}`}>
+                  <tr key={commission._id} className={`transition-colors hover:bg-gray-50 ${getPendingItemClasses(commission.status)}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <Store className="w-4 h-4 text-gray-400 flex-shrink-0" />
@@ -625,10 +741,10 @@ const VendorCommissions = () => {
 
         {/* Pagination */}
         {data?.meta?.pages > 1 && (
-          <div className="bg-blue-100 px-6 py-4 border-t border-gray-200">
+          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-700">
-                Showing page {data.meta.page} of {data.meta.pages}
+                Showing page {data.meta.page} of {data.meta.pages} ({data.meta.total} total)
               </p>
               <div className="flex gap-2">
                 <Button

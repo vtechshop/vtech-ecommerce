@@ -76,12 +76,13 @@ const warrantySchema = new mongoose.Schema({
       type: String,
       enum: ['pending', 'approved', 'rejected', 'completed'],
     },
+    resolution: String,
     resolvedDate: Date,
   }],
   notifications: [{
     type: {
       type: String,
-      enum: ['30_days_before', '7_days_before', 'on_expiry', 'expired'],
+      enum: ['30_days_before', '7_days_before', 'on_expiry', 'expired', 'manual_reminder', 'bulk_reminder'],
     },
     sentAt: Date,
     sentTo: String,

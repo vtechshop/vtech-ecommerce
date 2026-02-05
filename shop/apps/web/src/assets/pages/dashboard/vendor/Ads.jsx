@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/dashboard/vendor/Ads.jsx
+﻿// FILE: apps/web/src/pages/dashboard/vendor/Ads.jsx
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -886,5 +886,5 @@ const Ads = () => {
     </div>
   );
 };
-
+s
 export default Ads;

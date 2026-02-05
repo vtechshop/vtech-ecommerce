@@ -9,8 +9,27 @@ import CustomSelect from '@/components/common/CustomSelect';
 import PendingBadge from '@/components/common/PendingBadge';
 import { useToast } from '@/components/common/ToastContainer';
 import { getPendingItemClasses, formatRelativeTime } from '@/utils/dateHelpers';
+import { formatCurrency } from '@/utils/format';
 import CategoryCommissionRules from '@/components/admin/CategoryCommissionRules';
-import { Search, CheckCircle, XCircle, UserX, AlertCircle, RefreshCw, Percent, Trash2 } from 'lucide-react';
+import {
+  Search,
+  CheckCircle,
+  XCircle,
+  UserX,
+  AlertCircle,
+  RefreshCw,
+  Percent,
+  Trash2,
+  Users,
+  Store,
+  TrendingUp,
+  Package,
+  Star,
+  ShoppingBag,
+  Download,
+  ExternalLink,
+  Award
+} from 'lucide-react';
 
 const Vendors = () => {
   const queryClient = useQueryClient();
@@ -20,12 +39,22 @@ const Vendors = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingVendor, setViewingVendor] = useState(null);
 
-  const { data, isLoading } = useQuery({
+  // Fetch vendor stats
+  const { data: statsData } = useQuery({
+    queryKey: ['admin-vendor-stats'],
+    queryFn: async () => {
+      const response = await api.get('/admin/vendors/stats');
+      return response.data.data;
+    },
+  });
+
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-vendors', page, statusFilter, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('page', page);
       params.append('limit', '20');
+      params.append('includeStats', 'true'); // Request additional stats
       if (statusFilter) params.append('status', statusFilter);
       if (searchTerm) params.append('search', searchTerm);
 
@@ -40,6 +69,7 @@ const Vendors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-stats'] });
       toast.success('Vendor approved successfully');
     },
     onError: (error) => {
@@ -53,6 +83,7 @@ const Vendors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-stats'] });
       toast.success('Vendor rejected');
     },
     onError: (error) => {
@@ -66,6 +97,7 @@ const Vendors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-stats'] });
       toast.success('Vendor suspended successfully');
     },
     onError: (error) => {
@@ -79,6 +111,7 @@ const Vendors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-stats'] });
       toast.success('Vendor and associated data deleted successfully');
     },
     onError: (error) => {
@@ -139,6 +172,33 @@ const Vendors = () => {
     }
   };
 
+  const handleExportCSV = () => {
+    const vendors = data?.data || [];
+    const csvData = [
+      ['Store Name', 'Owner', 'Email', 'Phone', 'Status', 'KYC', 'Commission %', 'Products', 'Total Sales', 'Rating', 'Joined'].join(','),
+      ...vendors.map(v => [
+        v.storeName || '',
+        v.userId?.name || '',
+        v.userId?.email || '',
+        v.phone || '',
+        v.status || '',
+        v.kyc?.status || 'pending',
+        v.defaultCommissionPercentage || 15,
+        v.totalProducts || 0,
+        v.totalSales || 0,
+        v.rating || 0,
+        new Date(v.createdAt).toLocaleDateString()
+      ].map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `vendors-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active':
@@ -148,9 +208,9 @@ const Vendors = () => {
       case 'suspended':
         return 'bg-red-100 text-red-800';
       case 'rejected':
-        return 'bg-blue-100 text-gray-900';
+        return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-blue-100 text-gray-900';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -159,7 +219,7 @@ const Vendors = () => {
       case 'active':
         return <CheckCircle className="w-4 h-4" />;
       case 'pending':
-        return <UserX className="w-4 h-4" />;
+        return <AlertCircle className="w-4 h-4" />;
       case 'suspended':
         return <XCircle className="w-4 h-4" />;
       case 'rejected':
@@ -167,6 +227,13 @@ const Vendors = () => {
       default:
         return <UserX className="w-4 h-4" />;
     }
+  };
+
+  const getPerformanceTier = (totalSales) => {
+    if (totalSales >= 1000000) return { tier: 'Platinum', color: 'bg-purple-100 text-purple-800', icon: '💎' };
+    if (totalSales >= 500000) return { tier: 'Gold', color: 'bg-yellow-100 text-yellow-800', icon: '🥇' };
+    if (totalSales >= 100000) return { tier: 'Silver', color: 'bg-gray-200 text-gray-800', icon: '🥈' };
+    return { tier: 'Bronze', color: 'bg-orange-100 text-orange-800', icon: '🥉' };
   };
 
   if (isLoading) {
@@ -179,39 +246,105 @@ const Vendors = () => {
 
   const vendors = data?.data || [];
   const totalPages = Math.ceil((data?.meta?.total || 0) / 20);
-
-  const pendingCount = vendors.filter(v => v.status === 'pending').length;
+  const stats = statsData || { total: 0, active: 0, pending: 0, suspended: 0, topPerformer: null };
 
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Vendor Management</h1>
-          {pendingCount > 0 && (
-            <p className="text-sm text-gray-700 mt-1">
-              {pendingCount} pending approval{pendingCount > 1 ? 's' : ''}
-            </p>
-          )}
+          <p className="text-sm text-gray-600 mt-1">Manage all marketplace vendors and their performance</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-vendors'] })}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={handleExportCSV}
+            className="flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              refetch();
+              queryClient.invalidateQueries({ queryKey: ['admin-vendor-stats'] });
+            }}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">Total Vendors</h3>
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Users className="w-5 h-5 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{stats.total || vendors.length}</p>
+          <p className="text-xs text-gray-500 mt-1">Registered vendors</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">Active</h3>
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Store className="w-5 h-5 text-green-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-green-600">{stats.active || 0}</p>
+          <p className="text-xs text-gray-500 mt-1">Currently selling</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">Pending</h3>
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-yellow-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-yellow-600">{stats.pending || 0}</p>
+          <p className="text-xs text-gray-500 mt-1">Awaiting approval</p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">Suspended</h3>
+            <div className="p-2 bg-red-100 rounded-lg">
+              <UserX className="w-5 h-5 text-red-600" />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-red-600">{stats.suspended || 0}</p>
+          <p className="text-xs text-gray-500 mt-1">Account suspended</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg shadow-sm p-5 text-white">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-purple-100">Top Performer</h3>
+            <Award className="w-5 h-5 text-yellow-300" />
+          </div>
+          <p className="text-lg font-bold truncate">{stats.topPerformer?.storeName || 'N/A'}</p>
+          <p className="text-xs text-purple-200 mt-1">
+            {stats.topPerformer?.totalSales ? formatCurrency(stats.topPerformer.totalSales) : 'No sales yet'}
+          </p>
+        </div>
       </div>
 
       {/* Pending Approvals Alert */}
-      {pendingCount > 0 && statusFilter !== 'pending' && (
+      {stats.pending > 0 && statusFilter !== 'pending' && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-600" />
             <div>
               <p className="text-sm font-semibold text-yellow-800">
-                {pendingCount} vendor application{pendingCount > 1 ? 's' : ''} awaiting approval
+                {stats.pending} vendor application{stats.pending > 1 ? 's' : ''} awaiting approval
               </p>
               <p className="text-xs text-yellow-700 mt-1">
                 Review and approve new vendor applications to allow them to start selling
@@ -230,12 +363,12 @@ const Vendors = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search vendors..."
+              placeholder="Search by store name, owner, or email..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -272,177 +405,193 @@ const Vendors = () => {
             Clear Filters
           </Button>
         </div>
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-sm text-gray-600">
+            Showing <span className="font-semibold">{vendors.length}</span> of{' '}
+            <span className="font-semibold">{data?.meta?.total || 0}</span> vendors
+          </p>
+        </div>
       </div>
 
       {/* Vendors Table */}
       {vendors.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <AlertCircle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <Store className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-xl font-semibold mb-2">No vendors found</h3>
-          <p className="text-gray-700 mb-4">
+          <p className="text-gray-600 mb-4">
             {statusFilter === 'pending'
               ? 'There are no pending vendor applications at the moment.'
               : searchTerm
-              ? 'No vendors match your search criteria. Try adjusting your filters.'
-              : 'No vendors have registered yet. New vendor applications will appear here.'}
+              ? 'No vendors match your search criteria.'
+              : 'No vendors have registered yet.'}
           </p>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSearchTerm('');
-              setStatusFilter('');
-              queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
-            }}
-            className="flex items-center gap-2 mx-auto"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Clear Filters & Refresh
-          </Button>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-blue-100 border-b">
+              <thead className="bg-gray-800 text-white">
                 <tr>
                   <th className="text-left py-3 px-4 font-semibold text-sm">Vendor</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Store</th>
                   <th className="text-left py-3 px-4 font-semibold text-sm">Contact</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Commission</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">KYC</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Joined</th>
+                  <th className="text-center py-3 px-4 font-semibold text-sm">Products</th>
+                  <th className="text-right py-3 px-4 font-semibold text-sm">Total Sales</th>
+                  <th className="text-center py-3 px-4 font-semibold text-sm">Rating</th>
+                  <th className="text-center py-3 px-4 font-semibold text-sm">Status</th>
+                  <th className="text-center py-3 px-4 font-semibold text-sm">KYC</th>
+                  <th className="text-center py-3 px-4 font-semibold text-sm">Commission</th>
                   <th className="text-right py-3 px-4 font-semibold text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {vendors.map((vendor) => (
-                <tr key={vendor._id} className={`border-b last:border-b-0 transition-colors ${getPendingItemClasses(vendor.status)}`}>
-                  <td className="py-3 px-3 sm:px-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        vendor.status === 'pending' ? 'bg-yellow-200' : 'bg-gray-200'
-                      }`}>
-                        <span className={`text-sm font-medium ${
-                          vendor.status === 'pending' ? 'text-yellow-700' : 'text-gray-700'
-                        }`}>
-                          {vendor.userId?.name?.charAt(0)?.toUpperCase() || 'V'}
-                        </span>
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{vendor.userId?.name || 'N/A'}</p>
-                          <PendingBadge status={vendor.status} />
+                {vendors.map((vendor) => {
+                  const perfTier = getPerformanceTier(vendor.totalSales || 0);
+                  return (
+                    <tr key={vendor._id} className={`border-b last:border-b-0 hover:bg-gray-50 transition-colors ${getPendingItemClasses(vendor.status)}`}>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            vendor.status === 'pending' ? 'bg-yellow-200' : 'bg-blue-100'
+                          }`}>
+                            <span className={`text-sm font-bold ${
+                              vendor.status === 'pending' ? 'text-yellow-700' : 'text-blue-700'
+                            }`}>
+                              {vendor.storeName?.charAt(0)?.toUpperCase() || 'V'}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-gray-900">{vendor.storeName}</p>
+                              {vendor.status === 'active' && vendor.totalSales > 0 && (
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${perfTier.color}`}>
+                                  {perfTier.icon} {perfTier.tier}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500">{vendor.userId?.name || 'N/A'}</p>
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-700">
-                          ID: {vendor._id.slice(-8)} • {formatRelativeTime(vendor.createdAt)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <p className="text-sm text-gray-900">{vendor.userId?.email || 'N/A'}</p>
+                        <p className="text-xs text-gray-500">{vendor.phone || 'No phone'}</p>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <Package className="w-4 h-4 text-gray-400" />
+                          <span className="font-medium">{vendor.totalProducts || 0}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <p className="font-semibold text-gray-900">
+                          {formatCurrency(vendor.totalSales || 0)}
                         </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 sm:px-4">
-                    <div>
-                      <p className="font-medium">{vendor.storeName}</p>
-                      <p className="text-xs text-gray-700">{vendor.slug}</p>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm">
-                    <div>
-                      <p className="font-medium">{vendor.userId?.email || 'N/A'}</p>
-                      <p className="text-xs text-gray-700">{vendor.phone || 'N/A'}</p>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 sm:px-4">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                        vendor.status
-                      )}`}
-                    >
-                      {getStatusIcon(vendor.status)}
-                      {vendor.status?.charAt(0).toUpperCase() + vendor.status?.slice(1)}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 sm:px-4">
-                    <div className="flex items-center gap-1">
-                      <Percent className="w-3 h-3 text-gray-400" />
-                      <span className="text-sm font-medium text-gray-900">
-                        {vendor.defaultCommissionPercentage || 15}%
-                      </span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 sm:px-4">
-                    <span
-                      className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                        vendor.kyc?.status === 'approved'
-                          ? 'bg-green-100 text-green-800'
-                          : vendor.kyc?.status === 'rejected'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {vendor.kyc?.status?.charAt(0).toUpperCase() + vendor.kyc?.status?.slice(1) || 'Pending'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-700">
-                    {new Date(vendor.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleView(vendor)}
-                        className="text-blue-600 hover:text-blue-700 px-3 py-1 rounded hover:bg-primary-50 text-sm font-medium"
-                        title="View Details"
-                      >
-                        View Details
-                      </button>
-                      {vendor.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => handleApprove(vendor._id)}
-                            className="text-green-600 hover:text-green-700 px-3 py-1 rounded hover:bg-green-50 text-sm font-medium flex items-center gap-1"
-                            title="Approve Vendor"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => handleReject(vendor._id)}
-                            className="text-red-600 hover:text-red-700 px-3 py-1 rounded hover:bg-red-50 text-sm font-medium flex items-center gap-1"
-                            title="Reject Vendor"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {vendor.status === 'active' && (
-                        <button
-                          onClick={() => handleSuspend(vendor._id)}
-                          className="text-yellow-600 hover:text-yellow-700 px-3 py-1 rounded hover:bg-yellow-50 text-sm font-medium flex items-center gap-1"
-                          title="Suspend Vendor"
+                        <p className="text-xs text-gray-500">
+                          {vendor.totalOrders || 0} orders
+                        </p>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        {vendor.rating > 0 ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                            <span className="font-medium">{vendor.rating.toFixed(1)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(vendor.status)}`}
                         >
-                          <UserX className="w-4 h-4" />
-                          Suspend
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(vendor._id, vendor.storeName)}
-                        className="text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 text-sm font-medium flex items-center gap-1"
-                        title="Delete Vendor (Permanent)"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                          {getStatusIcon(vendor.status)}
+                          {vendor.status?.charAt(0).toUpperCase() + vendor.status?.slice(1)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span
+                          className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
+                            vendor.kyc?.status === 'approved'
+                              ? 'bg-green-100 text-green-800'
+                              : vendor.kyc?.status === 'rejected'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
+                          {vendor.kyc?.status?.charAt(0).toUpperCase() + vendor.kyc?.status?.slice(1) || 'Pending'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className="font-medium text-gray-900">
+                          {vendor.defaultCommissionPercentage || 15}%
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleView(vendor)}
+                            className="text-blue-600 hover:text-blue-700 px-2 py-1 rounded hover:bg-blue-50 text-sm font-medium"
+                            title="View Details"
+                          >
+                            Details
+                          </button>
+                          {vendor.status === 'active' && (
+                            <a
+                              href={`/vendor/${vendor.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-600 hover:text-gray-700 p-1 rounded hover:bg-gray-100"
+                              title="View Store"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          )}
+                          {vendor.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(vendor._id)}
+                                className="text-green-600 hover:text-green-700 p-1 rounded hover:bg-green-50"
+                                title="Approve"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleReject(vendor._id)}
+                                className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                                title="Reject"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {vendor.status === 'active' && (
+                            <button
+                              onClick={() => handleSuspend(vendor._id)}
+                              className="text-yellow-600 hover:text-yellow-700 p-1 rounded hover:bg-yellow-50"
+                              title="Suspend"
+                            >
+                              <UserX className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDelete(vendor._id, vendor.storeName)}
+                            className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-6">
+            <div className="p-4 border-t">
               <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
             </div>
           )}
@@ -491,87 +640,134 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
       case 'suspended':
         return 'bg-red-100 text-red-800';
       case 'rejected':
-        return 'bg-blue-100 text-gray-900';
+        return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-blue-100 text-gray-900';
+        return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const perfTier = vendor.totalSales >= 1000000 ? { tier: 'Platinum', color: 'bg-purple-100 text-purple-800', icon: '💎' }
+    : vendor.totalSales >= 500000 ? { tier: 'Gold', color: 'bg-yellow-100 text-yellow-800', icon: '🥇' }
+    : vendor.totalSales >= 100000 ? { tier: 'Silver', color: 'bg-gray-200 text-gray-800', icon: '🥈' }
+    : { tier: 'Bronze', color: 'bg-orange-100 text-orange-800', icon: '🥉' };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold">{vendor.storeName}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700">
-            ✕
+        <div className="flex items-center justify-between p-6 border-b bg-gray-50">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
+              <span className="text-xl font-bold text-blue-700">
+                {vendor.storeName?.charAt(0)?.toUpperCase() || 'V'}
+              </span>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">{vendor.storeName}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full ${getStatusColor(vendor.status)}`}>
+                  {vendor.status?.charAt(0).toUpperCase() + vendor.status?.slice(1)}
+                </span>
+                {vendor.status === 'active' && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${perfTier.color}`}>
+                    {perfTier.icon} {perfTier.tier} Seller
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-2xl">
+            &times;
           </button>
         </div>
 
-        <div className="p-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-4 gap-4 p-6 bg-gray-50 border-b">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-gray-900">{vendor.productCount || 0}</p>
+            <p className="text-xs text-gray-500">Products</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-green-600">{formatCurrency(vendor.totalSales || 0)}</p>
+            <p className="text-xs text-gray-500">Total Sales</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-gray-900">{vendor.orderCount || 0}</p>
+            <p className="text-xs text-gray-500">Orders</p>
+          </div>
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-1">
+              <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
+              <p className="text-2xl font-bold text-gray-900">{vendor.avgRating?.toFixed(1) || '-'}</p>
+            </div>
+            <p className="text-xs text-gray-500">Avg Rating</p>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Vendor Information */}
             <div>
               <h3 className="text-lg font-semibold mb-4">Vendor Information</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Store Name</label>
-                  <p className="text-sm">{vendor.storeName}</p>
+              <div className="space-y-3 bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Store Name</span>
+                  <span className="text-sm font-medium">{vendor.storeName}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Store Slug</label>
-                  <p className="text-sm font-mono">{vendor.slug}</p>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Store URL</span>
+                  <span className="text-sm font-mono text-blue-600">/{vendor.slug}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Owner Name</label>
-                  <p className="text-sm">{vendor.userId?.name || 'N/A'}</p>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Owner</span>
+                  <span className="text-sm font-medium">{vendor.userId?.name || 'N/A'}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Email</label>
-                  <p className="text-sm">{vendor.userId?.email || 'N/A'}</p>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Email</span>
+                  <span className="text-sm">{vendor.userId?.email || 'N/A'}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Phone</label>
-                  <p className="text-sm">{vendor.phone || 'N/A'}</p>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Phone</span>
+                  <span className="text-sm">{vendor.phone || 'N/A'}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Status</label>
-                  <p className="text-sm">
-                    <span
-                      className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
-                        vendor.status
-                      )}`}
-                    >
-                      {vendor.status?.charAt(0).toUpperCase() + vendor.status?.slice(1)}
-                    </span>
-                  </p>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Joined</span>
+                  <span className="text-sm">{new Date(vendor.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </div>
 
-            {/* Business Information */}
+            {/* Business & KYC */}
             <div>
-              <h3 className="text-lg font-semibold mb-4">Business Information</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Business Name</label>
-                  <p className="text-sm">{vendor.kyc?.businessName || 'N/A'}</p>
+              <h3 className="text-lg font-semibold mb-4">Business & KYC</h3>
+              <div className="space-y-3 bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Business Name</span>
+                  <span className="text-sm font-medium">{vendor.kyc?.businessName || 'N/A'}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Business Type</label>
-                  <p className="text-sm capitalize">{vendor.kyc?.businessType || 'N/A'}</p>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Business Type</span>
+                  <span className="text-sm capitalize">{vendor.kyc?.businessType || 'N/A'}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Tax ID / PAN</label>
-                  <p className="text-sm font-mono">{vendor.kyc?.taxId || 'N/A'}</p>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Tax ID / PAN</span>
+                  <span className="text-sm font-mono">{vendor.kyc?.taxId || 'N/A'}</span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Description</label>
-                  <p className="text-sm">{vendor.description || 'N/A'}</p>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">KYC Status</span>
+                  <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                    vendor.kyc?.status === 'approved' ? 'bg-green-100 text-green-800' :
+                    vendor.kyc?.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {vendor.kyc?.status?.charAt(0).toUpperCase() + vendor.kyc?.status?.slice(1) || 'Pending'}
+                  </span>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Joined Date</label>
-                  <p className="text-sm">{new Date(vendor.createdAt).toLocaleDateString()}</p>
-                </div>
+                {vendor.kyc?.verifiedAt && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Verified On</span>
+                    <span className="text-sm">{new Date(vendor.kyc.verifiedAt).toLocaleDateString()}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -580,63 +776,24 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
           {vendor.bank && (
             <div className="mt-6">
               <h3 className="text-lg font-semibold mb-4">Bank Details</h3>
-              <div className="bg-blue-100 rounded-lg p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Account Holder Name</label>
-                    <p className="text-sm">{vendor.bank.accountName || 'N/A'}</p>
+                    <p className="text-xs text-gray-500">Account Holder</p>
+                    <p className="text-sm font-medium">{vendor.bank.accountName || 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Bank Name</label>
-                    <p className="text-sm">{vendor.bank.bankName || 'N/A'}</p>
+                    <p className="text-xs text-gray-500">Bank Name</p>
+                    <p className="text-sm font-medium">{vendor.bank.bankName || 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Account Number</label>
+                    <p className="text-xs text-gray-500">Account Number</p>
                     <p className="text-sm font-mono">{vendor.bank.accountNumber ? `****${vendor.bank.accountNumber.slice(-4)}` : 'N/A'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Routing/SWIFT</label>
-                    <p className="text-sm font-mono">{vendor.bank.routingNumber || vendor.bank.swiftCode || 'N/A'}</p>
+                    <p className="text-xs text-gray-500">IFSC Code</p>
+                    <p className="text-sm font-mono">{vendor.bank.routingNumber || vendor.bank.ifscCode || 'N/A'}</p>
                   </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* KYC Information */}
-          {vendor.kyc && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">KYC Status</h3>
-              <div className="bg-blue-100 rounded-lg p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">KYC Status</label>
-                    <p className="text-sm">
-                      <span
-                        className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                          vendor.kyc.status === 'approved'
-                            ? 'bg-green-100 text-green-800'
-                            : vendor.kyc.status === 'rejected'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}
-                      >
-                        {vendor.kyc.status?.charAt(0).toUpperCase() + vendor.kyc.status?.slice(1)}
-                      </span>
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Verified Date</label>
-                    <p className="text-sm">
-                      {vendor.kyc.verifiedAt ? new Date(vendor.kyc.verifiedAt).toLocaleDateString() : 'Not verified'}
-                    </p>
-                  </div>
-                  {vendor.kyc.rejectionReason && (
-                    <div className="md:col-span-2">
-                      <label className="text-sm font-medium text-gray-700">Rejection Reason</label>
-                      <p className="text-sm text-red-600">{vendor.kyc.rejectionReason}</p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -649,7 +806,7 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <label className="text-sm font-medium text-gray-700 mb-2 block">
-                    Default Platform Commission Rate
+                    Platform Commission Rate
                   </label>
                   {isEditingCommission ? (
                     <div className="flex items-center gap-3">
@@ -661,15 +818,12 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
                           step="0.5"
                           value={commissionValue}
                           onChange={(e) => setCommissionValue(parseFloat(e.target.value))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="Enter commission %"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
                       </div>
-                      <Button
-                        onClick={handleCommissionSave}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
+                      <Button onClick={handleCommissionSave} className="bg-green-600 hover:bg-green-700">
                         Save
                       </Button>
                       <Button
@@ -695,16 +849,12 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
                         onClick={() => setIsEditingCommission(true)}
                         className="border-blue-300 text-blue-600 hover:bg-blue-100"
                       >
-                        Change Commission
+                        Change
                       </Button>
                     </div>
                   )}
-                  <p className="text-xs text-gray-700 mt-2">
-                    This is the percentage the platform takes from each sale. The vendor receives{' '}
-                    <strong>{100 - (vendor.defaultCommissionPercentage || 15)}%</strong> of the sale amount.
-                  </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    💡 Individual products can override this with custom commission rates
+                  <p className="text-xs text-gray-600 mt-2">
+                    Vendor receives <strong>{100 - (vendor.defaultCommissionPercentage || 15)}%</strong> of each sale
                   </p>
                 </div>
               </div>
@@ -721,7 +871,7 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
           </div>
 
           {/* Actions */}
-          <div className="mt-6 flex items-center justify-between gap-4">
+          <div className="mt-6 flex items-center justify-between gap-4 pt-4 border-t">
             <Button
               onClick={onDelete}
               variant="outline"
@@ -730,23 +880,23 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
               <Trash2 className="w-4 h-4" />
               Delete Vendor
             </Button>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <Button variant="outline" onClick={onClose}>
                 Close
               </Button>
               {vendor.status === 'pending' && (
                 <>
                   <Button onClick={onApprove} className="bg-green-600 hover:bg-green-700">
-                    Approve Vendor
+                    Approve
                   </Button>
                   <Button onClick={onReject} variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
-                    Reject Vendor
+                    Reject
                   </Button>
                 </>
               )}
               {vendor.status === 'active' && (
                 <Button onClick={onSuspend} variant="outline" className="border-yellow-300 text-yellow-600 hover:bg-yellow-50">
-                  Suspend Vendor
+                  Suspend
                 </Button>
               )}
             </div>

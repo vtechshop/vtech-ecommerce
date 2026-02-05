@@ -73,6 +73,8 @@ exports.getStats = async (req, res, next) => {
       byStatus,
       recentCount,
       failedCount,
+      deliveredCount,
+      pendingCount,
     ] = await Promise.all([
       Communication.countDocuments(),
       Communication.aggregate([
@@ -85,6 +87,8 @@ exports.getStats = async (req, res, next) => {
         createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
       }),
       Communication.countDocuments({ status: 'failed' }),
+      Communication.countDocuments({ status: 'delivered' }),
+      Communication.countDocuments({ status: 'pending' }),
     ]);
 
     res.json({
@@ -93,6 +97,8 @@ exports.getStats = async (req, res, next) => {
         total: totalCount,
         recent24h: recentCount,
         failed: failedCount,
+        delivered: deliveredCount,
+        pending: pendingCount,
         byType: byType.reduce((acc, item) => {
           acc[item._id] = item.count;
           return acc;
@@ -313,6 +319,178 @@ exports.sendMarketingCampaign = async (req, res, next) => {
     res.json({
       success: true,
       data: { sent: communications.length, communications }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Mark communication as read
+exports.markAsRead = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const communication = await Communication.findByIdAndUpdate(
+      id,
+      { status: 'read', readAt: new Date() },
+      { new: true }
+    );
+
+    if (!communication) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Communication not found' },
+      });
+    }
+
+    logger.info(`Communication marked as read: ${communication._id}`);
+    res.json({ success: true, data: communication });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Bulk update communications
+exports.bulkUpdateCommunications = async (req, res, next) => {
+  try {
+    const { ids, action, status, priority, tags } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'IDs array is required' },
+      });
+    }
+
+    // Handle action-based bulk operations
+    if (action) {
+      if (action === 'delete') {
+        const result = await Communication.deleteMany({ _id: { $in: ids } });
+        logger.info(`Bulk delete communications: ${result.deletedCount} deleted`);
+        return res.json({
+          success: true,
+          data: { deleted: result.deletedCount },
+          message: `${result.deletedCount} communications deleted`,
+        });
+      }
+
+      if (action === 'read') {
+        const result = await Communication.updateMany(
+          { _id: { $in: ids } },
+          { status: 'read', readAt: new Date() }
+        );
+        logger.info(`Bulk mark as read: ${result.modifiedCount} updated`);
+        return res.json({
+          success: true,
+          data: { modified: result.modifiedCount },
+          message: `${result.modifiedCount} communications marked as read`,
+        });
+      }
+
+      if (action === 'archive') {
+        const result = await Communication.updateMany(
+          { _id: { $in: ids } },
+          { $addToSet: { tags: 'archived' } }
+        );
+        logger.info(`Bulk archive: ${result.modifiedCount} archived`);
+        return res.json({
+          success: true,
+          data: { modified: result.modifiedCount },
+          message: `${result.modifiedCount} communications archived`,
+        });
+      }
+    }
+
+    // Handle field-based updates
+    const updateData = {};
+
+    if (status) {
+      const validStatuses = ['pending', 'sent', 'delivered', 'failed', 'read'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_STATUS', message: 'Invalid status value' },
+        });
+      }
+      updateData.status = status;
+      if (status === 'read') updateData.readAt = new Date();
+    }
+
+    if (priority) {
+      const validPriorities = ['low', 'normal', 'high', 'urgent'];
+      if (!validPriorities.includes(priority)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_PRIORITY', message: 'Invalid priority value' },
+        });
+      }
+      updateData.priority = priority;
+    }
+
+    if (tags && Array.isArray(tags)) {
+      updateData.tags = tags;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'NO_UPDATE', message: 'No valid update fields provided' },
+      });
+    }
+
+    const result = await Communication.updateMany(
+      { _id: { $in: ids } },
+      updateData
+    );
+
+    logger.info(`Bulk update communications: ${result.modifiedCount} updated`);
+    res.json({
+      success: true,
+      data: {
+        modified: result.modifiedCount,
+        matched: result.matchedCount,
+      },
+      message: `${result.modifiedCount} communications updated`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Resend failed communication
+exports.resendCommunication = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const communication = await Communication.findById(id);
+    if (!communication) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Communication not found' },
+      });
+    }
+
+    if (communication.status !== 'failed') {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Only failed communications can be resent' },
+      });
+    }
+
+    // Reset status to pending for retry
+    communication.status = 'pending';
+    communication.errorMessage = null;
+    communication.failedAt = null;
+    await communication.save();
+
+    // TODO: Actually trigger resend based on type
+    // This would call the appropriate send method
+
+    logger.info(`Communication queued for resend: ${communication._id}`);
+    res.json({
+      success: true,
+      data: communication,
+      message: 'Communication queued for resend',
     });
   } catch (error) {
     next(error);

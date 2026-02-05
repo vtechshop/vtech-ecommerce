@@ -10,8 +10,11 @@ router.use(authenticate);
 // Admin-only routes
 router.get('/', authorize(['admin']), communication.getAllCommunications);
 router.get('/stats', authorize(['admin']), communication.getStats);
+router.post('/bulk-update', authorize(['admin']), communication.bulkUpdateCommunications);
 router.get('/:id', authorize(['admin']), communication.getCommunicationById);
 router.put('/:id', authorize(['admin']), communication.updateCommunication);
+router.put('/:id/read', authorize(['admin']), communication.markAsRead);
+router.post('/:id/resend', authorize(['admin']), communication.resendCommunication);
 router.delete('/:id', authorize(['admin']), communication.deleteCommunication);
 
 // Send messages (admin only)

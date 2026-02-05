@@ -39,10 +39,13 @@ router.get('/security/stats', (req, res) => {
 
 // Users - SECURITY: Added ObjectId validation
 router.get('/users', admin.getUsers);
+router.get('/users/stats', admin.getUserStats);
 router.get('/users/:id', validateObjectId('id'), admin.getUserById);
+router.get('/users/:id/activity', validateObjectId('id'), admin.getUserActivity);
 router.put('/users/:id', validateObjectId('id'), admin.updateUser);
 router.delete('/users/:id', validateObjectId('id'), admin.deleteUser);
 router.put('/users/:id/reset-password', validateObjectId('id'), admin.resetUserPassword);
+router.post('/users/bulk-update', admin.bulkUpdateUsers);
 
 // Products - SECURITY: Added ObjectId validation
 router.get('/products', admin.getProducts);
@@ -68,6 +71,7 @@ router.put('/orders/:id/status', validateObjectId('id'), admin.updateOrderStatus
 
 // Vendors - SECURITY: Added ObjectId validation
 router.get('/vendors', admin.getVendors);
+router.get('/vendors/stats', admin.getVendorStats);
 router.put('/vendors/:id/approve', validateObjectId('id'), admin.approveVendor);
 router.put('/vendors/:id/reject', validateObjectId('id'), admin.rejectVendor);
 router.put('/vendors/:id/suspend', validateObjectId('id'), admin.suspendVendor);
@@ -78,6 +82,7 @@ router.put('/vendors/:id/settlement-config', validateObjectId('id'), admin.updat
 
 // Affiliates - SECURITY: Added ObjectId validation
 router.get('/affiliates', admin.getAffiliates);
+router.get('/affiliates/stats', admin.getAffiliateStats);
 router.put('/affiliates/:id/approve', validateObjectId('id'), admin.approveAffiliate);
 router.put('/affiliates/:id/reject', validateObjectId('id'), admin.rejectAffiliate);
 router.put('/affiliates/:id/suspend', validateObjectId('id'), admin.suspendAffiliate);
@@ -138,6 +143,9 @@ router.put('/pages/:id', validateObjectId('id'), admin.updatePage);
 router.delete('/pages/:id', validateObjectId('id'), admin.deletePage);
 
 // Settings
+router.get('/settings/stats', admin.getSettingsStats);
+router.get('/settings/export', admin.exportSettings);
+router.post('/settings/bulk-update', admin.bulkUpdateSettings);
 router.get('/settings', admin.getSettings);
 router.put('/settings/:key', admin.updateSetting);
 
@@ -145,11 +153,14 @@ router.put('/settings/:key', admin.updateSetting);
 router.get('/audit-logs', admin.getAuditLogs);
 
 // Contact Submissions
+router.get('/contact-submissions/stats', admin.getContactSubmissionStats);
 router.get('/contact-submissions', admin.getContactSubmissions);
-router.get('/contact-submissions/:id', admin.getContactSubmissionById);
-router.put('/contact-submissions/:id/status', admin.updateContactSubmissionStatus);
-router.put('/contact-submissions/:id/notes', admin.updateContactSubmissionNotes);
-router.delete('/contact-submissions/:id', admin.deleteContactSubmission);
+router.get('/contact-submissions/:id', validateObjectId('id'), admin.getContactSubmissionById);
+router.put('/contact-submissions/:id/status', validateObjectId('id'), admin.updateContactSubmissionStatus);
+router.put('/contact-submissions/:id/notes', validateObjectId('id'), admin.updateContactSubmissionNotes);
+router.post('/contact-submissions/:id/reply', validateObjectId('id'), admin.replyToContactSubmission);
+router.delete('/contact-submissions/:id', validateObjectId('id'), admin.deleteContactSubmission);
+router.post('/contact-submissions/bulk-update', admin.bulkUpdateContactSubmissions);
 
 // KYC Management
 router.get('/kyc/pending', admin.getPendingKYC);
@@ -161,16 +172,25 @@ router.put('/kyc/affiliates/:id/approve', admin.approveAffiliateKYC);
 router.put('/kyc/affiliates/:id/reject', admin.rejectAffiliateKYC);
 
 // Reviews Management
+router.get('/reviews/stats', admin.getReviewStats);
 router.get('/reviews', admin.getReviews);
-router.get('/reviews/:id', admin.getReviewById);
-router.put('/reviews/:id/status', admin.updateReviewStatus);
-router.delete('/reviews/:id', admin.deleteReview);
-router.put('/reviews/:id/respond', admin.respondToReview);
+router.get('/reviews/:id', validateObjectId('id'), admin.getReviewById);
+router.put('/reviews/:id/status', validateObjectId('id'), admin.updateReviewStatus);
+router.delete('/reviews/:id', validateObjectId('id'), admin.deleteReview);
+router.put('/reviews/:id/respond', validateObjectId('id'), admin.respondToReview);
+router.post('/reviews/bulk-update', admin.bulkUpdateReviews);
 
 // CRM - Customer Relationship Management
 router.get('/crm/stats', crm.getCRMStats);
 router.get('/crm/customers', crm.getCRMCustomers);
 router.get('/crm/customers/:id/orders', crm.getCustomerOrders);
+
+// CRM - Support Tickets
+router.get('/crm/tickets/stats', crm.getTicketStats);
+router.get('/crm/tickets', crm.getTickets);
+router.put('/crm/tickets/:id/status', validateObjectId('id'), crm.updateTicketStatus);
+router.put('/crm/tickets/:id/priority', validateObjectId('id'), crm.updateTicketPriority);
+router.post('/crm/tickets/:id/reply', validateObjectId('id'), crm.replyToTicket);
 
 // Payments
 router.get('/payments/stats', admin.getPaymentStats);
@@ -190,5 +210,12 @@ router.post('/carousel', admin.createCarouselItem);
 router.put('/carousel/:id', validateObjectId('id'), admin.updateCarouselItem);
 router.delete('/carousel/:id', validateObjectId('id'), admin.deleteCarouselItem);
 router.put('/carousel/reorder', admin.reorderCarouselItems);
+
+// Inventory Management (Amazon-style)
+router.get('/inventory/stats', admin.getInventoryStats);
+router.get('/inventory/export', admin.exportInventory);
+router.get('/inventory', admin.getInventory);
+router.put('/inventory/:productId/stock', validateObjectId('productId'), admin.updateInventoryStock);
+router.post('/inventory/:productId/restock-reminder', validateObjectId('productId'), admin.sendRestockReminder);
 
 module.exports = router;
