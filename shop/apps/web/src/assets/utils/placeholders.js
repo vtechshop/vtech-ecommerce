@@ -63,18 +63,18 @@ export const getResponsiveImageUrls = (url) => {
     baseUrl = url.replace(`/upload/${uploadMatch[1]}/`, '/upload/');
   }
 
-  // Mobile-first responsive widths
-  const widths = [150, 200, 300];
+  // Mobile-first responsive widths - smaller sizes for mobile
+  const widths = [100, 150, 200];
   const srcSet = widths.map(w => {
     const optimized = baseUrl.replace('/upload/', `/upload/q_auto,f_auto,w_${w},c_fill/`);
     return `${optimized} ${w}w`;
   }).join(', ');
 
-  // Default src optimized for mobile
-  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_200,c_fill/');
+  // Default src optimized for mobile (smallest practical size)
+  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_150,c_fill/');
 
-  // Sizes attribute for responsive behavior
-  const sizes = '(max-width: 640px) 150px, (max-width: 1024px) 200px, 300px';
+  // Sizes attribute - match actual display sizes on mobile
+  const sizes = '(max-width: 480px) 100px, (max-width: 768px) 150px, 200px';
 
   return { src, srcSet, sizes };
 };

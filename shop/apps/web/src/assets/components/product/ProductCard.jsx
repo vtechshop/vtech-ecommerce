@@ -87,10 +87,10 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
               <img
                 src={src}
                 srcSet={srcSet}
-                sizes={sizes || '(max-width: 640px) 150px, (max-width: 1024px) 200px, 300px'}
+                sizes={sizes || '(max-width: 480px) 100px, (max-width: 768px) 150px, 200px'}
                 alt={product.seo?.title || product.title}
-                width={200}
-                height={200}
+                width={150}
+                height={150}
                 loading="lazy"
                 decoding="async"
                 className="etsy-image w-full h-full object-contain p-3"
