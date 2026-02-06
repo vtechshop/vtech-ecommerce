@@ -192,8 +192,8 @@ const Home = React.memo(() => {
               </section>
             )}
 
-            {/* Featured Products */}
-            <section className="mb-8">
+            {/* Featured Products - contain layout to prevent CLS */}
+            <section className="mb-8" style={{ contain: 'layout' }}>
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl md:text-2xl font-bold">{t('home.featuredProducts')}</h2>
                 <Link to="/products?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold">
@@ -201,28 +201,39 @@ const Home = React.memo(() => {
                 </Link>
               </div>
 
-              {/* Always render grid container with same layout to prevent CLS */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+              {/* Grid with stable layout - contain to prevent CLS propagation */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6" style={{ contain: 'layout style' }}>
                 {isLoading ? (
-                  // Skeleton placeholders - MUST match ProductCard height exactly
+                  // Skeleton placeholders - EXACTLY match ProductCard height
                   [...Array(8)].map((_, i) => (
                     <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-pulse h-full">
                       <div className="aspect-square bg-gray-200"></div>
-                      <div className="p-3 sm:p-4 space-y-3">
-                        <div className="h-3 bg-gray-200 rounded w-20"></div>
-                        <div className="space-y-2">
-                          <div className="h-4 bg-gray-200 rounded w-full"></div>
+                      <div className="p-3 sm:p-4">
+                        {/* Vendor name - mb-2 like ProductCard */}
+                        <div className="h-3 bg-gray-200 rounded w-20 mb-2"></div>
+                        {/* Title - mb-2 leading-snug like ProductCard */}
+                        <div className="mb-2">
+                          <div className="h-4 bg-gray-200 rounded w-full mb-1"></div>
                           <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                         </div>
-                        <div className="flex gap-1">
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
-                          <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                        {/* Rating - mb-3 like ProductCard */}
+                        <div className="flex items-center gap-1 mb-3">
+                          <div className="flex gap-0.5">
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="h-3 bg-gray-200 rounded w-8 ml-1"></div>
                         </div>
-                        <div className="h-6 bg-gray-200 rounded w-24"></div>
+                        {/* Price - mb-3 like ProductCard */}
+                        <div className="flex items-baseline gap-2 mb-3">
+                          <div className="h-6 sm:h-7 bg-gray-200 rounded w-20"></div>
+                          <div className="h-4 bg-gray-200 rounded w-14"></div>
+                        </div>
                       </div>
+                      {/* Button - desktop only, exact padding match */}
                       <div className="px-3 sm:px-4 pb-3 sm:pb-4 hidden sm:block">
                         <div className="h-10 bg-gray-200 rounded-lg w-full"></div>
                       </div>
