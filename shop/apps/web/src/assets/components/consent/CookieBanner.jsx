@@ -2,7 +2,7 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { acceptAll, rejectNonEssential, showBanner } from '@/store/slices/consentSlice';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import useAuth from '@/hooks/useAuth';
@@ -18,6 +18,18 @@ const CookieBanner = () => {
     marketing: false,
   });
 
+  // Delay banner render to not affect LCP
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // Wait for page to be interactive before showing banner
+    const timer = setTimeout(() => {
+      setIsReady(true);
+    }, 2000); // 2 second delay
+
+    return () => clearTimeout(timer);
+  }, []);
+
   // Don't show banner for admin users
   if (isAdmin) {
     return null;
@@ -27,6 +39,9 @@ const CookieBanner = () => {
   if (typeof window !== 'undefined' && window.playwright) {
     return null;
   }
+
+  // Don't show until page is ready (prevents LCP impact)
+  if (!isReady) return null;
 
   if (!bannerVisible) return null;
 
