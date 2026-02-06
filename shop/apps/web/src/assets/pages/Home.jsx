@@ -185,8 +185,8 @@ const Home = React.memo(() => {
               </section>
             )}
 
-            {/* Featured Products - min-height prevents CLS */}
-            <section className="mb-8 min-h-[500px]">
+            {/* Featured Products */}
+            <section className="mb-8">
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl md:text-2xl font-bold">{t('home.featuredProducts')}</h2>
                 <Link to="/products?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold">
@@ -194,21 +194,31 @@ const Home = React.memo(() => {
                 </Link>
               </div>
 
-              {isLoading ? (
-                <ProductGridSkeleton count={8} />
-              ) : featuredProducts?.length > 0 ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
-                  {featuredProducts.map((p) => (
-                    <div key={p._id}>
-                      <ProductCard product={p} />
+              {/* Always render grid container with same layout to prevent CLS */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+                {isLoading ? (
+                  // Skeleton placeholders - 8 items to match expected content
+                  [...Array(8)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-pulse">
+                      <div className="aspect-square bg-gray-200"></div>
+                      <div className="p-3 sm:p-4 space-y-3">
+                        <div className="h-3 bg-gray-200 rounded w-20"></div>
+                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-6 bg-gray-200 rounded w-24"></div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <p>{t('home.noFeaturedProducts')}</p>
-                </div>
-              )}
+                  ))
+                ) : featuredProducts?.length > 0 ? (
+                  featuredProducts.map((p) => (
+                    <ProductCard key={p._id} product={p} />
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-12 text-gray-500">
+                    <p>{t('home.noFeaturedProducts')}</p>
+                  </div>
+                )}
+              </div>
             </section>
 
             {/* Sponsored Ad - Middle */}
@@ -231,9 +241,9 @@ const Home = React.memo(() => {
               </section>
             )}
 
-            {/* Join as Vendor or Affiliate - min-height prevents CLS */}
+            {/* Join as Vendor or Affiliate */}
             {(user?.role !== 'vendor' || user?.role !== 'affiliate') && (
-              <section className="mb-8 min-h-[400px]">
+              <section className="mb-8">
                 <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
                 <div className={`grid gap-6 ${
                   user?.role === 'vendor' || user?.role === 'affiliate'
