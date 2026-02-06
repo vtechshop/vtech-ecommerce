@@ -1,17 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import api from '@/utils/api';
 import ProductCard from '@/components/product/ProductCard';
-import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
-import FlashSaleBanner from '@/components/flash-sale/FlashSaleBanner';
-import ProductRecommendations from '@/components/product/ProductRecommendations';
-import SponsorAd from '@/components/ads/SponsorAd';
 import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
-import ThreeDCarousel from '@/components/home/ThreeDCarousel';
+
+// Lazy load below-fold components for better initial load
+const FlashSaleBanner = lazy(() => import('@/components/flash-sale/FlashSaleBanner'));
+const ProductRecommendations = lazy(() => import('@/components/product/ProductRecommendations'));
+const SponsorAd = lazy(() => import('@/components/ads/SponsorAd'));
+const ThreeDCarousel = lazy(() => import('@/components/home/ThreeDCarousel'));
 
 const Home = React.memo(() => {
   const { t } = useTranslation();
@@ -124,9 +125,11 @@ const Home = React.memo(() => {
         }`}>
           {/* Left Sidebar */}
           {!leftLoading && leftAd && (
-            <aside className="lg:col-span-1">
-              <SponsorAd ad={leftAd} variant="sidebar" />
-            </aside>
+            <Suspense fallback={null}>
+              <aside className="lg:col-span-1">
+                <SponsorAd ad={leftAd} variant="sidebar" />
+              </aside>
+            </Suspense>
           )}
 
           {/* Main Content */}
@@ -140,18 +143,22 @@ const Home = React.memo(() => {
 
             {/* Flash Sales */}
             {flashSales && flashSales.length > 0 && (
-              <section className="mb-8">
-                {flashSales.map((sale) => (
-                  <FlashSaleBanner key={sale._id} sale={sale} />
-                ))}
-              </section>
+              <Suspense fallback={<div className="mb-8 h-24 bg-gray-100 rounded-lg animate-pulse"></div>}>
+                <section className="mb-8">
+                  {flashSales.map((sale) => (
+                    <FlashSaleBanner key={sale._id} sale={sale} />
+                  ))}
+                </section>
+              </Suspense>
             )}
 
             {/* Sponsored Banner */}
             {!bannerLoading && bannerAd && (
-              <section className="mb-8">
-                <SponsorAd ad={bannerAd} variant="banner" />
-              </section>
+              <Suspense fallback={null}>
+                <section className="mb-8">
+                  <SponsorAd ad={bannerAd} variant="banner" />
+                </section>
+              </Suspense>
             )}
 
             {/* Categories */}
@@ -223,22 +230,26 @@ const Home = React.memo(() => {
 
             {/* Sponsored Ad - Middle */}
             {!middleLoading && middleAd && (
-              <section className="mb-8">
-                <SponsorAd ad={middleAd} variant="banner" />
-              </section>
+              <Suspense fallback={null}>
+                <section className="mb-8">
+                  <SponsorAd ad={middleAd} variant="banner" />
+                </section>
+              </Suspense>
             )}
 
             {/* 3D Carousel - Featured Brands/Categories */}
             {carouselItems && carouselItems.length > 0 && (
-              <section className="mb-8">
-                <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
-                <ThreeDCarousel
-                  items={carouselItems.map(item => ({ ...item, id: item._id }))}
-                  autoRotate={true}
-                  rotateInterval={5000}
-                  cardHeight={560}
-                />
-              </section>
+              <Suspense fallback={<div className="mb-8 h-96 bg-gray-100 rounded-lg animate-pulse"></div>}>
+                <section className="mb-8">
+                  <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
+                  <ThreeDCarousel
+                    items={carouselItems.map(item => ({ ...item, id: item._id }))}
+                    autoRotate={true}
+                    rotateInterval={5000}
+                    cardHeight={560}
+                  />
+                </section>
+              </Suspense>
             )}
 
             {/* Join as Vendor or Affiliate */}
@@ -347,39 +358,47 @@ const Home = React.memo(() => {
 
             {/* Personalized Recommendations */}
             {user && (
-              <section className="mb-8">
-                <ProductRecommendations
-                  type="personalized"
-                  limit={8}
-                  showViewAll={true}
-                  viewAllLink="/products"
-                />
-              </section>
+              <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
+                <section className="mb-8">
+                  <ProductRecommendations
+                    type="personalized"
+                    limit={8}
+                    showViewAll={true}
+                    viewAllLink="/products"
+                  />
+                </section>
+              </Suspense>
             )}
 
             {/* Trending Products */}
-            <section className="mb-8">
-              <ProductRecommendations
-                type="trending"
-                limit={8}
-                showViewAll={true}
-                viewAllLink="/products?sort=-sold"
-              />
-            </section>
+            <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
+              <section className="mb-8">
+                <ProductRecommendations
+                  type="trending"
+                  limit={8}
+                  showViewAll={true}
+                  viewAllLink="/products?sort=-sold"
+                />
+              </section>
+            </Suspense>
 
             {/* Sponsored Ad - Bottom */}
             {!bottomLoading && bottomAd && (
-              <section className="mb-8">
-                <SponsorAd ad={bottomAd} variant="banner" />
-              </section>
+              <Suspense fallback={null}>
+                <section className="mb-8">
+                  <SponsorAd ad={bottomAd} variant="banner" />
+                </section>
+              </Suspense>
             )}
           </main>
 
           {/* Right Sidebar */}
           {!rightLoading && rightAd && (
-            <aside className="lg:col-span-1">
-              <SponsorAd ad={rightAd} variant="sidebar" />
-            </aside>
+            <Suspense fallback={null}>
+              <aside className="lg:col-span-1">
+                <SponsorAd ad={rightAd} variant="sidebar" />
+              </aside>
+            </Suspense>
           )}
         </div>
 
