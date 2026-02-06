@@ -28,7 +28,7 @@ export const handleImageError = (e, placeholder = PLACEHOLDER_IMAGE) => {
  * @returns {string} - Optimized Cloudinary URL
  */
 const optimizeCloudinaryUrl = (url, options = {}) => {
-  const { width = 300, quality = 'auto', format = 'auto' } = options;
+  const { width = 200, quality = 'auto', format = 'auto' } = options;
 
   // Check if it's a Cloudinary URL
   if (!url.includes('res.cloudinary.com')) {
@@ -40,10 +40,43 @@ const optimizeCloudinaryUrl = (url, options = {}) => {
     return url;
   }
 
-  // Add transformations to Cloudinary URL
-  // Pattern: .../upload/[transformations]/...
-  const transformations = `q_${quality},f_${format},w_${width}`;
+  // Add transformations to Cloudinary URL with c_fill for proper cropping
+  const transformations = `q_${quality},f_${format},w_${width},c_fill`;
   return url.replace('/upload/', `/upload/${transformations}/`);
+};
+
+/**
+ * Generate srcset for responsive Cloudinary images
+ * @param {string} url - Cloudinary URL
+ * @returns {object} - { src, srcSet, sizes } for responsive images
+ */
+export const getResponsiveImageUrls = (url) => {
+  if (!url || !url.includes('res.cloudinary.com')) {
+    return { src: url, srcSet: null, sizes: null };
+  }
+
+  // Remove existing transformations if any
+  let baseUrl = url;
+  const uploadMatch = url.match(/\/upload\/([^/]+)\//);
+  if (uploadMatch && uploadMatch[1].includes(',')) {
+    // Has transformations (comma-separated), remove them
+    baseUrl = url.replace(`/upload/${uploadMatch[1]}/`, '/upload/');
+  }
+
+  // Mobile-first responsive widths
+  const widths = [150, 200, 300];
+  const srcSet = widths.map(w => {
+    const optimized = baseUrl.replace('/upload/', `/upload/q_auto,f_auto,w_${w},c_fill/`);
+    return `${optimized} ${w}w`;
+  }).join(', ');
+
+  // Default src optimized for mobile
+  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_200,c_fill/');
+
+  // Sizes attribute for responsive behavior
+  const sizes = '(max-width: 640px) 150px, (max-width: 1024px) 200px, 300px';
+
+  return { src, srcSet, sizes };
 };
 
 /**

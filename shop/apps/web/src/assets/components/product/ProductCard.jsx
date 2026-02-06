@@ -6,7 +6,7 @@ import { useDispatch } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
 import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency } from '@/utils/format';
-import { normalizeImageUrl } from '@/utils/placeholders';
+import { normalizeImageUrl, getResponsiveImageUrls } from '@/utils/placeholders';
 import { useAddToCartAnimation } from '@/components/animations/AddToCartAnimation';
 import { playAddToCart, playError } from '@/utils/sounds';
 
@@ -81,15 +81,22 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
       {/* Image Container */}
       <div className="relative aspect-square bg-gray-50 overflow-hidden">
         {product.images && product.images.length > 0 ? (
-          <img
-            src={normalizeImageUrl(product.images[0], { width: 300 })}
-            alt={product.seo?.title || product.title}
-            width={284}
-            height={284}
-            loading="lazy"
-            decoding="async"
-            className="etsy-image w-full h-full object-contain p-3"
-          />
+          (() => {
+            const { src, srcSet, sizes } = getResponsiveImageUrls(product.images[0]);
+            return (
+              <img
+                src={src}
+                srcSet={srcSet}
+                sizes={sizes || '(max-width: 640px) 150px, (max-width: 1024px) 200px, 300px'}
+                alt={product.seo?.title || product.title}
+                width={200}
+                height={200}
+                loading="lazy"
+                decoding="async"
+                className="etsy-image w-full h-full object-contain p-3"
+              />
+            );
+          })()
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
             No image
