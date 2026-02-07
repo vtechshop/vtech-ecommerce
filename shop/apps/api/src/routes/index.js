@@ -51,6 +51,7 @@ router.use('/payment', paymentRoutes);
 router.use('/products', productRoutes);
 router.use('/user', userRoutes);
 router.use('/communication', communicationRoutes);
+router.use('/communications', communicationRoutes); // Alias for plural form
 router.use('/upload', uploadRoutes);
 router.use('/flash-sales', flashSaleRoutes);
 router.use('/recommendations', recommendationRoutes);

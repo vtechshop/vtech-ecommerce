@@ -1,15 +1,42 @@
 // FILE: apps/web/src/pages/dashboard/admin/AdminDashboard.jsx
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import api from '@/utils/api';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, TrendingDown, AlertCircle, Package, UserCheck, MessageSquare, ChevronRight } from 'lucide-react';
+
+// Time period options
+const TIME_PERIODS = [
+  { value: 'today', label: 'Today' },
+  { value: '7days', label: '7 Days' },
+  { value: '30days', label: '30 Days' },
+  { value: 'month', label: 'This Month' },
+];
+
+// Trend indicator component
+const TrendIndicator = ({ current, previous, suffix = '' }) => {
+  if (!previous || previous === 0) return null;
+  const change = ((current - previous) / previous) * 100;
+  const isPositive = change >= 0;
+
+  return (
+    <span className={`inline-flex items-center text-xs font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+      {isPositive ? <TrendingUp className="w-3 h-3 mr-0.5" /> : <TrendingDown className="w-3 h-3 mr-0.5" />}
+      {Math.abs(change).toFixed(1)}%{suffix}
+    </span>
+  );
+};
 
 const AdminDashboard = () => {
+  const [period, setPeriod] = useState('30days');
+
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['admin-stats'],
+    queryKey: ['admin-stats', period],
     queryFn: async () => {
-      const response = await api.get('/admin/dashboard/stats');
+      const response = await api.get(`/admin/dashboard/stats?period=${period}`);
       return response.data.data;
     },
   });
@@ -35,11 +62,82 @@ const AdminDashboard = () => {
   const vendorComm = comm.vendor || {};
   const affiliateComm = comm.affiliate || {};
 
+  // Calculate pending actions for alert banner
+  const pendingOrders = stats?.pendingOrders || 0;
+  const pendingKYC = stats?.pendingKYC || 0;
+  const pendingTickets = stats?.pendingTickets || 0;
+  const pendingVendorPayouts = vendorComm.pendingCount || 0;
+  const totalPendingActions = pendingOrders + pendingKYC + pendingTickets + pendingVendorPayouts;
+
   return (
     <div>
-      <h1 className="text-3xl md:text-4xl font-bold mb-8 fade-in-down">Admin Dashboard</h1>
+      {/* Header with Title and Time Period Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h1 className="text-3xl md:text-4xl font-bold fade-in-down">Admin Dashboard</h1>
 
-      {/* Stats Grid */}
+        {/* Time Period Tabs */}
+        <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+          {TIME_PERIODS.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => setPeriod(p.value)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                period === p.value
+                  ? 'bg-white text-primary-700 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Alert Banner - Pending Actions */}
+      {totalPendingActions > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 fade-in">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-amber-800 text-sm mb-2">
+                You have {totalPendingActions} pending action{totalPendingActions > 1 ? 's' : ''}
+              </h3>
+              <div className="flex flex-wrap gap-3 text-sm">
+                {pendingOrders > 0 && (
+                  <Link to="/admin-dashboard/orders?status=pending" className="inline-flex items-center gap-1.5 text-amber-700 hover:text-amber-900 bg-amber-100 px-2.5 py-1 rounded-full">
+                    <Package className="w-3.5 h-3.5" />
+                    {pendingOrders} orders to ship
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                )}
+                {pendingKYC > 0 && (
+                  <Link to="/admin-dashboard/kyc-review" className="inline-flex items-center gap-1.5 text-amber-700 hover:text-amber-900 bg-amber-100 px-2.5 py-1 rounded-full">
+                    <UserCheck className="w-3.5 h-3.5" />
+                    {pendingKYC} KYC reviews
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                )}
+                {pendingTickets > 0 && (
+                  <Link to="/admin-dashboard/tickets" className="inline-flex items-center gap-1.5 text-amber-700 hover:text-amber-900 bg-amber-100 px-2.5 py-1 rounded-full">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    {pendingTickets} support tickets
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                )}
+                {pendingVendorPayouts > 0 && (
+                  <Link to="/admin-dashboard/vendor-commissions" className="inline-flex items-center gap-1.5 text-amber-700 hover:text-amber-900 bg-amber-100 px-2.5 py-1 rounded-full">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    {pendingVendorPayouts} vendor payouts
+                    <ChevronRight className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Grid with Trend Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-1 hover-lift">
           <div className="flex items-center justify-between mb-2">
@@ -49,6 +147,13 @@ const AdminDashboard = () => {
             </svg>
           </div>
           <p className="text-3xl font-bold">{stats?.totalUsers || 0}</p>
+          <div className="mt-1">
+            <TrendIndicator
+              current={stats?.totalUsers}
+              previous={stats?.previousPeriod?.totalUsers}
+              suffix=" vs prev"
+            />
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-2 hover-lift">
@@ -59,6 +164,13 @@ const AdminDashboard = () => {
             </svg>
           </div>
           <p className="text-3xl font-bold">{stats?.totalVendors || 0}</p>
+          <div className="mt-1">
+            <TrendIndicator
+              current={stats?.totalVendors}
+              previous={stats?.previousPeriod?.totalVendors}
+              suffix=" vs prev"
+            />
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-3 hover-lift">
@@ -69,6 +181,13 @@ const AdminDashboard = () => {
             </svg>
           </div>
           <p className="text-3xl font-bold">{stats?.totalProducts || 0}</p>
+          <div className="mt-1">
+            <TrendIndicator
+              current={stats?.totalProducts}
+              previous={stats?.previousPeriod?.totalProducts}
+              suffix=" vs prev"
+            />
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 fade-in stagger-4 hover-lift">
@@ -79,6 +198,13 @@ const AdminDashboard = () => {
             </svg>
           </div>
           <p className="text-3xl font-bold">{formatCurrency(stats?.totalRevenue || 0)}</p>
+          <div className="mt-1">
+            <TrendIndicator
+              current={stats?.totalRevenue}
+              previous={stats?.previousPeriod?.totalRevenue}
+              suffix=" vs prev"
+            />
+          </div>
         </div>
       </div>
 
@@ -241,24 +367,6 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Pending Approvals */}
-      {stats?.pendingApprovals > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 fade-in pulse">
-          <div className="flex items-start gap-3">
-            <svg className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div className="flex-1">
-              <h3 className="font-semibold text-yellow-800 mb-1">
-                {stats.pendingApprovals} Pending Approvals
-              </h3>
-              <p className="text-sm text-yellow-700">
-                You have vendor and affiliate applications waiting for review.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

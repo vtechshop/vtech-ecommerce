@@ -384,4 +384,46 @@ router.post('/track/search-click', catalogTrackingLimiter, async (req, res, next
   }
 });
 
+// GET /catalog/settings - Public settings for frontend
+router.get('/settings', async (req, res, next) => {
+  try {
+    const Setting = require('../models/Setting');
+    const { category, keys } = req.query;
+
+    const query = { isPublic: true };
+
+    // Filter by category if provided
+    if (category) {
+      query.category = category;
+    }
+
+    // Filter by specific keys if provided (comma-separated)
+    if (keys) {
+      const keyList = keys.split(',').map(k => k.trim());
+      query.key = { $in: keyList };
+    }
+
+    const settings = await Setting.find(query)
+      .select('key value type category description')
+      .lean();
+
+    // Convert to key-value object for easier frontend consumption
+    const settingsMap = {};
+    settings.forEach(s => {
+      settingsMap[s.key] = s.value;
+    });
+
+    res.json({
+      success: true,
+      data: settingsMap,
+      meta: {
+        count: settings.length,
+        details: settings, // Full setting details if needed
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

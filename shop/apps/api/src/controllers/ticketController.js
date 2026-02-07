@@ -444,6 +444,91 @@ exports.updatePriority = async (req, res, next) => {
   }
 };
 
+// Get user-specific ticket statistics
+exports.getUserStats = async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+
+    const [
+      totalCount,
+      openCount,
+      inProgressCount,
+      resolvedCount,
+      closedCount,
+      unreadCount,
+      byCategory,
+      avgResponseTime,
+    ] = await Promise.all([
+      Ticket.countDocuments({ userId }),
+      Ticket.countDocuments({ userId, status: 'open' }),
+      Ticket.countDocuments({ userId, status: 'in_progress' }),
+      Ticket.countDocuments({ userId, status: 'resolved' }),
+      Ticket.countDocuments({ userId, status: 'closed' }),
+      Ticket.countDocuments({ userId, lastResponseBy: 'admin', userViewed: false }),
+      Ticket.aggregate([
+        { $match: { userId: req.user._id } },
+        { $group: { _id: '$category', count: { $sum: 1 } } },
+      ]),
+      Ticket.aggregate([
+        { $match: { userId: req.user._id, 'messages.1': { $exists: true } } },
+        {
+          $project: {
+            firstAdminResponse: {
+              $arrayElemAt: [
+                {
+                  $filter: {
+                    input: '$messages',
+                    cond: { $ne: ['$$this.sender', req.user._id] }
+                  }
+                },
+                0
+              ]
+            },
+            createdAt: 1
+          }
+        },
+        {
+          $project: {
+            responseTime: {
+              $subtract: ['$firstAdminResponse.timestamp', '$createdAt']
+            }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            avgResponseTime: { $avg: '$responseTime' }
+          }
+        }
+      ]),
+    ]);
+
+    const avgResponseHours = avgResponseTime[0]?.avgResponseTime
+      ? Math.round(avgResponseTime[0].avgResponseTime / (1000 * 60 * 60))
+      : null;
+
+    res.json({
+      success: true,
+      data: {
+        total: totalCount,
+        open: openCount,
+        inProgress: inProgressCount,
+        resolved: resolvedCount,
+        closed: closedCount,
+        unread: unreadCount,
+        active: openCount + inProgressCount,
+        avgResponseTime: avgResponseHours ? `${avgResponseHours}h` : 'N/A',
+        byCategory: byCategory.reduce((acc, item) => {
+          acc[item._id] = item.count;
+          return acc;
+        }, {}),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get ticket statistics (Admin only)
 exports.getStats = async (req, res, next) => {
   try {

@@ -18,8 +18,15 @@ router.get('/me', affiliateController.getAffiliateProfile);
 router.put('/payment-details', affiliateController.updatePaymentDetails);
 router.get('/dashboard/stats', affiliateController.getDashboardStats);
 router.get('/links', affiliateController.getLinks);
+router.get('/links/stats', affiliateController.getLinkStats);
+router.get('/products/stats', affiliateController.getProductStats);
+router.get('/commissions/stats', affiliateController.getCommissionStats);
 router.get('/commissions', affiliateController.getCommissions);
 router.get('/payouts', affiliateController.getPayouts);
+
+// Preferences routes
+router.get('/preferences', affiliateController.getPreferences);
+router.put('/preferences', affiliateController.updatePreferences);
 
 // Product-specific affiliate links
 router.post('/links/generate', affiliateController.generateProductLink);

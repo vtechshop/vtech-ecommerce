@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Vendor = require('../models/Vendor');
 const Affiliate = require('../models/Affiliate');
@@ -91,25 +92,103 @@ const activateWarrantiesForOrder = async (order) => {
 };
 
 // ---------- Dashboard ----------
+// Helper: Get date range for period
+const getDateRange = (period) => {
+  const now = new Date();
+  let startDate, endDate, prevStartDate, prevEndDate;
+
+  switch (period) {
+    case 'today':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      endDate = now;
+      // Previous = yesterday
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 1);
+      prevEndDate = new Date(startDate);
+      break;
+    case '7days':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 7);
+      endDate = now;
+      // Previous = 7 days before that
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 7);
+      prevEndDate = new Date(startDate);
+      break;
+    case '30days':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 30);
+      endDate = now;
+      // Previous = 30 days before that
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 30);
+      prevEndDate = new Date(startDate);
+      break;
+    case 'month':
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = now;
+      // Previous = last month
+      prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      prevEndDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    default:
+      // All time - no date filter
+      return { startDate: null, endDate: null, prevStartDate: null, prevEndDate: null };
+  }
+
+  return { startDate, endDate, prevStartDate, prevEndDate };
+};
+
 exports.getDashboardStats = async (req, res, next) => {
   try {
+    const { period = '30days' } = req.query;
+    const { startDate, endDate, prevStartDate, prevEndDate } = getDateRange(period);
+
+    // Build date filter for current period
+    const dateFilter = startDate ? { createdAt: { $gte: startDate, $lte: endDate } } : {};
+    const prevDateFilter = prevStartDate ? { createdAt: { $gte: prevStartDate, $lt: prevEndDate } } : {};
+
+    // Current period stats
     const [totalUsers, totalVendors, totalProducts, totalOrders, revenueAgg] = await Promise.all([
-      User.countDocuments(),
-      Vendor.countDocuments({ status: 'active' }),
-      Product.countDocuments({ published: true }),
-      Order.countDocuments(),
-      Order.aggregate([{ $group: { _id: null, total: { $sum: '$totals.total' } } }]),
+      User.countDocuments(dateFilter),
+      Vendor.countDocuments({ status: 'active', ...dateFilter }),
+      Product.countDocuments({ published: true, ...dateFilter }),
+      Order.countDocuments(dateFilter),
+      Order.aggregate([
+        { $match: dateFilter },
+        { $group: { _id: null, total: { $sum: '$totals.total' } } }
+      ]),
     ]);
 
-    const [pendingVendors, pendingAffiliates] = await Promise.all([
+    // Previous period stats for trend comparison
+    const [prevUsers, prevVendors, prevProducts, prevOrders, prevRevenueAgg] = await Promise.all([
+      prevStartDate ? User.countDocuments(prevDateFilter) : Promise.resolve(0),
+      prevStartDate ? Vendor.countDocuments({ status: 'active', ...prevDateFilter }) : Promise.resolve(0),
+      prevStartDate ? Product.countDocuments({ published: true, ...prevDateFilter }) : Promise.resolve(0),
+      prevStartDate ? Order.countDocuments(prevDateFilter) : Promise.resolve(0),
+      prevStartDate ? Order.aggregate([
+        { $match: prevDateFilter },
+        { $group: { _id: null, total: { $sum: '$totals.total' } } }
+      ]) : Promise.resolve([]),
+    ]);
+
+    // Pending actions for alert banner
+    const [pendingVendors, pendingAffiliates, pendingOrders, pendingKYC, pendingTickets] = await Promise.all([
       Vendor.countDocuments({ status: 'pending' }),
       Affiliate.countDocuments({ status: 'pending' }),
+      Order.countDocuments({ status: { $in: ['placed', 'paid'] } }), // Orders needing shipment
+      Vendor.countDocuments({ 'kyc.status': 'pending' }),
+      // Assuming SupportTicket model exists, otherwise return 0
+      mongoose.models.SupportTicket
+        ? mongoose.models.SupportTicket.countDocuments({ status: 'open' })
+        : Promise.resolve(0),
     ]);
 
     // Commission stats - vendor, affiliate, and overall
+    const commissionDateFilter = startDate ? { createdAt: { $gte: startDate, $lte: endDate } } : {};
     const [vendorCommissions, affiliateCommissions, allCommissions] = await Promise.all([
       Commission.aggregate([
-        { $match: { type: 'vendor' } },
+        { $match: { type: 'vendor', ...commissionDateFilter } },
         { $group: {
           _id: '$status',
           total: { $sum: '$amount' },
@@ -117,7 +196,7 @@ exports.getDashboardStats = async (req, res, next) => {
         }}
       ]),
       Commission.aggregate([
-        { $match: { type: 'affiliate' } },
+        { $match: { type: 'affiliate', ...commissionDateFilter } },
         { $group: {
           _id: '$status',
           total: { $sum: '$amount' },
@@ -125,6 +204,7 @@ exports.getDashboardStats = async (req, res, next) => {
         }}
       ]),
       Commission.aggregate([
+        { $match: commissionDateFilter },
         { $group: {
           _id: '$status',
           total: { $sum: '$amount' },
@@ -145,6 +225,7 @@ exports.getDashboardStats = async (req, res, next) => {
     };
 
     const totalRevenue = revenueAgg[0]?.total || 0;
+    const prevRevenue = prevRevenueAgg[0]?.total || 0;
     const vendorComm = mapStats(vendorCommissions);
     const affiliateComm = mapStats(affiliateCommissions);
     const allComm = mapStats(allCommissions);
@@ -160,7 +241,19 @@ exports.getDashboardStats = async (req, res, next) => {
         totalProducts,
         totalOrders,
         totalRevenue,
+        // Pending actions for alert banner
+        pendingOrders,
+        pendingKYC,
+        pendingTickets,
         pendingApprovals: (pendingVendors || 0) + (pendingAffiliates || 0),
+        // Previous period for trend indicators
+        previousPeriod: {
+          totalUsers: prevUsers,
+          totalVendors: prevVendors,
+          totalProducts: prevProducts,
+          totalOrders: prevOrders,
+          totalRevenue: prevRevenue,
+        },
         commissions: {
           vendor: vendorComm,
           affiliate: affiliateComm,
