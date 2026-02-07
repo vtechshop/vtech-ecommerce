@@ -31,6 +31,7 @@ const Button = ({
     primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-md hover:shadow-lg btn-add-to-cart',
     secondary: 'bg-secondary-600 text-white hover:bg-secondary-700 focus:ring-secondary-500 shadow-md hover:shadow-lg btn-add-to-cart',
     outline: 'border-2 border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:border-primary-500 focus:ring-primary-500',
+    'outline-light': 'border border-white/50 bg-transparent text-white hover:bg-white/20 focus:ring-white/50',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-md hover:shadow-lg',
     success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 shadow-md hover:shadow-lg',
     ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-gray-500',

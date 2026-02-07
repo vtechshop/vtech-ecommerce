@@ -475,11 +475,10 @@ const VendorCommissions = () => {
             </div>
             {(stats?.approvedCount || 0) > 0 && (
               <Button
-                variant="outline"
+                variant="outline-light"
                 size="xs"
                 onClick={handlePayAllApproved}
                 disabled={bulkPayMutation.isPending}
-                className="border-white/50 text-white hover:bg-white/20 text-xs"
               >
                 <Banknote className="w-3 h-3 mr-1" />
                 Pay All
