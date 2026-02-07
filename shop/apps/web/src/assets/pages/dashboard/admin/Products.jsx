@@ -987,9 +987,23 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                       )}
                     </div>
                     <div className="flex-1">
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Image {index + 1} Alt Tag (SEO)
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-medium text-gray-700">
+                          Image {index + 1} Alt Tag (SEO)
+                        </label>
+                        {!isViewing && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const autoAlt = `${formData.title || 'Product'}${formData.brand ? ` by ${formData.brand}` : ''} - Image ${index + 1}`;
+                              handleUpdateImageAlt(index, autoAlt);
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-0.5 rounded hover:bg-blue-50 transition-colors"
+                          >
+                            Auto-generate
+                          </button>
+                        )}
+                      </div>
                       {isViewing ? (
                         <p className="text-sm text-gray-600">{image.alt || 'No alt tag set'}</p>
                       ) : (
@@ -999,11 +1013,33 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                             value={image.alt}
                             onChange={(e) => handleUpdateImageAlt(index, e.target.value)}
                             placeholder={`e.g., ${formData.title || 'Product name'} front view`}
-                            className="input w-full text-sm"
+                            className={`input w-full text-sm ${
+                              image.alt.length >= 40 && image.alt.length <= 125
+                                ? 'border-green-400 focus:border-green-500 focus:ring-green-200'
+                                : image.alt.length > 0 && image.alt.length < 40
+                                ? 'border-yellow-400 focus:border-yellow-500 focus:ring-yellow-200'
+                                : image.alt.length > 125
+                                ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
+                                : ''
+                            }`}
+                            maxLength={150}
                           />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Describe the image for SEO & accessibility
-                          </p>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-xs text-gray-500">
+                              Include product name, brand, color
+                            </p>
+                            <span className={`text-xs font-medium ${
+                              image.alt.length >= 40 && image.alt.length <= 125
+                                ? 'text-green-600'
+                                : image.alt.length > 0 && image.alt.length < 40
+                                ? 'text-yellow-600'
+                                : image.alt.length > 125
+                                ? 'text-red-600'
+                                : 'text-gray-400'
+                            }`}>
+                              {image.alt.length}/125
+                            </span>
+                          </div>
                         </>
                       )}
                     </div>
