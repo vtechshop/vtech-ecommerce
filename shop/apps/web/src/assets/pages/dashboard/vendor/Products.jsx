@@ -1029,23 +1029,48 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                         </button>
                       </div>
                       <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-700 mb-1">
-                          Image {idx + 1} Alt Tag (SEO)
-                        </label>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-medium text-gray-700">
+                            Image {idx + 1} Alt Tag (SEO)
+                          </label>
+                          {!img.alt && formData.title && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const suggested = `${formData.title}${formData.brand ? ` by ${formData.brand}` : ''} - Image ${idx + 1}`;
+                                const updated = [...images];
+                                updated[idx] = { ...updated[idx], alt: suggested.slice(0, 125) };
+                                setImages(updated);
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Auto-generate
+                            </button>
+                          )}
+                        </div>
                         <input
                           type="text"
                           value={img.alt}
+                          maxLength={125}
                           onChange={(e) => {
                             const updated = [...images];
                             updated[idx] = { ...updated[idx], alt: e.target.value };
                             setImages(updated);
                           }}
                           placeholder={`e.g., ${formData.title || 'Product name'} front view`}
-                          className="input w-full text-sm"
+                          className={`input w-full text-sm ${img.alt.length > 125 ? 'border-red-300 focus:ring-red-500' : ''}`}
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Describe the image for SEO & accessibility
-                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-gray-500">
+                            Include product name, brand, color
+                          </p>
+                          <span className={`text-xs font-medium ${
+                            img.alt.length === 0 ? 'text-gray-400' :
+                            img.alt.length <= 125 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {img.alt.length}/125
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
