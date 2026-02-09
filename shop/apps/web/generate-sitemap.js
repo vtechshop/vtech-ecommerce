@@ -5,7 +5,7 @@ const fs = require('fs');
 const axios = require('axios');
 
 const API_URL = process.env.VITE_API_URL || 'http://localhost:8080/api';
-const BASE_URL = 'https://vtechkitchen.com';
+const BASE_URL = 'https://www.vtechkitchen.com';
 
 async function generateSitemapRoutes() {
   const routes = [
