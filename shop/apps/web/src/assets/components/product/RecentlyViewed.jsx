@@ -1,6 +1,7 @@
 // FILE: apps/web/src/components/product/RecentlyViewed.jsx
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '@/utils/api';
 import { getRecentlyViewed, removeFromRecentlyViewed } from '@/utils/recentlyViewed';
 import { formatCurrency } from '@/utils/format';
 import { Eye, ShoppingCart, Star } from 'lucide-react';
@@ -32,17 +33,10 @@ const RecentlyViewed = ({ currentProductId = null, limit = 6 }) => {
         const productIds = recentProducts.map(p => p._id);
 
         // Validate products exist in database and aren't deleted
-        const response = await fetch(`/api/products/validate`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ productIds }),
-        });
+        const response = await api.post('/products/validate', { productIds });
 
-        if (response.ok) {
-          const data = await response.json();
-          const validProductIds = new Set(data.validProducts || []);
+        if (response.data?.success) {
+          const validProductIds = new Set(response.data.validProducts || []);
 
           // Filter to only valid products
           const validProducts = recentProducts.filter(p => validProductIds.has(p._id));
