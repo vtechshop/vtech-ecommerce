@@ -59,7 +59,7 @@ const activateWarrantiesForOrder = async (order) => {
           purchaseId: order.orderId,
           orderId: order._id,
           user: {
-            id: order.userId || order.guestEmail,
+            id: order.userId || null,
             name: order.shipTo?.fullName || 'Guest',
             email: order.guestEmail || 'N/A',
             phone: order.shipTo?.phone || ''

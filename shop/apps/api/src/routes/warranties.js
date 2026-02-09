@@ -81,6 +81,9 @@ router.get('/admin/all', authenticate, authorize(['admin']), async (req, res, ne
         { warrantyId: new RegExp(search, 'i') },
         { 'product.name': new RegExp(search, 'i') },
         { purchaseId: new RegExp(search, 'i') },
+        { customerName: new RegExp(search, 'i') },
+        { customerEmail: new RegExp(search, 'i') },
+        { customerPhone: new RegExp(search, 'i') },
       ];
     }
 

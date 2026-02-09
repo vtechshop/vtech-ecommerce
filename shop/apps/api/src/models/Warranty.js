@@ -20,9 +20,12 @@ const warrantySchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
     index: true,
   },
+  // Guest customer info (for manual/in-store orders without registered user)
+  customerName: String,
+  customerEmail: String,
+  customerPhone: String,
   productId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
@@ -155,6 +158,9 @@ warrantySchema.methods.toAdminView = function() {
     purchaseId: this.purchaseId,
     orderId: this.orderId,
     userId: this.userId,
+    customerName: this.customerName,
+    customerEmail: this.customerEmail,
+    customerPhone: this.customerPhone,
     productId: this.productId,
     product: this.product,
     purchaseDate: this.purchaseDate,

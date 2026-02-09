@@ -574,10 +574,10 @@ const Warranties = () => {
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {warranty.userId?.name || warranty.userId?.email || 'N/A'}
+                        {warranty.userId?.name || warranty.customerName || warranty.userId?.email || 'N/A'}
                       </div>
-                      {warranty.userId?.email && (
-                        <div className="text-xs text-gray-500">{warranty.userId.email}</div>
+                      {(warranty.userId?.email || warranty.customerEmail) && (
+                        <div className="text-xs text-gray-500">{warranty.userId?.email || warranty.customerEmail}</div>
                       )}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap">
@@ -802,11 +802,11 @@ const Warranties = () => {
                 <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-4">
                   <div>
                     <p className="text-sm text-gray-500">Customer Name</p>
-                    <p className="font-medium text-gray-900">{viewingWarranty.userId?.name || 'N/A'}</p>
+                    <p className="font-medium text-gray-900">{viewingWarranty.userId?.name || viewingWarranty.customerName || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium text-gray-900">{viewingWarranty.userId?.email || 'N/A'}</p>
+                    <p className="font-medium text-gray-900">{viewingWarranty.userId?.email || viewingWarranty.customerEmail || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Order ID</p>
