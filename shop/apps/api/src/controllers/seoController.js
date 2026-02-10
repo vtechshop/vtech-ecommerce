@@ -5,12 +5,15 @@ const Post = require('../models/Post');
 const Vendor = require('../models/Vendor');
 const env = require('../config/env');
 
-// Helper to ensure URL has proper protocol
+// Helper to ensure URL has proper protocol and www prefix
 function ensureProtocol(url, defaultUrl) {
   let result = url || defaultUrl;
   if (result && !result.startsWith('http://') && !result.startsWith('https://')) {
     result = 'https://' + result;
   }
+  // Ensure www prefix for vtechkitchen.com
+  result = result.replace('https://vtechkitchen.com', 'https://www.vtechkitchen.com');
+  result = result.replace('http://vtechkitchen.com', 'https://www.vtechkitchen.com');
   return result.replace(/\/$/, ''); // Remove trailing slash
 }
 
@@ -259,7 +262,7 @@ exports.renderPage = async (req, res, next) => {
 
       if (product) {
         pageData.title = `${product.title} - V-Tech Kitchen`;
-        pageData.description = product.description?.substring(0, 160) || `Buy ${product.title} at best price. ${product.shortDescription || ''}`;
+        pageData.description = (product.description?.substring(0, 155) || `Buy ${product.title} at best price. ${product.shortDescription || ''}`).substring(0, 155);
         pageData.image = product.images?.[0] || pageData.image;
         pageData.type = 'product';
         pageData.content = `

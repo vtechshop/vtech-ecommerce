@@ -14,6 +14,7 @@ const Setting = require('../models/Setting');
 const AuditLog = require('../models/AuditLog');
 const Review = require('../models/Review');
 const Carousel = require('../models/Carousel');
+const Warranty = require('../models/Warranty');
 const { getPaginationMeta, slugify, generateSKU, generateOrderId } = require('../utils/helpers');
 const logger = require('../config/logger');
 const warrantyService = require('../services/warrantyService');
@@ -55,7 +56,7 @@ const activateWarrantiesForOrder = async (order) => {
       try {
         const productDetails = await Product.findById(item.productId);
 
-        await warrantyService.generateWarranty({
+        const warrantyData = {
           purchaseId: order.orderId,
           orderId: order._id,
           user: {
@@ -66,10 +67,10 @@ const activateWarrantiesForOrder = async (order) => {
           },
           product: {
             id: item.productId,
-            name: item.name,
+            name: item.name || productDetails?.title || productDetails?.name || 'Unknown Product',
             model: productDetails?.sku || '',
             serial: '',
-            category: productDetails?.category?.name || ''
+            category: typeof productDetails?.category === 'string' ? productDetails.category : ''
           },
           purchaseDate: order.createdAt || now,
           warrantyPeriodDays: warrantyPeriodDays,
@@ -79,10 +80,13 @@ const activateWarrantiesForOrder = async (order) => {
             invoiceNo: order.orderId,
             remarks: item.warranty.description || ''
           }
-        });
-        logger.info(`Warranty generated for product ${item.name} in order ${order.orderId}`);
+        };
+        logger.info(`Creating warranty record for ${item.name} in order ${order.orderId} with data: ${JSON.stringify({ purchaseId: warrantyData.purchaseId, userId: warrantyData.user.id, productId: String(warrantyData.product.id), warrantyPeriodDays })}`);
+
+        await warrantyService.generateWarranty(warrantyData);
+        logger.info(`Warranty generated successfully for product ${item.name} in order ${order.orderId}`);
       } catch (error) {
-        logger.error(`Failed to generate warranty for ${item.name}: ${error.message}`);
+        logger.error(`Failed to generate warranty for ${item.name} in order ${order.orderId}: ${error.message}`, { stack: error.stack });
       }
     }
   }
@@ -3887,7 +3891,7 @@ exports.createManualOrder = async (req, res, next) => {
       const orderItem = {
         productId: product._id,
         vendorId: product.vendorId,
-        name: product.name,
+        name: product.title || product.name,
         image: product.images?.[0] || '',
         productSlug: product.slug,
         sku: product.sku,
@@ -3937,11 +3941,176 @@ exports.createManualOrder = async (req, res, next) => {
       guestEmail: customerEmail || undefined,
     });
 
-    // Auto-activate warranties
+    // Auto-activate warranties (sets isActivated=true on order items)
     await activateWarrantiesForOrder(order);
     await order.save();
 
+    // Verify warranty records were created in Warranty collection
+    // If activateWarrantiesForOrder failed silently, create them directly
+    for (const item of order.items) {
+      if (!item.warranty?.hasWarranty) continue;
+      try {
+        const exists = await Warranty.findOne({ purchaseId: order.orderId, productId: item.productId });
+        if (exists) {
+          logger.info(`Warranty record verified for ${item.name} in order ${order.orderId}: ${exists.warrantyId}`);
+          continue;
+        }
+
+        // Record missing - create it directly
+        logger.warn(`Warranty record missing for ${item.name} in order ${order.orderId}, creating directly...`);
+        const warrantyId = await Warranty.generateWarrantyId();
+        const now = new Date();
+        let warrantyPeriodDays = 0;
+        if (item.warranty.durationType === 'lifetime') {
+          warrantyPeriodDays = 36500;
+        } else if (item.warranty.durationType === 'years') {
+          warrantyPeriodDays = (item.warranty.duration || 1) * 365;
+        } else {
+          warrantyPeriodDays = (item.warranty.duration || 1) * 30;
+        }
+        const endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + warrantyPeriodDays);
+
+        const prodLookup = await Product.findById(item.productId).select('title name sku').lean();
+        const warrantyRecord = await Warranty.create({
+          warrantyId,
+          purchaseId: order.orderId,
+          orderId: order._id,
+          customerName: customerName,
+          customerEmail: customerEmail || undefined,
+          customerPhone: customerPhone,
+          productId: item.productId,
+          product: { name: item.name || prodLookup?.title || prodLookup?.name || 'Unknown Product', model: item.sku || prodLookup?.sku || '' },
+          purchaseDate: now,
+          warrantyStartDate: now,
+          warrantyEndDate: endDate,
+          warrantyPeriodDays,
+          warrantyType: 'manufacturer',
+          status: warrantyPeriodDays === 0 ? 'no_warranty' : 'active',
+          extraInfo: { store: 'V-Tech', invoiceNo: order.orderId, remarks: item.warranty.description || '' },
+        });
+        logger.info(`Warranty record created directly: ${warrantyRecord.warrantyId} for ${item.name}`);
+      } catch (err) {
+        logger.error(`Direct warranty creation failed for ${item.name} in ${order.orderId}: ${err.message}`, { name: err.name, code: err.code, stack: err.stack });
+      }
+    }
+
     res.status(201).json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update a manual order (customer info, notes, source, payment method only)
+exports.updateManualOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, error: { message: 'Order not found' } });
+
+    // Only allow editing manual orders
+    if (!['in-store', 'phone'].includes(order.source)) {
+      return res.status(400).json({ success: false, error: { message: 'Only manual orders can be edited here' } });
+    }
+
+    // Cannot edit cancelled orders
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: { message: 'Cannot edit a cancelled order' } });
+    }
+
+    const { customerName, customerPhone, customerEmail, source, paymentMethod, customerNotes, internalNotes } = req.body;
+
+    // Update allowed fields
+    if (customerName) order.shipTo.fullName = customerName;
+    if (customerPhone) {
+      order.customerPhone = customerPhone;
+      order.shipTo.phone = customerPhone;
+    }
+    if (customerEmail !== undefined) order.guestEmail = customerEmail || undefined;
+    if (source && ['in-store', 'phone'].includes(source)) order.source = source;
+    if (paymentMethod) order.payment.method = paymentMethod;
+    if (customerNotes !== undefined) order.customerNotes = customerNotes;
+    if (internalNotes !== undefined) order.internalNotes = internalNotes;
+
+    // Push edit event
+    order.events.push({
+      status: 'updated',
+      description: `Order edited by admin (${req.user._id})`,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+
+    // Also update warranty customer info if guest warranties exist
+    if (customerName || customerPhone || customerEmail !== undefined) {
+      const updateFields = {};
+      if (customerName) updateFields.customerName = customerName;
+      if (customerEmail !== undefined) updateFields.customerEmail = customerEmail || undefined;
+      if (customerPhone) updateFields.customerPhone = customerPhone;
+      if (Object.keys(updateFields).length > 0) {
+        await Warranty.updateMany({ orderId: order._id }, updateFields);
+      }
+    }
+
+    res.json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Cancel a manual order and void associated warranties
+exports.cancelManualOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, error: { message: 'Order not found' } });
+
+    if (!['in-store', 'phone'].includes(order.source)) {
+      return res.status(400).json({ success: false, error: { message: 'Only manual orders can be cancelled here' } });
+    }
+
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: { message: 'Order is already cancelled' } });
+    }
+
+    const { reason } = req.body;
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, error: { message: 'Cancellation reason is required' } });
+    }
+
+    // Cancel the order
+    order.status = 'cancelled';
+    order.cancellation = {
+      reason: reason.trim(),
+      cancelledAt: new Date(),
+      cancelledBy: req.user._id,
+    };
+
+    // Mark payment as refunded
+    order.payment.refund = {
+      amount: order.payment.amount || order.totals?.total || 0,
+      status: 'refunded',
+      createdAt: new Date(),
+    };
+
+    // Push cancel event
+    order.events.push({
+      status: 'cancelled',
+      description: `Order cancelled by admin. Reason: ${reason.trim()}`,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+
+    // Void all associated warranties
+    const voidResult = await Warranty.updateMany(
+      { orderId: order._id },
+      { status: 'void', isActive: false }
+    );
+
+    res.json({
+      success: true,
+      data: order,
+      warrantiesVoided: voidResult.modifiedCount || 0,
+    });
   } catch (error) {
     next(error);
   }

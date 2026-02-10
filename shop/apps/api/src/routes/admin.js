@@ -199,6 +199,8 @@ router.get('/payments', admin.getPayments);
 // Manual Orders (In-store / Phone sales)
 router.get('/manual-orders', admin.getManualOrders);
 router.post('/manual-orders', admin.createManualOrder);
+router.put('/manual-orders/:id', validateObjectId('id'), admin.updateManualOrder);
+router.put('/manual-orders/:id/cancel', validateObjectId('id'), admin.cancelManualOrder);
 
 // Data cleanup - Remove orphaned profiles
 router.post('/cleanup/orphaned-profiles', admin.cleanupOrphanedProfiles);

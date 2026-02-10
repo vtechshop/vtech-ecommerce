@@ -7,7 +7,7 @@ import Button from '@/components/common/Button';
 import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
-import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, ZoomIn, Upload, Search, Filter, ChevronUp, ChevronDown, Package, AlertTriangle, CheckCircle, MoreVertical, Copy, Archive, TrendingUp, Download } from 'lucide-react';
+import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, ZoomIn, Upload, Search, Filter, ChevronUp, ChevronDown, Package, AlertTriangle, CheckCircle, MoreVertical, Copy, Archive, TrendingUp, Download, RefreshCw } from 'lucide-react';
 
 // Stock level thresholds
 const STOCK_THRESHOLDS = {
@@ -49,7 +49,7 @@ const Products = () => {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showActionsDropdown, setShowActionsDropdown] = useState(null);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['vendor-products', page],
     queryFn: async () => {
       const response = await api.get(`/vendors/products?page=${page}&limit=50`);
@@ -369,6 +369,10 @@ const Products = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">My Products</h1>
         <div className="flex items-center gap-3">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
           {allProducts.length > 0 && (
             <button
               onClick={handleExportProducts}

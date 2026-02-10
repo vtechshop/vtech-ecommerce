@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, X, Pause, Eye, ArrowLeft } from 'lucide-react';
+import { Check, X, Pause, Eye, ArrowLeft, RefreshCw } from 'lucide-react';
 import api from '../../../utils/api';
 import Button from '../../../components/common/Button';
 import Modal from '../../../components/common/Modal';
@@ -21,7 +21,7 @@ const AdCampaignApprovals = () => {
   const [adminNotes, setAdminNotes] = useState('');
 
   // Fetch pending campaigns
-  const { data: pendingData, isLoading: pendingLoading } = useQuery({
+  const { data: pendingData, isLoading: pendingLoading, refetch: refetchPending } = useQuery({
     queryKey: ['admin-pending-campaigns'],
     queryFn: async () => {
       const response = await api.get('/admin/ads/campaigns/pending');
@@ -31,7 +31,7 @@ const AdCampaignApprovals = () => {
   });
 
   // Fetch all campaigns
-  const { data: allCampaigns, isLoading: allLoading } = useQuery({
+  const { data: allCampaigns, isLoading: allLoading, refetch: refetchAll } = useQuery({
     queryKey: ['admin-all-campaigns'],
     queryFn: async () => {
       const response = await api.get('/admin/ads/campaigns/all');
@@ -41,7 +41,7 @@ const AdCampaignApprovals = () => {
   });
 
   // Fetch campaign stats
-  const { data: statsData } = useQuery({
+  const { data: statsData, refetch: refetchStats } = useQuery({
     queryKey: ['admin-campaign-stats'],
     queryFn: async () => {
       const response = await api.get('/admin/ads/campaigns/stats');
@@ -107,6 +107,8 @@ const AdCampaignApprovals = () => {
       toast.error(error.response?.data?.error?.message || 'Failed to pause campaign');
     },
   });
+
+  const handleRefresh = () => { refetchPending(); refetchAll(); refetchStats(); };
 
   const handleApprove = (campaign) => {
     setSelectedCampaign(campaign);
@@ -292,8 +294,15 @@ const AdCampaignApprovals = () => {
           <ArrowLeft className="w-4 h-4" />
           Back to Sponsored Ads
         </Link>
-        <h1 className="text-2xl font-bold mb-2">Ad Campaign Approvals</h1>
-        <p className="text-gray-600">Review and approve vendor ad campaigns</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Ad Campaign Approvals</h1>
+            <p className="text-gray-600">Review and approve vendor ad campaigns</p>
+          </div>
+          <button onClick={handleRefresh} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}

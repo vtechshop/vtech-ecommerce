@@ -224,11 +224,11 @@ const BlogPost = () => {
       updateMetaTags({
         title: `${post.title} - V-Tech Blog`,
         description: post.excerpt || post.content?.substring(0, 160),
-        canonical: `${window.location.origin}/blog/${slug}`,
+        canonical: `https://www.vtechkitchen.com/blog/${slug}`,
         ogTitle: post.title,
         ogDescription: post.excerpt || post.content?.substring(0, 160),
         ogImage: post.featuredImage,
-        ogUrl: `${window.location.origin}/blog/${slug}`,
+        ogUrl: `https://www.vtechkitchen.com/blog/${slug}`,
       });
 
       // JSON-LD for BlogPosting
@@ -241,14 +241,14 @@ const BlogPost = () => {
         'dateModified': post.updatedAt,
         'author': {
           '@type': 'Person',
-          'name': post.author?.name || 'Shop Team',
+          'name': post.author?.name || 'V-Tech Kitchen',
         },
         'publisher': {
           '@type': 'Organization',
-          'name': 'Shop',
+          'name': 'V-Tech Kitchen',
           'logo': {
             '@type': 'ImageObject',
-            'url': `${window.location.origin}/logo.png`,
+            'url': 'https://www.vtechkitchen.com/logo.png',
           },
         },
         'description': post.excerpt || post.content?.substring(0, 160),

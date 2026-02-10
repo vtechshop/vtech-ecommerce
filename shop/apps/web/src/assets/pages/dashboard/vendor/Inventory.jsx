@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
-import { Search, X, Package, AlertTriangle, CheckCircle, TrendingDown, Warehouse, Plus, Minus, Save, RotateCcw } from 'lucide-react';
+import { Search, X, Package, AlertTriangle, CheckCircle, TrendingDown, Warehouse, Plus, Minus, Save, RotateCcw, RefreshCw } from 'lucide-react';
 
 // Stock thresholds
 const STOCK_THRESHOLDS = {
@@ -28,7 +28,7 @@ const Inventory = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
 
-  const { data: products, isLoading } = useQuery({
+  const { data: products, isLoading, refetch } = useQuery({
     queryKey: ['inventory'],
     queryFn: async () => {
       const response = await api.get('/vendors/inventory');
@@ -162,6 +162,10 @@ const Inventory = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold">Inventory Management</h1>
+        <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+          <RefreshCw className="w-4 h-4" />
+          Refresh
+        </button>
       </div>
 
       {/* Stats Cards */}

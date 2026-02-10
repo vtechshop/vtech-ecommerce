@@ -12,7 +12,8 @@ import {
   Phone,
   User,
   X,
-  Star
+  Star,
+  RefreshCw
 } from 'lucide-react';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
@@ -111,7 +112,7 @@ const Addresses = () => {
     isDefault: false,
   });
 
-  const { data: addresses, isLoading, error } = useQuery({
+  const { data: addresses, isLoading, error, refetch } = useQuery({
     queryKey: ['addresses'],
     queryFn: async () => {
       const response = await api.get('/user/addresses');
@@ -272,13 +273,19 @@ const Addresses = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Addresses</h1>
           <p className="text-gray-500 text-sm mt-1">Manage your delivery addresses</p>
         </div>
-        <button
-          onClick={handleAdd}
-          className="self-start sm:self-center flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add New Address
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          <button
+            onClick={handleAdd}
+            className="self-start sm:self-center flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Add New Address
+          </button>
+        </div>
       </div>
 
       {/* Addresses Grid */}

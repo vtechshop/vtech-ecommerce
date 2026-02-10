@@ -8,7 +8,7 @@ import {
   MessageSquare, Plus, Send, Paperclip, X, Search, Filter, Clock,
   CheckCircle, MessageCircle, ChevronRight, ChevronDown,
   HelpCircle, Phone, Mail, FileText, Loader2, Bell, ExternalLink,
-  ArrowRight, Ticket, CircleDot, XCircle
+  ArrowRight, Ticket, CircleDot, XCircle, RefreshCw
 } from 'lucide-react';
 import { formatDate } from '@/utils/format';
 import { useToast } from '@/components/common/ToastContainer';
@@ -114,7 +114,7 @@ const Support = () => {
   const [uploading, setUploading] = useState(false);
 
   // Fetch tickets
-  const { data: ticketsData, isLoading } = useQuery({
+  const { data: ticketsData, isLoading, refetch } = useQuery({
     queryKey: ['vendor-tickets'],
     queryFn: async () => {
       const response = await api.get('/tickets');
@@ -323,10 +323,16 @@ const Support = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Support Center</h1>
           <p className="text-gray-600 text-sm mt-1">Get help from our support team</p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="flex items-center justify-center gap-2">
-          <Plus className="w-5 h-5" />
-          <span>New Ticket</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          <Button onClick={() => setShowCreateModal(true)} className="flex items-center justify-center gap-2">
+            <Plus className="w-5 h-5" />
+            <span>New Ticket</span>
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

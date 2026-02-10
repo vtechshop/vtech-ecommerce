@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/dashboard/admin/Warranties.jsx
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import CustomSelect from '@/components/common/CustomSelect';
@@ -129,6 +129,35 @@ const Warranties = () => {
       toast.error(error.response?.data?.message || 'Bulk action failed');
     },
   });
+
+  const syncWarrantiesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await api.post('/warranties/admin/sync');
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries(['admin-warranties']);
+      queryClient.invalidateQueries(['warranty-stats-enhanced']);
+      if (data.data?.created > 0) {
+        toast.success(`${data.data.created} warranty records synced from orders`);
+      }
+      if (data.data?.failed > 0) {
+        toast.error(`${data.data.failed} warranties failed to sync. Check server logs.`);
+      }
+    },
+    onError: (error) => {
+      console.error('Warranty sync failed:', error);
+    },
+  });
+
+  // Auto-sync: when stats load and show 0 total, auto-trigger sync from orders
+  const hasSynced = useRef(false);
+  useEffect(() => {
+    if (stats && stats.total === 0 && !hasSynced.current && !syncWarrantiesMutation.isPending) {
+      hasSynced.current = true;
+      syncWarrantiesMutation.mutate();
+    }
+  }, [stats]);
 
   // Export CSV
   const handleExportCSV = async () => {

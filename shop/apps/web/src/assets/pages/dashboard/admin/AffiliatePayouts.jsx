@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DollarSign, Eye, CheckCircle, Clock, Filter, Download } from 'lucide-react';
+import { DollarSign, Eye, CheckCircle, Clock, Filter, Download, RefreshCw } from 'lucide-react';
 import api from '../../../utils/api';
 import { useToast } from '../../../components/common/ToastContainer';
 import Button from '../../../components/common/Button';
@@ -17,7 +17,7 @@ const AffiliatePayouts = () => {
   const [paymentReference, setPaymentReference] = useState('');
 
   // Fetch affiliates with pending payouts
-  const { data: affiliatesData, isLoading } = useQuery({
+  const { data: affiliatesData, isLoading, refetch } = useQuery({
     queryKey: ['admin-affiliate-payouts', statusFilter],
     queryFn: async () => {
       let url = '/admin/affiliates?';
@@ -93,9 +93,14 @@ const AffiliatePayouts = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Affiliate Payouts</h1>
-        <p className="text-gray-700 mt-1">Manage commission payments to affiliates</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Affiliate Payouts</h1>
+          <p className="text-gray-700 mt-1">Manage commission payments to affiliates</p>
+        </div>
+        <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </button>
       </div>
 
       {/* Summary Cards */}

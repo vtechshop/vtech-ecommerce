@@ -63,18 +63,18 @@ export const getResponsiveImageUrls = (url) => {
     baseUrl = url.replace(`/upload/${uploadMatch[1]}/`, '/upload/');
   }
 
-  // Mobile-first responsive widths - smaller sizes for mobile
-  const widths = [100, 150, 200];
+  // Responsive widths matching actual card display sizes
+  const widths = [200, 300, 400];
   const srcSet = widths.map(w => {
     const optimized = baseUrl.replace('/upload/', `/upload/q_auto,f_auto,w_${w},c_fill/`);
     return `${optimized} ${w}w`;
   }).join(', ');
 
-  // Default src optimized for mobile (smallest practical size)
-  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_150,c_fill/');
+  // Default src - good quality for most screens
+  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_300,c_fill/');
 
-  // Sizes attribute - match actual display sizes on mobile
-  const sizes = '(max-width: 480px) 100px, (max-width: 768px) 150px, 200px';
+  // Sizes attribute - match actual card display sizes
+  const sizes = '(max-width: 480px) 160px, (max-width: 768px) 200px, 300px';
 
   return { src, srcSet, sizes };
 };

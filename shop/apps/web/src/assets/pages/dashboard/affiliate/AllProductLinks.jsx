@@ -9,7 +9,7 @@ import {
   Copy, Check, Download, Eye, EyeOff, AlertCircle, Search, Filter,
   Package, TrendingUp, DollarSign, MousePointerClick, Star, Grid3X3,
   List, ChevronDown, ChevronUp, ExternalLink, Share2, Tag, Percent,
-  SlidersHorizontal, X, ArrowUpDown, Sparkles, ShoppingBag, LayoutGrid
+  SlidersHorizontal, X, ArrowUpDown, Sparkles, ShoppingBag, LayoutGrid, RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
@@ -145,7 +145,7 @@ const AllProductLinks = () => {
   });
 
   // Fetch all products
-  const { data: productsData, isLoading, error } = useQuery({
+  const { data: productsData, isLoading, error, refetch } = useQuery({
     queryKey: ['all-products-for-affiliate'],
     queryFn: async () => {
       const response = await api.get('/catalog/products?limit=1000&status=active');
@@ -405,12 +405,18 @@ const AllProductLinks = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">All Product Links</h1>
           <p className="text-gray-600 text-sm mt-1">Generate affiliate links for {products.length} products</p>
         </div>
-        <Link
-          to="/affiliate-dashboard/links"
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
-        >
-          ← Back to Links
-        </Link>
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          <Link
+            to="/affiliate-dashboard/links"
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
+          >
+            ← Back to Links
+          </Link>
+        </div>
       </div>
 
       {/* Quick Stats */}

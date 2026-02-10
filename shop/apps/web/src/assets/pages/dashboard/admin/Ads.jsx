@@ -6,12 +6,13 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { RefreshCw } from 'lucide-react';
 
 const Ads = () => {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-ads', page, statusFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -39,6 +40,10 @@ const Ads = () => {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Ad Campaigns</h1>
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
         <CustomSelect
           value={statusFilter}
           onChange={(value) => {
@@ -55,6 +60,7 @@ const Ads = () => {
           placeholder="All Status"
           className="w-48"
         />
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

@@ -436,7 +436,7 @@ const Product = () => {
 
   // SEO metadata for Google indexing
   const seoTitle = product.seo?.title || `${product.title} - V-Tech Kitchen`;
-  const seoDescription = product.seo?.description || product.description?.substring(0, 160) || `Buy ${product.title} at the best price. ${product.brand ? `${product.brand} ` : ''}High-quality kitchen products with fast shipping.`;
+  const seoDescription = (product.seo?.description || product.description?.substring(0, 155) || `Buy ${product.title} at the best price. ${product.brand ? `${product.brand} ` : ''}High-quality kitchen products with fast shipping.`).substring(0, 155);
   const seoKeywords = product.seo?.keywords?.join(', ') || product.tags?.join(', ') || product.title;
   const productImage = normalizedImages[0] || 'https://www.vtechkitchen.com/og-image.jpg';
   const productUrl = `https://www.vtechkitchen.com/product/${product.slug}`;
@@ -508,7 +508,7 @@ const Product = () => {
       "bestRating": 5,
       "worstRating": 1
     } : undefined,
-    "review": reviewsData?.data?.length > 0 ? reviewsData.data.slice(0, 5).map(review => ({
+    "review": reviewsData?.data?.length > 0 ? reviewsData.data.slice(0, 5).filter(r => r.createdAt && r.rating).map(review => ({
       "@type": "Review",
       "reviewRating": {
         "@type": "Rating",
@@ -520,8 +520,8 @@ const Product = () => {
         "@type": "Person",
         "name": review.userId?.name || "Anonymous"
       },
-      "datePublished": review.createdAt ? new Date(review.createdAt).toISOString() : undefined,
-      "reviewBody": review.comment
+      "datePublished": new Date(review.createdAt).toISOString(),
+      "reviewBody": review.comment || ""
     })) : undefined
   };
 

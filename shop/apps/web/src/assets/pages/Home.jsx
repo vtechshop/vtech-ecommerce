@@ -39,10 +39,10 @@ const Home = React.memo(() => {
     updateMetaTags({
       title: 'V-Tech - Multi-Vendor Marketplace',
       description: 'Discover amazing products from trusted vendors. Free shipping on orders over ₹500.',
-      canonical: window.location.origin,
+      canonical: 'https://www.vtechkitchen.com',
       ogTitle: 'V-Tech - Multi-Vendor Marketplace',
       ogDescription: 'Discover amazing products from trusted vendors.',
-      ogUrl: window.location.origin,
+      ogUrl: 'https://www.vtechkitchen.com',
     });
   }, []);
 

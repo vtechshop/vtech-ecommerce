@@ -7,7 +7,7 @@ import api from '@/utils/api';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, AlertCircle, Package, AlertTriangle, Star, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertCircle, Package, AlertTriangle, Star, ChevronRight, RefreshCw } from 'lucide-react';
 
 // Time period options
 const TIME_PERIODS = [
@@ -35,7 +35,7 @@ const VendorDashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const [period, setPeriod] = useState('30days');
 
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ['vendor-stats', user?._id, period],
     queryFn: async () => {
       const response = await api.get(`/vendors/dashboard/stats?period=${period}`);
@@ -76,8 +76,14 @@ const VendorDashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-3xl md:text-4xl font-bold fade-in-down">Vendor Dashboard</h1>
 
-        {/* Time Period Tabs */}
-        <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+        <div className="flex items-center gap-3">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+
+          {/* Time Period Tabs */}
+          <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
           {TIME_PERIODS.map((p) => (
             <button
               key={p.value}
@@ -91,6 +97,7 @@ const VendorDashboard = () => {
               {p.label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

@@ -87,7 +87,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
               <img
                 src={src}
                 srcSet={srcSet}
-                sizes={sizes || '(max-width: 480px) 100px, (max-width: 768px) 150px, 200px'}
+                sizes={sizes || '(max-width: 480px) 160px, (max-width: 768px) 200px, 300px'}
                 alt={product.seo?.title || product.title}
                 width={150}
                 height={150}

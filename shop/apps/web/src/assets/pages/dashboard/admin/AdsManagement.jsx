@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Eye, Edit, Trash2, X, CheckCircle } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, X, CheckCircle, RefreshCw } from 'lucide-react';
 import api from '../../../utils/api';
 import CustomSelect from '../../../components/common/CustomSelect';
 import { useToast } from '../../../components/common/ToastContainer';
@@ -35,7 +35,7 @@ const AdsManagement = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
 
   // Fetch ads
-  const { data: adsData, isLoading } = useQuery({
+  const { data: adsData, isLoading, refetch } = useQuery({
     queryKey: ['admin-ads', statusFilter],
     queryFn: async () => {
       const params = statusFilter ? `?status=${statusFilter}` : '';
@@ -239,6 +239,9 @@ const AdsManagement = () => {
           <p className="text-gray-700 mt-1">Manage advertising campaigns</p>
         </div>
         <div className="flex items-center gap-3">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
           <Link
             to="/admin-dashboard/ads/approvals"
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"

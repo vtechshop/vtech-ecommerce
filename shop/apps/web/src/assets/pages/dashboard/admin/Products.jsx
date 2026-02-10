@@ -7,7 +7,7 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import { formatCurrency } from '@/utils/format';
-import { Plus, Edit, Trash2, Eye, Search, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Search, X, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Products = () => {
@@ -20,7 +20,7 @@ const Products = () => {
   const [viewingProduct, setViewingProduct] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-products', page, statusFilter, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -168,6 +168,9 @@ const Products = () => {
               Delete Selected
             </Button>
           )}
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
           <Button
             onClick={() => {
               setEditingProduct(null);

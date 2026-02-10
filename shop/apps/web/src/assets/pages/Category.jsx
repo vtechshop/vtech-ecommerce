@@ -85,14 +85,14 @@ const Category = () => {
       updateMetaTags({
         title: `${category.name} - Shop`,
         description: category.description || `Browse ${category.name} products`,
-        canonical: `${window.location.origin}/category/${slug}`,
+        canonical: `https://www.vtechkitchen.com/category/${slug}`,
       });
       injectJSONLD({
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: window.location.origin },
-          { '@type': 'ListItem', position: 2, name: category.name, item: `${window.location.origin}/category/${slug}` },
+          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.vtechkitchen.com' },
+          { '@type': 'ListItem', position: 2, name: category.name, item: `https://www.vtechkitchen.com/category/${slug}` },
         ],
       });
     }
@@ -139,7 +139,7 @@ const Category = () => {
 
   // SEO metadata for category pages
   const seoTitle = category.seo?.title || `${category.name} - V-Tech Kitchen`;
-  const seoDescription = category.seo?.description || category.description || `Shop ${category.name} at V-Tech Kitchen. Browse our selection of premium kitchen products.`;
+  const seoDescription = (category.seo?.description || category.description || `Shop ${category.name} at V-Tech Kitchen. Browse our selection of premium kitchen products.`).substring(0, 155);
   const seoKeywords = category.seo?.keywords?.join(', ') || `${category.name}, kitchen, appliances`;
   const categoryUrl = `https://www.vtechkitchen.com/category/${category.slug}`;
 

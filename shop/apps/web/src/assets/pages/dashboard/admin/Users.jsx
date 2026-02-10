@@ -11,7 +11,7 @@ import { isNewItem, getNewItemClasses, formatRelativeTime } from '@/utils/dateHe
 import {
   Trash2, Eye, Search, UserCheck, UserX, Key, Users as UsersIcon,
   Store, Link2, Shield, Download, CheckSquare, Square, X,
-  ShoppingBag, Package, Clock, Activity
+  ShoppingBag, Package, Clock, Activity, RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
 
@@ -25,7 +25,7 @@ const Users = () => {
   const [resettingPasswordFor, setResettingPasswordFor] = useState(null);
   const [selectedUsers, setSelectedUsers] = useState([]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-users', page, roleFilter, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -186,10 +186,15 @@ const Users = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">User Management</h1>
-        <Button variant="outline" onClick={handleExportCSV}>
-          <Download className="w-4 h-4 mr-2" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+          <Button variant="outline" onClick={handleExportCSV}>
+            <Download className="w-4 h-4 mr-2" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Quick Stats Row */}

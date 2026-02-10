@@ -14,7 +14,8 @@ import {
   AlertCircle,
   CheckCircle,
   Grid,
-  List
+  List,
+  RefreshCw
 } from 'lucide-react';
 import api from '@/utils/api';
 import { addToCart } from '@/store/slices/cartSlice';
@@ -207,7 +208,7 @@ const Wishlist = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
-  const { data: wishlist, isLoading } = useQuery({
+  const { data: wishlist, isLoading, refetch } = useQuery({
     queryKey: ['wishlist'],
     queryFn: async () => {
       const response = await api.get('/user/wishlist');
@@ -288,6 +289,11 @@ const Wishlist = () => {
         </div>
 
         {/* View Toggle */}
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
         {wishlist && wishlist.length > 0 && (
           <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
             <button
@@ -306,6 +312,7 @@ const Wishlist = () => {
             </button>
           </div>
         )}
+        </div>
       </div>
 
       {/* Search */}

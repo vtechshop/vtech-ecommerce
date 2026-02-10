@@ -80,7 +80,7 @@ const VendorStore = () => {
       updateMetaTags({
         title: `${vendor.storeName} - Shop`,
         description: vendor.description || `Shop products from ${vendor.storeName}`,
-        canonical: `${window.location.origin}/vendor/${slug}`,
+        canonical: `https://www.vtechkitchen.com/vendor/${slug}`,
       });
 
       injectJSONLD({
@@ -88,7 +88,7 @@ const VendorStore = () => {
         '@type': 'Organization',
         'name': vendor.storeName,
         'description': vendor.description,
-        'url': `${window.location.origin}/vendor/${slug}`,
+        'url': `https://www.vtechkitchen.com/vendor/${slug}`,
       });
     }
   }, [vendor, slug]);

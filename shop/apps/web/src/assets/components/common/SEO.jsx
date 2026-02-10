@@ -4,12 +4,12 @@ const SEO = ({
   title = 'V-Tech Kitchen - Premium Kitchen Appliances & Utensils',
   description = 'Shop premium kitchen appliances and utensils at V-Tech Kitchen. Discover quality cookware, gadgets, and tools for your modern kitchen. Fast shipping, great prices.',
   keywords = 'kitchen appliances, cookware, kitchen utensils, kitchen gadgets, cooking tools, premium kitchenware',
-  image = 'https://vtechkitchen.com/og-image.jpg',
+  image = 'https://www.vtechkitchen.com/og-image.jpg',
   url,
   type = 'website',
   structuredData,
 }) => {
-  const canonicalUrl = url || (typeof window !== 'undefined' ? window.location.href : 'https://vtechkitchen.com');
+  const canonicalUrl = url || (typeof window !== 'undefined' ? window.location.href : 'https://www.vtechkitchen.com');
 
   return (
     <Helmet>

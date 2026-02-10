@@ -10,6 +10,7 @@ import Input from '@/components/common/Input';
 import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { loadRazorpayScript } from '@/utils/razorpay';
+import { RefreshCw } from 'lucide-react';
 
 const Ads = () => {
   const queryClient = useQueryClient();
@@ -44,7 +45,7 @@ const Ads = () => {
     enabled: !!campaignForm.placement && isCreateModalOpen,
   });
 
-  const { data: campaigns, isLoading } = useQuery({
+  const { data: campaigns, isLoading, refetch } = useQuery({
     queryKey: ['ad-campaigns'],
     queryFn: async () => {
       const response = await api.get('/ads/campaigns');
@@ -389,6 +390,10 @@ const Ads = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Sponsored Ads</h1>
         <div className="flex items-center gap-4">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
           <div className="text-right">
             <p className="text-sm text-gray-700">Wallet Balance</p>
             <p className="text-2xl font-bold text-green-600">

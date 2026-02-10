@@ -23,7 +23,7 @@ const Page = () => {
       updateMetaTags({
         title: `${page.title} - V-Tech`,
         description: page.excerpt || page.content?.substring(0, 160),
-        canonical: `${window.location.origin}/page/${slug}`,
+        canonical: `https://www.vtechkitchen.com/page/${slug}`,
       });
     }
   }, [page, slug]);

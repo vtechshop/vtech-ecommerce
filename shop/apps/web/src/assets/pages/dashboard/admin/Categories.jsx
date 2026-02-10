@@ -5,7 +5,7 @@ import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
 import { useToast } from '@/components/common/ToastContainer';
-import { Plus, Edit, Trash2, X, Save, FolderTree, Folder, ZoomIn, Upload, Clock, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Save, FolderTree, Folder, ZoomIn, Upload, Clock, CheckCircle, RefreshCw } from 'lucide-react';
 
 const Categories = () => {
   const queryClient = useQueryClient();
@@ -13,7 +13,7 @@ const Categories = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
 
-  const { data: categories, isLoading } = useQuery({
+  const { data: categories, isLoading, refetch } = useQuery({
     queryKey: ['admin-categories'],
     queryFn: async () => {
       const response = await api.get('/admin/categories');
@@ -96,16 +96,21 @@ const Categories = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Category Management</h1>
-        <Button
-          onClick={() => {
-            setEditingCategory(null);
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Add Category
-        </Button>
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+          <Button
+            onClick={() => {
+              setEditingCategory(null);
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Add Category
+          </Button>
+        </div>
       </div>
 
       {/* Categories Table */}

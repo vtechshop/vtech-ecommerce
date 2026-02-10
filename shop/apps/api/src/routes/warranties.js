@@ -4,6 +4,8 @@ const warrantyService = require('../services/warrantyService');
 const { authenticate, authorize, optionalAuth } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validate');
 const Warranty = require('../models/Warranty');
+const Order = require('../models/Order');
+const Product = require('../models/Product');
 const logger = require('../config/logger');
 
 // Warranty check - optionalAuth so logged-in users get their data, guests can search by orderId
@@ -585,6 +587,104 @@ router.post('/admin/bulk-action', authenticate, authorize(['admin']), async (req
       success: true,
       message: `${action} completed for ${updatedCount} warranties`,
       data: { updatedCount },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Sync warranties - create missing Warranty records from Order data (admin only)
+// POST /api/warranties/admin/sync
+router.post('/admin/sync', authenticate, authorize(['admin']), async (req, res, next) => {
+  try {
+    // Find all delivered orders with warranty items
+    const orders = await Order.find({
+      'items.warranty.hasWarranty': true,
+      status: { $in: ['delivered', 'cancelled'] },
+    }).lean();
+
+    let created = 0;
+    let skipped = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const order of orders) {
+      for (const item of order.items) {
+        if (!item.warranty?.hasWarranty) continue;
+
+        // Check if Warranty record already exists for this order+product
+        const existing = await Warranty.findOne({
+          purchaseId: order.orderId,
+          productId: item.productId,
+        });
+
+        if (existing) {
+          skipped++;
+          continue;
+        }
+
+        // Calculate warranty period in days
+        let warrantyPeriodDays = 0;
+        if (item.warranty.durationType === 'lifetime') {
+          warrantyPeriodDays = 36500;
+        } else if (item.warranty.durationType === 'years') {
+          warrantyPeriodDays = (item.warranty.duration || 1) * 365;
+        } else {
+          warrantyPeriodDays = (item.warranty.duration || 1) * 30;
+        }
+
+        try {
+          const productDetails = await Product.findById(item.productId);
+
+          await warrantyService.generateWarranty({
+            purchaseId: order.orderId,
+            orderId: order._id,
+            user: {
+              id: order.userId || null,
+              name: order.shipTo?.fullName || 'Guest',
+              email: order.guestEmail || 'N/A',
+              phone: order.shipTo?.phone || '',
+            },
+            product: {
+              id: item.productId,
+              name: item.name || productDetails?.title || productDetails?.name || 'Unknown Product',
+              model: productDetails?.sku || '',
+              serial: '',
+              category: typeof productDetails?.category === 'string' ? productDetails.category : '',
+            },
+            purchaseDate: order.createdAt || new Date(),
+            warrantyPeriodDays,
+            warrantyType: 'manufacturer',
+            extraInfo: {
+              store: 'V-Tech',
+              invoiceNo: order.orderId,
+              remarks: item.warranty.description || '',
+            },
+          });
+
+          // If order is cancelled, void the warranty
+          if (order.status === 'cancelled') {
+            await Warranty.updateOne(
+              { purchaseId: order.orderId, productId: item.productId },
+              { status: 'void', isActive: false }
+            );
+          }
+
+          created++;
+        } catch (err) {
+          failed++;
+          errors.push(`${order.orderId} / ${item.name}: ${err.message}`);
+          logger.error(`Sync warranty failed for order ${order.orderId}, product ${item.name}: ${err.message}`);
+        }
+      }
+    }
+
+    logger.info(`Warranty sync completed by admin ${req.user._id}: created=${created}, skipped=${skipped}, failed=${failed}`);
+
+    res.json({
+      success: true,
+      message: `Sync complete: ${created} created, ${skipped} already existed, ${failed} failed`,
+      data: { created, skipped, failed, errors: errors.slice(0, 10) },
     });
   } catch (error) {
     next(error);

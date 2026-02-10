@@ -6,7 +6,7 @@ import api from '@/utils/api';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, AlertCircle, Package, UserCheck, MessageSquare, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, AlertCircle, Package, UserCheck, MessageSquare, ChevronRight, RefreshCw } from 'lucide-react';
 
 // Time period options
 const TIME_PERIODS = [
@@ -33,7 +33,7 @@ const TrendIndicator = ({ current, previous, suffix = '' }) => {
 const AdminDashboard = () => {
   const [period, setPeriod] = useState('30days');
 
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, refetch } = useQuery({
     queryKey: ['admin-stats', period],
     queryFn: async () => {
       const response = await api.get(`/admin/dashboard/stats?period=${period}`);
@@ -75,6 +75,10 @@ const AdminDashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-3xl md:text-4xl font-bold fade-in-down">Admin Dashboard</h1>
 
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
         {/* Time Period Tabs */}
         <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
           {TIME_PERIODS.map((p) => (
@@ -90,6 +94,7 @@ const AdminDashboard = () => {
               {p.label}
             </button>
           ))}
+        </div>
         </div>
       </div>
 

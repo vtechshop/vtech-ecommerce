@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, Upload, X, FileText, AlertCircle, CheckCircle, Clock, BadgeCheck, Loader2 } from 'lucide-react';
+import { Shield, Upload, X, FileText, AlertCircle, CheckCircle, Clock, BadgeCheck, Loader2, RefreshCw } from 'lucide-react';
 import api from '../../../utils/api';
 import { useToast } from '../../../components/common/ToastContainer';
 
@@ -34,7 +34,7 @@ const AffiliateKYC = () => {
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
   // Fetch KYC data
-  const { data: kycData, isLoading, error } = useQuery({
+  const { data: kycData, isLoading, error, refetch } = useQuery({
     queryKey: ['affiliate-kyc'],
     queryFn: async () => {
       const response = await api.get('/affiliates/kyc');
@@ -284,7 +284,13 @@ const AffiliateKYC = () => {
           </h1>
           <p className="text-gray-700 mt-1">Complete your verification to receive payouts</p>
         </div>
-        {getStatusBadge(kyc.status || 'pending')}
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          {getStatusBadge(kyc.status || 'pending')}
+        </div>
       </div>
 
       {/* Rejection reason */}

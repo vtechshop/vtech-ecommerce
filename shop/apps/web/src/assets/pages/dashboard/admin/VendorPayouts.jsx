@@ -4,6 +4,7 @@ import api from '@/utils/api';
 import { useToast } from '@/components/common/ToastContainer';
 import Button from '@/components/common/Button';
 import { formatCurrency, formatDate } from '@/utils/format';
+import { RefreshCw } from 'lucide-react';
 
 const VendorPayouts = () => {
   const toast = useToast();
@@ -13,7 +14,7 @@ const VendorPayouts = () => {
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'held'
 
   // Fetch pending payouts
-  const { data: pendingPayouts, isLoading } = useQuery({
+  const { data: pendingPayouts, isLoading, refetch } = useQuery({
     queryKey: ['admin', 'payouts', 'pending'],
     queryFn: async () => {
       const response = await api.get('/admin/payouts/pending');
@@ -168,9 +169,14 @@ const VendorPayouts = () => {
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Vendor Payouts</h1>
-        <p className="text-gray-700">Manage and process vendor commission payouts</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Vendor Payouts</h1>
+          <p className="text-gray-700">Manage and process vendor commission payouts</p>
+        </div>
+        <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+          <RefreshCw className="w-4 h-4" /> Refresh
+        </button>
       </div>
 
       {/* Summary Cards */}

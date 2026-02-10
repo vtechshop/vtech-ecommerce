@@ -10,7 +10,7 @@ import {
   ExternalLink, Share2, QrCode, MousePointerClick, TrendingUp,
   DollarSign, ChevronRight, Lightbulb, Globe, Image, FileText,
   Facebook, Twitter, MessageCircle, Mail, ChevronDown, ChevronUp,
-  Sparkles, Target, Clock, Zap
+  Sparkles, Target, Clock, Zap, RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
 
@@ -110,7 +110,7 @@ const Links = () => {
   const [showLinkBuilder, setShowLinkBuilder] = useState(false);
   const toast = useToast();
 
-  const { data: linksData, isLoading, error } = useQuery({
+  const { data: linksData, isLoading, error, refetch } = useQuery({
     queryKey: ['affiliate-links'],
     queryFn: async () => {
       const response = await api.get('/affiliates/links');
@@ -228,14 +228,20 @@ const Links = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Affiliate Links</h1>
           <p className="text-gray-600 text-sm mt-1">Generate and share your affiliate links</p>
         </div>
-        <Link
-          to="/affiliate-dashboard/all-product-links"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
-        >
-          <ShoppingBag className="w-4 h-4" />
-          All Product Links
-          <ChevronRight className="w-4 h-4" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          <Link
+            to="/affiliate-dashboard/all-product-links"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            All Product Links
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       {/* Quick Stats */}

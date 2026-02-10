@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Info, HelpCircle, DollarSign, CheckCircle, Download, Calendar, LinkIcon, AlertCircle, Loader2, ExternalLink, Shield, Wallet, Clock, TrendingUp, ArrowUpRight, ArrowDownRight, Filter, Search, X, ChevronRight, CreditCard, Receipt, RefreshCcw, Banknote } from 'lucide-react';
+import { Info, HelpCircle, DollarSign, CheckCircle, Download, Calendar, LinkIcon, AlertCircle, Loader2, ExternalLink, Shield, Wallet, Clock, TrendingUp, ArrowUpRight, ArrowDownRight, Filter, Search, X, ChevronRight, CreditCard, Receipt, RefreshCcw, Banknote, RefreshCw } from 'lucide-react';
 import api from '@/utils/api';
 import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
@@ -220,7 +220,7 @@ const Settlements = () => {
     },
   });
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['settlements', page],
     queryFn: async () => {
       const response = await api.get(`/vendors/settlements?page=${page}&limit=20`);
@@ -334,6 +334,10 @@ const Settlements = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <h1 className="text-2xl sm:text-3xl font-bold">Payments & Settlements</h1>
         <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
           <button
             onClick={() => setShowExport(!showExport)}
             className="flex items-center gap-1.5 px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"

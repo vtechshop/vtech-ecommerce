@@ -6,7 +6,7 @@ import {
   Info, HelpCircle, DollarSign, CheckCircle, TrendingUp, Clock, Wallet,
   Calendar, ArrowUpRight, ArrowDownRight, Filter, ChevronDown, ChevronUp,
   Award, Target, Zap, Gift, CreditCard, FileText, Download, Search,
-  Package, ExternalLink, AlertCircle, BarChart3, PieChart, Receipt
+  Package, ExternalLink, AlertCircle, BarChart3, PieChart, Receipt, RefreshCw
 } from 'lucide-react';
 import api from '@/utils/api';
 import Pagination from '@/components/common/Pagination';
@@ -211,7 +211,7 @@ const Commissions = () => {
   });
 
   // Fetch commissions
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['affiliate-commissions', page, statusFilter, dateRange],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -313,14 +313,20 @@ const Commissions = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Commissions</h1>
           <p className="text-gray-600 text-sm mt-1">Track your earnings and payouts</p>
         </div>
-        <button
-          onClick={() => setShowInfo(!showInfo)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
-        >
-          <HelpCircle className="w-4 h-4" />
-          How It Works
-          {showInfo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          <button
+            onClick={() => setShowInfo(!showInfo)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
+          >
+            <HelpCircle className="w-4 h-4" />
+            How It Works
+            {showInfo ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
 
       {/* Info Panel (Collapsible) */}
