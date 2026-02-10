@@ -349,6 +349,10 @@ app.use('/uploads', express.static('uploads'));
 if (env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../../web/dist');
   const fs = require('fs');
+  const seoController = require('./controllers/seoController');
+
+  // Bot User-Agent detection pattern
+  const BOT_UA_PATTERN = /googlebot|google-inspectiontool|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|rogerbot|screaming frog/i;
 
   // Only serve frontend if the build exists (for combined deployments)
   // If frontend is deployed separately (e.g., Vercel), this will be skipped
@@ -362,6 +366,14 @@ if (env.NODE_ENV === 'production') {
       if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
         return next();
       }
+
+      // Serve pre-rendered HTML to search engine bots for SEO
+      const userAgent = req.headers['user-agent'] || '';
+      if (BOT_UA_PATTERN.test(userAgent)) {
+        req.query.path = req.path;
+        return seoController.renderPage(req, res, next);
+      }
+
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
   }
