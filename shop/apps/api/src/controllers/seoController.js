@@ -11,9 +11,8 @@ function ensureProtocol(url, defaultUrl) {
   if (result && !result.startsWith('http://') && !result.startsWith('https://')) {
     result = 'https://' + result;
   }
-  // Ensure www prefix for vtechkitchen.com
-  result = result.replace('https://vtechkitchen.com', 'https://www.vtechkitchen.com');
-  result = result.replace('http://vtechkitchen.com', 'https://www.vtechkitchen.com');
+  // Ensure www prefix for vtechkitchen.com (handle both exact and subdomain-less forms)
+  result = result.replace(/https?:\/\/(?:www\.)?vtechkitchen\.com/i, 'https://www.vtechkitchen.com');
   return result.replace(/\/$/, ''); // Remove trailing slash
 }
 
@@ -57,7 +56,7 @@ exports.getProductSitemap = async (req, res, next) => {
       .limit(50000)
       .lean();
 
-    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -88,7 +87,7 @@ exports.getCategorySitemap = async (req, res, next) => {
       .select('slug updatedAt')
       .lean();
 
-    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -128,7 +127,7 @@ exports.getBlogSitemap = async (req, res, next) => {
       .select('slug updatedAt')
       .lean();
 
-    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -159,7 +158,7 @@ exports.getVendorSitemap = async (req, res, next) => {
       .select('slug updatedAt')
       .lean();
 
-    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
@@ -186,10 +185,10 @@ exports.getVendorSitemap = async (req, res, next) => {
 // Get robots.txt
 exports.getRobotsTxt = async (req, res, next) => {
   try {
-    const clientUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
+    const clientUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
 
     const txt = `# VTech Kitchen - Robots.txt
-# https://vtechkitchen.com
+# https://www.vtechkitchen.com
 
 User-agent: *
 Allow: /
@@ -239,14 +238,14 @@ exports.renderPage = async (req, res, next) => {
       return res.status(400).json({ error: 'Path parameter required' });
     }
 
-    const clientUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
+    const clientUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
     const fullUrl = `${clientUrl}${path}`;
 
     // Parse the path to determine page type
     const pathParts = path.split('/').filter(Boolean);
     let pageData = {
       title: 'V-Tech Kitchen - Premium Kitchen Appliances & Utensils',
-      description: 'Shop premium kitchen appliances and utensils at V-Tech Kitchen. Discover quality cookware, gadgets, and tools for your modern kitchen.',
+      description: 'Shop premium kitchen appliances and utensils at V-Tech Kitchen. Quality cookware, gadgets, and tools for your kitchen.',
       image: `${clientUrl}/og-image.jpg`,
       type: 'website',
       content: '',
@@ -277,16 +276,20 @@ exports.renderPage = async (req, res, next) => {
           '@context': 'https://schema.org',
           '@type': 'Product',
           name: product.title,
-          description: product.description,
-          image: product.images,
+          description: (product.description || product.shortDescription || `${product.title} - Premium kitchen product`).substring(0, 500),
+          image: product.images?.length ? product.images : undefined,
           sku: product.sku || product._id.toString(),
           brand: { '@type': 'Brand', name: product.brand || product.vendorId?.storeName || 'V-Tech Kitchen' },
           offers: {
             '@type': 'Offer',
-            price: product.price,
+            price: product.price || 0,
             priceCurrency: 'INR',
             availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             url: fullUrl,
+            seller: {
+              '@type': 'Organization',
+              name: product.vendorId?.storeName || 'V-Tech Kitchen',
+            },
           },
         };
       }
@@ -346,7 +349,7 @@ exports.renderPage = async (req, res, next) => {
 
       if (post) {
         pageData.title = `${post.title} - V-Tech Kitchen Blog`;
-        pageData.description = post.excerpt || post.content?.substring(0, 160) || `Read ${post.title} on V-Tech Kitchen Blog.`;
+        pageData.description = (post.excerpt || post.content?.substring(0, 155) || `Read ${post.title} on V-Tech Kitchen Blog.`).substring(0, 155);
         pageData.image = post.featuredImage || pageData.image;
         pageData.type = 'article';
         pageData.content = `
@@ -473,7 +476,7 @@ exports.getProductFeed = async (req, res, next) => {
       .limit(10000)
       .lean();
 
-    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://vtechkitchen.com');
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
