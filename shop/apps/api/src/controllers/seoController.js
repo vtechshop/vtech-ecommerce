@@ -241,6 +241,13 @@ exports.renderPage = async (req, res, next) => {
     const clientUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
     const fullUrl = `${clientUrl}${path}`;
 
+    // Fetch categories and blog posts for site-wide navigation (resolves orphan pages)
+    const [navCategories, navPosts, navVendors] = await Promise.all([
+      Category.find({ isActive: true }).select('name slug').lean().catch(() => []),
+      Post.find({ published: true }).select('title slug').limit(10).lean().catch(() => []),
+      Vendor.find({ status: 'active' }).select('storeName slug').lean().catch(() => []),
+    ]);
+
     // Parse the path to determine page type
     const pathParts = path.split('/').filter(Boolean);
     let pageData = {
@@ -252,8 +259,24 @@ exports.renderPage = async (req, res, next) => {
       schema: null,
     };
 
+    // Homepage
+    if (pathParts.length === 0 || path === '/') {
+      const featuredProducts = await Product.find({ published: true })
+        .select('title slug price')
+        .sort({ createdAt: -1 })
+        .limit(12)
+        .lean();
+
+      pageData.content = `
+        <h1>V-Tech Kitchen - Premium Kitchen Appliances & Utensils</h1>
+        <p>Discover the finest collection of kitchen appliances, cookware, and utensils. Premium quality products from trusted brands.</p>
+        ${navCategories.length ? `<h2>Shop by Category</h2><ul>${navCategories.map(c => `<li><a href="${clientUrl}/category/${c.slug}">${c.name}</a></li>`).join('')}</ul>` : ''}
+        ${featuredProducts.length ? `<h2>Featured Products</h2><ul>${featuredProducts.map(p => `<li><a href="${clientUrl}/product/${p.slug}">${p.title} - ₹${p.price?.toLocaleString('en-IN')}</a></li>`).join('')}</ul>` : ''}
+      `;
+    }
+
     // Product page
-    if (pathParts[0] === 'product' && pathParts[1]) {
+    else if (pathParts[0] === 'product' && pathParts[1]) {
       const product = await Product.findOne({ slug: pathParts[1], published: true })
         .populate('vendorId', 'storeName')
         .populate('categoryIds', 'name')
@@ -375,24 +398,68 @@ exports.renderPage = async (req, res, next) => {
 
     // Products/Search page
     else if (pathParts[0] === 'products' || pathParts[0] === 'search') {
-      pageData.title = 'Search Products - V-Tech Kitchen';
-      pageData.description = 'Search for premium kitchen appliances, cookware, and utensils at V-Tech Kitchen.';
+      const recentProducts = await Product.find({ published: true })
+        .select('title slug price')
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean();
+
+      pageData.title = 'All Products - V-Tech Kitchen';
+      pageData.description = 'Browse all premium kitchen appliances, cookware, and utensils at V-Tech Kitchen. Best prices, fast delivery.';
       pageData.content = `
-        <h1>Search Products</h1>
-        <p>Find the best kitchen appliances and utensils at V-Tech Kitchen.</p>
-        <p>Browse our categories: Cookware, Appliances, Utensils, Gadgets</p>
+        <h1>All Products - V-Tech Kitchen</h1>
+        <p>Browse our complete collection of premium kitchen appliances and utensils.</p>
+        ${recentProducts.length ? `<h2>Our Products</h2><ul>${recentProducts.map(p => `<li><a href="${clientUrl}/product/${p.slug}">${p.title} - ₹${p.price?.toLocaleString('en-IN')}</a></li>`).join('')}</ul>` : ''}
       `;
+    }
+
+    // Blog listing page
+    else if (pathParts[0] === 'blog' && !pathParts[1]) {
+      pageData.title = 'Blog - V-Tech Kitchen';
+      pageData.description = 'Read tips, guides, and news about kitchen appliances and cooking on the V-Tech Kitchen blog.';
+      pageData.content = `
+        <h1>Blog - V-Tech Kitchen</h1>
+        <p>Tips, guides, and news about kitchen appliances and cooking.</p>
+        ${navPosts.length ? `<ul>${navPosts.map(p => `<li><a href="${clientUrl}/blog/${p.slug}">${p.title}</a></li>`).join('')}</ul>` : ''}
+      `;
+    }
+
+    // Track order page
+    else if (pathParts[0] === 'track-order') {
+      pageData.title = 'Track Your Order - V-Tech Kitchen';
+      pageData.description = 'Track your V-Tech Kitchen order status with your order ID.';
+      pageData.content = `<h1>Track Your Order - V-Tech Kitchen</h1><p>Enter your order ID to track your delivery status.</p>`;
+    }
+
+    // Warranty check page
+    else if (pathParts[0] === 'warranty-check') {
+      pageData.title = 'Warranty Check - V-Tech Kitchen';
+      pageData.description = 'Check warranty status of your V-Tech Kitchen products using your order ID or serial number.';
+      pageData.content = `<h1>Warranty Check - V-Tech Kitchen</h1><p>Verify the warranty status of your purchased products.</p>`;
+    }
+
+    // Cookie policy page (not under /page/)
+    else if (pathParts[0] === 'cookie-policy') {
+      pageData.title = 'Cookie Policy - V-Tech Kitchen';
+      pageData.description = 'Learn about how V-Tech Kitchen uses cookies and similar technologies.';
+      pageData.content = `<h1>Cookie Policy - V-Tech Kitchen</h1><p>Information about cookies and tracking technologies used on our site.</p>`;
     }
 
     // Static pages
     else if (pathParts[0] === 'page') {
       const pageName = pathParts[1];
       const pageContent = {
-        'privacy-policy': { title: 'Privacy Policy', desc: 'Learn how V-Tech Kitchen protects your privacy and handles your data.' },
-        'terms-of-service': { title: 'Terms of Service', desc: 'Read the terms and conditions for using V-Tech Kitchen.' },
-        'return-policy': { title: 'Return Policy', desc: 'Learn about our return and refund policies at V-Tech Kitchen.' },
+        'privacy': { title: 'Privacy Policy', desc: 'Learn how V-Tech Kitchen protects your privacy and handles your data.' },
+        'terms': { title: 'Terms of Service', desc: 'Read the terms and conditions for using V-Tech Kitchen.' },
+        'returns': { title: 'Return & Refund Policy', desc: 'Learn about our return and refund policies at V-Tech Kitchen.' },
+        'shipping': { title: 'Shipping Information', desc: 'Delivery options, shipping times, and costs for V-Tech Kitchen orders.' },
+        'faq': { title: 'Frequently Asked Questions', desc: 'Find answers to common questions about V-Tech Kitchen products and services.' },
         'about': { title: 'About Us', desc: 'Learn about V-Tech Kitchen - your trusted source for premium kitchen products.' },
         'contact': { title: 'Contact Us', desc: 'Get in touch with V-Tech Kitchen for support or inquiries.' },
+        'vendor-terms': { title: 'Vendor Terms', desc: 'Terms and conditions for vendors selling on V-Tech Kitchen.' },
+        'vendor-guide': { title: 'Vendor Guide', desc: 'Guide for vendors on how to sell on V-Tech Kitchen marketplace.' },
+        'affiliate-terms': { title: 'Affiliate Terms', desc: 'Terms and conditions for the V-Tech Kitchen affiliate program.' },
+        'affiliate-guide': { title: 'Affiliate Guide', desc: 'Guide to earning with the V-Tech Kitchen affiliate program.' },
       };
 
       if (pageContent[pageName]) {
@@ -430,27 +497,75 @@ exports.renderPage = async (req, res, next) => {
   ${pageData.schema ? `<script type="application/ld+json">${JSON.stringify(pageData.schema)}</script>` : ''}
 
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; color: #1f2937; }
     h1 { color: #1f2937; }
-    a { color: #3b82f6; }
+    a { color: #3b82f6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
     ul { list-style: none; padding: 0; }
     li { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+    nav.site-nav { padding: 12px 0; border-bottom: 1px solid #e5e7eb; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    nav.site-nav a { font-weight: 500; }
+    nav.site-nav .brand { font-weight: 700; font-size: 1.2rem; margin-right: 16px; }
+    footer.site-footer { margin-top: 40px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
+    footer.site-footer h3 { font-size: 0.95rem; margin: 0 0 8px 0; color: #374151; }
+    footer.site-footer .footer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; }
+    footer.site-footer ul { margin: 0; }
+    footer.site-footer li { padding: 4px 0; border: none; font-size: 0.9rem; }
   </style>
 </head>
 <body>
   <header>
-    <nav>
-      <a href="${clientUrl}">V-Tech Kitchen</a> |
-      <a href="${clientUrl}/products">Products</a> |
-      <a href="${clientUrl}/blog">Blog</a> |
-      <a href="${clientUrl}/page/contact">Contact</a>
+    <nav class="site-nav">
+      <a href="${clientUrl}" class="brand">V-Tech Kitchen</a>
+      <a href="${clientUrl}/products">Products</a>
+      ${navCategories.map(c => `<a href="${clientUrl}/category/${c.slug}">${c.name}</a>`).join('\n      ')}
+      <a href="${clientUrl}/page/contact">Contact Us</a>
+      <a href="${clientUrl}/blog">Blog</a>
+      <a href="${clientUrl}/page/about">About</a>
+      <a href="${clientUrl}/track-order">Track Order</a>
+      <a href="${clientUrl}/warranty-check">Warranty Check</a>
     </nav>
   </header>
   <main>
     ${pageData.content}
   </main>
-  <footer>
-    <p>&copy; 2024 V-Tech Kitchen. All rights reserved.</p>
+  <footer class="site-footer">
+    <div class="footer-grid">
+      <div>
+        <h3>Shop by Category</h3>
+        <ul>
+          <li><a href="${clientUrl}/products">All Products</a></li>
+          ${navCategories.map(c => `<li><a href="${clientUrl}/category/${c.slug}">${c.name}</a></li>`).join('\n          ')}
+        </ul>
+      </div>
+      ${navVendors.length ? `<div>
+        <h3>Our Vendors</h3>
+        <ul>
+          ${navVendors.map(v => `<li><a href="${clientUrl}/vendor/${v.slug}">${v.storeName}</a></li>`).join('\n          ')}
+        </ul>
+      </div>` : ''}
+      ${navPosts.length ? `<div>
+        <h3>From Our Blog</h3>
+        <ul>
+          ${navPosts.map(p => `<li><a href="${clientUrl}/blog/${p.slug}">${p.title}</a></li>`).join('\n          ')}
+        </ul>
+      </div>` : ''}
+      <div>
+        <h3>Information</h3>
+        <ul>
+          <li><a href="${clientUrl}/page/about">About Us</a></li>
+          <li><a href="${clientUrl}/page/contact">Contact Us</a></li>
+          <li><a href="${clientUrl}/page/privacy">Privacy Policy</a></li>
+          <li><a href="${clientUrl}/page/terms">Terms of Service</a></li>
+          <li><a href="${clientUrl}/page/returns">Return Policy</a></li>
+          <li><a href="${clientUrl}/page/shipping">Shipping Info</a></li>
+          <li><a href="${clientUrl}/page/faq">FAQ</a></li>
+          <li><a href="${clientUrl}/track-order">Track Order</a></li>
+          <li><a href="${clientUrl}/warranty-check">Warranty Check</a></li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top: 24px; font-size: 0.85rem; color: #6b7280;">&copy; ${new Date().getFullYear()} V-Tech Kitchen. All rights reserved.</p>
   </footer>
   <script>
     // Redirect real users to React app
