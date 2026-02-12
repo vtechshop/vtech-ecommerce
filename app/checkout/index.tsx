@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 let RazorpayCheckout: any = null;
 try {
   RazorpayCheckout = require('react-native-razorpay').default;
@@ -42,6 +43,7 @@ export default function CheckoutScreen() {
   const [saving, setSaving] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('standard');
+  const [locatingGPS, setLocatingGPS] = useState(false);
 
   const loadAddresses = async () => {
     try {
@@ -78,6 +80,38 @@ export default function CheckoutScreen() {
       Alert.alert('Error', e.response?.data?.message || 'Failed to add address');
     }
     setSaving(false);
+  };
+
+  const handleGPSAutoFill = async () => {
+    setLocatingGPS(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission is required to auto-fill address');
+        setLocatingGPS(false);
+        return;
+      }
+      const location = await Location.getCurrentPositionAsync({});
+      const [geocode] = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+      if (geocode) {
+        setForm((prev) => ({
+          ...prev,
+          addressLine1: [geocode.streetNumber, geocode.street].filter(Boolean).join(' ') || prev.addressLine1,
+          addressLine2: geocode.district || prev.addressLine2 || '',
+          city: geocode.city || geocode.subregion || prev.city,
+          state: geocode.region || prev.state,
+          pincode: geocode.postalCode || prev.pincode,
+          country: geocode.country || 'India',
+        }));
+        Alert.alert('Location Found', 'Address fields have been auto-filled. Please verify and complete any missing details.');
+      }
+    } catch {
+      Alert.alert('Error', 'Could not determine your location. Please enter address manually.');
+    }
+    setLocatingGPS(false);
   };
 
   const selectedDelivery = DELIVERY_OPTIONS.find((d) => d.key === deliveryMethod)!;
@@ -227,7 +261,23 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         ) : (
           <View style={styles.formCard}>
-            <Text style={styles.formTitle}>New Address</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.formTitle}>New Address</Text>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.infoLight, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 1, borderRadius: borderRadius.full }}
+                onPress={handleGPSAutoFill}
+                disabled={locatingGPS}
+              >
+                {locatingGPS ? (
+                  <ActivityIndicator size={14} color={colors.info} />
+                ) : (
+                  <Ionicons name="location" size={14} color={colors.info} />
+                )}
+                <Text style={{ fontSize: fontSize.xs, color: colors.info, fontWeight: fontWeight.semibold }}>
+                  {locatingGPS ? 'Locating...' : 'Use My Location'}
+                </Text>
+              </TouchableOpacity>
+            </View>
             {[
               { key: 'fullName', label: 'Full Name *', placeholder: 'John Doe' },
               { key: 'phone', label: 'Phone *', placeholder: '9876543210', keyboard: 'phone-pad' as const },

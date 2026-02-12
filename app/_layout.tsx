@@ -2,9 +2,11 @@ import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { Provider } from 'react-redux';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { store, useAppDispatch } from '../src/store';
 import { loadUser } from '../src/store/slices/authSlice';
 import { useFirstLaunch } from '../src/hooks/useFirstLaunch';
+import { ToastProvider } from '../src/components/ui/Toast';
 import { colors, fontWeight, letterSpacing } from '../src/theme';
 
 function RootLayoutInner() {
@@ -42,6 +44,9 @@ function RootLayoutInner() {
         <Stack.Screen name="affiliate" options={{ headerShown: false }} />
         <Stack.Screen name="admin" options={{ headerShown: false }} />
         <Stack.Screen name="pages" options={{ headerShown: false }} />
+        <Stack.Screen name="chatbot" options={{ title: 'V-Tech Assistant', headerTintColor: colors.primary }} />
+        <Stack.Screen name="gamification" options={{ headerShown: false }} />
+        <Stack.Screen name="deals" options={{ headerShown: false }} />
       </Stack>
     </>
   );
@@ -49,8 +54,12 @@ function RootLayoutInner() {
 
 export default function RootLayout() {
   return (
-    <Provider store={store}>
-      <RootLayoutInner />
-    </Provider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Provider store={store}>
+        <ToastProvider>
+          <RootLayoutInner />
+        </ToastProvider>
+      </Provider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,15 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, Alert, Image, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, Alert, Image, TouchableOpacity, Share } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { ordersApi } from '../../src/api/orders';
 import { useAppDispatch } from '../../src/store';
 import { addToCart } from '../../src/store/slices/cartSlice';
 import { Order } from '../../src/types';
 import StatusTimeline from '../../src/components/order/StatusTimeline';
 import RateReviewModal from '../../src/components/order/RateReviewModal';
+import TrackingMap from '../../src/components/order/TrackingMap';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
 import Button from '../../src/components/ui/Button';
+import { useToast } from '../../src/components/ui/Toast';
+import { haptic } from '../../src/utils/haptics';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpacing } from '../../src/theme';
 
 const statusColors: Record<string, string> = {
@@ -63,8 +68,11 @@ export default function OrderDetailScreen() {
     } catch { Alert.alert('Error', 'Tracking information not available'); }
   };
 
+  const { showToast } = useToast();
+
   const handleReorder = async () => {
     if (!order) return;
+    haptic.medium();
     let added = 0;
     for (const item of order.items) {
       if (item.product?._id) {
@@ -75,12 +83,55 @@ export default function OrderDetailScreen() {
       }
     }
     if (added > 0) {
+      showToast('success', 'Items Added', `${added} item${added > 1 ? 's' : ''} added to cart`);
       Alert.alert('Reorder', `${added} item${added > 1 ? 's' : ''} added to cart`, [
         { text: 'Continue Shopping' },
         { text: 'Go to Cart', onPress: () => router.push('/(tabs)/cart') },
       ]);
     } else {
-      Alert.alert('Error', 'Could not add items to cart');
+      showToast('error', 'Error', 'Could not add items to cart');
+    }
+  };
+
+  const handleShareInvoice = async () => {
+    if (!order) return;
+    haptic.light();
+    const html = `
+      <html><head><style>
+        body { font-family: Arial; padding: 20px; }
+        h1 { color: #4F46E5; font-size: 22px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+        th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #E5E7EB; }
+        th { background: #F9FAFB; font-weight: 600; }
+        .total { font-size: 18px; font-weight: bold; color: #4F46E5; }
+        .header { display: flex; justify-content: space-between; }
+      </style></head><body>
+        <h1>V-Tech Invoice</h1>
+        <p><strong>Order ID:</strong> #${order.orderId}</p>
+        <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+        <p><strong>Ship To:</strong> ${order.shipTo?.fullName}, ${order.shipTo?.addressLine1}, ${order.shipTo?.city} - ${order.shipTo?.pincode}</p>
+        <table>
+          <tr><th>Product</th><th>Qty</th><th>Price</th></tr>
+          ${(order.items || []).map(i => `<tr><td>${i.product?.title || 'Product'}</td><td>${i.quantity}</td><td>₹${(i.price ?? 0).toLocaleString()}</td></tr>`).join('')}
+        </table>
+        <br/>
+        <p>Subtotal: ₹${(order.totals?.subtotal ?? 0).toLocaleString()}</p>
+        ${(order.totals?.discount ?? 0) > 0 ? `<p>Discount: -₹${(order.totals?.discount ?? 0).toLocaleString()}</p>` : ''}
+        <p>Tax: ₹${(order.totals?.tax ?? 0).toLocaleString()}</p>
+        <p>Shipping: ₹${(order.totals?.shipping ?? 0).toLocaleString()}</p>
+        <p class="total">Total: ₹${(order.totals?.total ?? 0).toLocaleString()}</p>
+        <br/><p style="color:#6B7280; font-size:12px;">Thank you for shopping with V-Tech!</p>
+      </body></html>
+    `;
+    try {
+      const { uri } = await Print.printToFileAsync({ html });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `Invoice #${order.orderId}` });
+      } else {
+        showToast('info', 'Invoice saved', uri);
+      }
+    } catch {
+      showToast('error', 'Error', 'Failed to generate invoice');
     }
   };
 
@@ -128,6 +179,18 @@ export default function OrderDetailScreen() {
         <View style={styles.card}>
           <StatusTimeline status={order.status} createdAt={order.createdAt} />
         </View>
+
+        {/* Tracking Map */}
+        {['shipped', 'processing', 'confirmed'].includes(order.status) && (
+          <View style={{ marginTop: spacing.md }}>
+            <TrackingMap
+              status={order.status}
+              trackingId={order.tracking?.trackingId}
+              trackingUrl={order.tracking?.url}
+              provider={order.tracking?.provider}
+            />
+          </View>
+        )}
 
         {/* Items */}
         <View>
@@ -204,6 +267,7 @@ export default function OrderDetailScreen() {
           {order.status === 'delivered' && (
             <Button title="Reorder" variant="outline" onPress={handleReorder} style={{ flex: 1 }} />
           )}
+          <Button title="Download Invoice" variant="outline" onPress={handleShareInvoice} style={{ flex: 1 }} />
         </View>
       </ScrollView>
 

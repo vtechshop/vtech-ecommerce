@@ -86,6 +86,8 @@ export default function ProductDetailScreen() {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [zoomVisible, setZoomVisible] = useState(false);
   const [zoomIndex, setZoomIndex] = useState(0);
+  const [reviewFilter, setReviewFilter] = useState(0); // 0 = all, 1-5 = star filter
+  const [reviewSort, setReviewSort] = useState<'recent' | 'helpful'>('recent');
 
   const loadProduct = async () => {
     if (!id) return;
@@ -489,16 +491,65 @@ export default function ProductDetailScreen() {
           {reviews.length > 0 && (
             <StaggeredView delay={900}>
               <View style={styles.sectionTitleWrapper}><Text style={styles.sectionTitle}>Reviews ({product.reviewCount ?? 0})</Text><View style={styles.sectionAccent} /></View>
-              {reviews.slice(0, 5).map((review) => (
+              {/* Review Filter & Sort Controls */}
+              <View style={styles.reviewControls}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
+                  {[0, 5, 4, 3, 2, 1].map((star) => (
+                    <TouchableOpacity
+                      key={star}
+                      style={[styles.reviewFilterChip, reviewFilter === star && styles.reviewFilterChipActive]}
+                      onPress={() => setReviewFilter(star === reviewFilter ? 0 : star)}
+                    >
+                      {star > 0 ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                          <Text style={[styles.reviewFilterText, reviewFilter === star && styles.reviewFilterTextActive]}>{star}</Text>
+                          <Ionicons name="star" size={10} color={reviewFilter === star ? colors.white : colors.secondary} />
+                        </View>
+                      ) : (
+                        <Text style={[styles.reviewFilterText, reviewFilter === star && styles.reviewFilterTextActive]}>All</Text>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm }}>
+                  <TouchableOpacity
+                    style={[styles.sortChip, reviewSort === 'recent' && styles.sortChipActive]}
+                    onPress={() => setReviewSort('recent')}
+                  >
+                    <Text style={[styles.sortChipText, reviewSort === 'recent' && styles.sortChipTextActive]}>Most Recent</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.sortChip, reviewSort === 'helpful' && styles.sortChipActive]}
+                    onPress={() => setReviewSort('helpful')}
+                  >
+                    <Text style={[styles.sortChipText, reviewSort === 'helpful' && styles.sortChipTextActive]}>Most Helpful</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {/* Filtered Reviews */}
+              {reviews
+                .filter((r) => reviewFilter === 0 || Math.round(r.rating) === reviewFilter)
+                .sort((a, b) => reviewSort === 'recent'
+                  ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                  : (b.verifiedPurchase ? 1 : 0) - (a.verifiedPurchase ? 1 : 0)
+                )
+                .slice(0, 5)
+                .map((review) => (
                 <View key={review._id} style={styles.reviewCard}>
                   <View style={styles.reviewHeader}>
                     <Text style={styles.reviewAuthor}>{review.userId?.name || 'User'}</Text>
                     <View style={styles.reviewStars}>{[1, 2, 3, 4, 5].map((s) => <Ionicons key={s} name={s <= review.rating ? 'star' : 'star-outline'} size={14} color={colors.secondary} />)}</View>
                   </View>
                   <Text style={styles.reviewComment}>{review.comment}</Text>
-                  {review.verifiedPurchase && <Text style={styles.verified}>Verified Purchase</Text>}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xs }}>
+                    {review.verifiedPurchase && <Text style={styles.verified}>Verified Purchase</Text>}
+                    <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary }}>{new Date(review.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+                  </View>
                 </View>
               ))}
+              {reviews.filter((r) => reviewFilter === 0 || Math.round(r.rating) === reviewFilter).length === 0 && (
+                <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.md }}>No {reviewFilter}-star reviews yet</Text>
+              )}
             </StaggeredView>
           )}
 
@@ -610,6 +661,15 @@ const styles = StyleSheet.create({
   faqQRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   faqQuestion: { flex: 1, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
   faqAnswer: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.sm, marginLeft: spacing.sm + 18, lineHeight: 20 },
+  reviewControls: { marginBottom: spacing.md },
+  reviewFilterChip: { paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 1, borderRadius: borderRadius.full, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.white },
+  reviewFilterChipActive: { borderColor: colors.primary, backgroundColor: colors.primary },
+  reviewFilterText: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.semibold },
+  reviewFilterTextActive: { color: colors.white },
+  sortChip: { paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs, borderRadius: borderRadius.full, borderWidth: 1, borderColor: colors.border },
+  sortChipActive: { borderColor: colors.primary, backgroundColor: colors.primaryLightest },
+  sortChipText: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  sortChipTextActive: { color: colors.primary, fontWeight: fontWeight.semibold },
   reviewCard: { backgroundColor: colors.white, padding: spacing.md, borderRadius: borderRadius.xl, marginBottom: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.primary, ...shadows.sm },
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   reviewAuthor: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },

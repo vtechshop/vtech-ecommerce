@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppDispatch, useAppSelector } from '../../src/store';
-import { fetchCart, updateCartItem, removeCartItem, applyCoupon } from '../../src/store/slices/cartSlice';
+import { fetchCart, updateCartItem, removeCartItem, applyCoupon, addToCart } from '../../src/store/slices/cartSlice';
 import { productsApi } from '../../src/api/products';
 import { Product, CartItem } from '../../src/types';
 import AnimatedProductCard from '../../src/components/product/AnimatedProductCard';
 import Button from '../../src/components/ui/Button';
 import Input from '../../src/components/ui/Input';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
-import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpacing, gradients } from '../../src/theme';
+import { useToast } from '../../src/components/ui/Toast';
+import { haptic } from '../../src/utils/haptics';
+import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpacing } from '../../src/theme';
 
 const FREE_SHIPPING_THRESHOLD = 999;
+const SAVED_KEY = '@vtech_saved_for_later';
 
 export default function CartScreen() {
   const dispatch = useAppDispatch();
@@ -22,17 +25,54 @@ export default function CartScreen() {
   const { isAuthenticated } = useAppSelector((s) => s.auth);
   const [couponCode, setCouponCode] = useState('');
   const [recommended, setRecommended] = useState<Product[]>([]);
+  const [savedItems, setSavedItems] = useState<CartItem[]>([]);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (isAuthenticated) dispatch(fetchCart());
+    loadSavedItems();
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // Load recommended products
     productsApi.getRecommendations().then((res) => {
       setRecommended((res.data.data || []).slice(0, 6));
     }).catch(() => {});
   }, []);
+
+  const loadSavedItems = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(SAVED_KEY);
+      if (stored) setSavedItems(JSON.parse(stored));
+    } catch {}
+  };
+
+  const saveLater = async (item: CartItem) => {
+    haptic.medium();
+    const updated = [...savedItems, item];
+    setSavedItems(updated);
+    await AsyncStorage.setItem(SAVED_KEY, JSON.stringify(updated));
+    dispatch(removeCartItem(item._id));
+    showToast('info', 'Saved for Later', item.product?.title);
+  };
+
+  const moveBackToCart = async (item: CartItem) => {
+    haptic.light();
+    if (item.product?._id) {
+      await dispatch(addToCart({ productId: item.product._id, quantity: item.quantity }));
+      const updated = savedItems.filter((s) => s._id !== item._id);
+      setSavedItems(updated);
+      await AsyncStorage.setItem(SAVED_KEY, JSON.stringify(updated));
+      showToast('success', 'Moved to Cart', item.product?.title);
+    }
+  };
+
+  const removeSaved = async (itemId: string) => {
+    haptic.light();
+    const updated = savedItems.filter((s) => s._id !== itemId);
+    setSavedItems(updated);
+    await AsyncStorage.setItem(SAVED_KEY, JSON.stringify(updated));
+    showToast('info', 'Item removed');
+  };
 
   if (isLoading && !cart) return <LoadingScreen />;
 
@@ -99,13 +139,14 @@ export default function CartScreen() {
           >
             <Ionicons name="add" size={18} color={colors.primary} />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => Alert.alert('Remove Item', 'Remove this item from cart?', [
-              { text: 'Cancel' },
-              { text: 'Remove', style: 'destructive', onPress: () => dispatch(removeCartItem(item._id)) },
-            ])}
-            style={styles.removeBtn}
-          >
+        </View>
+        {/* Save for Later + Remove */}
+        <View style={styles.itemActions}>
+          <TouchableOpacity style={styles.saveBtn} onPress={() => saveLater(item)}>
+            <Ionicons name="bookmark-outline" size={14} color={colors.info} />
+            <Text style={styles.saveBtnText}>Save for Later</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { haptic.warning(); dispatch(removeCartItem(item._id)); showToast('info', 'Item removed'); }}>
             <Ionicons name="trash-outline" size={18} color={colors.error} />
           </TouchableOpacity>
         </View>
@@ -142,20 +183,56 @@ export default function CartScreen() {
           )
         }
         ListFooterComponent={
-          recommended.length > 0 ? (
-            <View style={styles.recommendInCart}>
-              <Text style={styles.recommendTitle}>You Might Also Like</Text>
-              <FlatList
-                data={recommended.slice(0, 4)}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item) => `rec-${item._id}`}
-                renderItem={({ item, index }) => (
-                  <View style={{ marginRight: spacing.md }}><AnimatedProductCard product={item} index={index} /></View>
-                )}
-              />
-            </View>
-          ) : null
+          <>
+            {/* Saved for Later Section */}
+            {savedItems.length > 0 && (
+              <View style={styles.savedSection}>
+                <View style={styles.savedHeader}>
+                  <Ionicons name="bookmark" size={18} color={colors.info} />
+                  <Text style={styles.savedTitle}>Saved for Later ({savedItems.length})</Text>
+                </View>
+                {savedItems.map((si) => (
+                  <View key={si._id} style={styles.item}>
+                    {si.product?.images?.[0] ? (
+                      <Image source={{ uri: si.product.images[0] }} style={styles.itemImage} contentFit="cover" />
+                    ) : (
+                      <View style={[styles.itemImage, { backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }]}>
+                        <Ionicons name="image-outline" size={24} color={colors.border} />
+                      </View>
+                    )}
+                    <View style={styles.itemInfo}>
+                      <Text style={styles.itemTitle} numberOfLines={2}>{si.product?.title || 'Product'}</Text>
+                      <Text style={styles.itemPrice}>₹{(si.price ?? 0).toLocaleString()}</Text>
+                      <View style={styles.itemActions}>
+                        <TouchableOpacity style={styles.moveBtn} onPress={() => moveBackToCart(si)}>
+                          <Ionicons name="cart-outline" size={14} color={colors.white} />
+                          <Text style={styles.moveBtnText}>Move to Cart</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => removeSaved(si._id)}>
+                          <Ionicons name="trash-outline" size={18} color={colors.error} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+            {/* Recommendations */}
+            {recommended.length > 0 && (
+              <View style={styles.recommendInCart}>
+                <Text style={styles.recommendTitle}>You Might Also Like</Text>
+                <FlatList
+                  data={recommended.slice(0, 4)}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(item) => `rec-${item._id}`}
+                  renderItem={({ item, index }) => (
+                    <View style={{ marginRight: spacing.md }}><AnimatedProductCard product={item} index={index} /></View>
+                  )}
+                />
+              </View>
+            )}
+          </>
         }
       />
       {/* Coupon */}
@@ -221,7 +298,14 @@ const styles = StyleSheet.create({
   qtyRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: spacing.sm },
   qtyBtn: { width: 32, height: 32, borderRadius: borderRadius.lg, borderWidth: 1.5, borderColor: colors.primaryLighter, justifyContent: 'center', alignItems: 'center' },
   qtyText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, minWidth: 24, textAlign: 'center' },
-  removeBtn: { marginLeft: 'auto' },
+  itemActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm },
+  saveBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, backgroundColor: colors.infoLight, borderRadius: borderRadius.full },
+  saveBtnText: { fontSize: fontSize.xs, color: colors.info, fontWeight: fontWeight.semibold },
+  moveBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 2, backgroundColor: colors.primary, borderRadius: borderRadius.full },
+  moveBtnText: { fontSize: fontSize.xs, color: colors.white, fontWeight: fontWeight.semibold },
+  savedSection: { marginTop: spacing.lg, paddingTop: spacing.md, borderTopWidth: 2, borderTopColor: colors.surfaceDark },
+  savedHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  savedTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text },
   // Recommend
   recommendSection: { paddingVertical: spacing.lg },
   recommendInCart: { marginTop: spacing.md, marginBottom: spacing.md },

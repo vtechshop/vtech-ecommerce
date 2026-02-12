@@ -1,17 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { userApi } from '../../src/api/user';
 import { useAppDispatch, useAppSelector } from '../../src/store';
 import { addToCart } from '../../src/store/slices/cartSlice';
 import { Product } from '../../src/types';
-import ProductCard from '../../src/components/product/ProductCard';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
+import { useToast } from '../../src/components/ui/Toast';
+import { haptic } from '../../src/utils/haptics';
 import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from '../../src/theme';
 
 type SortOption = 'default' | 'price-low' | 'price-high' | 'name';
+
+interface WishlistFolder {
+  id: string;
+  name: string;
+  items: string[];
+}
+
+const LISTS_KEY = '@vtech_wishlists';
+const PRICES_KEY = '@vtech_price_tracker';
 
 export default function WishlistScreen() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -20,19 +31,95 @@ export default function WishlistScreen() {
   const dispatch = useAppDispatch();
   const [error, setError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('default');
+  const [lists, setLists] = useState<WishlistFolder[]>([]);
+  const [activeList, setActiveList] = useState('all');
+  const [showNewList, setShowNewList] = useState(false);
+  const [newListName, setNewListName] = useState('');
+  const [priceDrops, setPriceDrops] = useState<Record<string, number>>({});
+  const { showToast } = useToast();
 
   const loadWishlist = async () => {
     setError(null);
     try {
       const { data } = await userApi.getWishlist();
-      setProducts(data.data || []);
+      const items = data.data || [];
+      setProducts(items);
+      // Check for price drops
+      checkPriceDrops(items);
     } catch (e: any) { setError(e.response?.data?.message || 'Something went wrong'); }
     setLoading(false);
+  };
+
+  const loadLists = async () => {
+    try {
+      const stored = await AsyncStorage.getItem(LISTS_KEY);
+      if (stored) setLists(JSON.parse(stored));
+    } catch {}
+  };
+
+  const saveLists = async (updated: WishlistFolder[]) => {
+    setLists(updated);
+    await AsyncStorage.setItem(LISTS_KEY, JSON.stringify(updated));
+  };
+
+  const createList = async () => {
+    if (!newListName.trim()) return;
+    haptic.success();
+    const newList: WishlistFolder = { id: Date.now().toString(), name: newListName.trim(), items: [] };
+    await saveLists([...lists, newList]);
+    setNewListName('');
+    setShowNewList(false);
+    showToast('success', 'List Created', newList.name);
+  };
+
+  const deleteList = (listId: string) => {
+    Alert.alert('Delete List', 'Are you sure?', [
+      { text: 'Cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => {
+        haptic.warning();
+        saveLists(lists.filter((l) => l.id !== listId));
+        if (activeList === listId) setActiveList('all');
+        showToast('info', 'List deleted');
+      }},
+    ]);
+  };
+
+  const addToList = (listId: string, productId: string) => {
+    haptic.light();
+    const updated = lists.map((l) =>
+      l.id === listId
+        ? { ...l, items: l.items.includes(productId) ? l.items : [...l.items, productId] }
+        : l
+    );
+    saveLists(updated);
+    showToast('success', 'Added to list');
+  };
+
+  const checkPriceDrops = async (items: Product[]) => {
+    try {
+      const stored = await AsyncStorage.getItem(PRICES_KEY);
+      const savedPrices: Record<string, number> = stored ? JSON.parse(stored) : {};
+      const drops: Record<string, number> = {};
+      const newPrices: Record<string, number> = {};
+      items.forEach((p) => {
+        newPrices[p._id] = p.price;
+        if (savedPrices[p._id] && p.price < savedPrices[p._id]) {
+          drops[p._id] = savedPrices[p._id] - p.price;
+        }
+      });
+      setPriceDrops(drops);
+      await AsyncStorage.setItem(PRICES_KEY, JSON.stringify(newPrices));
+      const dropCount = Object.keys(drops).length;
+      if (dropCount > 0) {
+        showToast('success', 'Price Drop!', `${dropCount} item${dropCount > 1 ? 's' : ''} in your wishlist dropped in price!`);
+      }
+    } catch {}
   };
 
   useEffect(() => {
     if (isAuthenticated) loadWishlist();
     else setLoading(false);
+    loadLists();
   }, [isAuthenticated]);
 
   const removeItem = async (productId: string) => {
@@ -42,13 +129,14 @@ export default function WishlistScreen() {
 
   const moveToCart = async (product: Product) => {
     if (!isAuthenticated) return;
+    haptic.medium();
     const result = await dispatch(addToCart({ productId: product._id, quantity: 1 }));
     if (addToCart.fulfilled.match(result)) {
       await userApi.removeFromWishlist(product._id);
       setProducts((prev) => prev.filter((p) => p._id !== product._id));
-      Alert.alert('Moved to Cart', `${product.title} moved to your cart`);
+      showToast('success', 'Moved to Cart', product.title);
     } else {
-      Alert.alert('Error', 'Failed to add to cart');
+      showToast('error', 'Error', 'Failed to add to cart');
     }
   };
 
@@ -85,11 +173,40 @@ export default function WishlistScreen() {
     );
   }
 
+  const filteredProducts = activeList === 'all'
+    ? sortedProducts
+    : sortedProducts.filter((p) => lists.find((l) => l.id === activeList)?.items.includes(p._id));
+
   return (
     <View style={styles.container}>
+      {/* List Tabs */}
+      <FlatList
+        data={[{ id: 'all', name: 'All Items' }, ...lists]}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.listTabs}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}
+        keyExtractor={(item) => item.id}
+        ListFooterComponent={
+          <TouchableOpacity style={styles.addListBtn} onPress={() => setShowNewList(true)}>
+            <Ionicons name="add" size={16} color={colors.primary} />
+            <Text style={styles.addListText}>New List</Text>
+          </TouchableOpacity>
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[styles.listTab, activeList === item.id && styles.listTabActive]}
+            onPress={() => setActiveList(item.id)}
+            onLongPress={() => item.id !== 'all' && deleteList(item.id)}
+          >
+            <Text style={[styles.listTabText, activeList === item.id && styles.listTabTextActive]}>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+      />
+
       {/* Sort Options */}
       <View style={styles.sortRow}>
-        <Text style={styles.countText}>{products.length} item{products.length !== 1 ? 's' : ''}</Text>
+        <Text style={styles.countText}>{filteredProducts.length} item{filteredProducts.length !== 1 ? 's' : ''}</Text>
         <View style={styles.sortChips}>
           {([
             { label: 'Default', value: 'default' as SortOption },
@@ -108,9 +225,34 @@ export default function WishlistScreen() {
         </View>
       </View>
 
+      {/* New List Modal */}
+      <Modal visible={showNewList} transparent animationType="fade" onRequestClose={() => setShowNewList(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Create New List</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="List name (e.g., Birthday, Home)"
+              placeholderTextColor={colors.textSecondary}
+              value={newListName}
+              onChangeText={setNewListName}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { setShowNewList(false); setNewListName(''); }}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCreateBtn} onPress={createList}>
+                <Text style={styles.modalCreateText}>Create</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <FlatList
         style={{ flex: 1 }}
-        data={sortedProducts}
+        data={filteredProducts}
         keyExtractor={(item) => item._id}
         contentContainerStyle={{ padding: spacing.md }}
         renderItem={({ item }) => (
@@ -133,6 +275,12 @@ export default function WishlistScreen() {
                   <Text style={styles.cardPrice}>₹{(item.price ?? 0).toLocaleString()}</Text>
                   {item.compareAt && <Text style={styles.cardCompare}>₹{item.compareAt.toLocaleString()}</Text>}
                 </View>
+                {priceDrops[item._id] && (
+                  <View style={styles.priceDropBadge}>
+                    <Ionicons name="trending-down" size={12} color={colors.success} />
+                    <Text style={styles.priceDropText}>Price dropped ₹{priceDrops[item._id].toLocaleString()}!</Text>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
             <View style={styles.cardActions}>
@@ -140,6 +288,18 @@ export default function WishlistScreen() {
                 <Ionicons name="cart-outline" size={16} color={colors.white} />
                 <Text style={styles.moveToCartText}>Move to Cart</Text>
               </TouchableOpacity>
+              {lists.length > 0 && (
+                <TouchableOpacity
+                  style={styles.addToListBtn}
+                  onPress={() => {
+                    Alert.alert('Add to List', 'Choose a list:', lists.map((l) => ({
+                      text: l.name, onPress: () => addToList(l.id, item._id),
+                    })).concat({ text: 'Cancel', onPress: () => {} }));
+                  }}
+                >
+                  <Ionicons name="folder-outline" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.removeWishlistBtn} onPress={() => removeItem(item._id)}>
                 <Ionicons name="heart-dislike-outline" size={16} color={colors.error} />
               </TouchableOpacity>
@@ -153,6 +313,24 @@ export default function WishlistScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  listTabs: { maxHeight: 44, borderBottomWidth: 1, borderBottomColor: colors.surfaceDark },
+  listTab: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.white, alignSelf: 'center' },
+  listTabActive: { borderColor: colors.primary, backgroundColor: colors.primaryLightest },
+  listTabText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  listTabTextActive: { color: colors.primary, fontWeight: fontWeight.semibold },
+  addListBtn: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, alignSelf: 'center' },
+  addListText: { fontSize: fontSize.xs, color: colors.primary, fontWeight: fontWeight.semibold },
+  priceDropBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs, backgroundColor: colors.successLight, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.full, alignSelf: 'flex-start' },
+  priceDropText: { fontSize: 10, color: colors.success, fontWeight: fontWeight.bold },
+  addToListBtn: { paddingHorizontal: spacing.md, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primaryLightest },
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'center', alignItems: 'center' },
+  modalContent: { backgroundColor: colors.white, borderRadius: borderRadius.xl, padding: spacing.lg, width: '85%', ...shadows.xl },
+  modalTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.md },
+  modalInput: { borderWidth: 1.5, borderColor: colors.border, borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, fontSize: fontSize.md, color: colors.text, marginBottom: spacing.md },
+  modalCancelBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.lg, borderWidth: 1.5, borderColor: colors.border, alignItems: 'center' },
+  modalCancelText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.semibold },
+  modalCreateBtn: { flex: 1, paddingVertical: spacing.sm, borderRadius: borderRadius.lg, backgroundColor: colors.primary, alignItems: 'center' },
+  modalCreateText: { fontSize: fontSize.sm, color: colors.white, fontWeight: fontWeight.semibold },
   sortRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.surfaceDark },
   countText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   sortChips: { flexDirection: 'row', gap: spacing.xs },

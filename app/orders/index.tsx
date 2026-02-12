@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator, ScrollView, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ordersApi } from '../../src/api/orders';
 import { Order } from '../../src/types';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
+import { haptic } from '../../src/utils/haptics';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 
 const PAGE_LIMIT = 20;
@@ -23,6 +24,14 @@ const STATUS_FILTERS = [
   { label: 'Cancelled', value: 'cancelled' },
 ];
 
+const TIME_FILTERS = [
+  { label: 'All Time', value: 0 },
+  { label: 'Last 30 Days', value: 30 },
+  { label: '3 Months', value: 90 },
+  { label: '6 Months', value: 180 },
+  { label: '1 Year', value: 365 },
+];
+
 export default function OrdersScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +41,9 @@ export default function OrdersScreen() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [timeFilter, setTimeFilter] = useState(0);
+  const [showTimeFilter, setShowTimeFilter] = useState(false);
 
   const loadOrders = async (pageNum: number = 1, status?: string) => {
     if (pageNum === 1) setError(null);
@@ -65,10 +77,63 @@ export default function OrdersScreen() {
     loadOrders(1, value);
   };
 
+  // Filter orders by search and time
+  const filteredOrders = useMemo(() => {
+    let result = orders;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((o) =>
+        o.orderId?.toLowerCase().includes(q) ||
+        o.items?.some((i) => i.product?.title?.toLowerCase().includes(q))
+      );
+    }
+    if (timeFilter > 0) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - timeFilter);
+      result = result.filter((o) => new Date(o.createdAt) >= cutoff);
+    }
+    return result;
+  }, [orders, searchQuery, timeFilter]);
+
   if (loading && orders.length === 0) return <LoadingScreen />;
 
   return (
     <View style={styles.container}>
+      {/* Search Bar */}
+      <View style={styles.searchBar}>
+        <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search orders..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery ? (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        ) : null}
+        <TouchableOpacity style={[styles.timeBtn, showTimeFilter && styles.timeBtnActive]} onPress={() => { haptic.light(); setShowTimeFilter(!showTimeFilter); }}>
+          <Ionicons name="calendar-outline" size={16} color={showTimeFilter ? colors.primary : colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Time Filter */}
+      {showTimeFilter && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeRow} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
+          {TIME_FILTERS.map((t) => (
+            <TouchableOpacity
+              key={t.value}
+              style={[styles.filterChip, timeFilter === t.value && styles.filterChipActive]}
+              onPress={() => { haptic.selection(); setTimeFilter(t.value); }}
+            >
+              <Text style={[styles.filterChipText, timeFilter === t.value && styles.filterChipTextActive]}>{t.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
       {/* Status Filter Chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
         {STATUS_FILTERS.map((f) => (
@@ -98,7 +163,7 @@ export default function OrdersScreen() {
         </View>
       ) : (
         <FlatList
-          data={orders}
+          data={filteredOrders}
           keyExtractor={(item) => item._id}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           contentContainerStyle={{ padding: spacing.md }}
@@ -135,6 +200,11 @@ export default function OrdersScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, marginHorizontal: spacing.md, marginTop: spacing.sm, borderRadius: borderRadius.xl, paddingHorizontal: spacing.md, gap: spacing.sm, ...shadows.sm },
+  searchInput: { flex: 1, fontSize: fontSize.sm, color: colors.text, paddingVertical: spacing.sm + 2 },
+  timeBtn: { padding: spacing.xs, borderRadius: borderRadius.lg },
+  timeBtnActive: { backgroundColor: colors.primaryLightest },
+  timeRow: { maxHeight: 44, marginTop: spacing.xs },
   filterRow: { maxHeight: 52, borderBottomWidth: 1, borderBottomColor: colors.surfaceDark },
   filterChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.white, alignSelf: 'center' },
   filterChipActive: { borderColor: colors.primary, backgroundColor: colors.primaryLightest },

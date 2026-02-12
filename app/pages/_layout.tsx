@@ -18,6 +18,11 @@ export default function PagesLayout() {
       <Stack.Screen name="privacy-policy" options={{ title: 'Privacy Policy' }} />
       <Stack.Screen name="terms" options={{ title: 'Terms of Service' }} />
       <Stack.Screen name="return-policy" options={{ title: 'Return Policy' }} />
+      <Stack.Screen name="gift-cards" options={{ title: 'Gift Cards' }} />
+      <Stack.Screen name="compare" options={{ title: 'Compare Products' }} />
+      <Stack.Screen name="coupons" options={{ title: 'Your Coupons' }} />
+      <Stack.Screen name="festival-sale" options={{ title: 'Festival Sale' }} />
+      <Stack.Screen name="referral" options={{ title: 'Refer & Earn' }} />
     </Stack>
   );
 }

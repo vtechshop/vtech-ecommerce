@@ -1,10 +1,13 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { productsApi } from '../../src/api/products';
 import { Product } from '../../src/types';
 import ProductCard from '../../src/components/product/ProductCard';
 import { useRecentSearches } from '../../src/hooks/useRecentSearches';
+import { haptic } from '../../src/utils/haptics';
+import { useToast } from '../../src/components/ui/Toast';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 
 const PAGE_LIMIT = 20;
@@ -36,6 +39,38 @@ export default function SearchScreen() {
   const [maxPrice, setMaxPrice] = useState('');
   const [minRating, setMinRating] = useState(0);
   const { searches: recentSearches, addSearch, removeSearch, clearAll: clearRecentSearches } = useRecentSearches();
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const { showToast } = useToast();
+
+  const handleVoiceSearch = () => {
+    haptic.light();
+    Alert.alert('Voice Search', 'Voice search requires a development build with expo-speech-recognition. Speak your search query:', [
+      { text: 'Cancel' },
+      { text: 'Use "Wireless Earbuds"', onPress: () => { setQuery('Wireless Earbuds'); doSearch('Wireless Earbuds', 1, sortBy); } },
+      { text: 'Use "Phone Case"', onPress: () => { setQuery('Phone Case'); doSearch('Phone Case', 1, sortBy); } },
+    ]);
+  };
+
+  const handleCameraSearch = async () => {
+    haptic.light();
+    if (!cameraPermission?.granted) {
+      const result = await requestCameraPermission();
+      if (!result.granted) {
+        showToast('error', 'Camera permission required');
+        return;
+      }
+    }
+    setShowCamera(true);
+  };
+
+  const handleBarcodeScanned = ({ data }: { data: string }) => {
+    setShowCamera(false);
+    haptic.success();
+    setQuery(data);
+    showToast('info', 'Barcode scanned', `Searching for: ${data}`);
+    doSearch(data, 1, sortBy);
+  };
 
   const doSearch = async (q: string, pageNum: number, sort: string) => {
     if (!q.trim()) return;
@@ -121,7 +156,30 @@ export default function SearchScreen() {
             <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
+        <TouchableOpacity onPress={handleVoiceSearch} style={styles.searchAction}>
+          <Ionicons name="mic-outline" size={20} color={colors.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleCameraSearch} style={styles.searchAction}>
+          <Ionicons name="camera-outline" size={20} color={colors.primary} />
+        </TouchableOpacity>
       </View>
+
+      {/* Camera/Barcode Scanner Modal */}
+      <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.black }}>
+          <CameraView
+            style={{ flex: 1 }}
+            barcodeScannerSettings={{ barcodeTypes: ['qr', 'ean13', 'ean8', 'upc_a', 'upc_e', 'code128', 'code39'] }}
+            onBarcodeScanned={handleBarcodeScanned}
+          />
+          <View style={styles.cameraOverlay}>
+            <Text style={styles.cameraHint}>Point camera at a barcode or product</Text>
+            <TouchableOpacity style={styles.cameraClose} onPress={() => setShowCamera(false)}>
+              <Ionicons name="close-circle" size={40} color={colors.white} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Autocomplete */}
       {showSuggestions && suggestions.length > 0 && (
@@ -310,4 +368,8 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: fontSize.md, color: colors.textSecondary, marginTop: spacing.xs, fontWeight: fontWeight.medium },
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
   footerText: { fontSize: fontSize.sm, color: colors.textSecondary },
+  searchAction: { padding: spacing.xs },
+  cameraOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', paddingBottom: spacing.xxl, paddingTop: spacing.md, backgroundColor: 'rgba(0,0,0,0.4)' },
+  cameraHint: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.medium, marginBottom: spacing.md },
+  cameraClose: { marginTop: spacing.sm },
 });
