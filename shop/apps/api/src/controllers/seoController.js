@@ -5,6 +5,32 @@ const Post = require('../models/Post');
 const Vendor = require('../models/Vendor');
 const env = require('../config/env');
 
+// Escape special XML characters to prevent parsing errors
+function escapeXml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+// Strip HTML tags and decode entities for plain text output
+function stripHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Helper to ensure URL has proper protocol and www prefix
 function ensureProtocol(url, defaultUrl) {
   let result = url || defaultUrl;
@@ -660,17 +686,22 @@ exports.getProductFeed = async (req, res, next) => {
     <description>Product feed for Shop</description>`;
 
     products.forEach(product => {
+      const title = escapeXml(product.title || '');
+      const description = escapeXml(stripHtml(product.description || '').substring(0, 500));
+      const brand = escapeXml(product.brand || product.vendorId?.storeName || 'Shop');
+      const imageLink = escapeXml(product.images?.[0] || '');
+
       xml += `
     <item>
       <g:id>${product._id}</g:id>
-      <g:title>${product.title}</g:title>
-      <g:description>${product.description?.substring(0, 500)}</g:description>
+      <g:title>${title}</g:title>
+      <g:description>${description}</g:description>
       <g:link>${baseUrl}/product/${product.slug}</g:link>
-      <g:image_link>${product.images?.[0] || ''}</g:image_link>
+      <g:image_link>${imageLink}</g:image_link>
       <g:condition>new</g:condition>
       <g:availability>${product.stock > 0 ? 'in stock' : 'out of stock'}</g:availability>
       <g:price>${product.price} INR</g:price>
-      <g:brand>${product.brand || product.vendorId?.storeName || 'Shop'}</g:brand>
+      <g:brand>${brand}</g:brand>
     </item>`;
     });
 
