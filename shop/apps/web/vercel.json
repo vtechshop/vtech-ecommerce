@@ -12,6 +12,10 @@
       "destination": "https://api.vtechkitchen.com/robots.txt"
     },
     {
+      "source": "/b4d7f2e8a1c94d5b8e3f6a7c0d2e1b9a.txt",
+      "destination": "https://api.vtechkitchen.com/b4d7f2e8a1c94d5b8e3f6a7c0d2e1b9a.txt"
+    },
+    {
       "source": "/(.*)",
       "has": [
         {
@@ -23,7 +27,7 @@
       "destination": "https://api.vtechkitchen.com/api/seo/render?path=/$1"
     },
     {
-      "source": "/((?!assets|static|sitemap.xml|robots.txt).*)",
+      "source": "/((?!assets|static|sitemap.xml|robots.txt|b4d7f2e8a1c94d5b8e3f6a7c0d2e1b9a\\.txt).*)",
       "destination": "/index.html"
     }
   ],

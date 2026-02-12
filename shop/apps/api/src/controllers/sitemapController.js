@@ -179,6 +179,17 @@ exports.generateSitemap = async (req, res, next) => {
 };
 
 // ======================
+// INDEXNOW KEY VERIFICATION
+// ======================
+const INDEXNOW_KEY = 'b4d7f2e8a1c94d5b8e3f6a7c0d2e1b9a';
+
+exports.getIndexNowKey = async (req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(INDEXNOW_KEY);
+};
+
+// ======================
 // ROBOTS.TXT GENERATOR
 // ======================
 exports.generateRobotsTxt = async (req, res, next) => {
