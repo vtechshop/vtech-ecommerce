@@ -39,6 +39,10 @@ exports.getSitemap = async (req, res, next) => {
     <loc>${apiUrl}/api/seo/sitemap-vendors.xml</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>${apiUrl}/api/seo/sitemap-pages.xml</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+  </sitemap>
 </sitemapindex>`;
 
     res.header('Content-Type', 'application/xml');
@@ -182,6 +186,59 @@ exports.getVendorSitemap = async (req, res, next) => {
   }
 };
 
+// Get pages sitemap (homepage, static/info pages, utility pages)
+exports.getPagesSitemap = async (req, res, next) => {
+  try {
+    const baseUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
+    const now = new Date().toISOString();
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/blog</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/track-order</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/warranty-check</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>`;
+
+    const staticPages = ['about', 'contact', 'privacy', 'terms', 'returns', 'shipping', 'faq'];
+    staticPages.forEach(page => {
+      xml += `
+  <url>
+    <loc>${baseUrl}/page/${page}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>`;
+    });
+
+    xml += '\n</urlset>';
+
+    res.header('Content-Type', 'application/xml');
+    res.send(xml);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get robots.txt
 exports.getRobotsTxt = async (req, res, next) => {
   try {
@@ -239,7 +296,9 @@ exports.renderPage = async (req, res, next) => {
     }
 
     const clientUrl = ensureProtocol(env.CLIENT_URL, 'https://www.vtechkitchen.com');
-    const fullUrl = `${clientUrl}${path}`;
+    // Normalize: strip trailing slash so canonical matches internal links
+    // e.g., path "/" → fullUrl "https://www.vtechkitchen.com" (not ".../")
+    const fullUrl = `${clientUrl}${path}`.replace(/\/$/, '') || clientUrl;
 
     // Fetch categories and blog posts for site-wide navigation (resolves orphan pages)
     const [navCategories, navPosts, navVendors] = await Promise.all([

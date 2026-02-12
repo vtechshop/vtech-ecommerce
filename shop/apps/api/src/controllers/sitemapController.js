@@ -59,14 +59,17 @@ exports.generateSitemap = async (req, res, next) => {
 
     // ===== STATIC PAGES (NO /search) =====
     const staticPages = [
-      { path: '/products', priority: '0.9', changefreq: 'daily' }, // IMPORTANT
+      { path: '/products', priority: '0.9', changefreq: 'daily' },
       { path: '/blog', priority: '0.8', changefreq: 'weekly' },
       { path: '/page/about', priority: '0.7', changefreq: 'monthly' },
       { path: '/page/contact', priority: '0.7', changefreq: 'monthly' },
       { path: '/track-order', priority: '0.6', changefreq: 'monthly' },
-      { path: '/page/privacy-policy', priority: '0.5', changefreq: 'monthly' },
-      { path: '/page/terms-of-service', priority: '0.5', changefreq: 'monthly' },
-      { path: '/page/return-policy', priority: '0.5', changefreq: 'monthly' },
+      { path: '/warranty-check', priority: '0.6', changefreq: 'monthly' },
+      { path: '/page/privacy', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/terms', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/returns', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/shipping', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/faq', priority: '0.5', changefreq: 'monthly' },
     ];
 
     staticPages.forEach(page => {
@@ -195,7 +198,17 @@ Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /api/
-Disallow: /search
+
+Allow: /products
+Allow: /product/
+Allow: /category/
+Allow: /blog/
+Allow: /vendor/
+Allow: /page/
+
+Disallow: /*?ref=
+
+Crawl-delay: 1
 
 Sitemap: ${BASE_URL}/sitemap.xml
 `;
