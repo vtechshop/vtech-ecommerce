@@ -28,30 +28,40 @@ export const adminApi = {
   deleteProduct: (id: string) =>
     apiClient.delete<ApiResponse<null>>(`/admin/products/${id}`),
 
+  // Categories
+  getCategories: () =>
+    apiClient.get<ApiResponse<object[]>>('/admin/categories'),
+
   // Orders
+  getOrderCounts: () =>
+    apiClient.get<ApiResponse<object>>('/admin/orders/counts'),
+
   getOrders: (params?: { page?: number; limit?: number; status?: string }) =>
     apiClient.get<ApiResponse<Order[]>>('/admin/orders', { params }),
 
-  updateOrder: (id: string, data: Partial<Order>) =>
-    apiClient.put<ApiResponse<Order>>(`/admin/orders/${id}`, data),
+  getOrderById: (id: string) =>
+    apiClient.get<ApiResponse<Order>>(`/admin/orders/${id}`),
+
+  updateOrderStatus: (id: string, status: string) =>
+    apiClient.put<ApiResponse<Order>>(`/admin/orders/${id}/status`, { status }),
 
   // Vendors
   getVendors: (params?: { page?: number; limit?: number; status?: string }) =>
     apiClient.get<ApiResponse<Vendor[]>>('/admin/vendors', { params }),
 
   approveVendor: (id: string) =>
-    apiClient.post<ApiResponse<null>>(`/admin/vendors/${id}/approve`),
+    apiClient.put<ApiResponse<null>>(`/admin/vendors/${id}/approve`),
 
   rejectVendor: (id: string, reason: string) =>
-    apiClient.post<ApiResponse<null>>(`/admin/vendors/${id}/reject`, { reason }),
+    apiClient.put<ApiResponse<null>>(`/admin/vendors/${id}/reject`, { reason }),
 
   // Affiliates
   getAffiliates: (params?: { page?: number; limit?: number; status?: string }) =>
     apiClient.get<ApiResponse<Affiliate[]>>('/admin/affiliates', { params }),
 
   approveAffiliate: (id: string) =>
-    apiClient.post<ApiResponse<null>>(`/admin/affiliates/${id}/approve`),
+    apiClient.put<ApiResponse<null>>(`/admin/affiliates/${id}/approve`),
 
   rejectAffiliate: (id: string, reason: string) =>
-    apiClient.post<ApiResponse<null>>(`/admin/affiliates/${id}/reject`, { reason }),
+    apiClient.put<ApiResponse<null>>(`/admin/affiliates/${id}/reject`, { reason }),
 };

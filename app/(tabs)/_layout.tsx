@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../src/theme';
+import { colors, fontSize, fontWeight, letterSpacing, shadows } from '../../src/theme';
 import { useAppSelector } from '../../src/store';
 
 export default function TabLayout() {
@@ -14,13 +14,25 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.white,
-          borderTopColor: colors.border,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 4,
+          borderTopWidth: 0,
+          height: 65,
+          paddingBottom: 10,
+          paddingTop: 6,
+          ...shadows.lg,
+        },
+        tabBarLabelStyle: {
+          fontSize: fontSize.xs,
+          fontWeight: fontWeight.semibold,
+          letterSpacing: letterSpacing.wide,
         },
         headerStyle: { backgroundColor: colors.white },
+        headerShadowVisible: false,
         headerTintColor: colors.text,
+        headerTitleStyle: {
+          fontWeight: fontWeight.bold,
+          fontSize: fontSize.xl,
+          letterSpacing: letterSpacing.tight,
+        },
       }}
     >
       <Tabs.Screen

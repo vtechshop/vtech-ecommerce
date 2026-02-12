@@ -10,20 +10,37 @@ export const vendorApi = {
     bankDetails?: object;
   }) => apiClient.post<ApiResponse<Vendor>>('/vendors/onboard', data),
 
-  getProfile: () =>
-    apiClient.get<ApiResponse<Vendor>>('/vendors/profile'),
+  // Profile via settings
+  getSettings: () =>
+    apiClient.get<ApiResponse<object>>('/vendors/settings'),
 
   updateProfile: (data: Partial<Vendor>) =>
-    apiClient.put<ApiResponse<Vendor>>('/vendors/profile', data),
+    apiClient.put<ApiResponse<Vendor>>('/vendors/settings/profile', data),
+
+  updateBankDetails: (data: object) =>
+    apiClient.put<ApiResponse<object>>('/vendors/settings/bank', data),
+
+  updatePolicies: (data: object) =>
+    apiClient.put<ApiResponse<object>>('/vendors/settings/policies', data),
 
   // KYC
-  submitKYC: (data: FormData) =>
-    apiClient.post<ApiResponse<null>>('/vendors/kyc', data, {
+  getKYC: () =>
+    apiClient.get<ApiResponse<object>>('/vendors/kyc'),
+
+  updateKYC: (data: object) =>
+    apiClient.put<ApiResponse<object>>('/vendors/kyc', data),
+
+  uploadKYCDocument: (data: FormData) =>
+    apiClient.post<ApiResponse<null>>('/vendors/kyc/documents', data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
 
-  getKYCStatus: () =>
-    apiClient.get<ApiResponse<{ status: string }>>('/vendors/kyc/status'),
+  deleteKYCDocument: (documentId: string) =>
+    apiClient.delete<ApiResponse<null>>(`/vendors/kyc/documents/${documentId}`),
+
+  // Categories (vendor-specific)
+  getCategories: () =>
+    apiClient.get<ApiResponse<object[]>>('/vendors/categories'),
 
   // Products
   getProducts: (params?: { page?: number; limit?: number }) =>
@@ -43,11 +60,14 @@ export const vendorApi = {
     apiClient.delete<ApiResponse<null>>(`/vendors/products/${id}`),
 
   // Orders
+  getOrderCounts: () =>
+    apiClient.get<ApiResponse<object>>('/vendors/orders/counts'),
+
   getOrders: (params?: { page?: number; limit?: number; status?: string }) =>
     apiClient.get<ApiResponse<Order[]>>('/vendors/orders', { params }),
 
   updateOrderStatus: (orderId: string, status: string) =>
-    apiClient.put<ApiResponse<Order>>(`/vendors/orders/${orderId}`, { status }),
+    apiClient.put<ApiResponse<Order>>(`/vendors/orders/${orderId}/status`, { status }),
 
   // Settlements
   getSettlements: (params?: { page?: number; limit?: number }) =>

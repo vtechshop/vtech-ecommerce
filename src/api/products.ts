@@ -11,19 +11,25 @@ export const productsApi = {
     minPrice?: number;
     maxPrice?: number;
     rating?: number;
+    featured?: boolean;
+    tag?: string;
+    vendor?: string;
   }) => apiClient.get<ApiResponse<Product[]>>('/catalog/products', { params }),
 
   getById: (id: string) =>
-    apiClient.get<ApiResponse<Product>>(`/catalog/products/${id}`),
+    apiClient.get<ApiResponse<Product>>(`/products/${id}`),
 
   getBySlug: (slug: string) =>
-    apiClient.get<ApiResponse<Product>>(`/catalog/products/slug/${slug}`),
+    apiClient.get<ApiResponse<Product>>(`/catalog/products/${slug}`),
 
   getFeatured: () =>
-    apiClient.get<ApiResponse<Product[]>>('/catalog/products/featured'),
+    apiClient.get<ApiResponse<Product[]>>('/catalog/products', { params: { featured: true } }),
 
   getCategories: () =>
     apiClient.get<ApiResponse<Category[]>>('/catalog/categories'),
+
+  getCategoryBySlug: (slug: string) =>
+    apiClient.get<ApiResponse<Category>>(`/catalog/categories/${slug}`),
 
   getReviews: (productId: string, params?: { page?: number; limit?: number }) =>
     apiClient.get<ApiResponse<Review[]>>(`/products/${productId}/reviews`, { params }),
@@ -32,8 +38,14 @@ export const productsApi = {
     apiClient.post<ApiResponse<Review>>(`/products/${productId}/reviews`, data),
 
   search: (query: string) =>
-    apiClient.get<ApiResponse<Product[]>>('/catalog/search', { params: { q: query } }),
+    apiClient.get<ApiResponse<Product[]>>('/catalog/products', { params: { search: query } }),
+
+  autocomplete: (query: string) =>
+    apiClient.get<ApiResponse<string[]>>('/catalog/autocomplete', { params: { q: query } }),
 
   getRecommendations: (productId?: string) =>
-    apiClient.get<ApiResponse<Product[]>>('/recommendations', { params: { productId } }),
+    apiClient.get<ApiResponse<Product[]>>('/catalog/recommendations/trending'),
+
+  getSimilar: (productId: string) =>
+    apiClient.get<ApiResponse<Product[]>>(`/catalog/products/${productId}/similar`),
 };

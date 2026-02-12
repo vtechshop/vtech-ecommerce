@@ -22,13 +22,23 @@ export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      const { data } = await authApi.login(email, password);
-      const { user, tokens } = data.data;
-      await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, tokens.accessToken);
-      await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, tokens.refreshToken);
+      const response = await authApi.login(email, password);
+      const { user, accessToken } = response.data.data;
+      await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, accessToken);
+      // Refresh token is sent as httpOnly cookie — extract from Set-Cookie header
+      const setCookie = response.headers?.['set-cookie'];
+      if (setCookie) {
+        const match = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
+        const rtMatch = match.match(/refreshToken=([^;]+)/);
+        if (rtMatch) await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, rtMatch[1]);
+      }
       return user;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Login failed');
+      const msg = error.response?.data?.error?.message
+        || error.response?.data?.message
+        || error.message
+        || 'Login failed';
+      return rejectWithValue(msg);
     }
   }
 );
@@ -37,13 +47,18 @@ export const register = createAsyncThunk(
   'auth/register',
   async (userData: { name: string; email: string; password: string; phone?: string }, { rejectWithValue }) => {
     try {
-      const { data } = await authApi.register(userData);
-      const { user, tokens } = data.data;
-      await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, tokens.accessToken);
-      await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, tokens.refreshToken);
+      const response = await authApi.register(userData);
+      const { user, accessToken } = response.data.data;
+      await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, accessToken);
+      const setCookie = response.headers?.['set-cookie'];
+      if (setCookie) {
+        const match = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
+        const rtMatch = match.match(/refreshToken=([^;]+)/);
+        if (rtMatch) await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, rtMatch[1]);
+      }
       return user;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Registration failed');
+      return rejectWithValue(error.response?.data?.error?.message || error.response?.data?.message || 'Registration failed');
     }
   }
 );

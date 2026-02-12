@@ -27,7 +27,7 @@ export interface Address {
 
 export interface Product {
   _id: string;
-  vendorId: string;
+  vendorId: string | { _id: string; storeName: string; slug: string };
   title: string;
   slug: string;
   description: string;
@@ -36,12 +36,24 @@ export interface Product {
   cost?: number;
   images: string[];
   category: string | Category;
+  categoryIds?: string[];
+  brand?: string;
   stock: number;
   taxable: boolean;
   rating: number;
   reviewCount: number;
   featured: boolean;
   variants?: Variant[];
+  tags?: string[];
+  videoUrl?: string;
+  hasWarranty?: boolean;
+  warranty?: {
+    duration: number;
+    durationType: string;
+    description: string;
+  };
+  specifications?: { label: string; value: string }[];
+  faqs?: { question: string; answer: string }[];
   createdAt: string;
 }
 
@@ -189,5 +201,5 @@ export interface AuthTokens {
 
 export interface LoginResponse {
   user: User;
-  tokens: AuthTokens;
+  accessToken: string;
 }

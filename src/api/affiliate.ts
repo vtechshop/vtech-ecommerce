@@ -6,14 +6,23 @@ export const affiliateApi = {
     apiClient.post<ApiResponse<Affiliate>>('/affiliates/apply', data),
 
   getProfile: () =>
-    apiClient.get<ApiResponse<Affiliate>>('/affiliates/profile'),
+    apiClient.get<ApiResponse<Affiliate>>('/affiliates/me'),
+
+  updatePaymentDetails: (data: object) =>
+    apiClient.put<ApiResponse<object>>('/affiliates/payment-details', data),
 
   // Links
   getLinks: (params?: { page?: number; limit?: number }) =>
     apiClient.get<ApiResponse<object[]>>('/affiliates/links', { params }),
 
   createLink: (productId: string) =>
-    apiClient.post<ApiResponse<{ url: string; code: string }>>('/affiliates/links', { productId }),
+    apiClient.post<ApiResponse<{ url: string; code: string }>>('/affiliates/links/generate', { productId }),
+
+  getProductLinks: (params?: { page?: number; limit?: number }) =>
+    apiClient.get<ApiResponse<object[]>>('/affiliates/links/product', { params }),
+
+  deleteLink: (linkId: string) =>
+    apiClient.delete<ApiResponse<null>>(`/affiliates/links/${linkId}`),
 
   // Commissions
   getCommissions: (params?: { page?: number; limit?: number; status?: string }) =>
@@ -24,19 +33,28 @@ export const affiliateApi = {
     apiClient.get<ApiResponse<object[]>>('/affiliates/payouts', { params }),
 
   requestPayout: (amount: number) =>
-    apiClient.post<ApiResponse<null>>('/affiliates/payouts', { amount }),
+    apiClient.post<ApiResponse<object>>('/affiliates/payouts/request', { amount }),
 
   // KYC
-  submitKYC: (data: FormData) =>
-    apiClient.post<ApiResponse<null>>('/affiliates/kyc', data, {
+  getKYC: () =>
+    apiClient.get<ApiResponse<object>>('/affiliates/kyc'),
+
+  updateKYC: (data: object) =>
+    apiClient.put<ApiResponse<object>>('/affiliates/kyc', data),
+
+  uploadKYCDocument: (data: FormData) =>
+    apiClient.post<ApiResponse<null>>('/affiliates/kyc/documents', data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
 
   // Stats
-  getStats: () =>
-    apiClient.get<ApiResponse<{ clicks: number; conversions: number; earnings: number }>>('/affiliates/stats'),
+  getDashboardStats: () =>
+    apiClient.get<ApiResponse<object>>('/affiliates/dashboard/stats'),
 
   // Razorpay
   connectRazorpay: (data: object) =>
     apiClient.post<ApiResponse<null>>('/affiliates/razorpay/connect', data),
+
+  getRazorpayStatus: () =>
+    apiClient.get<ApiResponse<object>>('/affiliates/razorpay/status'),
 };

@@ -1,0 +1,18 @@
+import { Stack } from 'expo-router';
+import { colors, fontWeight, letterSpacing } from '../../src/theme';
+
+export default function CheckoutLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.white },
+        headerShadowVisible: false,
+        headerTintColor: colors.text,
+        headerTitleStyle: { fontWeight: fontWeight.bold, letterSpacing: letterSpacing.tight },
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
+      <Stack.Screen name="index" options={{ title: 'Checkout', headerBackTitle: 'Cart' }} />
+    </Stack>
+  );
+}

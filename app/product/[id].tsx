@@ -1,210 +1,624 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, FlatList, Alert } from 'react-native';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, FlatList, Alert, Share, Modal, Pressable, Linking } from 'react-native';
 import { Image } from 'expo-image';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useNavigation, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  withSpring,
+  Easing,
+} from 'react-native-reanimated';
 import { productsApi } from '../../src/api/products';
 import { userApi } from '../../src/api/user';
 import { useAppDispatch, useAppSelector } from '../../src/store';
 import { addToCart } from '../../src/store/slices/cartSlice';
+import { useRecentlyViewed } from '../../src/hooks/useRecentlyViewed';
 import { Product, Review } from '../../src/types';
+import AnimatedProductCard from '../../src/components/product/AnimatedProductCard';
+import ImageThumbnailStrip from '../../src/components/product/ImageThumbnailStrip';
+import RatingBreakdown from '../../src/components/product/RatingBreakdown';
+import { OffersCard, ReturnPolicyBadges } from '../../src/components/product/OffersAndPolicies';
+import CollapsibleSection from '../../src/components/product/CollapsibleSection';
+import FrequentlyBoughtTogether from '../../src/components/product/FrequentlyBoughtTogether';
+import PincodeChecker from '../../src/components/product/PincodeChecker';
 import Button from '../../src/components/ui/Button';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
-import { colors, spacing, fontSize, borderRadius } from '../../src/theme';
+import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpacing } from '../../src/theme';
 
-const { width } = Dimensions.get('window');
+const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+function AnimatedDot({ active }: { active: boolean }) {
+  const dotWidth = useSharedValue(active ? 28 : 8);
+  const opacity = useSharedValue(active ? 1 : 0.4);
+  useEffect(() => {
+    dotWidth.value = withTiming(active ? 28 : 8, { duration: 300 });
+    opacity.value = withTiming(active ? 1 : 0.4, { duration: 300 });
+  }, [active]);
+  const animStyle = useAnimatedStyle(() => ({ width: dotWidth.value, opacity: opacity.value }));
+  return <Animated.View style={[styles.dot, animStyle]} />;
+}
+
+function StaggeredView({ delay, children, style }: { delay: number; children: React.ReactNode; style?: any }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
+  useEffect(() => {
+    opacity.value = withDelay(delay, withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }));
+    translateY.value = withDelay(delay, withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }));
+  }, []);
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value, transform: [{ translateY: translateY.value }] }));
+  return <Animated.View style={[animStyle, style]}>{children}</Animated.View>;
+}
+
+function SlideUpView({ children, style }: { children: React.ReactNode; style?: any }) {
+  const translateY = useSharedValue(60);
+  const opacity = useSharedValue(0);
+  useEffect(() => {
+    translateY.value = withDelay(200, withSpring(0, { damping: 20, stiffness: 150 }));
+    opacity.value = withDelay(200, withTiming(1, { duration: 300 }));
+  }, []);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }], opacity: opacity.value }));
+  return <Animated.View style={[animStyle, style]}>{children}</Animated.View>;
+}
+
+function getDeliveryEstimate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 5);
+  return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const navigation = useNavigation();
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAppSelector((s) => s.auth);
+  const { addItem: addToRecentlyViewed } = useRecentlyViewed();
+  const carouselRef = useRef<FlatList>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [zoomVisible, setZoomVisible] = useState(false);
+  const [zoomIndex, setZoomIndex] = useState(0);
 
-  useEffect(() => {
+  const loadProduct = async () => {
     if (!id) return;
-    Promise.all([
-      productsApi.getById(id),
-      productsApi.getReviews(id, { limit: 5 }),
-    ]).then(([prodRes, revRes]) => {
-      setProduct(prodRes.data.data);
-      setReviews(revRes.data.data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [id]);
+    setError(null);
+    setLoading(true);
+    try {
+      const [prodRes, revRes] = await Promise.all([
+        productsApi.getById(id),
+        productsApi.getReviews(id, { limit: 10 }).catch(() => ({ data: { data: [] } })),
+      ]);
+      const prod = prodRes.data.data;
+      setProduct(prod);
+      setReviews(revRes.data.data || []);
+      if (prod?.title) navigation.setOptions({ title: prod.title });
+      if (prod) addToRecentlyViewed(prod);
+      productsApi.getSimilar(id).then((res) => {
+        setSimilarProducts((res.data.data || []).slice(0, 6));
+      }).catch(() => {});
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'Failed to load product');
+    }
+    setLoading(false);
+  };
 
-  const handleAddToCart = () => {
+  useEffect(() => { loadProduct(); }, [id]);
+
+  const handleAddToCart = async () => {
     if (!product) return;
-    dispatch(addToCart({ productId: product._id, quantity }));
-    Alert.alert('Added to Cart', `${product.title} added to your cart`);
+    if (!isAuthenticated) {
+      Alert.alert('Login Required', 'Please login to add items to cart', [
+        { text: 'Cancel' },
+        { text: 'Login', onPress: () => router.push('/(auth)/login' as any) },
+      ]);
+      return;
+    }
+    const result = await dispatch(addToCart({ productId: product._id, quantity }));
+    if (addToCart.fulfilled.match(result)) {
+      Alert.alert('Added to Cart', `${product.title} added to your cart`);
+    } else {
+      Alert.alert('Error', (result.payload as string) || 'Failed to add to cart');
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!product) return;
+    if (!isAuthenticated) {
+      Alert.alert('Login Required', 'Please login to continue', [
+        { text: 'Cancel' },
+        { text: 'Login', onPress: () => router.push('/(auth)/login' as any) },
+      ]);
+      return;
+    }
+    const result = await dispatch(addToCart({ productId: product._id, quantity }));
+    if (addToCart.fulfilled.match(result)) {
+      router.push('/checkout' as any);
+    } else {
+      Alert.alert('Error', (result.payload as string) || 'Failed to add to cart');
+    }
   };
 
   const handleWishlist = async () => {
     if (!product || !isAuthenticated) return;
     try {
-      if (isWishlisted) {
-        await userApi.removeFromWishlist(product._id);
-      } else {
-        await userApi.addToWishlist(product._id);
-      }
+      if (isWishlisted) await userApi.removeFromWishlist(product._id);
+      else await userApi.addToWishlist(product._id);
       setIsWishlisted(!isWishlisted);
+    } catch { Alert.alert('Error', 'Failed to update wishlist'); }
+  };
+
+  const handleShare = async () => {
+    if (!product) return;
+    try {
+      await Share.share({
+        message: `Check out ${product.title} on V-Tech!\n₹${product.price.toLocaleString()}\nhttps://vtech.com/product/${product.slug}`,
+        title: product.title,
+      });
     } catch {}
   };
 
-  if (loading || !product) return <LoadingScreen />;
+  const handleThumbnailPress = (index: number) => {
+    carouselRef.current?.scrollToIndex({ index, animated: true });
+    setActiveImage(index);
+  };
 
-  const discount = product.compareAt
-    ? Math.round(((product.compareAt - product.price) / product.compareAt) * 100)
-    : 0;
+  const handleVideoPress = () => {
+    if (product?.videoUrl) Linking.openURL(product.videoUrl);
+  };
+
+  const handleAddAllToCart = async (productIds: string[]) => {
+    if (!isAuthenticated) {
+      Alert.alert('Login Required', 'Please login to add items to cart', [
+        { text: 'Cancel' },
+        { text: 'Login', onPress: () => router.push('/(auth)/login' as any) },
+      ]);
+      return;
+    }
+    try {
+      await Promise.all(productIds.map((pid) => dispatch(addToCart({ productId: pid, quantity: 1 }))));
+      Alert.alert('Added to Cart', `${productIds.length} items added to your cart`);
+    } catch {
+      Alert.alert('Error', 'Failed to add some items');
+    }
+  };
+
+  if (loading) return <LoadingScreen />;
+
+  if (error || !product) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={56} color={colors.error} />
+        <Text style={styles.errorText}>{error || 'Product not found'}</Text>
+        <TouchableOpacity onPress={loadProduct} style={styles.retryBtn}>
+          <Text style={styles.retryBtnText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const discount = product.compareAt ? Math.round(((product.compareAt - product.price) / product.compareAt) * 100) : 0;
+  const savedAmount = product.compareAt ? product.compareAt - product.price : 0;
+  const vendorInfo = typeof product.vendorId === 'object' ? product.vendorId : null;
+  const isLowStock = product.stock > 0 && product.stock <= 5;
+  const deliveryEstimate = getDeliveryEstimate();
+
+  const highlights = useMemo(() => {
+    if (product.tags && product.tags.length > 0) return product.tags.slice(0, 4);
+    if (product.specifications && product.specifications.length > 0) return product.specifications.slice(0, 3).map((s) => `${s.label}: ${s.value}`);
+    return [];
+  }, [product]);
 
   return (
     <View style={styles.container}>
+      {/* Image Zoom Modal */}
+      <Modal visible={zoomVisible} transparent animationType="fade" onRequestClose={() => setZoomVisible(false)}>
+        <View style={styles.zoomOverlay}>
+          <TouchableOpacity style={styles.zoomClose} onPress={() => setZoomVisible(false)}>
+            <Ionicons name="close" size={28} color={colors.white} />
+          </TouchableOpacity>
+          <FlatList
+            data={product.images || []}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            initialScrollIndex={zoomIndex}
+            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+            keyExtractor={(_, i) => `zoom-${i}`}
+            renderItem={({ item }) => (
+              <View style={{ width, height: SCREEN_HEIGHT * 0.7, justifyContent: 'center', alignItems: 'center' }}>
+                <Image source={{ uri: item }} style={{ width, height: SCREEN_HEIGHT * 0.7 }} contentFit="contain" />
+              </View>
+            )}
+          />
+          <Text style={styles.zoomHint}>Swipe to navigate</Text>
+        </View>
+      </Modal>
+
       <ScrollView>
         {/* Image Carousel */}
         <FlatList
-          data={product.images}
+          ref={carouselRef}
+          data={product.images || []}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
+          getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
           onMomentumScrollEnd={(e) => setActiveImage(Math.round(e.nativeEvent.contentOffset.x / width))}
           keyExtractor={(_, i) => i.toString()}
-          renderItem={({ item }) => (
-            <Image source={{ uri: item }} style={styles.image} contentFit="cover" />
+          renderItem={({ item, index }) => (
+            <Pressable onPress={() => { setZoomIndex(index); setZoomVisible(true); }}>
+              <Image source={{ uri: item }} style={styles.image} contentFit="cover" />
+            </Pressable>
           )}
         />
+        <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
+          <Ionicons name="share-social-outline" size={22} color={colors.primary} />
+        </TouchableOpacity>
+
+        {/* Dots */}
         <View style={styles.dots}>
-          {product.images.map((_, i) => (
-            <View key={i} style={[styles.dot, i === activeImage && styles.dotActive]} />
-          ))}
+          {(product.images || []).map((_, i) => <AnimatedDot key={i} active={i === activeImage} />)}
         </View>
 
+        {/* Thumbnail Strip */}
+        <ImageThumbnailStrip
+          images={product.images || []}
+          activeIndex={activeImage}
+          onThumbnailPress={handleThumbnailPress}
+          videoUrl={product.videoUrl}
+          onVideoPress={handleVideoPress}
+        />
+
         <View style={styles.info}>
-          <Text style={styles.title}>{product.title}</Text>
+          {/* Brand */}
+          {product.brand && (
+            <Text style={styles.brand}>{product.brand}</Text>
+          )}
 
-          {/* Rating */}
-          <View style={styles.ratingRow}>
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Ionicons key={star} name={star <= product.rating ? 'star' : 'star-outline'} size={18} color={colors.secondary} />
-            ))}
-            <Text style={styles.ratingText}>{product.rating.toFixed(1)} ({product.reviewCount} reviews)</Text>
-          </View>
+          {/* Title */}
+          <StaggeredView delay={0}><Text style={styles.title}>{product.title}</Text></StaggeredView>
 
-          {/* Price */}
-          <View style={styles.priceRow}>
-            <Text style={styles.price}>₹{product.price.toLocaleString()}</Text>
-            {product.compareAt && (
-              <>
-                <Text style={styles.compareAt}>₹{product.compareAt.toLocaleString()}</Text>
-                <View style={styles.discountBadge}>
-                  <Text style={styles.discountText}>{discount}% OFF</Text>
-                </View>
-              </>
+          {/* Rating Row */}
+          <StaggeredView delay={100}>
+            <View style={styles.ratingRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Ionicons key={star} name={star <= (product.rating ?? 0) ? 'star' : 'star-outline'} size={18} color={colors.secondary} />
+              ))}
+              <Text style={styles.ratingText}>{(product.rating ?? 0).toFixed(1)} ({product.reviewCount ?? 0} reviews)</Text>
+            </View>
+          </StaggeredView>
+
+          {/* Rating Breakdown */}
+          {reviews.length > 0 && (
+            <StaggeredView delay={150}>
+              <View style={{ marginTop: spacing.sm }}>
+                <RatingBreakdown reviews={reviews} averageRating={product.rating ?? 0} totalCount={product.reviewCount ?? 0} />
+              </View>
+            </StaggeredView>
+          )}
+
+          {/* Price Row + Save Indicator */}
+          <StaggeredView delay={200}>
+            <View style={styles.priceRow}>
+              <Text style={styles.price}>₹{(product.price ?? 0).toLocaleString()}</Text>
+              {product.compareAt && (
+                <>
+                  <Text style={styles.compareAt}>₹{(product.compareAt ?? 0).toLocaleString()}</Text>
+                  <View style={styles.discountBadge}><Text style={styles.discountText}>{discount}% OFF</Text></View>
+                </>
+              )}
+            </View>
+            {savedAmount > 0 && (
+              <View style={styles.saveRow}>
+                <Ionicons name="trending-down" size={14} color={colors.success} />
+                <Text style={styles.saveText}>You save ₹{savedAmount.toLocaleString()} ({discount}%)</Text>
+              </View>
             )}
-          </View>
+          </StaggeredView>
 
-          {/* Stock */}
-          <Text style={[styles.stock, product.stock > 0 ? { color: colors.success } : { color: colors.error }]}>
-            {product.stock > 0 ? `In Stock (${product.stock} available)` : 'Out of Stock'}
-          </Text>
+          {/* Stock + Urgency */}
+          <StaggeredView delay={300}>
+            <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
+              {isLowStock ? (
+                <View style={styles.urgencyBanner}>
+                  <Ionicons name="flash" size={16} color="#92400E" />
+                  <Text style={styles.urgencyText}>Only {product.stock} left in stock - order soon!</Text>
+                </View>
+              ) : (
+                <View style={styles.stockRow}>
+                  <View style={[styles.stockDot, { backgroundColor: (product.stock ?? 0) > 0 ? colors.success : colors.error }]} />
+                  <Text style={[styles.stockText, (product.stock ?? 0) > 0 ? { color: colors.success } : { color: colors.error }]}>
+                    {(product.stock ?? 0) > 0 ? `In Stock (${product.stock})` : 'Out of Stock'}
+                  </Text>
+                </View>
+              )}
+
+              {/* Delivery Estimate */}
+              {(product.stock ?? 0) > 0 && (
+                <View style={styles.deliveryBadge}>
+                  <Ionicons name="car-outline" size={14} color={colors.info} />
+                  <Text style={styles.deliveryText}>Delivery by {deliveryEstimate}</Text>
+                </View>
+              )}
+            </View>
+          </StaggeredView>
+
+          {/* Pincode Checker */}
+          <StaggeredView delay={320}>
+            <View style={{ marginTop: spacing.md }}>
+              <PincodeChecker deliveryEstimate={deliveryEstimate} />
+            </View>
+          </StaggeredView>
+
+          {/* Offers */}
+          <StaggeredView delay={350}>
+            <View style={{ marginTop: spacing.md }}>
+              <OffersCard />
+            </View>
+          </StaggeredView>
+
+          {/* Return Policy Badges */}
+          <StaggeredView delay={380}>
+            <View style={{ marginTop: spacing.md }}>
+              <ReturnPolicyBadges />
+            </View>
+          </StaggeredView>
+
+          {/* Seller Card */}
+          {vendorInfo && (
+            <StaggeredView delay={400}>
+              <View style={styles.sellerCard}>
+                <View style={styles.sellerIcon}><Ionicons name="storefront" size={18} color={colors.primary} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sellerName}>Sold by {vendorInfo.storeName}</Text>
+                  <Text style={styles.sellerMeta}>Verified Seller</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </View>
+            </StaggeredView>
+          )}
+
+          {/* Highlights */}
+          {highlights.length > 0 && (
+            <StaggeredView delay={420}>
+              <View style={styles.sectionTitleWrapper}><Text style={styles.sectionTitle}>Highlights</Text><View style={styles.sectionAccent} /></View>
+              <View style={styles.highlightsCard}>
+                {highlights.map((item, i) => (
+                  <View key={i} style={styles.highlightRow}>
+                    <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+                    <Text style={styles.highlightText}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+            </StaggeredView>
+          )}
+
+          {/* Variants */}
+          {product.variants && product.variants.length > 0 && (
+            <StaggeredView delay={440}>
+              {product.variants.map((variant) => (
+                <View key={variant._id} style={{ marginTop: spacing.md }}>
+                  <Text style={styles.variantLabel}>{variant.name}:</Text>
+                  <View style={styles.variantOptions}>
+                    {variant.options.map((opt, i) => (
+                      <TouchableOpacity key={i} style={[styles.variantChip, i === 0 && styles.variantChipActive]}>
+                        <Text style={[styles.variantChipText, i === 0 && styles.variantChipTextActive]}>{opt}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </StaggeredView>
+          )}
 
           {/* Quantity */}
-          <View style={styles.qtySection}>
-            <Text style={styles.qtyLabel}>Quantity:</Text>
-            <TouchableOpacity style={styles.qtyBtn} onPress={() => quantity > 1 && setQuantity(quantity - 1)}>
-              <Ionicons name="remove" size={20} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={styles.qtyValue}>{quantity}</Text>
-            <TouchableOpacity style={styles.qtyBtn} onPress={() => quantity < product.stock && setQuantity(quantity + 1)}>
-              <Ionicons name="add" size={20} color={colors.text} />
-            </TouchableOpacity>
-          </View>
+          <StaggeredView delay={470}>
+            <View style={styles.qtySection}>
+              <Text style={styles.qtyLabel}>Quantity:</Text>
+              <TouchableOpacity style={styles.qtyBtn} onPress={() => quantity > 1 && setQuantity(quantity - 1)}>
+                <Ionicons name="remove" size={20} color={colors.primary} />
+              </TouchableOpacity>
+              <Text style={styles.qtyValue}>{quantity}</Text>
+              <TouchableOpacity style={styles.qtyBtn} onPress={() => quantity < (product.stock ?? 0) && setQuantity(quantity + 1)}>
+                <Ionicons name="add" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+          </StaggeredView>
 
-          {/* Description */}
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>{product.description}</Text>
+          {/* Specifications (Collapsible) */}
+          {(product.specifications ?? []).length > 0 && (
+            <StaggeredView delay={500}>
+              <CollapsibleSection title="Specifications">
+                <View style={styles.specsCard}>
+                  {(product.specifications ?? []).map((spec, i) => (
+                    <View key={i} style={[styles.specRow, i > 0 && styles.specBorder]}>
+                      <Text style={styles.specLabel}>{spec.label}</Text><Text style={styles.specValue}>{spec.value}</Text>
+                    </View>
+                  ))}
+                </View>
+              </CollapsibleSection>
+            </StaggeredView>
+          )}
+
+          {/* Description (Collapsible, default open) */}
+          <StaggeredView delay={600}>
+            <CollapsibleSection title="Description" defaultExpanded>
+              <View style={styles.descriptionCard}>
+                {(product.description || '').split('\n').filter(Boolean).map((para, i) => {
+                  const isHeading = para.length < 80 && !para.endsWith('.') && !para.endsWith(',');
+                  return <Text key={i} style={isHeading ? styles.descHeading : styles.descParagraph}>{para}</Text>;
+                })}
+              </View>
+            </CollapsibleSection>
+          </StaggeredView>
+
+          {/* Warranty */}
+          {product.hasWarranty && product.warranty && (
+            <StaggeredView delay={700}>
+              <View style={styles.sectionTitleWrapper}><Text style={styles.sectionTitle}>Warranty</Text><View style={styles.sectionAccent} /></View>
+              <View style={styles.warrantyCard}>
+                <View style={styles.warrantyBadge}><Ionicons name="shield-checkmark" size={20} color={colors.success} /><Text style={styles.warrantyDuration}>{product.warranty.duration} {product.warranty.durationType} warranty</Text></View>
+                {product.warranty.description && <Text style={styles.warrantyDesc}>{product.warranty.description}</Text>}
+              </View>
+            </StaggeredView>
+          )}
+
+          {/* FAQs (Collapsible) */}
+          {(product.faqs ?? []).length > 0 && (
+            <StaggeredView delay={800}>
+              <CollapsibleSection title="FAQs">
+                {(product.faqs ?? []).map((faq, i) => (
+                  <View key={i} style={styles.faqCard}>
+                    <View style={styles.faqQRow}><Ionicons name="help-circle" size={18} color={colors.primary} /><Text style={styles.faqQuestion}>{faq.question}</Text></View>
+                    <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                  </View>
+                ))}
+              </CollapsibleSection>
+            </StaggeredView>
+          )}
 
           {/* Reviews */}
           {reviews.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Reviews ({product.reviewCount})</Text>
-              {reviews.map((review) => (
+            <StaggeredView delay={900}>
+              <View style={styles.sectionTitleWrapper}><Text style={styles.sectionTitle}>Reviews ({product.reviewCount ?? 0})</Text><View style={styles.sectionAccent} /></View>
+              {reviews.slice(0, 5).map((review) => (
                 <View key={review._id} style={styles.reviewCard}>
                   <View style={styles.reviewHeader}>
                     <Text style={styles.reviewAuthor}>{review.userId?.name || 'User'}</Text>
-                    <View style={styles.reviewStars}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Ionicons key={s} name={s <= review.rating ? 'star' : 'star-outline'} size={14} color={colors.secondary} />
-                      ))}
-                    </View>
+                    <View style={styles.reviewStars}>{[1, 2, 3, 4, 5].map((s) => <Ionicons key={s} name={s <= review.rating ? 'star' : 'star-outline'} size={14} color={colors.secondary} />)}</View>
                   </View>
                   <Text style={styles.reviewComment}>{review.comment}</Text>
-                  {review.verifiedPurchase && (
-                    <Text style={styles.verified}>Verified Purchase</Text>
-                  )}
+                  {review.verifiedPurchase && <Text style={styles.verified}>Verified Purchase</Text>}
                 </View>
               ))}
-            </>
+            </StaggeredView>
+          )}
+
+          {/* Frequently Bought Together */}
+          {similarProducts.length >= 2 && (
+            <StaggeredView delay={950}>
+              <View style={{ marginTop: spacing.lg }}>
+                <FrequentlyBoughtTogether
+                  currentProduct={product}
+                  similarProducts={similarProducts}
+                  onAddAllToCart={handleAddAllToCart}
+                />
+              </View>
+            </StaggeredView>
+          )}
+
+          {/* Similar Products */}
+          {similarProducts.length > 0 && (
+            <StaggeredView delay={1000}>
+              <View style={styles.sectionTitleWrapper}><Text style={styles.sectionTitle}>You May Also Like</Text><View style={styles.sectionAccent} /></View>
+              <FlatList
+                data={similarProducts}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => `sim-${item._id}`}
+                renderItem={({ item, index }) => (
+                  <View style={{ marginRight: spacing.md }}><AnimatedProductCard product={item} index={index} /></View>
+                )}
+              />
+            </StaggeredView>
           )}
         </View>
       </ScrollView>
 
-      {/* Bottom Bar */}
-      <View style={styles.bottomBar}>
+      {/* Bottom Bar: Wishlist + Add to Cart + Buy Now */}
+      <SlideUpView style={styles.bottomBar}>
         <TouchableOpacity style={styles.wishlistButton} onPress={handleWishlist}>
-          <Ionicons name={isWishlisted ? 'heart' : 'heart-outline'} size={24} color={isWishlisted ? colors.error : colors.text} />
+          <Ionicons name={isWishlisted ? 'heart' : 'heart-outline'} size={24} color={isWishlisted ? colors.error : colors.primary} />
         </TouchableOpacity>
-        <Button
-          title={product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
-          onPress={handleAddToCart}
-          disabled={product.stock === 0}
-          size="lg"
-          style={{ flex: 1 }}
-        />
-      </View>
+        <Button title={(product.stock ?? 0) > 0 ? 'Add to Cart' : 'Out of Stock'} onPress={handleAddToCart} disabled={!product.stock} variant="outline" size="lg" style={{ flex: 1 }} />
+        <Button title="Buy Now" onPress={handleBuyNow} disabled={!product.stock} size="lg" style={{ flex: 1 }} />
+      </SlideUpView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl, backgroundColor: colors.background },
+  errorText: { fontSize: fontSize.md, color: colors.textSecondary, marginTop: spacing.md, textAlign: 'center' as const },
+  retryBtn: { marginTop: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.primary, borderRadius: borderRadius.lg },
+  retryBtnText: { color: colors.white, fontWeight: fontWeight.semibold, fontSize: fontSize.md },
   image: { width, height: width },
-  dots: { flexDirection: 'row', justifyContent: 'center', paddingVertical: spacing.sm },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border, marginHorizontal: 4 },
-  dotActive: { backgroundColor: colors.primary, width: 24 },
+  shareBtn: { position: 'absolute', top: spacing.xl + spacing.md, right: spacing.md, backgroundColor: colors.white, borderRadius: borderRadius.full, padding: spacing.sm + 2, ...shadows.md },
+  dots: { flexDirection: 'row', justifyContent: 'center', paddingVertical: spacing.sm, gap: spacing.xs + 2 },
+  dot: { height: 8, borderRadius: 4, backgroundColor: colors.primary },
   info: { padding: spacing.md },
-  title: { fontSize: fontSize.xl, fontWeight: '700', color: colors.text },
+  brand: { fontSize: fontSize.sm, color: colors.primary, fontWeight: fontWeight.semibold, textTransform: 'uppercase', letterSpacing: letterSpacing.wide, marginBottom: spacing.xs },
+  title: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, letterSpacing: letterSpacing.tight },
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: 2 },
   ratingText: { marginLeft: spacing.sm, fontSize: fontSize.sm, color: colors.textSecondary },
   priceRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.md, gap: spacing.sm },
-  price: { fontSize: fontSize.xxl, fontWeight: '700', color: colors.primary },
+  price: { fontSize: fontSize.xxxl, fontWeight: fontWeight.extrabold, color: colors.primary, letterSpacing: letterSpacing.tight },
   compareAt: { fontSize: fontSize.lg, color: colors.textSecondary, textDecorationLine: 'line-through' },
-  discountBadge: { backgroundColor: colors.success, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.sm },
-  discountText: { color: colors.white, fontSize: fontSize.xs, fontWeight: '700' },
-  stock: { fontSize: fontSize.sm, fontWeight: '600', marginTop: spacing.sm },
+  discountBadge: { backgroundColor: colors.success, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: borderRadius.full },
+  discountText: { color: colors.white, fontSize: fontSize.xs, fontWeight: fontWeight.bold },
+  saveRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
+  saveText: { fontSize: fontSize.sm, color: colors.success, fontWeight: fontWeight.semibold },
+  urgencyBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#FEF3C7', borderLeftWidth: 3, borderLeftColor: '#F59E0B', borderRadius: borderRadius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  urgencyText: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: '#92400E', flex: 1 },
+  stockRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  stockDot: { width: 8, height: 8, borderRadius: 4 },
+  stockText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+  deliveryBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.infoLight, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: borderRadius.full, alignSelf: 'flex-start' },
+  deliveryText: { fontSize: fontSize.xs, color: colors.info, fontWeight: fontWeight.semibold },
+  sellerCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, borderRadius: borderRadius.xl, padding: spacing.md, marginTop: spacing.md, gap: spacing.md, ...shadows.sm },
+  sellerIcon: { width: 36, height: 36, borderRadius: borderRadius.lg, backgroundColor: colors.primaryLightest, justifyContent: 'center', alignItems: 'center' },
+  sellerName: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
+  sellerMeta: { fontSize: fontSize.xs, color: colors.success, fontWeight: fontWeight.medium },
+  highlightsCard: { backgroundColor: colors.white, borderRadius: borderRadius.xl, padding: spacing.md, ...shadows.sm },
+  highlightRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.sm },
+  highlightText: { flex: 1, fontSize: fontSize.sm, color: colors.text, lineHeight: 20 },
+  variantLabel: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text, marginBottom: spacing.sm },
+  variantOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  variantChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: borderRadius.full, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.white },
+  variantChipActive: { borderColor: colors.primary, backgroundColor: colors.primaryLightest },
+  variantChipText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  variantChipTextActive: { color: colors.primary, fontWeight: fontWeight.semibold },
   qtySection: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.md, gap: spacing.md },
-  qtyLabel: { fontSize: fontSize.md, fontWeight: '600', color: colors.text },
-  qtyBtn: { width: 36, height: 36, borderRadius: borderRadius.sm, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' },
-  qtyValue: { fontSize: fontSize.lg, fontWeight: '700', minWidth: 30, textAlign: 'center' },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text, marginTop: spacing.lg, marginBottom: spacing.sm },
-  description: { fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 24 },
-  reviewCard: { backgroundColor: colors.surface, padding: spacing.md, borderRadius: borderRadius.md, marginBottom: spacing.sm },
+  qtyLabel: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.text },
+  qtyBtn: { width: 36, height: 36, borderRadius: borderRadius.lg, borderWidth: 1.5, borderColor: colors.primaryLighter, justifyContent: 'center', alignItems: 'center' },
+  qtyValue: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, minWidth: 30, textAlign: 'center', color: colors.text },
+  sectionTitleWrapper: { marginTop: spacing.lg, marginBottom: spacing.sm },
+  sectionTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text },
+  sectionAccent: { width: 24, height: 3, backgroundColor: colors.primary, borderRadius: 2, marginTop: 4 },
+  specsCard: { backgroundColor: colors.white, borderRadius: borderRadius.xl, overflow: 'hidden', ...shadows.sm },
+  specRow: { flexDirection: 'row', paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md },
+  specBorder: { borderTopWidth: 1, borderTopColor: colors.border },
+  specLabel: { flex: 1, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
+  specValue: { flex: 1.5, fontSize: fontSize.sm, color: colors.textSecondary },
+  descriptionCard: { backgroundColor: colors.white, borderRadius: borderRadius.xl, padding: spacing.md, ...shadows.sm },
+  descHeading: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.text, marginTop: spacing.md, marginBottom: spacing.xs },
+  descParagraph: { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 22, marginBottom: spacing.sm },
+  warrantyCard: { backgroundColor: colors.successLight, borderRadius: borderRadius.xl, padding: spacing.md, borderLeftWidth: 3, borderLeftColor: colors.success },
+  warrantyBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  warrantyDuration: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.success, textTransform: 'capitalize' },
+  warrantyDesc: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.sm, lineHeight: 20 },
+  faqCard: { backgroundColor: colors.white, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm, ...shadows.sm },
+  faqQRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  faqQuestion: { flex: 1, fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
+  faqAnswer: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.sm, marginLeft: spacing.sm + 18, lineHeight: 20 },
+  reviewCard: { backgroundColor: colors.white, padding: spacing.md, borderRadius: borderRadius.xl, marginBottom: spacing.sm, borderLeftWidth: 3, borderLeftColor: colors.primary, ...shadows.sm },
   reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  reviewAuthor: { fontSize: fontSize.sm, fontWeight: '600', color: colors.text },
+  reviewAuthor: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text },
   reviewStars: { flexDirection: 'row' },
   reviewComment: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs },
-  verified: { fontSize: fontSize.xs, color: colors.success, fontWeight: '600', marginTop: spacing.xs },
-  bottomBar: {
-    flexDirection: 'row',
-    padding: spacing.md,
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: spacing.md,
-    alignItems: 'center',
-  },
-  wishlistButton: { width: 48, height: 48, borderRadius: borderRadius.md, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' },
+  verified: { fontSize: fontSize.xs, color: colors.success, fontWeight: fontWeight.semibold, marginTop: spacing.xs },
+  bottomBar: { flexDirection: 'row', padding: spacing.md, backgroundColor: colors.white, borderTopLeftRadius: borderRadius.xxl, borderTopRightRadius: borderRadius.xxl, gap: spacing.sm, alignItems: 'center', ...shadows.xl },
+  wishlistButton: { width: 44, height: 44, borderRadius: borderRadius.lg, borderWidth: 1.5, borderColor: colors.primaryLighter, justifyContent: 'center', alignItems: 'center' },
+  zoomOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center' },
+  zoomClose: { position: 'absolute', top: 50, right: 20, zIndex: 10, padding: spacing.sm },
+  zoomHint: { color: 'rgba(255,255,255,0.5)', fontSize: fontSize.xs, textAlign: 'center', paddingBottom: spacing.xl },
 });

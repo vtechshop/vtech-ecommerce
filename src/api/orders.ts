@@ -1,5 +1,5 @@
 import apiClient from './client';
-import { ApiResponse, Order, Address } from '../types';
+import { ApiResponse, Order } from '../types';
 
 export const ordersApi = {
   create: (data: {
@@ -8,6 +8,7 @@ export const ordersApi = {
     razorpayPaymentId?: string;
     razorpayOrderId?: string;
     razorpaySignature?: string;
+    notes?: string;
   }) => apiClient.post<ApiResponse<Order>>('/orders', data),
 
   getAll: (params?: { page?: number; limit?: number; status?: string }) =>
@@ -22,6 +23,9 @@ export const ordersApi = {
   returnOrder: (id: string, data: { reason: string; items?: string[] }) =>
     apiClient.post<ApiResponse<Order>>(`/orders/${id}/return`, data),
 
-  trackOrder: (id: string) =>
-    apiClient.get<ApiResponse<{ status: string; tracking: object }>>(`/orders/${id}/track`),
+  trackOrder: (orderId: string) =>
+    apiClient.post<ApiResponse<{ status: string; tracking: object }>>('/orders/track', { orderId }),
+
+  trackByAwb: (awb: string) =>
+    apiClient.post<ApiResponse<object>>('/orders/track-awb', { awb }),
 };

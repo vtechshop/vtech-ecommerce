@@ -18,10 +18,13 @@ export const authApi = {
     apiClient.post<ApiResponse<null>>('/auth/resend-verification'),
 
   forgotPassword: (email: string) =>
-    apiClient.post<ApiResponse<null>>('/auth/reset-password', { email }),
+    apiClient.post<ApiResponse<null>>('/auth/forgot-password', { email }),
 
   resetPassword: (token: string, password: string) =>
-    apiClient.post<ApiResponse<null>>('/auth/reset-password/confirm', { token, password }),
+    apiClient.post<ApiResponse<null>>('/auth/reset-password', { token, password }),
+
+  me: () =>
+    apiClient.get<ApiResponse<User>>('/auth/me'),
 
   getProfile: () =>
     apiClient.get<ApiResponse<User>>('/user/profile'),
@@ -30,7 +33,7 @@ export const authApi = {
     apiClient.put<ApiResponse<User>>('/user/profile', data),
 
   changePassword: (currentPassword: string, newPassword: string) =>
-    apiClient.put<ApiResponse<null>>('/auth/change-password', { currentPassword, newPassword }),
+    apiClient.put<ApiResponse<null>>('/user/password', { currentPassword, newPassword }),
 
   logout: () =>
     apiClient.post<ApiResponse<null>>('/auth/logout'),

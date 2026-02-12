@@ -14,10 +14,27 @@ const initialState: CartState = {
   error: null,
 };
 
+// Normalize cart data from backend (handles productId vs product field naming)
+function normalizeCart(raw: any): Cart {
+  if (!raw) return raw;
+  return {
+    ...raw,
+    items: (raw.items || []).map((item: any) => ({
+      ...item,
+      product: item.product && typeof item.product === 'object'
+        ? item.product
+        : item.productId && typeof item.productId === 'object'
+          ? item.productId
+          : null,
+      price: item.price ?? item.productId?.price ?? item.product?.price ?? 0,
+    })),
+  };
+}
+
 export const fetchCart = createAsyncThunk('cart/fetch', async (_, { rejectWithValue }) => {
   try {
     const { data } = await cartApi.get();
-    return data.data;
+    return normalizeCart(data.data);
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || 'Failed to fetch cart');
   }
@@ -28,7 +45,7 @@ export const addToCart = createAsyncThunk(
   async ({ productId, quantity, variant }: { productId: string; quantity: number; variant?: string }, { rejectWithValue }) => {
     try {
       const { data } = await cartApi.addItem(productId, quantity, variant);
-      return data.data;
+      return normalizeCart(data.data);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to add item');
     }
@@ -40,7 +57,7 @@ export const updateCartItem = createAsyncThunk(
   async ({ itemId, quantity }: { itemId: string; quantity: number }, { rejectWithValue }) => {
     try {
       const { data } = await cartApi.updateItem(itemId, quantity);
-      return data.data;
+      return normalizeCart(data.data);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update item');
     }
@@ -52,7 +69,7 @@ export const removeCartItem = createAsyncThunk(
   async (itemId: string, { rejectWithValue }) => {
     try {
       const { data } = await cartApi.removeItem(itemId);
-      return data.data;
+      return normalizeCart(data.data);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to remove item');
     }
@@ -64,7 +81,7 @@ export const applyCoupon = createAsyncThunk(
   async (code: string, { rejectWithValue }) => {
     try {
       const { data } = await cartApi.applyCoupon(code);
-      return data.data;
+      return normalizeCart(data.data);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Invalid coupon');
     }

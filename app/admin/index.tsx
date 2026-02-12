@@ -4,18 +4,20 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { adminApi } from '../../src/api/admin';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
-import { colors, spacing, fontSize, borderRadius } from '../../src/theme';
+import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpacing } from '../../src/theme';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
+    setError(null);
     try {
       const { data } = await adminApi.getDashboardStats();
       setStats(data.data);
-    } catch {}
+    } catch (e: any) { setError(e.response?.data?.message || 'Something went wrong'); }
     setLoading(false);
   };
 
@@ -45,19 +47,27 @@ export default function AdminDashboard() {
     <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
       <View style={styles.statsGrid}>
         {statsCards.map((stat, i) => (
-          <View key={i} style={styles.statCard}>
-            <Ionicons name={stat.icon as any} size={22} color={stat.color} />
+          <View key={i} style={[styles.statCard, { borderLeftColor: stat.color }]}>
+            <View style={[styles.statIconCircle, { backgroundColor: stat.color + '15' }]}>
+              <Ionicons name={stat.icon as any} size={22} color={stat.color} />
+            </View>
             <Text style={styles.statValue}>{stat.value}</Text>
             <Text style={styles.statLabel}>{stat.label}</Text>
           </View>
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>Management</Text>
-      <View style={styles.menu}>
+      <View style={styles.sectionTitleWrap}>
+        <Text style={styles.sectionTitle}>Management</Text>
+        <View style={styles.accentBar} />
+      </View>
+
+      <View style={styles.menuCard}>
         {menuItems.map((item, i) => (
-          <TouchableOpacity key={i} style={styles.menuItem} onPress={() => router.push(item.route as any)}>
-            <Ionicons name={item.icon} size={22} color={colors.text} />
+          <TouchableOpacity key={i} style={[styles.menuItem, i === menuItems.length - 1 && styles.menuItemLast]} onPress={() => router.push(item.route as any)}>
+            <View style={styles.menuIcon}>
+              <Ionicons name={item.icon} size={22} color={colors.primary} />
+            </View>
             <Text style={styles.menuLabel}>{item.label}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
@@ -73,17 +83,33 @@ const styles = StyleSheet.create({
   statCard: {
     width: '31%',
     backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
+    borderRadius: borderRadius.xl,
     padding: spacing.sm,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
+    borderLeftWidth: 4,
+    ...shadows.md,
   },
-  statValue: { fontSize: fontSize.md, fontWeight: '700', color: colors.text, marginTop: spacing.xs },
+  statIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statValue: { fontSize: fontSize.md, fontWeight: fontWeight.extrabold, letterSpacing: letterSpacing.tight, color: colors.text, marginTop: spacing.xs },
   statLabel: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text, paddingHorizontal: spacing.md, marginTop: spacing.lg },
-  menu: { backgroundColor: colors.white, marginTop: spacing.md },
-  menuItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, gap: spacing.md },
-  menuLabel: { fontSize: fontSize.md, fontWeight: '500', color: colors.text },
+  sectionTitleWrap: { paddingHorizontal: spacing.md, marginTop: spacing.lg },
+  sectionTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text },
+  accentBar: { width: 24, height: 3, backgroundColor: colors.primary, borderRadius: 2, marginTop: 4 },
+  menuCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    ...shadows.sm,
+    overflow: 'hidden',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+  },
+  menuItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.surfaceDark, gap: spacing.md },
+  menuItemLast: { borderBottomWidth: 0 },
+  menuIcon: { width: 36, height: 36, borderRadius: borderRadius.lg, backgroundColor: colors.primaryLightest, justifyContent: 'center', alignItems: 'center' },
+  menuLabel: { fontSize: fontSize.md, fontWeight: fontWeight.medium, color: colors.text },
 });

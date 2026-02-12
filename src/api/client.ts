@@ -4,7 +4,8 @@ import { API_BASE_URL, TOKEN_KEYS } from '../utils/constants';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 60000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -64,13 +65,26 @@ apiClient.interceptors.response.use(
           throw new Error('No refresh token');
         }
 
-        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-          refreshToken,
-        });
+        // Send refresh token as cookie header (backend expects httpOnly cookie)
+        const refreshResponse = await axios.post(
+          `${API_BASE_URL}/auth/refresh`,
+          {},
+          {
+            headers: { Cookie: `refreshToken=${refreshToken}` },
+            withCredentials: true,
+          }
+        );
 
-        const { accessToken, refreshToken: newRefreshToken } = data.data.tokens;
+        const accessToken = refreshResponse.data.data.accessToken;
         await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, accessToken);
-        await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, newRefreshToken);
+
+        // Extract new refresh token from Set-Cookie if present
+        const setCookie = refreshResponse.headers?.['set-cookie'];
+        if (setCookie) {
+          const cookieStr = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
+          const rtMatch = cookieStr.match(/refreshToken=([^;]+)/);
+          if (rtMatch) await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, rtMatch[1]);
+        }
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         processQueue(null, accessToken);

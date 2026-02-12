@@ -43,3 +43,6 @@ yarn-error.*
 # junk files
 bugreport-*.zip
 com.facebook.react.*
+.claude/
+nul
+backend-sync-prompt.md

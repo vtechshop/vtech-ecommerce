@@ -1,11 +1,8 @@
-// API base URL - update for production
-export const API_BASE_URL = __DEV__
-  ? 'http://10.0.2.2:8080/api' // Android emulator -> localhost
-  : 'https://vtech-ecommerce.onrender.com/api';
-
-// For iOS simulator, use: http://localhost:8080/api
-// For physical device on same WiFi, use your computer's local IP:
-// http://192.168.x.x:8080/api
+// API base URL
+// Always use production Render URL — 10.0.2.2 only works on Android emulator,
+// not on physical devices. Change to local IP only when running backend locally
+// AND testing on an emulator (e.g. 'http://10.0.2.2:8080/api').
+export const API_BASE_URL = 'https://vtech-ecommerce.onrender.com/api';
 
 export const RAZORPAY_KEY = 'your_razorpay_key';
 

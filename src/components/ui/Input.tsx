@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, StyleSheet, TextInputProps, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, borderRadius, spacing, fontSize } from '../../theme';
+import { colors, borderRadius, spacing, fontSize, fontWeight, letterSpacing } from '../../theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -16,7 +16,10 @@ export default function Input({ label, error, leftIcon, isPassword, style, ...pr
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputContainer, error && styles.inputError]}>
+      <View style={[
+        styles.inputContainer,
+        error && styles.inputError,
+      ]}>
         {leftIcon && (
           <Ionicons name={leftIcon} size={20} color={colors.textSecondary} style={styles.leftIcon} />
         )}
@@ -24,6 +27,8 @@ export default function Input({ label, error, leftIcon, isPassword, style, ...pr
           style={[styles.input, style]}
           placeholderTextColor={colors.textSecondary}
           secureTextEntry={isPassword && !showPassword}
+          autoCorrect={false}
+          spellCheck={false}
           {...props}
         />
         {isPassword && (
@@ -39,17 +44,29 @@ export default function Input({ label, error, leftIcon, isPassword, style, ...pr
 
 const styles = StyleSheet.create({
   container: { marginBottom: spacing.md },
-  label: { fontSize: fontSize.sm, fontWeight: '500', color: colors.text, marginBottom: spacing.xs },
+  label: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    marginBottom: spacing.xs,
+    letterSpacing: letterSpacing.wide,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
   },
   inputError: { borderColor: colors.error },
-  input: { flex: 1, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md, fontSize: fontSize.md, color: colors.text },
+  input: {
+    flex: 1,
+    paddingVertical: spacing.md - 2,
+    paddingHorizontal: spacing.md,
+    fontSize: fontSize.md,
+    color: colors.text,
+  },
   leftIcon: { marginLeft: spacing.md },
   eyeIcon: { padding: spacing.md },
   error: { fontSize: fontSize.xs, color: colors.error, marginTop: spacing.xs },
