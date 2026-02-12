@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Post = require('../models/Post');
 const Vendor = require('../models/Vendor');
+const Review = require('../models/Review');
 const env = require('../config/env');
 
 // Escape special XML characters to prevent parsing errors
@@ -368,6 +369,14 @@ exports.renderPage = async (req, res, next) => {
         .lean();
 
       if (product) {
+        // Fetch approved reviews for this product
+        const productReviews = await Review.find({ productId: product._id, status: 'approved' })
+          .populate('userId', 'name')
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .lean()
+          .catch(() => []);
+
         pageData.title = `${product.title} - V-Tech Kitchen`;
         pageData.description = (product.description?.substring(0, 155) || `Buy ${product.title} at best price. ${product.shortDescription || ''}`).substring(0, 155);
         pageData.image = product.images?.[0] || pageData.image;
@@ -380,6 +389,10 @@ exports.renderPage = async (req, res, next) => {
           <p>${product.description || ''}</p>
           ${product.features?.length ? `<h2>Features</h2><ul>${product.features.map(f => `<li>${f}</li>`).join('')}</ul>` : ''}
         `;
+
+        // Price valid for 1 year from now
+        const priceValidUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
         pageData.schema = {
           '@context': 'https://schema.org',
           '@type': 'Product',
@@ -392,6 +405,7 @@ exports.renderPage = async (req, res, next) => {
             '@type': 'Offer',
             price: product.price || 0,
             priceCurrency: 'INR',
+            priceValidUntil,
             availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             url: fullUrl,
             seller: {
@@ -400,6 +414,34 @@ exports.renderPage = async (req, res, next) => {
             },
           },
         };
+
+        // Add aggregateRating if product has reviews
+        if (product.rating > 0 && product.reviewCount > 0) {
+          pageData.schema.aggregateRating = {
+            '@type': 'AggregateRating',
+            ratingValue: product.rating,
+            reviewCount: product.reviewCount,
+            bestRating: 5,
+            worstRating: 1,
+          };
+        }
+
+        // Add individual reviews if available
+        if (productReviews.length > 0) {
+          pageData.schema.review = productReviews.map(r => ({
+            '@type': 'Review',
+            author: { '@type': 'Person', name: r.userId?.name || 'Customer' },
+            datePublished: r.createdAt ? new Date(r.createdAt).toISOString().split('T')[0] : undefined,
+            reviewBody: r.comment || r.title || '',
+            name: r.title || undefined,
+            reviewRating: {
+              '@type': 'Rating',
+              ratingValue: r.rating,
+              bestRating: 5,
+              worstRating: 1,
+            },
+          }));
+        }
       }
     }
 
