@@ -669,7 +669,7 @@ exports.getProductFeed = async (req, res, next) => {
       <g:image_link>${product.images?.[0] || ''}</g:image_link>
       <g:condition>new</g:condition>
       <g:availability>${product.stock > 0 ? 'in stock' : 'out of stock'}</g:availability>
-      <g:price>${product.price} USD</g:price>
+      <g:price>${product.price} INR</g:price>
       <g:brand>${product.brand || product.vendorId?.storeName || 'Shop'}</g:brand>
     </item>`;
     });
