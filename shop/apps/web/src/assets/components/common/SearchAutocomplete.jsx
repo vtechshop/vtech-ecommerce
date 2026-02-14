@@ -1,5 +1,6 @@
 // FILE: apps/web/src/components/common/SearchAutocomplete.jsx
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Search, TrendingUp, Clock, X, ChevronRight, Mic } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -27,7 +28,10 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
   const wrapperRef = useRef(null);
   const inputRef = useRef(null);
   const [isListening, setIsListening] = useState(false);
+  const [voiceText, setVoiceText] = useState('');
+  const [voiceError, setVoiceError] = useState('');
   const recognitionRef = useRef(null);
+  const gotResultRef = useRef(false);
 
   // Check if browser supports speech recognition
   const SpeechRecognition = typeof window !== 'undefined'
@@ -38,42 +42,78 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-IN';
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognitionRef.current = recognition;
+    gotResultRef.current = false;
 
-    recognition.onstart = () => setIsListening(true);
+    recognition.onstart = () => {
+      setIsListening(true);
+      setVoiceText('');
+      setVoiceError('');
+    };
 
     recognition.onresult = (event) => {
+      gotResultRef.current = true;
       const transcript = Array.from(event.results)
         .map(result => result[0].transcript)
         .join('');
-      setQuery(transcript);
-      setIsOpen(true);
+      setVoiceText(transcript);
 
       // If final result, auto-search
-      if (event.results[0].isFinal && transcript.trim()) {
+      const lastResult = event.results[event.results.length - 1];
+      if (lastResult.isFinal && transcript.trim()) {
+        recognition.stop();
         setTimeout(() => {
           saveRecentSearch(transcript.trim());
+          setIsListening(false);
+          setVoiceText('');
           navigate(`/products?q=${encodeURIComponent(transcript.trim())}&source=voice`);
-          setQuery('');
-          setIsOpen(false);
-        }, 500);
+        }, 600);
       }
     };
 
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
+    recognition.onerror = (event) => {
+      if (event.error === 'no-speech') {
+        setVoiceError('No speech detected. Try again.');
+      } else if (event.error === 'not-allowed') {
+        setVoiceError('Microphone access denied.');
+        setIsListening(false);
+      } else {
+        setVoiceError('Something went wrong. Try again.');
+      }
+    };
+
+    // Don't auto-close on end — only close if user stops or error
+    recognition.onend = () => {
+      // If still listening and no error, restart (handles Chrome stopping after silence)
+      if (recognitionRef.current && !voiceError) {
+        try {
+          recognition.start();
+        } catch {
+          setIsListening(false);
+        }
+      }
+    };
 
     recognition.start();
   }, [SpeechRecognition, navigate]);
 
   const stopVoiceSearch = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setIsListening(false);
+    setVoiceText('');
+    setVoiceError('');
   }, []);
+
+  // Scroll dismisses voice search overlay
+  useEffect(() => {
+    if (!isListening) return;
+    const dismiss = () => stopVoiceSearch();
+    window.addEventListener('scroll', dismiss, { once: true });
+    return () => window.removeEventListener('scroll', dismiss);
+  }, [isListening, stopVoiceSearch]);
 
   // Load recent searches from localStorage
   useEffect(() => {
@@ -284,36 +324,43 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
         </button>
       </form>
 
-      {/* Voice search listening overlay - Amazon style */}
-      {isListening && (
-        <div className="fixed inset-0 bg-black/70 z-[60] flex flex-col items-center justify-center" onClick={stopVoiceSearch}>
-          <div className="bg-white rounded-3xl p-10 text-center max-w-md w-[90%] shadow-2xl" onClick={e => e.stopPropagation()}>
+      {/* Voice search listening overlay - Amazon style (portal to body) */}
+      {isListening && createPortal(
+        <div
+          className="z-[9999] flex items-center justify-center"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }}
+          onClick={stopVoiceSearch}
+        >
+          <div className="bg-white rounded-2xl p-10 text-center shadow-2xl mx-4" style={{ width: '420px', maxWidth: '90vw' }} onClick={e => e.stopPropagation()}>
             {/* Animated mic with ripple rings */}
-            <div className="relative inline-flex items-center justify-center mb-6">
-              <div className="absolute w-28 h-28 rounded-full border-2 border-blue-200 animate-ping opacity-20"></div>
-              <div className="absolute w-24 h-24 rounded-full border-2 border-blue-300 animate-pulse opacity-30"></div>
-              <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-xl cursor-pointer hover:from-blue-600 hover:to-blue-700 transition-all" onClick={stopVoiceSearch}>
+            <div className="relative inline-flex items-center justify-center mb-6" style={{ width: '140px', height: '140px' }}>
+              <div className="absolute rounded-full border-2 border-blue-100 animate-ping opacity-20" style={{ width: '130px', height: '130px' }}></div>
+              <div className="absolute rounded-full border-2 border-blue-200 animate-pulse opacity-30" style={{ width: '110px', height: '110px' }}></div>
+              <div className="absolute rounded-full bg-blue-50 opacity-40" style={{ width: '100px', height: '100px' }}></div>
+              <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg cursor-pointer" onClick={stopVoiceSearch}>
                 <Mic className="w-10 h-10 text-white" />
               </div>
             </div>
 
             {/* Audio wave bars */}
-            <div className="flex items-end justify-center gap-1 mb-5 h-8">
-              {[...Array(5)].map((_, i) => (
+            <div className="flex items-end justify-center gap-1.5 mb-5 h-10">
+              {[...Array(7)].map((_, i) => (
                 <div
                   key={i}
                   className="w-1 bg-blue-500 rounded-full"
                   style={{
-                    animation: `voiceWave 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
-                    height: '8px',
+                    animation: `voiceWave 0.6s ease-in-out ${i * 0.08}s infinite alternate`,
+                    height: '6px',
                   }}
                 />
               ))}
             </div>
 
             <p className="text-xl font-bold text-gray-900 mb-2">Listening...</p>
-            {query ? (
-              <p className="text-base text-blue-600 font-medium mb-5 min-h-[24px]">"{query}"</p>
+            {voiceError ? (
+              <p className="text-sm text-red-500 mb-5">{voiceError}</p>
+            ) : voiceText ? (
+              <p className="text-base text-blue-600 font-medium mb-5 min-h-[24px]">"{voiceText}"</p>
             ) : (
               <p className="text-sm text-gray-400 mb-5">Try saying a product name</p>
             )}
@@ -328,11 +375,12 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
           <style>{`
             @keyframes voiceWave {
-              0% { height: 8px; }
-              100% { height: 32px; }
+              0% { height: 6px; }
+              100% { height: 40px; }
             }
           `}</style>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Dropdown - Always light background for visibility */}
