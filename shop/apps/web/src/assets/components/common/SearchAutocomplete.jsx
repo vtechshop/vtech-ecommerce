@@ -31,21 +31,49 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
   const [voiceText, setVoiceText] = useState('');
   const [voiceError, setVoiceError] = useState('');
   const recognitionRef = useRef(null);
-  const gotResultRef = useRef(false);
+  const silenceTimerRef = useRef(null);
+  const maxTimerRef = useRef(null);
+  const transcriptRef = useRef('');
 
   // Check if browser supports speech recognition
   const SpeechRecognition = typeof window !== 'undefined'
     && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
-  const startVoiceSearch = useCallback(() => {
+  // Execute voice search with accumulated transcript
+  const executeVoiceSearch = useCallback((text) => {
+    clearTimeout(silenceTimerRef.current);
+    clearTimeout(maxTimerRef.current);
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null; // prevent restart
+      recognitionRef.current.stop();
+    }
+    recognitionRef.current = null;
+    if (text.trim()) {
+      saveRecentSearch(text.trim());
+      setIsListening(false);
+      setVoiceText('');
+      navigate(`/products?q=${encodeURIComponent(text.trim())}&source=voice`);
+    }
+  }, [navigate]);
+
+  const startVoiceSearch = useCallback(async () => {
     if (!SpeechRecognition) return;
+
+    // Pre-warm mic to avoid missing first word
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+    } catch {
+      setVoiceError('Microphone access denied.');
+      return;
+    }
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-IN';
-    recognition.continuous = true;
+    recognition.continuous = false; // Use false + auto-restart (more reliable)
     recognition.interimResults = true;
     recognitionRef.current = recognition;
-    gotResultRef.current = false;
+    transcriptRef.current = '';
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -54,54 +82,89 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
     };
 
     recognition.onresult = (event) => {
-      gotResultRef.current = true;
-      const transcript = Array.from(event.results)
-        .map(result => result[0].transcript)
-        .join('');
-      setVoiceText(transcript);
-
-      // If final result, auto-search
-      const lastResult = event.results[event.results.length - 1];
-      if (lastResult.isFinal && transcript.trim()) {
-        recognition.stop();
-        setTimeout(() => {
-          saveRecentSearch(transcript.trim());
-          setIsListening(false);
-          setVoiceText('');
-          navigate(`/products?q=${encodeURIComponent(transcript.trim())}&source=voice`);
-        }, 600);
+      // Build full transcript from all segments
+      let finalText = '';
+      let interimText = '';
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalText += event.results[i][0].transcript;
+        } else {
+          interimText += event.results[i][0].transcript;
+        }
       }
+      // Accumulate final text across restarts
+      const fullText = (transcriptRef.current + ' ' + finalText + interimText).trim();
+      setVoiceText(fullText);
+
+      // When a segment is final, save it permanently
+      if (finalText) {
+        transcriptRef.current = (transcriptRef.current + ' ' + finalText).trim();
+      }
+
+      // Reset silence timer — auto-search after 1.5s of silence
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(() => {
+        const q = transcriptRef.current || fullText;
+        if (q.trim()) executeVoiceSearch(q.trim());
+      }, 1500);
     };
 
     recognition.onerror = (event) => {
       if (event.error === 'no-speech') {
         setVoiceError('No speech detected. Try again.');
-      } else if (event.error === 'not-allowed') {
+      } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         setVoiceError('Microphone access denied.');
         setIsListening(false);
-      } else {
+      } else if (event.error !== 'aborted') {
         setVoiceError('Something went wrong. Try again.');
       }
     };
 
-    // Don't auto-close on end — only close if user stops or error
+    // Auto-restart on end (continuous:false stops after each phrase)
     recognition.onend = () => {
-      // If still listening and no error, restart (handles Chrome stopping after silence)
-      if (recognitionRef.current && !voiceError) {
+      if (recognitionRef.current) {
         try {
           recognition.start();
         } catch {
-          setIsListening(false);
+          // If restart fails and we have text, search with it
+          const q = transcriptRef.current;
+          if (q.trim()) executeVoiceSearch(q.trim());
+          else setIsListening(false);
         }
       }
     };
 
     recognition.start();
-  }, [SpeechRecognition, navigate]);
+
+    // Safety cap: max 15 seconds of listening
+    maxTimerRef.current = setTimeout(() => {
+      const q = transcriptRef.current;
+      if (q.trim()) {
+        executeVoiceSearch(q.trim());
+      } else {
+        // Manual cleanup (can't reference stopVoiceSearch here)
+        clearTimeout(silenceTimerRef.current);
+        if (recognitionRef.current) {
+          recognitionRef.current.onend = null;
+          recognitionRef.current.stop();
+        }
+        recognitionRef.current = null;
+        transcriptRef.current = '';
+        setIsListening(false);
+        setVoiceText('');
+      }
+    }, 15000);
+  }, [SpeechRecognition, executeVoiceSearch]);
 
   const stopVoiceSearch = useCallback(() => {
-    recognitionRef.current?.stop();
+    clearTimeout(silenceTimerRef.current);
+    clearTimeout(maxTimerRef.current);
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null; // prevent restart
+      recognitionRef.current.stop();
+    }
     recognitionRef.current = null;
+    transcriptRef.current = '';
     setIsListening(false);
     setVoiceText('');
     setVoiceError('');
@@ -365,12 +428,22 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
               <p className="text-sm text-gray-400 mb-5">Try saying a product name</p>
             )}
 
-            <button
-              onClick={stopVoiceSearch}
-              className="px-6 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-            >
-              Tap to stop
-            </button>
+            <div className="flex items-center justify-center gap-3">
+              {voiceText && (
+                <button
+                  onClick={() => executeVoiceSearch(voiceText)}
+                  className="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors"
+                >
+                  Search
+                </button>
+              )}
+              <button
+                onClick={stopVoiceSearch}
+                className="px-6 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
 
           <style>{`
