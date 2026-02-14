@@ -8,6 +8,7 @@ const { slugify, generateSKU, getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
 const notificationHelper = require('../services/notificationHelper');
 const notificationService = require('../services/notificationService');
+const indexNow = require('../services/indexNowService');
 
 // ---------- CONTROLLERS ----------
 async function getVendorBySlug(req, res, next) {
@@ -399,6 +400,7 @@ async function createProduct(req, res, next) {
 
     logger.info(`Product created: ${product.title}`);
     res.status(201).json({ success: true, data: product });
+    indexNow.notifyContentChange('product', product.slug);
   } catch (error) {
     next(error);
   }
@@ -451,6 +453,7 @@ async function updateProduct(req, res, next) {
 
     await product.save();
     res.json({ success: true, data: product });
+    indexNow.notifyContentChange('product', product.slug);
   } catch (error) {
     next(error);
   }
@@ -664,6 +667,13 @@ async function importProducts(req, res, next) {
 
     logger.info(`Bulk import: ${imported.length} products created, ${errors.length} errors`);
     res.json({ success: true, data: { imported: imported.length, errors } });
+
+    // Notify IndexNow for all imported products
+    const slugs = imported.map(p => p.slug).filter(Boolean);
+    if (slugs.length > 0) {
+      const urls = slugs.map(s => `${indexNow.BASE_URL}/product/${s}`);
+      indexNow.submitUrls(urls).catch(err => console.error('IndexNow bulk import notify failed:', err.message));
+    }
   } catch (error) {
     next(error);
   }

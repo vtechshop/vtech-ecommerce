@@ -190,6 +190,20 @@ exports.getIndexNowKey = async (req, res) => {
 };
 
 // ======================
+// INDEXNOW BULK SUBMIT (Admin)
+// ======================
+exports.submitIndexNow = async (req, res, next) => {
+  try {
+    const indexNow = require('../services/indexNowService');
+    const result = await indexNow.submitAllUrls();
+    res.json({ success: result.success, data: result });
+  } catch (error) {
+    console.error('IndexNow bulk submit failed:', error);
+    next(error);
+  }
+};
+
+// ======================
 // ROBOTS.TXT GENERATOR
 // ======================
 exports.generateRobotsTxt = async (req, res, next) => {

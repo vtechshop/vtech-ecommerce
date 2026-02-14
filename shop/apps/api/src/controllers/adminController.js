@@ -20,6 +20,7 @@ const logger = require('../config/logger');
 const warrantyService = require('../services/warrantyService');
 const notificationHelper = require('../services/notificationHelper');
 const payoutService = require('../services/payoutService');
+const indexNow = require('../services/indexNowService');
 
 // Helper function to activate warranties after payment
 const activateWarrantiesForOrder = async (order) => {
@@ -683,6 +684,7 @@ exports.createProduct = async (req, res, next) => {
 
     logger.info(`Product created by admin: ${product.title}`);
     res.status(201).json({ success: true, data: product });
+    indexNow.notifyContentChange('product', product.slug);
   } catch (error) {
     logger.error('Product creation error:', error);
     next(error);
@@ -703,6 +705,7 @@ exports.updateProduct = async (req, res, next) => {
     await product.save();
     logger.info(`Product updated by admin: ${product.title}`);
     res.json({ success: true, data: product });
+    indexNow.notifyContentChange('product', product.slug);
   } catch (error) { next(error); }
 };
 
@@ -743,6 +746,7 @@ exports.createCategory = async (req, res, next) => {
     const cat = await Category.create({ ...req.body, name: req.body.name.trim(), slug: slugify(req.body.name) });
     logger.info(`Category created: ${cat.name}`);
     res.status(201).json({ success: true, data: cat });
+    indexNow.notifyContentChange('category', cat.slug);
   } catch (error) { next(error); }
 };
 
@@ -756,6 +760,7 @@ exports.updateCategory = async (req, res, next) => {
     if (!cat) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Category not found' } });
     logger.info(`Category updated: ${cat.name}`);
     res.json({ success: true, data: cat });
+    indexNow.notifyContentChange('category', cat.slug);
   } catch (error) { next(error); }
 };
 
@@ -2232,6 +2237,7 @@ exports.createPost = async (req, res, next) => {
     const row = await Post.create({ ...req.body, author: req.user._id, slug: slugify(req.body.title) });
     logger.info(`Post created: ${row.title}`);
     res.status(201).json({ success: true, data: row });
+    indexNow.notifyContentChange('blog', row.slug);
   } catch (error) { next(error); }
 };
 
@@ -2240,6 +2246,7 @@ exports.updatePost = async (req, res, next) => {
     const row = await Post.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!row) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Post not found' } });
     res.json({ success: true, data: row });
+    indexNow.notifyContentChange('blog', row.slug);
   } catch (error) { next(error); }
 };
 
