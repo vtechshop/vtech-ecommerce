@@ -147,6 +147,64 @@ router.get('/autocomplete', async (req, res, next) => {
   }
 });
 
+// GET /catalog/search-related?q=banana&limit=8 — Amazon-style "Related to your search"
+// Finds products in the same categories as search results (but not the results themselves)
+router.get('/search-related', async (req, res, next) => {
+  try {
+    const { q, limit = 8, exclude = '' } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+    const cappedLimit = Math.min(parseInt(limit), 20);
+
+    // Step 1: Find products matching the query to identify relevant categories
+    const matched = await Product.find(
+      { published: true, $text: { $search: q } },
+      { score: { $meta: 'textScore' } }
+    ).sort({ score: { $meta: 'textScore' } }).limit(10).select('_id categoryIds').lean();
+
+    // Collect IDs to exclude (matched products + any the frontend already shows)
+    const excludeIds = matched.map(p => p._id);
+    if (exclude) {
+      exclude.split(',').forEach(id => {
+        if (mongoose.Types.ObjectId.isValid(id.trim())) {
+          excludeIds.push(new mongoose.Types.ObjectId(id.trim()));
+        }
+      });
+    }
+
+    // Step 2: Collect category IDs from matched products
+    const categoryIds = [...new Set(
+      matched.flatMap(p => (p.categoryIds || []).map(id => id.toString()))
+    )];
+
+    if (categoryIds.length === 0) {
+      // No category context — return trending products as fallback
+      const trending = await Product.find({ published: true, _id: { $nin: excludeIds } })
+        .sort({ sold: -1, rating: -1 })
+        .limit(cappedLimit)
+        .populate('vendorId', 'storeName slug')
+        .lean();
+      return res.json({ success: true, data: trending });
+    }
+
+    // Step 3: Find other products in same categories (excluding already-matched ones)
+    const related = await Product.find({
+      published: true,
+      _id: { $nin: excludeIds },
+      categoryIds: { $in: categoryIds.map(id => new mongoose.Types.ObjectId(id)) },
+    })
+      .sort({ rating: -1, sold: -1 })
+      .limit(cappedLimit)
+      .populate('vendorId', 'storeName slug')
+      .lean();
+
+    res.json({ success: true, data: related });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /catalog/categories?limit=6
 router.get('/categories', async (req, res, next) => {
   try {

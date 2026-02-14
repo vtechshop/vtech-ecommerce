@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -178,6 +178,25 @@ const Search = () => {
   const products = data?.items || [];
   const totalPages = Math.ceil((data?.total || 0) / 20);
 
+  // IDs of products already shown in main results (to exclude from related)
+  const mainProductIds = useMemo(
+    () => products.map(p => p._id || p.id).filter(Boolean).join(','),
+    [products]
+  );
+
+  // Fetch related products from same categories — Amazon-style "Related to your search"
+  const { data: relatedProducts } = useQuery({
+    queryKey: ['search-related', query, mainProductIds],
+    queryFn: async () => {
+      const response = await api.get(
+        `/catalog/search-related?q=${encodeURIComponent(query)}&limit=8&exclude=${mainProductIds}`
+      );
+      return response.data.data || [];
+    },
+    enabled: !!query && !isLoading,
+    staleTime: 60 * 1000,
+  });
+
   // If view is categories, show category grid
   if (view === 'categories') {
     return (
@@ -351,6 +370,23 @@ const Search = () => {
           )}
         </div>
       </div>
+
+      {/* Related Products — Amazon-style "Related to your search" */}
+      {query && relatedProducts?.length > 0 && (
+        <div className="mt-10 border-t border-gray-200 pt-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Related to your search</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+            {relatedProducts.map((product, index) => (
+              <div key={product._id || product.id} className={`fade-in stagger-${Math.min((index % 6) + 1, 6)}`}>
+                <ProductCard
+                  product={product}
+                  onQuickView={handleQuickView}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick View Modal */}
       <QuickView
