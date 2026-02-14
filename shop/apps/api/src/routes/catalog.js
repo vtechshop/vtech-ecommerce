@@ -19,8 +19,22 @@ router.get('/products', async (req, res, next) => {
 
     const query = { published: true }; // Only show published products
     if (featured === 'true') query.featured = true;
-    if (q) query.$text = { $search: q };
     if (tag) query.tags = tag.toLowerCase(); // Filter by specific tag
+
+    // Text search: multi-word uses AND logic (like Amazon) so only relevant products show
+    let searchWords = [];
+    if (q) {
+      searchWords = q.trim().split(/\s+/)
+        .map(w => w.replace(/^[+\-"]+/, '')) // sanitize operators
+        .filter(w => w.length >= 2);
+
+      if (searchWords.length > 1) {
+        // Require ALL words — "+chapati +pressing +machine" = AND with stemming
+        query.$text = { $search: searchWords.map(w => `+${w}`).join(' ') };
+      } else {
+        query.$text = { $search: q };
+      }
+    }
 
     // Filter by vendor slug
     if (vendor) {
@@ -50,10 +64,19 @@ router.get('/products', async (req, res, next) => {
       sortOption = '-createdAt';
     }
 
-    const [items, total] = await Promise.all([
+    let [items, total] = await Promise.all([
       Product.find(query, projection).populate('vendorId', 'storeName slug').sort(sortOption).skip(skip).limit(cappedLimit).lean(),
       Product.countDocuments(query),
     ]);
+
+    // Fallback: if strict AND search returns 0 results, try broader OR search
+    if (q && total === 0 && searchWords.length > 1) {
+      query.$text = { $search: q };
+      [items, total] = await Promise.all([
+        Product.find(query, projection).populate('vendorId', 'storeName slug').sort(sortOption).skip(skip).limit(cappedLimit).lean(),
+        Product.countDocuments(query),
+      ]);
+    }
 
     res.json({ success: true, data: items, meta: { total, page: Number(page), limit: cappedLimit } });
   } catch (err) {
