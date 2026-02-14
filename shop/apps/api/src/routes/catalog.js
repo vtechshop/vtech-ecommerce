@@ -36,8 +36,22 @@ router.get('/products', async (req, res, next) => {
 
     const skip = (parseInt(page) - 1) * cappedLimit;
 
+    // When text search is active, project text score for relevance sorting
+    let sortOption = sort;
+    let projection = {};
+    if (q) {
+      projection = { score: { $meta: 'textScore' } };
+      // Sort by relevance (text score) by default or when explicitly requested
+      if (sort === 'relevance' || sort === '-createdAt') {
+        sortOption = { score: { $meta: 'textScore' } };
+      }
+    } else if (sort === 'relevance') {
+      // No text query but relevance sort requested — fall back to newest
+      sortOption = '-createdAt';
+    }
+
     const [items, total] = await Promise.all([
-      Product.find(query).populate('vendorId', 'storeName slug').sort(sort).skip(skip).limit(cappedLimit).lean(),
+      Product.find(query, projection).populate('vendorId', 'storeName slug').sort(sortOption).skip(skip).limit(cappedLimit).lean(),
       Product.countDocuments(query),
     ]);
 

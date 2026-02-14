@@ -26,7 +26,7 @@ const Search = () => {
   const view = searchParams.get('view') || 'products';
   const query = searchParams.get('q') || '';
   const page = parseInt(searchParams.get('page') || '1');
-  const sort = searchParams.get('sort') || '-createdAt';
+  const sort = searchParams.get('sort') || (query ? 'relevance' : '-createdAt');
   const category = searchParams.get('category') || '';
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
@@ -252,6 +252,7 @@ const Search = () => {
               value={sort}
               onChange={(value) => handleSortChange(value)}
               options={[
+                ...(query ? [{ value: 'relevance', label: 'Most Relevant' }] : []),
                 { value: '-createdAt', label: 'Newest First' },
                 { value: 'price', label: 'Price: Low to High' },
                 { value: '-price', label: 'Price: High to Low' },
