@@ -308,7 +308,7 @@ router.post('/track/view', catalogTrackingLimiter, async (req, res, next) => {
 // POST /catalog/track/search - Track search query
 router.post('/track/search', catalogTrackingLimiter, async (req, res, next) => {
   try {
-    const { query, filters, resultsCount } = req.body;
+    const { query, filters, resultsCount, source } = req.body;
 
     // SECURITY: Validate query string length
     if (!query || typeof query !== 'string') {
@@ -339,6 +339,7 @@ router.post('/track/search', catalogTrackingLimiter, async (req, res, next) => {
       query: query.substring(0, 200),
       filters: filters || {},
       resultsCount: parsedResultsCount,
+      source: ['text', 'voice', 'autocomplete'].includes(source) ? source : 'text',
     };
 
     // Add userId if authenticated

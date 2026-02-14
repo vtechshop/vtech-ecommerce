@@ -36,6 +36,12 @@ const searchHistorySchema = new mongoose.Schema({
       default: Date.now,
     },
   }],
+  // How the search was initiated
+  source: {
+    type: String,
+    enum: ['text', 'voice', 'autocomplete'],
+    default: 'text',
+  },
   // Track if the search led to a purchase
   convertedToPurchase: {
     type: Boolean,
