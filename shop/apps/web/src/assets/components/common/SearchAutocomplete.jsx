@@ -203,6 +203,20 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
     gcTime: 5 * 60 * 1000,
   });
 
+  // Voice autocomplete - live suggestions while speaking
+  const debouncedVoiceText = useDebounce(voiceText, 400);
+  const { data: voiceAutocomplete } = useQuery({
+    queryKey: ['voice-autocomplete', debouncedVoiceText],
+    queryFn: async () => {
+      if (!debouncedVoiceText.trim() || debouncedVoiceText.length < 2) return null;
+      const response = await api.get(`/catalog/autocomplete?q=${encodeURIComponent(debouncedVoiceText)}`);
+      return response.data.data;
+    },
+    enabled: isListening && debouncedVoiceText.length >= 2,
+    staleTime: 30 * 1000,
+    gcTime: 60 * 1000,
+  });
+
   // Fetch trending searches (popular products)
   const { data: trending } = useQuery({
     queryKey: ['trending-searches'],
@@ -296,6 +310,21 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
     setIsOpen(false);
     inputRef.current?.blur();
   };
+
+  // Select product from voice overlay
+  const handleVoiceSelectProduct = useCallback((product) => {
+    clearTimeout(silenceTimerRef.current);
+    clearTimeout(maxTimerRef.current);
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null;
+      recognitionRef.current.stop();
+    }
+    recognitionRef.current = null;
+    saveRecentSearch(product.title);
+    setIsListening(false);
+    setVoiceText('');
+    navigate(`/product/${product.slug}`);
+  }, [navigate]);
 
   const handleSelectCategory = (category) => {
     if (query.trim()) {
@@ -394,56 +423,103 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }}
           onClick={stopVoiceSearch}
         >
-          <div className="bg-white rounded-2xl p-10 text-center shadow-2xl mx-4" style={{ width: '420px', maxWidth: '90vw' }} onClick={e => e.stopPropagation()}>
-            {/* Animated mic with ripple rings */}
-            <div className="relative inline-flex items-center justify-center mb-6" style={{ width: '140px', height: '140px' }}>
-              <div className="absolute rounded-full border-2 border-blue-100 animate-ping opacity-20" style={{ width: '130px', height: '130px' }}></div>
-              <div className="absolute rounded-full border-2 border-blue-200 animate-pulse opacity-30" style={{ width: '110px', height: '110px' }}></div>
-              <div className="absolute rounded-full bg-blue-50 opacity-40" style={{ width: '100px', height: '100px' }}></div>
-              <div className="relative w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg cursor-pointer" onClick={stopVoiceSearch}>
-                <Mic className="w-10 h-10 text-white" />
+          <div className="bg-white rounded-2xl text-center shadow-2xl mx-4 overflow-hidden" style={{ width: '440px', maxWidth: '92vw' }} onClick={e => e.stopPropagation()}>
+            {/* Top section with mic and status */}
+            <div className="px-8 pt-8 pb-4">
+              {/* Animated mic with ripple rings */}
+              <div className="relative inline-flex items-center justify-center mb-4" style={{ width: '120px', height: '120px' }}>
+                <div className="absolute rounded-full border-2 border-blue-100 animate-ping opacity-20" style={{ width: '110px', height: '110px' }}></div>
+                <div className="absolute rounded-full border-2 border-blue-200 animate-pulse opacity-30" style={{ width: '90px', height: '90px' }}></div>
+                <div className="absolute rounded-full bg-blue-50 opacity-40" style={{ width: '80px', height: '80px' }}></div>
+                <div className="relative w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg cursor-pointer" onClick={stopVoiceSearch}>
+                  <Mic className="w-8 h-8 text-white" />
+                </div>
+              </div>
+
+              {/* Audio wave bars */}
+              <div className="flex items-end justify-center gap-1.5 mb-3 h-8">
+                {[...Array(7)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-1 bg-blue-500 rounded-full"
+                    style={{
+                      animation: `voiceWave 0.6s ease-in-out ${i * 0.08}s infinite alternate`,
+                      height: '6px',
+                    }}
+                  />
+                ))}
+              </div>
+
+              <p className="text-lg font-bold text-gray-900 mb-1">Listening...</p>
+              {voiceError ? (
+                <p className="text-sm text-red-500 mb-3">{voiceError}</p>
+              ) : voiceText ? (
+                <p className="text-base text-blue-600 font-medium mb-3 min-h-[24px]">"{voiceText}"</p>
+              ) : (
+                <p className="text-sm text-gray-400 mb-3">Try saying a product name</p>
+              )}
+
+              <div className="flex items-center justify-center gap-3">
+                {voiceText && (
+                  <button
+                    onClick={() => executeVoiceSearch(voiceText)}
+                    className="px-5 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors"
+                  >
+                    Search
+                  </button>
+                )}
+                <button
+                  onClick={stopVoiceSearch}
+                  className="px-5 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
 
-            {/* Audio wave bars */}
-            <div className="flex items-end justify-center gap-1.5 mb-5 h-10">
-              {[...Array(7)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1 bg-blue-500 rounded-full"
-                  style={{
-                    animation: `voiceWave 0.6s ease-in-out ${i * 0.08}s infinite alternate`,
-                    height: '6px',
-                  }}
-                />
-              ))}
-            </div>
+            {/* Live suggestions - YouTube style */}
+            {voiceAutocomplete && (voiceAutocomplete.suggestions?.length > 0 || voiceAutocomplete.products?.length > 0) && (
+              <div className="border-t border-gray-100 max-h-[240px] overflow-y-auto">
+                {/* Text suggestions */}
+                {voiceAutocomplete.suggestions?.slice(0, 3).map((suggestion) => (
+                  <button
+                    key={`vs-${suggestion}`}
+                    onClick={() => executeVoiceSearch(suggestion)}
+                    className="w-full px-5 py-2.5 flex items-center gap-3 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm text-gray-800 truncate">{suggestion}</span>
+                  </button>
+                ))}
 
-            <p className="text-xl font-bold text-gray-900 mb-2">Listening...</p>
-            {voiceError ? (
-              <p className="text-sm text-red-500 mb-5">{voiceError}</p>
-            ) : voiceText ? (
-              <p className="text-base text-blue-600 font-medium mb-5 min-h-[24px]">"{voiceText}"</p>
-            ) : (
-              <p className="text-sm text-gray-400 mb-5">Try saying a product name</p>
+                {/* Product matches */}
+                {voiceAutocomplete.products?.slice(0, 4).map((product) => (
+                  <button
+                    key={`vp-${product._id}`}
+                    onClick={() => handleVoiceSelectProduct(product)}
+                    className="w-full px-5 py-2.5 flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-9 h-9 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                      {product.images?.[0] ? (
+                        <img
+                          src={normalizeImageUrl(product.images[0])}
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-[8px]">
+                          No img
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 text-left overflow-hidden">
+                      <p className="text-sm text-gray-800 truncate">{product.title}</p>
+                      <p className="text-xs font-semibold text-blue-600">{formatCurrency(product.price)}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             )}
-
-            <div className="flex items-center justify-center gap-3">
-              {voiceText && (
-                <button
-                  onClick={() => executeVoiceSearch(voiceText)}
-                  className="px-6 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-full transition-colors"
-                >
-                  Search
-                </button>
-              )}
-              <button
-                onClick={stopVoiceSearch}
-                className="px-6 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
           </div>
 
           <style>{`
