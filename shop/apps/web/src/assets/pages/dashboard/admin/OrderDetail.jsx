@@ -21,6 +21,7 @@ const AdminOrderDetail = () => {
   const [carrier, setCarrier] = useState('Shiprocket');
   const [showCarrierForm, setShowCarrierForm] = useState(true);
   const [assignMode, setAssignMode] = useState('manual');
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['admin-order', id],
@@ -126,6 +127,26 @@ const AdminOrderDetail = () => {
     assignCarrierMutation.mutate({ awb: awbNumber.trim(), carrier });
   };
 
+  const handleDownloadInvoice = async () => {
+    setDownloadingInvoice(true);
+    try {
+      const response = await api.get(`/admin/orders/${id}/invoice`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Invoice-${order?.orderId || id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Invoice downloaded');
+    } catch (error) {
+      toast.error('Failed to download invoice');
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
+
   const handleUseRecommended = () => {
     if (recommendedCarrier?.recommended) {
       setCarrier(recommendedCarrier.recommended.carrier);
@@ -173,9 +194,21 @@ const AdminOrderDetail = () => {
           <h1 className="text-3xl font-bold text-gray-900">Order #{order?.orderId || 'N/A'}</h1>
           <p className="text-gray-600 mt-1">Placed on {order?.createdAt ? formatDate(order.createdAt) : 'N/A'}</p>
         </div>
-        <Button onClick={() => navigate('/admin-dashboard/orders')} variant="outline">
-          Back to Orders
-        </Button>
+        <div className="flex gap-3">
+          <Button
+            onClick={handleDownloadInvoice}
+            variant="outline"
+            loading={downloadingInvoice}
+          >
+            <svg className="w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download Invoice
+          </Button>
+          <Button onClick={() => navigate('/admin-dashboard/orders')} variant="outline">
+            Back to Orders
+          </Button>
+        </div>
       </div>
 
       {/* Order Summary Cards */}

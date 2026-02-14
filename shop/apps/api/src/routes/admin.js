@@ -3,6 +3,8 @@ const router = express.Router();
 const admin = require('../controllers/adminController');
 const adminAds = require('../controllers/adminAdsController');
 const crm = require('../controllers/crmController');
+const invoiceController = require('../controllers/invoiceController');
+const sitemapController = require('../controllers/sitemapController');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validate');
 const { getSecurityStats } = require('../middleware/advancedSecurity');
@@ -67,6 +69,7 @@ router.delete('/categories/:id', validateObjectId('id'), admin.deleteCategory);
 router.get('/orders/counts', admin.getOrderCounts);
 router.get('/orders', admin.getOrders);
 router.get('/orders/:id', validateObjectId('id'), admin.getOrderById);
+router.get('/orders/:id/invoice', validateObjectId('id'), invoiceController.downloadInvoiceAdmin);
 router.put('/orders/:id/status', validateObjectId('id'), admin.updateOrderStatus);
 
 // Vendors - SECURITY: Added ObjectId validation
@@ -219,5 +222,8 @@ router.get('/inventory/export', admin.exportInventory);
 router.get('/inventory', admin.getInventory);
 router.put('/inventory/:productId/stock', validateObjectId('productId'), admin.updateInventoryStock);
 router.post('/inventory/:productId/restock-reminder', validateObjectId('productId'), admin.sendRestockReminder);
+
+// SEO - IndexNow bulk URL submission
+router.post('/seo/indexnow/submit', sitemapController.submitIndexNow);
 
 module.exports = router;

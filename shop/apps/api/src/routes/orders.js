@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const invoiceController = require('../controllers/invoiceController');
 const { authenticate, optionalAuth } = require('../middleware/auth');
 const { checkoutLimiter, orderTrackingLimiter, orderCreationLimiter } = require('../middleware/rateLimiter');
 
@@ -14,6 +15,7 @@ router.post('/', orderCreationLimiter, optionalAuth, orderController.createOrder
 
 // Authenticated only
 router.get('/', authenticate, orderController.getOrders);
+router.get('/:id/invoice', authenticate, invoiceController.downloadInvoice);
 router.get('/:id', optionalAuth, orderController.getOrderById);  // Support guest checkout
 router.post('/:id/cancel', authenticate, orderController.cancelOrder);
 router.post('/:id/return', authenticate, orderController.requestReturn);
