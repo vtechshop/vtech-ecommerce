@@ -1,13 +1,13 @@
 // FILE: apps/web/src/components/cart/CartDrawer.jsx
 import { useSelector, useDispatch } from 'react-redux';
-import { removeFromCart, clearCart } from '@/store/slices/cartSlice';
-import { useNavigate } from 'react-router-dom';
+import { removeCartItem, clearCart } from '@/store/slices/cartSlice';
+import { useNavigate, Link } from 'react-router-dom';
 import Button from '@/components/common/Button';
 import { formatCurrency } from '@/utils/format';
-import { normalizeImageUrl } from '@/utils/placeholders';
-import { X, ShoppingCart, Trash2 } from 'lucide-react';
+import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
+import { X, ShoppingCart, Trash2, CheckCircle } from 'lucide-react';
 
-const CartDrawer = ({ isOpen, onClose }) => {
+const CartDrawer = ({ isOpen, onClose, justAdded }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { items, totals } = useSelector((state) => state.cart);
@@ -18,7 +18,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
   };
 
   const handleRemove = (itemId) => {
-    dispatch(removeFromCart(itemId));
+    dispatch(removeCartItem(itemId));
   };
 
   const handleClearCart = () => {
@@ -42,63 +42,80 @@ const CartDrawer = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 text-blue-600 cart-bounce" />
+            <ShoppingCart className="w-5 h-5 text-blue-600" />
             <h2 className="text-xl font-bold text-gray-900">Shopping Cart</h2>
-            <span className="bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded-full cart-badge-pulse">
+            <span className="bg-primary-600 text-white text-xs font-bold px-2 py-1 rounded-full">
               {items.length}
             </span>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors btn-scale"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        {/* Added to Cart confirmation banner */}
+        {justAdded && (
+          <div className="bg-green-50 border-b border-green-200 px-4 py-2.5 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <span className="text-sm font-medium text-green-800">Added to Cart</span>
+          </div>
+        )}
+
         {/* Cart Items */}
         <div className="flex-1 overflow-y-auto p-4">
           {items.length === 0 ? (
-            <div className="text-center py-12 fade-in">
-              <ShoppingCart className="w-16 h-16 mx-auto text-gray-300 mb-4 empty-state-icon" />
+            <div className="text-center py-12">
+              <ShoppingCart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
               <p className="text-gray-700 mb-4">Your cart is empty</p>
               <Button onClick={onClose} variant="outline">
                 Continue Shopping
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {items.map((item, index) => (
+            <div className="space-y-3">
+              {items.map((item) => (
                 <div
-                  key={item.id}
-                  className={`flex gap-3 p-3 border border-gray-200 rounded-lg hover:shadow-card hover:border-blue-500 transition-all duration-300 hover-lift fade-in stagger-${Math.min(index + 1, 6)}`}
+                  key={item._id}
+                  className="flex gap-3 p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition-all"
                 >
-                  <img
-                    src={normalizeImageUrl(item.product.images?.[0])}
-                    alt={item.product.seo?.title || item.product.title}
-                    className="w-20 h-20 object-cover rounded"
-                  />
+                  <Link
+                    to={`/product/${item.productSlug}`}
+                    onClick={onClose}
+                    className="flex-shrink-0"
+                  >
+                    <img
+                      src={item.image || PLACEHOLDER_IMAGE_SM}
+                      alt={item.name}
+                      className="w-16 h-16 object-cover rounded"
+                      onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)}
+                    />
+                  </Link>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm truncate">
-                      {item.product.title}
+                    <h3 className="font-semibold text-sm truncate text-gray-900">
+                      {item.name}
                     </h3>
                     {item.variant && (
-                      <p className="text-xs text-gray-700">
-                        {item.variant.name}: {item.variant.value}
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {typeof item.variant === 'string'
+                          ? JSON.parse(item.variant).join(', ')
+                          : Object.values(item.variant).join(', ')}
                       </p>
                     )}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-sm text-gray-700">
-                        Qty: {item.quantity}
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-xs text-gray-500">
+                        Qty: {item.qty}
                       </span>
-                      <span className="font-bold">
-                        {formatCurrency(item.product.price * item.quantity)}
+                      <span className="font-bold text-sm">
+                        {formatCurrency((item.priceSnapshot || item.price || 0) * item.qty)}
                       </span>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleRemove(item.id)}
-                    className="text-red-600 hover:text-red-700 p-2 h-fit"
+                    onClick={() => handleRemove(item._id)}
+                    className="text-red-500 hover:text-red-700 p-1 h-fit"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -119,14 +136,14 @@ const CartDrawer = ({ isOpen, onClose }) => {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="border-t p-4 space-y-4">
-            <div className="space-y-2">
+          <div className="border-t p-4 space-y-3">
+            <div className="space-y-1.5">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-700">Subtotal</span>
+                <span className="text-gray-500">Subtotal</span>
                 <span className="font-semibold">{formatCurrency(totals.subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-700">Shipping</span>
+                <span className="text-gray-500">Shipping</span>
                 <span className="font-semibold">
                   {totals.shipping === 0 ? 'FREE' : formatCurrency(totals.shipping)}
                 </span>

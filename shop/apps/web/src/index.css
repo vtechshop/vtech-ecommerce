@@ -419,6 +419,11 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
   }
+
+  /* Safe area for fixed bottom bars on iPhones with notch/home indicator */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 /* ============================================

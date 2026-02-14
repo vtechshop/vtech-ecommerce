@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/Product.jsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
@@ -18,6 +18,7 @@ import ProductImageCarousel from '@/components/product/ProductImageCarousel';
 import ReviewForm from '@/components/product/ReviewForm';
 import EditReviewModal from '@/components/product/EditReviewModal';
 import AdBanner from '@/components/common/AdBanner';
+import CartDrawer from '@/components/cart/CartDrawer';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
 import SEO from '@/components/common/SEO';
@@ -158,6 +159,7 @@ const Product = () => {
   const dispatch = useDispatch();
   const toast = useToast();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const cartItems = useSelector((state) => state.cart.items);
   const [searchParams] = useSearchParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState({});
@@ -166,11 +168,32 @@ const Product = () => {
   const [editingReview, setEditingReview] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [showBottomBar, setShowBottomBar] = useState(false);
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+  const [cartDrawerJustAdded, setCartDrawerJustAdded] = useState(false);
+  const addToCartRef = useRef(null);
+
+  // Reset "Go to Cart" button when cart becomes empty
+  useEffect(() => {
+    if (cartItems.length === 0) setAddedToCart(false);
+  }, [cartItems.length]);
 
   // Capture affiliate code from URL on page load
   useEffect(() => {
     captureAffiliateFromURL(searchParams);
   }, [searchParams]);
+
+  // Show mobile bottom bar when Add to Cart button scrolls out of view
+  useEffect(() => {
+    const node = addToCartRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowBottomBar(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [addToCartRef.current]);
 
   const { data: product, isLoading, error: productError, refetch } = useQuery({
     queryKey: ['product', slug],
@@ -313,11 +336,9 @@ const Product = () => {
       // Play add to cart sound
       playAddToCart();
 
-      // Show message - same for all users (3 seconds)
-      toast.success('Added to cart!', 3000);
-
-      // Reset after 2 seconds
-      setTimeout(() => setAddedToCart(false), 2000);
+      // Open cart drawer (Amazon-style) with "Added to Cart" banner
+      setCartDrawerJustAdded(true);
+      setIsCartDrawerOpen(true);
     } catch (error) {
       playError();
       console.error('Add to cart error:', error);
@@ -746,32 +767,31 @@ const Product = () => {
             </div>
           </div>
 
-          <div className="flex gap-4 pt-2 fade-in stagger-3">
-            <button
-              onClick={handleAddToCart}
-              disabled={product.stock === 0}
-              data-testid="add-to-cart-btn"
-              data-cy="add-to-cart-btn"
-              className={`btn-add-to-cart btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
-                addedToCart
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-400'
-                  : product.stock === 0
+          <div ref={addToCartRef} className="flex gap-4 pt-2 fade-in stagger-3">
+            {addedToCart ? (
+              <button
+                onClick={() => { setCartDrawerJustAdded(false); setIsCartDrawerOpen(true); }}
+                className="btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-400"
+              >
+                <ShoppingCart className="w-6 h-6" />
+                Go to Cart
+              </button>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock === 0}
+                data-testid="add-to-cart-btn"
+                data-cy="add-to-cart-btn"
+                className={`btn-add-to-cart btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
+                  product.stock === 0
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-2 border-gray-400'
                   : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 border-2 border-primary-400'
-              }`}
-            >
-              {addedToCart ? (
-                <>
-                  <Check className="w-6 h-6 checkmark" />
-                  Added to Cart
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-6 h-6" />
-                  Add to Cart
-                </>
-              )}
-            </button>
+                }`}
+              >
+                <ShoppingCart className="w-6 h-6" />
+                Add to Cart
+              </button>
+            )}
             <button
               onClick={handleBuyNow}
               disabled={product.stock === 0}
@@ -1120,6 +1140,52 @@ const Product = () => {
         onSubmit={handleEditSubmit}
         isLoading={editReviewMutation.isPending}
       />
+
+      {/* Mobile Sticky Bottom Bar - shows when Add to Cart button scrolls out of view */}
+      {showBottomBar && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] px-3 py-2 safe-area-bottom">
+          <div className="flex items-center gap-3">
+            {/* Price */}
+            <div className="flex-shrink-0">
+              <p className="text-lg font-bold text-gray-900 leading-tight">{formatCurrency(product.price)}</p>
+              {product.comparePrice && discountPercentage > 0 && (
+                <p className="text-xs text-red-600 font-medium">-{discountPercentage}% off</p>
+              )}
+            </div>
+            {/* Add to Cart / Go to Cart */}
+            {addedToCart ? (
+              <button
+                onClick={() => { setCartDrawerJustAdded(false); setIsCartDrawerOpen(true); }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm transition-all bg-green-500 text-white active:bg-green-600"
+              >
+                <ShoppingCart className="w-4 h-4" /> Go to Cart
+              </button>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock === 0}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                  product.stock === 0
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-primary-600 text-white active:bg-primary-700'
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4" /> Add to Cart
+              </button>
+            )}
+            {/* Buy Now */}
+            <button
+              onClick={handleBuyNow}
+              disabled={product.stock === 0}
+              className="flex-1 py-2.5 rounded-xl font-semibold text-sm bg-secondary-600 text-white active:bg-secondary-700 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              Buy Now
+            </button>
+          </div>
+        </div>
+      )}
+      {/* Cart Drawer - slides in from right after adding to cart (Amazon-style) */}
+      <CartDrawer isOpen={isCartDrawerOpen} onClose={() => setIsCartDrawerOpen(false)} justAdded={cartDrawerJustAdded} />
       </div>
     </>
   );
