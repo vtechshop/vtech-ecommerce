@@ -338,7 +338,7 @@ const Search = () => {
                   <>
                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
                       {combinedProducts.map((product, index) => (
-                        <div key={product._isSponsored ? product._adData.creativeId : (product.id ?? product._id)} className={`relative fade-in stagger-${Math.min((index % 6) + 1, 6)}`}>
+                        <div key={product._isSponsored ? product._adData.creativeId : (product.id ?? product._id)} className="relative stagger-grid-item" style={{ animationDelay: `${index * 0.07}s` }}>
                           <ProductCard
                             product={{ _id: product._id ?? product.id, ...product }}
                             onClick={product._isSponsored ? () => handleAdClick(product._adData) : undefined}
@@ -377,7 +377,7 @@ const Search = () => {
           <h2 className="text-xl font-bold text-gray-900 mb-4">Related to your search</h2>
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
             {relatedProducts.map((product, index) => (
-              <div key={product._id || product.id} className={`fade-in stagger-${Math.min((index % 6) + 1, 6)}`}>
+              <div key={product._id || product.id} className="stagger-grid-item" style={{ animationDelay: `${index * 0.07}s` }}>
                 <ProductCard
                   product={product}
                   onQuickView={handleQuickView}

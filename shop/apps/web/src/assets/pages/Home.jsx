@@ -168,8 +168,8 @@ const Home = React.memo(() => {
                 <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 ${
                   leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
                 }`}>
-                  {categories.map((category) => (
-                    <Link key={category.slug} to={`/category/${category.slug}`} className="group">
+                  {categories.map((category, index) => (
+                    <Link key={category.slug} to={`/category/${category.slug}`} className="group stagger-grid-item" style={{ animationDelay: `${index * 0.06}s` }}>
                       <div className="bg-white rounded-lg overflow-hidden hover:shadow-md transition-all duration-300 border border-gray-200">
                         <div className="flex items-center justify-center py-4 px-4">
                           <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
@@ -240,8 +240,10 @@ const Home = React.memo(() => {
                     </div>
                   ))
                 ) : featuredProducts?.length > 0 ? (
-                  featuredProducts.map((p) => (
-                    <ProductCard key={p._id} product={p} />
+                  featuredProducts.map((p, index) => (
+                    <div key={p._id} className="stagger-grid-item" style={{ animationDelay: `${index * 0.07}s` }}>
+                      <ProductCard product={p} />
+                    </div>
                   ))
                 ) : (
                   <div className="col-span-full text-center py-12 text-gray-500">
@@ -285,7 +287,7 @@ const Home = React.memo(() => {
                     : 'md:grid-cols-2'
                 }`}>
                   {user?.role !== 'vendor' && (
-                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow">
+                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.1s' }}>
                       <div className="flex items-center mb-4">
                         <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-4">
                           <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -331,7 +333,7 @@ const Home = React.memo(() => {
                   )}
 
                   {user?.role !== 'affiliate' && (
-                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow">
+                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.2s' }}>
                       <div className="flex items-center mb-4">
                         <div className="w-12 h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-4">
                           <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">

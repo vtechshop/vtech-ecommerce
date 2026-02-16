@@ -169,6 +169,87 @@
   box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
 }
 
+/* ====== STAGGERED GRID LOAD ====== */
+
+@keyframes staggerFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.stagger-grid-item {
+  opacity: 0;
+  animation: staggerFadeUp 0.4s ease-out forwards;
+}
+
+/* ====== SMOOTH ACCORDION / COLLAPSE ====== */
+
+.accordion-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease-out;
+}
+
+.accordion-collapse.open {
+  grid-template-rows: 1fr;
+}
+
+.accordion-collapse > .accordion-inner {
+  overflow: hidden;
+}
+
+.accordion-chevron {
+  transition: transform 0.3s ease-out;
+}
+
+.accordion-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* ====== IMAGE REVEAL ON SCROLL ====== */
+
+@keyframes clipRevealLeft {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes clipRevealUp {
+  from {
+    clip-path: inset(100% 0 0 0);
+    opacity: 0.3;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.reveal-clip {
+  clip-path: inset(0 100% 0 0);
+}
+
+.reveal-clip.revealed {
+  animation: clipRevealLeft 0.6s ease-out forwards;
+}
+
+.reveal-clip-up {
+  clip-path: inset(100% 0 0 0);
+  opacity: 0.3;
+}
+
+.reveal-clip-up.revealed {
+  animation: clipRevealUp 0.5s ease-out forwards;
+}
+
 /* ====== PAGE LOAD ANIMATIONS ====== */
 
 /* Fade in from top */

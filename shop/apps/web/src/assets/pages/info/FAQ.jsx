@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { ChevronDown, Search } from 'lucide-react';
 
 const FAQ = () => {
   const [openIndex, setOpenIndex] = useState(null);
@@ -228,18 +228,16 @@ const FAQ = () => {
                         className="w-full flex items-center justify-between p-4 text-left hover:bg-blue-100 transition-colors"
                       >
                         <span className="font-semibold text-gray-900 pr-4">{item.q}</span>
-                        {isOpen ? (
-                          <ChevronUp className="w-5 h-5 text-blue-600 flex-shrink-0" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                        )}
+                        <ChevronDown className={`w-5 h-5 flex-shrink-0 accordion-chevron ${isOpen ? 'open text-blue-600' : 'text-gray-400'}`} />
                       </button>
 
-                      {isOpen && (
-                        <div className="px-4 pb-4 text-gray-700">
-                          {item.a}
+                      <div className={`accordion-collapse ${isOpen ? 'open' : ''}`}>
+                        <div className="accordion-inner">
+                          <div className="px-4 pb-4 text-gray-700">
+                            {item.a}
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
