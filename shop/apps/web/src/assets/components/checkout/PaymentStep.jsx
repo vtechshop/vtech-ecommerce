@@ -69,10 +69,10 @@ const PaymentStep = ({ order, totals, onBack }) => {
       // 3. Handle payment success/failure
       // 4. Call confirmPayment API
 
-      // For demo purposes, we'll simulate success after 2 seconds
+      // For demo purposes, simulate success quickly
       setTimeout(() => {
         handlePaymentSuccess({ id: 'razorpay_demo_' + Date.now() });
-      }, 2000);
+      }, 800);
     } catch (error) {
       setIsProcessing(false);
     }

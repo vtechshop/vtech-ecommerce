@@ -100,7 +100,7 @@ const BecomeAffiliate = () => {
     },
     onSuccess: () => {
       toast.success('Affiliate application submitted successfully!');
-      setTimeout(() => navigate('/affiliate-dashboard'), 1500);
+      setTimeout(() => navigate('/affiliate-dashboard'), 800);
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to submit application');

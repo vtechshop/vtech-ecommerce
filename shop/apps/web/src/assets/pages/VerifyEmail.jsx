@@ -28,10 +28,10 @@ export default function VerifyEmail() {
       setStatus('success');
       setMessage(response.data.data.message || 'Email verified successfully!');
 
-      // Redirect to login after 3 seconds
+      // Redirect to login after 1.5 seconds
       setTimeout(() => {
         navigate('/login');
-      }, 3000);
+      }, 1500);
     } catch (error) {
       setStatus('error');
       setMessage(

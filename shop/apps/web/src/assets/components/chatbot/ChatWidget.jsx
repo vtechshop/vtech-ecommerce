@@ -92,8 +92,8 @@ const ChatWidget = () => {
       dispatch(setSending(true));
       setIsTyping(true);
 
-      // Simulate typing delay for better UX
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Brief typing indicator for UX
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Call chatbot API
       const { data } = await api.post('/chatbot/message', { message: text });

@@ -106,7 +106,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
       silenceTimerRef.current = setTimeout(() => {
         const q = transcriptRef.current || fullText;
         if (q.trim()) executeVoiceSearch(q.trim());
-      }, 1500);
+      }, 1000);
     };
 
     recognition.onerror = (event) => {

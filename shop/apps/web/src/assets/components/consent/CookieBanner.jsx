@@ -25,7 +25,7 @@ const CookieBanner = () => {
     // Wait for page to be interactive before showing banner
     const timer = setTimeout(() => {
       setIsReady(true);
-    }, 2000); // 2 second delay
+    }, 500); // Brief delay to not affect LCP
 
     return () => clearTimeout(timer);
   }, []);

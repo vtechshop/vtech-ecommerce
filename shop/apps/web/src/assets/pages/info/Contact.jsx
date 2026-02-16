@@ -27,7 +27,7 @@ const Contact = () => {
         setTimeout(() => {
           setSubmitted(false);
           setFormData({ name: '', email: '', subject: '', message: '' });
-        }, 5000);
+        }, 3000);
       }
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to send message. Please try again.');

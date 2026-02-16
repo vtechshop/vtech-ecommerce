@@ -121,7 +121,7 @@ const Categories = () => {
     setToastMessage(message);
     setToastType(type);
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 4000);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
   const handleEdit = (category) => {

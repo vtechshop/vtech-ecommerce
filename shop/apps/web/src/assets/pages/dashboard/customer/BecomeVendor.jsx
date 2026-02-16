@@ -123,7 +123,7 @@ const BecomeVendor = () => {
       } catch (error) {
         toast.error('Application submitted but failed to update session. Please refresh.');
       }
-      setTimeout(() => navigate('/vendor-dashboard/kyc'), 1500);
+      setTimeout(() => navigate('/vendor-dashboard/kyc'), 800);
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to submit application');

@@ -193,12 +193,12 @@ const Products = () => {
     }
   };
 
-  // Auto-hide toast after 5 seconds
+  // Auto-hide toast after 3 seconds
   useEffect(() => {
     if (showToast) {
       const timer = setTimeout(() => {
         setShowToast(false);
-      }, 5000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [showToast]);

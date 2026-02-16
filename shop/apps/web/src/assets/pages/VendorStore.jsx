@@ -253,7 +253,7 @@ const VendorStore = () => {
                     setActiveSection(tab.id);
                     el.scrollIntoView({ behavior: 'smooth' });
                     window.history.replaceState(null, '', `#${tab.id}`);
-                    setTimeout(() => { scrollLockRef.current = false; }, 1000);
+                    setTimeout(() => { scrollLockRef.current = false; }, 600);
                   }
                 }}
                 className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${

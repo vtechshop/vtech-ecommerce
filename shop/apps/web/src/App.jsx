@@ -174,11 +174,11 @@ function App() {
     // Initialize auth with timeout fallback
     const authPromise = dispatch(initializeAuth());
 
-    // Fallback: If auth initialization takes more than 5 seconds, force completion
+    // Fallback: If auth initialization takes more than 2 seconds, force completion
     const timeoutId = setTimeout(() => {
       console.warn('Auth initialization timeout - forcing completion');
       dispatch(forceInitialized());
-    }, 5000);
+    }, 2000);
 
     // Clear timeout when auth completes
     authPromise.finally(() => clearTimeout(timeoutId));
