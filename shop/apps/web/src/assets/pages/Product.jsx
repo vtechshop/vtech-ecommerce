@@ -535,7 +535,7 @@ const Product = () => {
                 </span>
               </div>
             )}
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-snug fade-in-down">{product.title}</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 leading-snug fade-in-down">{product.title}</h1>
 
             {/* Tags hidden - used only for SEO keywords */}
 
@@ -665,7 +665,7 @@ const Product = () => {
                       <button
                         key={option}
                         onClick={() => setSelectedVariants({ ...selectedVariants, [key]: option })}
-                        className={`px-3 py-1.5 text-sm border rounded ${
+                        className={`px-3 py-2 sm:px-4 sm:py-2.5 text-sm border rounded min-h-[44px] ${
                           selectedVariants[key] === option
                             ? 'border-primary-600 bg-primary-600 text-white'
                             : 'border-gray-300 hover:border-gray-400'
@@ -726,7 +726,7 @@ const Product = () => {
                 disabled={product.stock === 0 || cartLoading}
                 data-testid="add-to-cart-btn"
                 data-cy="add-to-cart-btn"
-                className={`btn-add-to-cart btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
+                className={`btn-add-to-cart btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 rounded-2xl font-bold text-base sm:text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
                   product.stock === 0
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-2 border-gray-400'
                   : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 border-2 border-primary-400'
@@ -738,29 +738,29 @@ const Product = () => {
             <button
               onClick={handleBuyNow}
               disabled={product.stock === 0}
-              className="btn-scale hover-lift flex-1 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white py-4 rounded-2xl font-bold text-lg hover:from-secondary-600 hover:to-secondary-700 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed border-2 border-secondary-400 disabled:border-gray-400"
+              className="btn-scale hover-lift flex-1 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white py-3 sm:py-4 rounded-2xl font-bold text-base sm:text-lg hover:from-secondary-600 hover:to-secondary-700 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed border-2 border-secondary-400 disabled:border-gray-400"
             >
               Buy Now
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t-2 border-gray-200">
-            <div className="text-center p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-2xl border-2 border-primary-200 hover:shadow-lg transition-all transform hover:scale-105">
-              <div className="bg-blue-500 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 border-t-2 border-gray-200">
+            <div className="text-center p-2 sm:p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl sm:rounded-2xl border-2 border-primary-200 hover:shadow-lg transition-all transform hover:scale-105">
+              <div className="bg-blue-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
                 <Truck className="w-6 h-6 text-white" />
               </div>
               <p className="text-sm font-bold text-gray-900">Fast Delivery</p>
               <p className="text-xs text-gray-700 mt-1">Quick shipping</p>
             </div>
-            <div className="text-center p-4 bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-2xl border-2 border-secondary-200 hover:shadow-lg transition-all transform hover:scale-105">
-              <div className="bg-secondary-500 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
+            <div className="text-center p-2 sm:p-4 bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl sm:rounded-2xl border-2 border-secondary-200 hover:shadow-lg transition-all transform hover:scale-105">
+              <div className="bg-secondary-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <p className="text-sm font-bold text-gray-900">Secure Payment</p>
               <p className="text-xs text-gray-700 mt-1">100% protected</p>
             </div>
-            <div className="text-center p-4 bg-gradient-to-br from-dark-50 to-gray-100 rounded-2xl border-2 border-dark-200 hover:shadow-lg transition-all transform hover:scale-105">
-              <div className="bg-gray-900 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
+            <div className="text-center p-2 sm:p-4 bg-gradient-to-br from-dark-50 to-gray-100 rounded-xl sm:rounded-2xl border-2 border-dark-200 hover:shadow-lg transition-all transform hover:scale-105">
+              <div className="bg-gray-900 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
                 <RotateCcw className="w-6 h-6 text-white" />
               </div>
               <p className="text-sm font-bold text-gray-900">Easy Returns</p>

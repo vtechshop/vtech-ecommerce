@@ -135,7 +135,7 @@ const ProductImageCarousel = ({ images = [], productName = '' }) => {
 
       {/* Thumbnails */}
       {images.length > 1 && (
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1.5 sm:gap-2">
           {images.map((image, index) => (
             <button
               key={index}

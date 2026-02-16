@@ -29,8 +29,8 @@ const cleanupMemoryCache = () => {
   }
 };
 
-// Run cleanup every 60 seconds
-setInterval(cleanupMemoryCache, 60000);
+// Run cleanup every 45 seconds
+setInterval(cleanupMemoryCache, 45000);
 
 /**
  * Get from memory cache

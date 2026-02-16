@@ -165,7 +165,7 @@ const Home = React.memo(() => {
             {categories?.length > 0 && (
               <section className="mb-8">
                 <h2 className="text-xl md:text-2xl font-bold mb-6">{t('home.shopByCategory')}</h2>
-                <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 ${
+                <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 ${
                   leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
                 }`}>
                   {categories.map((category, index) => (
@@ -287,14 +287,14 @@ const Home = React.memo(() => {
                     : 'md:grid-cols-2'
                 }`}>
                   {user?.role !== 'vendor' && (
-                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.1s' }}>
+                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-primary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.1s' }}>
                       <div className="flex items-center mb-4">
-                        <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-4">
-                          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-3 sm:mr-4">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeVendor')}</h3>
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{t('home.becomeVendor')}</h3>
                       </div>
                       <p className="text-gray-700 mb-6 leading-relaxed">{t('home.vendorDesc')}</p>
                       <ul className="space-y-2 mb-6">
@@ -333,14 +333,14 @@ const Home = React.memo(() => {
                   )}
 
                   {user?.role !== 'affiliate' && (
-                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.2s' }}>
+                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-secondary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.2s' }}>
                       <div className="flex items-center mb-4">
-                        <div className="w-12 h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-4">
-                          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-3 sm:mr-4">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeAffiliate')}</h3>
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{t('home.becomeAffiliate')}</h3>
                       </div>
                       <p className="text-gray-700 mb-6 leading-relaxed">{t('home.affiliateDesc')}</p>
                       <ul className="space-y-2 mb-6">

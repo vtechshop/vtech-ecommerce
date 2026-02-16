@@ -341,8 +341,8 @@ app.use('/api', require('./routes/index'));
 // SEO Routes - Sitemap and robots.txt
 app.use('/', require('./routes/sitemap'));
 
-// Static files (uploads)
-app.use('/uploads', express.static('uploads'));
+// Static files (uploads) - cache images for 7 days
+app.use('/uploads', express.static('uploads', { maxAge: '7d' }));
 
 // SPA Fallback for Production (only if frontend build exists)
 // This allows the API to optionally serve the frontend when deployed together
@@ -357,8 +357,17 @@ if (env.NODE_ENV === 'production') {
   // Only serve frontend if the build exists (for combined deployments)
   // If frontend is deployed separately (e.g., Vercel), this will be skipped
   if (fs.existsSync(path.join(frontendPath, 'index.html'))) {
-    // Serve static files from the React build
-    app.use(express.static(frontendPath));
+    // Serve static files from the React build with long cache for hashed assets
+    app.use(express.static(frontendPath, {
+      maxAge: '1y',
+      immutable: true,
+      setHeaders: (res, filePath) => {
+        // HTML files should not be cached (SPA routing)
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      }
+    }));
 
     // Handle SPA routing - serve index.html for all non-API routes
     app.get('*', (req, res, next) => {

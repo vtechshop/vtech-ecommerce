@@ -336,7 +336,7 @@ const Search = () => {
 
                 return (
                   <>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
                       {combinedProducts.map((product, index) => (
                         <div key={product._isSponsored ? product._adData.creativeId : (product.id ?? product._id)} className="relative stagger-grid-item" style={{ animationDelay: `${index * 0.07}s` }}>
                           <ProductCard

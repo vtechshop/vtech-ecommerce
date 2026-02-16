@@ -62,7 +62,7 @@ const CartDrawer = ({ isOpen, onClose, justAdded }) => {
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform flex flex-col toast-slide-in">
+      <div className="fixed right-0 top-0 h-full w-full max-w-[92vw] sm:max-w-md bg-white shadow-2xl z-50 transform transition-transform flex flex-col toast-slide-in">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
