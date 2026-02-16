@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/VendorStore.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -21,6 +21,7 @@ const VendorStore = () => {
     return ['items', 'reviews', 'about', 'policies'].includes(hash) ? hash : 'items';
   };
   const [activeSection, setActiveSection] = useState(getInitialSection());
+  const scrollLockRef = useRef(false);
 
   const { data: vendor, isLoading: vendorLoading } = useQuery({
     queryKey: ['vendor', slug],
@@ -104,6 +105,7 @@ const VendorStore = () => {
 
       const observer = new IntersectionObserver(
         (entries) => {
+          if (scrollLockRef.current) return;
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               const sectionId = entry.target.id;
@@ -127,8 +129,25 @@ const VendorStore = () => {
         }
       });
 
-      // Cleanup observer
+      // When near the top of the page, force "items" as active
+      // (the IntersectionObserver detection band misses it at the very top)
+      const handleScroll = () => {
+        if (scrollLockRef.current) return;
+        const reviewsEl = document.getElementById('reviews');
+        if (reviewsEl) {
+          const reviewsTop = reviewsEl.getBoundingClientRect().top;
+          // If the reviews section is still below the detection band, we're in "items"
+          if (reviewsTop > window.innerHeight * 0.35) {
+            setActiveSection('items');
+          }
+        }
+      };
+
+      window.addEventListener('scroll', handleScroll, { passive: true });
+
+      // Cleanup
       return () => {
+        window.removeEventListener('scroll', handleScroll);
         sections.forEach((sectionId) => {
           const element = document.getElementById(sectionId);
           if (element) {
@@ -219,46 +238,33 @@ const VendorStore = () => {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6 sticky top-0 z-10 overflow-hidden">
         <div className="overflow-x-auto scrollbar-hide">
           <div className="flex gap-1 sm:gap-2 p-2 sm:p-3 md:p-4 min-w-max sm:min-w-0">
-            <a
-              href="#items"
-              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
-                activeSection === 'items'
-                  ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                  : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-              }`}
-            >
-              Items
-            </a>
-            <a
-              href="#reviews"
-              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
-                activeSection === 'reviews'
-                  ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                  : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-              }`}
-            >
-              Reviews
-            </a>
-            <a
-              href="#about"
-              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
-                activeSection === 'about'
-                  ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                  : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-              }`}
-            >
-              About
-            </a>
-            <a
-              href="#policies"
-              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
-                activeSection === 'policies'
-                  ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
-                  : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-              }`}
-            >
-              Shop Policies
-            </a>
+            {[
+              { id: 'items', label: 'Items' },
+              { id: 'reviews', label: 'Reviews' },
+              { id: 'about', label: 'About' },
+              { id: 'policies', label: 'Shop Policies' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  const el = document.getElementById(tab.id);
+                  if (el) {
+                    scrollLockRef.current = true;
+                    setActiveSection(tab.id);
+                    el.scrollIntoView({ behavior: 'smooth' });
+                    window.history.replaceState(null, '', `#${tab.id}`);
+                    setTimeout(() => { scrollLockRef.current = false; }, 1000);
+                  }
+                }}
+                className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors rounded-lg whitespace-nowrap ${
+                  activeSection === tab.id
+                    ? 'text-primary-600 bg-primary-50 border-b-2 border-primary-600'
+                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>

@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, ShoppingCart } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
-import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency } from '@/utils/format';
 import { normalizeImageUrl, getResponsiveImageUrls } from '@/utils/placeholders';
 import { useAddToCartAnimation } from '@/components/animations/AddToCartAnimation';
@@ -12,7 +11,6 @@ import { playAddToCart, playError } from '@/utils/sounds';
 
 const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const dispatch = useDispatch();
-  const toast = useToast();
   const navigate = useNavigate();
   const addToCartButtonRef = useRef(null);
   const cardRef = useRef(null);
@@ -64,12 +62,11 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
       // Play add to cart sound
       playAddToCart();
 
-      toast.success('Added to cart!');
+      // Cart drawer auto-opens via Redux (addToCart.fulfilled)
     } catch (error) {
       playError();
-      toast.error(error?.message || 'Failed to add to cart');
     }
-  }, [dispatch, product._id, product, toast, triggerAnimation]);
+  }, [dispatch, product._id, product, triggerAnimation]);
 
   // Memoize rating rendering
   const ratingStars = React.useMemo(() => {

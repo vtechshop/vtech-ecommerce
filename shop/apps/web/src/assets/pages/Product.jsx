@@ -19,7 +19,7 @@ import ProductImageCarousel from '@/components/product/ProductImageCarousel';
 import ReviewForm from '@/components/product/ReviewForm';
 import EditReviewModal from '@/components/product/EditReviewModal';
 import AdBanner from '@/components/common/AdBanner';
-import CartDrawer from '@/components/cart/CartDrawer';
+import { closeCartDrawer } from '@/store/slices/cartSlice';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
 import SEO from '@/components/common/SEO';
@@ -160,24 +160,16 @@ const Product = () => {
   const dispatch = useDispatch();
   const toast = useToast();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
-  const cartItems = useSelector((state) => state.cart.items);
+  const cartLoading = useSelector((state) => state.cart.loading);
   const [searchParams] = useSearchParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [addedToCart, setAddedToCart] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [showBottomBar, setShowBottomBar] = useState(false);
-  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
-  const [cartDrawerJustAdded, setCartDrawerJustAdded] = useState(false);
   const addToCartRef = useRef(null);
-
-  // Reset "Go to Cart" button when cart becomes empty
-  useEffect(() => {
-    if (cartItems.length === 0) setAddedToCart(false);
-  }, [cartItems.length]);
 
   // Capture affiliate code from URL on page load
   useEffect(() => {
@@ -312,18 +304,14 @@ const Product = () => {
   };
 
   const handleAddToCart = async () => {
-    // Prevent multiple rapid clicks
-    if (addedToCart) return;
+    // Prevent double-clicks while loading
+    if (cartLoading) return;
 
-    // Allow guests to add to cart (stored locally)
     const variantId = Object.keys(selectedVariants).length > 0
       ? JSON.stringify(selectedVariants)
       : undefined;
 
     try {
-      setAddedToCart(true);
-
-      // Validate product data
       if (!product?._id) {
         throw new Error('Product information is missing. Please refresh the page.');
       }
@@ -337,20 +325,16 @@ const Product = () => {
       // Play add to cart sound
       playAddToCart();
 
-      // Open cart drawer (Amazon-style) with "Added to Cart" banner
-      setCartDrawerJustAdded(true);
-      setIsCartDrawerOpen(true);
+      // Cart drawer auto-opens via Redux (addToCart.fulfilled)
     } catch (error) {
       playError();
       console.error('Add to cart error:', error);
       const errorMsg = error.message || error.error?.message || 'Failed to add to cart. Please try again.';
       toast.error(errorMsg);
-      setAddedToCart(false);
     }
   };
 
   const handleBuyNow = async () => {
-    // Allow guests to proceed, they'll be prompted to login at checkout
     const variantId = Object.keys(selectedVariants).length > 0
       ? JSON.stringify(selectedVariants)
       : undefined;
@@ -361,7 +345,9 @@ const Product = () => {
         quantity,
         variantId,
       })).unwrap();
-      navigate('/checkout'); // Checkout will handle login/register prompt
+      // Close drawer immediately - Buy Now goes straight to checkout
+      dispatch(closeCartDrawer());
+      navigate('/checkout');
     } catch (error) {
       console.error('Buy now error:', error);
       toast.error(error.message || 'Failed to process. Please try again.');
@@ -735,18 +721,9 @@ const Product = () => {
           </div>
 
           <div ref={addToCartRef} className="flex gap-4 pt-2 fade-in stagger-3">
-            {addedToCart ? (
-              <button
-                onClick={() => { setCartDrawerJustAdded(false); setIsCartDrawerOpen(true); }}
-                className="btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-400"
-              >
-                <ShoppingCart className="w-6 h-6" />
-                Go to Cart
-              </button>
-            ) : (
               <button
                 onClick={handleAddToCart}
-                disabled={product.stock === 0}
+                disabled={product.stock === 0 || cartLoading}
                 data-testid="add-to-cart-btn"
                 data-cy="add-to-cart-btn"
                 className={`btn-add-to-cart btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
@@ -756,9 +733,8 @@ const Product = () => {
                 }`}
               >
                 <ShoppingCart className="w-6 h-6" />
-                Add to Cart
+                {cartLoading ? 'Adding...' : 'Add to Cart'}
               </button>
-            )}
             <button
               onClick={handleBuyNow}
               disabled={product.stock === 0}
@@ -1119,27 +1095,18 @@ const Product = () => {
                 <p className="text-xs text-red-600 font-medium">-{discountPercentage}% off</p>
               )}
             </div>
-            {/* Add to Cart / Go to Cart */}
-            {addedToCart ? (
-              <button
-                onClick={() => { setCartDrawerJustAdded(false); setIsCartDrawerOpen(true); }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm transition-all bg-green-500 text-white active:bg-green-600"
-              >
-                <ShoppingCart className="w-4 h-4" /> Go to Cart
-              </button>
-            ) : (
+            {/* Add to Cart */}
               <button
                 onClick={handleAddToCart}
-                disabled={product.stock === 0}
+                disabled={product.stock === 0 || cartLoading}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
                   product.stock === 0
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   : 'bg-primary-600 text-white active:bg-primary-700'
                 }`}
               >
-                <ShoppingCart className="w-4 h-4" /> Add to Cart
+                <ShoppingCart className="w-4 h-4" /> {cartLoading ? 'Adding...' : 'Add to Cart'}
               </button>
-            )}
             {/* Buy Now */}
             <button
               onClick={handleBuyNow}
@@ -1151,8 +1118,6 @@ const Product = () => {
           </div>
         </div>
       )}
-      {/* Cart Drawer - slides in from right after adding to cart (Amazon-style) */}
-      <CartDrawer isOpen={isCartDrawerOpen} onClose={() => setIsCartDrawerOpen(false)} justAdded={cartDrawerJustAdded} />
       </div>
     </>
   );
