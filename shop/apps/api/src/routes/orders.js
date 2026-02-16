@@ -19,6 +19,7 @@ router.get('/:id/invoice', authenticate, invoiceController.downloadInvoice);
 router.get('/:id', optionalAuth, orderController.getOrderById);  // Support guest checkout
 router.post('/:id/cancel', authenticate, orderController.cancelOrder);
 router.post('/:id/return', authenticate, orderController.requestReturn);
+router.get('/:id/return', authenticate, orderController.getReturnDetails);
 
 // SECURITY NOTE: Webhook routes have been moved to payment.js
 // See src/routes/payment.js for secure webhook implementations

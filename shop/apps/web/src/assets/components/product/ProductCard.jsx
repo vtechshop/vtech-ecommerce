@@ -15,7 +15,26 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const toast = useToast();
   const navigate = useNavigate();
   const addToCartButtonRef = useRef(null);
+  const cardRef = useRef(null);
   const { triggerAnimation, AnimationComponent } = useAddToCartAnimation();
+
+  // 3D tilt effect on hover (desktop only, uses refs for performance)
+  const handleMouseMove = useCallback((e) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const rotateX = (0.5 - y) * 10; // max ±5deg
+    const rotateY = (x - 0.5) * 10;
+    card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    card.style.transform = '';
+  }, []);
 
   // Memoize discount calculation
   const hasDiscount = React.useMemo(() => product.compareAt && product.compareAt > product.price, [product.compareAt, product.price]);
@@ -72,9 +91,13 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   return (
     <>
     <Link
+      ref={cardRef}
       to={`/product/${product.slug}`}
       onClick={handleClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className="etsy-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden block h-full group"
+      style={{ transition: 'transform 0.15s ease-out, box-shadow 0.15s ease-out', willChange: 'transform' }}
       data-testid="product-card"
       data-cy="product-card"
     >

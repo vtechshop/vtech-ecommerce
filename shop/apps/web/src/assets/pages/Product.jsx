@@ -6,7 +6,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
 import { useToast } from '@/components/common/ToastContainer';
 import api from '@/utils/api';
-import { Star, Heart, ShoppingCart, Truck, Shield, RotateCcw, Share2, Minus, Plus, Check, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import { Star, Heart, ShoppingCart, Truck, Shield, RotateCcw, Minus, Plus, Check, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import ShareProduct from '@/components/common/ShareProduct';
 import { formatCurrency } from '@/utils/format';
 import { normalizeImageUrl } from '@/utils/placeholders';
 import { addToRecentlyViewed } from '@/utils/recentlyViewed';
@@ -376,38 +377,6 @@ const Product = () => {
     toggleWishlistMutation.mutate(product._id);
   };
 
-  const handleShare = async () => {
-    const shareData = {
-      title: product.title,
-      text: `Check out ${product.title} for ${formatCurrency(product.price)}!`,
-      url: window.location.href,
-    };
-
-    try {
-      // Check if Web Share API is supported
-      if (navigator.share) {
-        await navigator.share(shareData);
-        // Share dialog shown by browser/OS - no toast needed
-      } else {
-        // Fallback: Copy link to clipboard
-        await navigator.clipboard.writeText(window.location.href);
-        // Silently copied to clipboard
-      }
-    } catch (error) {
-      // User cancelled share or error occurred
-      if (error.name !== 'AbortError') {
-        // Fallback: Copy to clipboard
-        try {
-          await navigator.clipboard.writeText(window.location.href);
-          // Silently copied to clipboard
-        } catch (clipboardError) {
-          // Only show error if everything fails
-          toast.error('Failed to share product');
-        }
-      }
-    }
-  };
-
   const handleEditReview = (review) => {
     setEditingReview(review);
     setIsEditModalOpen(true);
@@ -621,13 +590,11 @@ const Product = () => {
               >
                 <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
               </button>
-              <button
-                onClick={handleShare}
-                className="p-2 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-blue-100 transition-all"
-                title="Share product"
-              >
-                <Share2 className="w-5 h-5" />
-              </button>
+              <ShareProduct
+                title={product.title}
+                price={product.price}
+                url={window.location.href}
+              />
             </div>
           </div>
 
