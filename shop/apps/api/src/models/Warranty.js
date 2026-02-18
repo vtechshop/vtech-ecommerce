@@ -20,9 +20,12 @@ const warrantySchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
     index: true,
   },
+  // Guest customer info (for manual/in-store orders without registered user)
+  customerName: String,
+  customerEmail: String,
+  customerPhone: String,
   productId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
@@ -76,12 +79,13 @@ const warrantySchema = new mongoose.Schema({
       type: String,
       enum: ['pending', 'approved', 'rejected', 'completed'],
     },
+    resolution: String,
     resolvedDate: Date,
   }],
   notifications: [{
     type: {
       type: String,
-      enum: ['30_days_before', '7_days_before', 'on_expiry', 'expired'],
+      enum: ['30_days_before', '7_days_before', 'on_expiry', 'expired', 'manual_reminder', 'bulk_reminder'],
     },
     sentAt: Date,
     sentTo: String,
@@ -154,6 +158,9 @@ warrantySchema.methods.toAdminView = function() {
     purchaseId: this.purchaseId,
     orderId: this.orderId,
     userId: this.userId,
+    customerName: this.customerName,
+    customerEmail: this.customerEmail,
+    customerPhone: this.customerPhone,
     productId: this.productId,
     product: this.product,
     purchaseDate: this.purchaseDate,

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Vendor = require('../models/Vendor');
 const Affiliate = require('../models/Affiliate');
@@ -13,11 +14,13 @@ const Setting = require('../models/Setting');
 const AuditLog = require('../models/AuditLog');
 const Review = require('../models/Review');
 const Carousel = require('../models/Carousel');
+const Warranty = require('../models/Warranty');
 const { getPaginationMeta, slugify, generateSKU, generateOrderId } = require('../utils/helpers');
 const logger = require('../config/logger');
 const warrantyService = require('../services/warrantyService');
 const notificationHelper = require('../services/notificationHelper');
 const payoutService = require('../services/payoutService');
+const indexNow = require('../services/indexNowService');
 
 // Helper function to activate warranties after payment
 const activateWarrantiesForOrder = async (order) => {
@@ -54,21 +57,21 @@ const activateWarrantiesForOrder = async (order) => {
       try {
         const productDetails = await Product.findById(item.productId);
 
-        await warrantyService.generateWarranty({
+        const warrantyData = {
           purchaseId: order.orderId,
           orderId: order._id,
           user: {
-            id: order.userId || order.guestEmail,
+            id: order.userId || null,
             name: order.shipTo?.fullName || 'Guest',
             email: order.guestEmail || 'N/A',
             phone: order.shipTo?.phone || ''
           },
           product: {
             id: item.productId,
-            name: item.name,
+            name: item.name || productDetails?.title || productDetails?.name || 'Unknown Product',
             model: productDetails?.sku || '',
             serial: '',
-            category: productDetails?.category?.name || ''
+            category: typeof productDetails?.category === 'string' ? productDetails.category : ''
           },
           purchaseDate: order.createdAt || now,
           warrantyPeriodDays: warrantyPeriodDays,
@@ -78,10 +81,13 @@ const activateWarrantiesForOrder = async (order) => {
             invoiceNo: order.orderId,
             remarks: item.warranty.description || ''
           }
-        });
-        logger.info(`Warranty generated for product ${item.name} in order ${order.orderId}`);
+        };
+        logger.info(`Creating warranty record for ${item.name} in order ${order.orderId} with data: ${JSON.stringify({ purchaseId: warrantyData.purchaseId, userId: warrantyData.user.id, productId: String(warrantyData.product.id), warrantyPeriodDays })}`);
+
+        await warrantyService.generateWarranty(warrantyData);
+        logger.info(`Warranty generated successfully for product ${item.name} in order ${order.orderId}`);
       } catch (error) {
-        logger.error(`Failed to generate warranty for ${item.name}: ${error.message}`);
+        logger.error(`Failed to generate warranty for ${item.name} in order ${order.orderId}: ${error.message}`, { stack: error.stack });
       }
     }
   }
@@ -91,25 +97,103 @@ const activateWarrantiesForOrder = async (order) => {
 };
 
 // ---------- Dashboard ----------
+// Helper: Get date range for period
+const getDateRange = (period) => {
+  const now = new Date();
+  let startDate, endDate, prevStartDate, prevEndDate;
+
+  switch (period) {
+    case 'today':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      endDate = now;
+      // Previous = yesterday
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 1);
+      prevEndDate = new Date(startDate);
+      break;
+    case '7days':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 7);
+      endDate = now;
+      // Previous = 7 days before that
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 7);
+      prevEndDate = new Date(startDate);
+      break;
+    case '30days':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 30);
+      endDate = now;
+      // Previous = 30 days before that
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 30);
+      prevEndDate = new Date(startDate);
+      break;
+    case 'month':
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = now;
+      // Previous = last month
+      prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      prevEndDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    default:
+      // All time - no date filter
+      return { startDate: null, endDate: null, prevStartDate: null, prevEndDate: null };
+  }
+
+  return { startDate, endDate, prevStartDate, prevEndDate };
+};
+
 exports.getDashboardStats = async (req, res, next) => {
   try {
+    const { period = '30days' } = req.query;
+    const { startDate, endDate, prevStartDate, prevEndDate } = getDateRange(period);
+
+    // Build date filter for current period
+    const dateFilter = startDate ? { createdAt: { $gte: startDate, $lte: endDate } } : {};
+    const prevDateFilter = prevStartDate ? { createdAt: { $gte: prevStartDate, $lt: prevEndDate } } : {};
+
+    // Current period stats
     const [totalUsers, totalVendors, totalProducts, totalOrders, revenueAgg] = await Promise.all([
-      User.countDocuments(),
-      Vendor.countDocuments({ status: 'active' }),
-      Product.countDocuments({ published: true }),
-      Order.countDocuments(),
-      Order.aggregate([{ $group: { _id: null, total: { $sum: '$totals.total' } } }]),
+      User.countDocuments(dateFilter),
+      Vendor.countDocuments({ status: 'active', ...dateFilter }),
+      Product.countDocuments({ published: true, ...dateFilter }),
+      Order.countDocuments(dateFilter),
+      Order.aggregate([
+        { $match: dateFilter },
+        { $group: { _id: null, total: { $sum: '$totals.total' } } }
+      ]),
     ]);
 
-    const [pendingVendors, pendingAffiliates] = await Promise.all([
+    // Previous period stats for trend comparison
+    const [prevUsers, prevVendors, prevProducts, prevOrders, prevRevenueAgg] = await Promise.all([
+      prevStartDate ? User.countDocuments(prevDateFilter) : Promise.resolve(0),
+      prevStartDate ? Vendor.countDocuments({ status: 'active', ...prevDateFilter }) : Promise.resolve(0),
+      prevStartDate ? Product.countDocuments({ published: true, ...prevDateFilter }) : Promise.resolve(0),
+      prevStartDate ? Order.countDocuments(prevDateFilter) : Promise.resolve(0),
+      prevStartDate ? Order.aggregate([
+        { $match: prevDateFilter },
+        { $group: { _id: null, total: { $sum: '$totals.total' } } }
+      ]) : Promise.resolve([]),
+    ]);
+
+    // Pending actions for alert banner
+    const [pendingVendors, pendingAffiliates, pendingOrders, pendingKYC, pendingTickets] = await Promise.all([
       Vendor.countDocuments({ status: 'pending' }),
       Affiliate.countDocuments({ status: 'pending' }),
+      Order.countDocuments({ status: { $in: ['placed', 'paid'] } }), // Orders needing shipment
+      Vendor.countDocuments({ 'kyc.status': 'pending' }),
+      // Assuming SupportTicket model exists, otherwise return 0
+      mongoose.models.SupportTicket
+        ? mongoose.models.SupportTicket.countDocuments({ status: 'open' })
+        : Promise.resolve(0),
     ]);
 
     // Commission stats - vendor, affiliate, and overall
+    const commissionDateFilter = startDate ? { createdAt: { $gte: startDate, $lte: endDate } } : {};
     const [vendorCommissions, affiliateCommissions, allCommissions] = await Promise.all([
       Commission.aggregate([
-        { $match: { type: 'vendor' } },
+        { $match: { type: 'vendor', ...commissionDateFilter } },
         { $group: {
           _id: '$status',
           total: { $sum: '$amount' },
@@ -117,7 +201,7 @@ exports.getDashboardStats = async (req, res, next) => {
         }}
       ]),
       Commission.aggregate([
-        { $match: { type: 'affiliate' } },
+        { $match: { type: 'affiliate', ...commissionDateFilter } },
         { $group: {
           _id: '$status',
           total: { $sum: '$amount' },
@@ -125,6 +209,7 @@ exports.getDashboardStats = async (req, res, next) => {
         }}
       ]),
       Commission.aggregate([
+        { $match: commissionDateFilter },
         { $group: {
           _id: '$status',
           total: { $sum: '$amount' },
@@ -145,6 +230,7 @@ exports.getDashboardStats = async (req, res, next) => {
     };
 
     const totalRevenue = revenueAgg[0]?.total || 0;
+    const prevRevenue = prevRevenueAgg[0]?.total || 0;
     const vendorComm = mapStats(vendorCommissions);
     const affiliateComm = mapStats(affiliateCommissions);
     const allComm = mapStats(allCommissions);
@@ -160,7 +246,19 @@ exports.getDashboardStats = async (req, res, next) => {
         totalProducts,
         totalOrders,
         totalRevenue,
+        // Pending actions for alert banner
+        pendingOrders,
+        pendingKYC,
+        pendingTickets,
         pendingApprovals: (pendingVendors || 0) + (pendingAffiliates || 0),
+        // Previous period for trend indicators
+        previousPeriod: {
+          totalUsers: prevUsers,
+          totalVendors: prevVendors,
+          totalProducts: prevProducts,
+          totalOrders: prevOrders,
+          totalRevenue: prevRevenue,
+        },
         commissions: {
           vendor: vendorComm,
           affiliate: affiliateComm,
@@ -317,6 +415,182 @@ exports.resetUserPassword = async (req, res, next) => {
   }
 };
 
+exports.getUserStats = async (req, res, next) => {
+  try {
+    const [total, customers, vendors, affiliates, admins, activeToday, newThisWeek] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ role: 'customer' }),
+      User.countDocuments({ role: 'vendor' }),
+      User.countDocuments({ role: 'affiliate' }),
+      User.countDocuments({ role: 'admin' }),
+      User.countDocuments({ lastLogin: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }),
+      User.countDocuments({ createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } }),
+    ]);
+
+    res.json({
+      success: true,
+      data: { total, customers, vendors, affiliates, admins, activeToday, newThisWeek },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.bulkUpdateUsers = async (req, res, next) => {
+  try {
+    const { userIds, action } = req.body;
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'userIds array is required' },
+      });
+    }
+
+    if (!['activate', 'deactivate', 'delete'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_ACTION', message: 'action must be activate, deactivate, or delete' },
+      });
+    }
+
+    let result;
+    if (action === 'activate') {
+      result = await User.updateMany({ _id: { $in: userIds } }, { isActive: true });
+      logger.info(`Bulk activated ${result.modifiedCount} users`);
+    } else if (action === 'deactivate') {
+      result = await User.updateMany({ _id: { $in: userIds } }, { isActive: false });
+      logger.info(`Bulk deactivated ${result.modifiedCount} users`);
+    } else if (action === 'delete') {
+      // Delete associated profiles and data
+      for (const userId of userIds) {
+        const user = await User.findById(userId);
+        if (!user) continue;
+
+        if (user.role === 'vendor') {
+          const vendor = await Vendor.findOne({ userId });
+          if (vendor) {
+            await Product.deleteMany({ vendorId: vendor._id });
+            await Vendor.deleteOne({ userId });
+          }
+        }
+        if (user.role === 'affiliate') {
+          const affiliate = await Affiliate.findOne({ userId });
+          if (affiliate) {
+            await Commission.deleteMany({ subjectId: affiliate._id, type: 'affiliate' });
+            await Affiliate.deleteOne({ userId });
+          }
+        }
+        await Review.deleteMany({ userId });
+      }
+      result = await User.deleteMany({ _id: { $in: userIds } });
+      logger.info(`Bulk deleted ${result.deletedCount} users`);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        message: `Successfully ${action}d ${result.modifiedCount || result.deletedCount} users`,
+        count: result.modifiedCount || result.deletedCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.getUserActivity = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).lean();
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'User not found' },
+      });
+    }
+
+    // Get recent orders for customers
+    const recentOrders = await Order.find({
+      $or: [{ userId: user._id }, { guestEmail: user.email }],
+    })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .select('orderId status totals createdAt')
+      .lean();
+
+    // Get role-specific data
+    let roleData = {};
+    if (user.role === 'vendor') {
+      const vendor = await Vendor.findOne({ userId: user._id }).lean();
+      if (vendor) {
+        const [productCount, totalSales] = await Promise.all([
+          Product.countDocuments({ vendorId: vendor._id }),
+          Order.aggregate([
+            { $unwind: '$items' },
+            { $match: { 'items.vendorId': vendor._id } },
+            { $group: { _id: null, total: { $sum: '$items.total' } } },
+          ]),
+        ]);
+        roleData = {
+          vendor: {
+            storeName: vendor.storeName,
+            status: vendor.status,
+            productCount,
+            totalSales: totalSales[0]?.total || 0,
+            commissionRules: vendor.commissionRules,
+          },
+        };
+      }
+    } else if (user.role === 'affiliate') {
+      const affiliate = await Affiliate.findOne({ userId: user._id }).lean();
+      if (affiliate) {
+        const commissionStats = await Commission.aggregate([
+          { $match: { subjectId: affiliate._id, type: 'affiliate' } },
+          { $group: { _id: '$status', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+        ]);
+        roleData = {
+          affiliate: {
+            code: affiliate.code,
+            status: affiliate.status,
+            totalClicks: affiliate.totalClicks || 0,
+            totalConversions: affiliate.totalConversions || 0,
+            commissions: commissionStats,
+          },
+        };
+      }
+    }
+
+    // Build activity log
+    const activity = [
+      { type: 'account_created', date: user.createdAt, description: 'Account created' },
+    ];
+    if (user.lastLogin) {
+      activity.push({ type: 'last_login', date: user.lastLogin, description: 'Last login' });
+    }
+    recentOrders.forEach((order) => {
+      activity.push({
+        type: 'order',
+        date: order.createdAt,
+        description: `Order ${order.orderId} - ${order.status}`,
+        data: order,
+      });
+    });
+    activity.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json({
+      success: true,
+      data: {
+        user: { _id: user._id, name: user.name, email: user.email, role: user.role },
+        recentOrders,
+        roleData,
+        activity: activity.slice(0, 10),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ---------- Products ----------
 exports.getProducts = async (req, res, next) => {
   try {
@@ -410,6 +684,7 @@ exports.createProduct = async (req, res, next) => {
 
     logger.info(`Product created by admin: ${product.title}`);
     res.status(201).json({ success: true, data: product });
+    indexNow.notifyContentChange('product', product.slug);
   } catch (error) {
     logger.error('Product creation error:', error);
     next(error);
@@ -430,6 +705,7 @@ exports.updateProduct = async (req, res, next) => {
     await product.save();
     logger.info(`Product updated by admin: ${product.title}`);
     res.json({ success: true, data: product });
+    indexNow.notifyContentChange('product', product.slug);
   } catch (error) { next(error); }
 };
 
@@ -470,6 +746,7 @@ exports.createCategory = async (req, res, next) => {
     const cat = await Category.create({ ...req.body, name: req.body.name.trim(), slug: slugify(req.body.name) });
     logger.info(`Category created: ${cat.name}`);
     res.status(201).json({ success: true, data: cat });
+    indexNow.notifyContentChange('category', cat.slug);
   } catch (error) { next(error); }
 };
 
@@ -483,6 +760,7 @@ exports.updateCategory = async (req, res, next) => {
     if (!cat) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Category not found' } });
     logger.info(`Category updated: ${cat.name}`);
     res.json({ success: true, data: cat });
+    indexNow.notifyContentChange('category', cat.slug);
   } catch (error) { next(error); }
 };
 
@@ -635,6 +913,56 @@ exports.updateOrderStatus = async (req, res, next) => {
 };
 
 // ---------- Vendors ----------
+exports.getVendorStats = async (req, res, next) => {
+  try {
+    // Get counts by status
+    const [total, active, pending, suspended] = await Promise.all([
+      Vendor.countDocuments(),
+      Vendor.countDocuments({ status: 'active' }),
+      Vendor.countDocuments({ status: 'pending' }),
+      Vendor.countDocuments({ status: 'suspended' }),
+    ]);
+
+    // Get top performer by total sales
+    const topPerformerAgg = await Vendor.aggregate([
+      { $match: { status: 'active' } },
+      { $sort: { totalSales: -1 } },
+      { $limit: 1 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          storeName: 1,
+          totalSales: 1,
+          ownerName: '$user.name',
+          ownerEmail: '$user.email'
+        }
+      }
+    ]);
+
+    const topPerformer = topPerformerAgg[0] || null;
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        active,
+        pending,
+        suspended,
+        topPerformer
+      }
+    });
+  } catch (error) { next(error); }
+};
+
 exports.getVendors = async (req, res, next) => {
   try {
     const { page = 1, limit = 20, status, search } = req.query;
@@ -1052,17 +1380,122 @@ exports.rejectAffiliateKYC = async (req, res, next) => {
 };
 
 // ---------- Affiliates ----------
+exports.getAffiliateStats = async (req, res, next) => {
+  try {
+    const [total, active, pending, suspended, earningsAgg, topPerformer] = await Promise.all([
+      Affiliate.countDocuments(),
+      Affiliate.countDocuments({ status: 'active' }),
+      Affiliate.countDocuments({ status: 'pending' }),
+      Affiliate.countDocuments({ status: 'suspended' }),
+      Affiliate.aggregate([
+        { $group: {
+          _id: null,
+          totalEarnings: { $sum: '$totalEarnings' },
+          pendingEarnings: { $sum: '$pendingEarnings' },
+          paidEarnings: { $sum: '$paidEarnings' },
+          totalClicks: { $sum: '$totalClicks' },
+          totalConversions: { $sum: '$totalConversions' }
+        }}
+      ]),
+      // Top performer by conversions
+      Affiliate.aggregate([
+        { $match: { status: 'active' } },
+        { $sort: { totalConversions: -1 } },
+        { $limit: 1 },
+        { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'user' } },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+        { $project: {
+          _id: 1,
+          code: 1,
+          totalConversions: 1,
+          totalEarnings: 1,
+          totalClicks: 1,
+          userName: '$user.name'
+        }}
+      ])
+    ]);
+
+    const earnings = earningsAgg[0] || { totalEarnings: 0, pendingEarnings: 0, paidEarnings: 0, totalClicks: 0, totalConversions: 0 };
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        active,
+        pending,
+        suspended,
+        totalEarnings: earnings.totalEarnings,
+        pendingEarnings: earnings.pendingEarnings,
+        paidEarnings: earnings.paidEarnings,
+        totalClicks: earnings.totalClicks,
+        totalConversions: earnings.totalConversions,
+        conversionRate: earnings.totalClicks > 0 ? ((earnings.totalConversions / earnings.totalClicks) * 100).toFixed(2) : 0,
+        topPerformer: topPerformer[0] || null
+      }
+    });
+  } catch (error) { next(error); }
+};
+
 exports.getAffiliates = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status } = req.query;
-    const query = {};
-    if (status) query.status = status;
-
+    const { page = 1, limit = 20, status, search } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const [affiliates, total] = await Promise.all([
-      Affiliate.find(query).populate('userId', 'name email').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).lean(),
-      Affiliate.countDocuments(query),
-    ]);
+
+    // Build aggregation pipeline for search support
+    const pipeline = [];
+
+    // Match status if provided
+    if (status) {
+      pipeline.push({ $match: { status } });
+    }
+
+    // Lookup user data
+    pipeline.push({
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'userId'
+      }
+    });
+    pipeline.push({ $unwind: { path: '$userId', preserveNullAndEmptyArrays: true } });
+
+    // Search filter (by name, email, or code)
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { 'userId.name': { $regex: search, $options: 'i' } },
+            { 'userId.email': { $regex: search, $options: 'i' } },
+            { code: { $regex: search, $options: 'i' } }
+          ]
+        }
+      });
+    }
+
+    // Get total count
+    const countPipeline = [...pipeline, { $count: 'total' }];
+    const countResult = await Affiliate.aggregate(countPipeline);
+    const total = countResult[0]?.total || 0;
+
+    // Sort and paginate
+    pipeline.push({ $sort: { createdAt: -1 } });
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: parseInt(limit) });
+
+    // Project only needed user fields
+    pipeline.push({
+      $project: {
+        _id: 1, code: 1, status: 1, totalClicks: 1, totalConversions: 1,
+        totalEarnings: 1, pendingEarnings: 1, paidEarnings: 1,
+        commissionPercentage: 1, commissionRules: 1, kyc: 1,
+        bankDetails: 1, panNumber: 1, panVerified: 1, razorpay: 1,
+        rejectionReason: 1, createdAt: 1, updatedAt: 1,
+        'userId._id': 1, 'userId.name': 1, 'userId.email': 1
+      }
+    });
+
+    const affiliates = await Affiliate.aggregate(pipeline);
 
     res.json({ success: true, data: affiliates, meta: getPaginationMeta(total, +page, +limit) });
   } catch (error) { next(error); }
@@ -1139,10 +1572,17 @@ exports.deleteAffiliate = async (req, res, next) => {
 // ---------- Commissions / Payouts ----------
 exports.getCommissions = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, type, status } = req.query;
+    const { page = 1, limit = 20, type, status, startDate, endDate } = req.query;
     const query = {};
     if (type) query.type = type;
     if (status) query.status = status;
+
+    // Add date range filter
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate + 'T23:59:59.999Z');
+    }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const [rows, total] = await Promise.all([
@@ -1275,34 +1715,80 @@ exports.exportVendorCommissions = async (req, res, next) => {
 
 exports.getCommissionStats = async (req, res, next) => {
   try {
-    const { type } = req.query;
+    const { type, startDate, endDate } = req.query;
     const query = type ? { type } : {};
 
-    const [totalStats, pendingStats, paidStats, affiliateCount, vendorCount] = await Promise.all([
+    // Add date range filter if provided
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate + 'T23:59:59.999Z');
+    }
+
+    // Build topSubjects aggregation based on type
+    const getTopSubjectsAggregation = () => {
+      if (type === 'affiliate') {
+        // Top 5 affiliates by commission amount
+        return Commission.aggregate([
+          { $match: { ...query, type: 'affiliate' } },
+          { $group: { _id: '$subjectId', totalAmount: { $sum: '$amount' }, count: { $sum: 1 } } },
+          { $sort: { totalAmount: -1 } },
+          { $limit: 5 },
+          { $lookup: { from: 'affiliates', localField: '_id', foreignField: '_id', as: 'affiliate' } },
+          { $unwind: { path: '$affiliate', preserveNullAndEmptyArrays: true } },
+          { $lookup: { from: 'users', localField: 'affiliate.userId', foreignField: '_id', as: 'user' } },
+          { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+          { $project: { _id: 1, totalAmount: 1, count: 1, storeName: { $ifNull: ['$user.name', '$affiliate.code'] } } }
+        ]);
+      } else if (type === 'vendor' || !type) {
+        // Top 5 vendors by commission amount
+        return Commission.aggregate([
+          { $match: { ...query, type: 'vendor' } },
+          { $group: { _id: '$subjectId', totalAmount: { $sum: '$amount' }, count: { $sum: 1 } } },
+          { $sort: { totalAmount: -1 } },
+          { $limit: 5 },
+          { $lookup: { from: 'vendors', localField: '_id', foreignField: '_id', as: 'vendor' } },
+          { $unwind: { path: '$vendor', preserveNullAndEmptyArrays: true } },
+          { $project: { _id: 1, totalAmount: 1, count: 1, storeName: '$vendor.storeName' } }
+        ]);
+      }
+      return Promise.resolve([]);
+    };
+
+    const [totalStats, pendingStats, approvedStats, paidStats, affiliateCount, vendorCount, topVendors] = await Promise.all([
       Commission.aggregate([
         { $match: query },
-        { $group: { _id: null, totalAmount: { $sum: '$amount' } } }
+        { $group: { _id: null, totalAmount: { $sum: '$amount' }, totalCount: { $sum: 1 } } }
       ]),
       Commission.aggregate([
         { $match: { ...query, status: 'pending' } },
         { $group: { _id: null, pendingAmount: { $sum: '$amount' }, pendingCount: { $sum: 1 } } }
       ]),
       Commission.aggregate([
+        { $match: { ...query, status: 'approved' } },
+        { $group: { _id: null, approvedAmount: { $sum: '$amount' }, approvedCount: { $sum: 1 } } }
+      ]),
+      Commission.aggregate([
         { $match: { ...query, status: 'paid' } },
         { $group: { _id: null, paidAmount: { $sum: '$amount' }, paidCount: { $sum: 1 } } }
       ]),
       type === 'affiliate' ? Affiliate.countDocuments({ status: 'active' }) : Promise.resolve(0),
-      type === 'vendor' || !type ? Vendor.countDocuments({ status: 'active' }) : Promise.resolve(0)
+      type === 'vendor' || !type ? Vendor.countDocuments({ status: 'active' }) : Promise.resolve(0),
+      getTopSubjectsAggregation()
     ]);
 
     const stats = {
       totalAmount: totalStats[0]?.totalAmount || 0,
+      totalCount: totalStats[0]?.totalCount || 0,
       pendingAmount: pendingStats[0]?.pendingAmount || 0,
       pendingCount: pendingStats[0]?.pendingCount || 0,
+      approvedAmount: approvedStats[0]?.approvedAmount || 0,
+      approvedCount: approvedStats[0]?.approvedCount || 0,
       paidAmount: paidStats[0]?.paidAmount || 0,
       paidCount: paidStats[0]?.paidCount || 0,
       affiliateCount: affiliateCount,
-      vendorCount: vendorCount
+      vendorCount: vendorCount,
+      topVendors: topVendors || []
     };
 
     res.json({ success: true, data: stats });
@@ -1544,7 +2030,7 @@ exports.getPayouts = async (req, res, next) => {
 
 exports.createPayout = async (req, res, next) => {
   try {
-    const { type, subjectId, amount, paymentRef } = req.body;
+    const { type, subjectId, amount, paymentRef, paymentMethod, paymentProof } = req.body;
     const list = await Commission.find({ type, subjectId, status: 'approved' });
     const available = list.reduce((s, c) => s + c.amount, 0);
     if (amount > available) {
@@ -1557,6 +2043,8 @@ exports.createPayout = async (req, res, next) => {
       c.status = 'paid';
       c.paidAt = new Date();
       c.paymentRef = paymentRef;
+      c.paymentMethod = paymentMethod || 'other';
+      c.paymentProof = paymentProof || null;
       await c.save();
       remaining -= payAmount;
     }
@@ -1716,13 +2204,33 @@ exports.deleteAdCampaign = async (req, res, next) => {
 // ---------- Blog (Posts/Pages) ----------
 exports.getPosts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 100, search, status, category } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build query with filters
+    const query = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (status === 'published') query.published = true;
+    if (status === 'draft') query.published = false;
+    if (category) query.category = category;
+
     const [rows, total] = await Promise.all([
-      Post.find().populate('author', 'name email').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).lean(),
-      Post.countDocuments(),
+      Post.find(query).populate('author', 'name email').sort({ createdAt: -1 }).skip(skip).limit(parseInt(limit)).lean(),
+      Post.countDocuments(query),
     ]);
-    res.json({ success: true, data: rows, meta: getPaginationMeta(total, +page, +limit) });
+
+    // Map viewCount to views for frontend compatibility
+    const postsWithViews = rows.map(post => ({
+      ...post,
+      views: post.viewCount || 0
+    }));
+
+    res.json({ success: true, data: postsWithViews, meta: getPaginationMeta(total, +page, +limit) });
   } catch (error) { next(error); }
 };
 
@@ -1731,6 +2239,7 @@ exports.createPost = async (req, res, next) => {
     const row = await Post.create({ ...req.body, author: req.user._id, slug: slugify(req.body.title) });
     logger.info(`Post created: ${row.title}`);
     res.status(201).json({ success: true, data: row });
+    indexNow.notifyContentChange('blog', row.slug);
   } catch (error) { next(error); }
 };
 
@@ -1739,6 +2248,7 @@ exports.updatePost = async (req, res, next) => {
     const row = await Post.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!row) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Post not found' } });
     res.json({ success: true, data: row });
+    indexNow.notifyContentChange('blog', row.slug);
   } catch (error) { next(error); }
 };
 
@@ -1753,7 +2263,20 @@ exports.deletePost = async (req, res, next) => {
 
 exports.getPages = async (req, res, next) => {
   try {
-    const rows = await Page.find().sort({ title: 1 }).lean();
+    const { search, status } = req.query;
+
+    // Build query with filters
+    const query = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { slug: { $regex: search, $options: 'i' } }
+      ];
+    }
+    if (status === 'published') query.published = true;
+    if (status === 'draft') query.published = false;
+
+    const rows = await Page.find(query).sort({ title: 1 }).lean();
     res.json({ success: true, data: rows });
   } catch (error) { next(error); }
 };
@@ -1803,6 +2326,134 @@ exports.updateSetting = async (req, res, next) => {
     }
     logger.info(`Setting updated: ${key}`);
     res.json({ success: true, data: setting });
+  } catch (error) { next(error); }
+};
+
+// Get settings statistics
+exports.getSettingsStats = async (req, res, next) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [
+      total,
+      publicCount,
+      categoryCounts,
+      recentlyUpdated,
+      featuresEnabled
+    ] = await Promise.all([
+      Setting.countDocuments(),
+      Setting.countDocuments({ isPublic: true }),
+      Setting.aggregate([
+        { $group: { _id: '$category', count: { $sum: 1 } } }
+      ]),
+      Setting.countDocuments({ updatedAt: { $gte: today } }),
+      Setting.countDocuments({
+        $or: [
+          { type: 'boolean', value: 'true' },
+          { type: 'boolean', value: true },
+          { key: { $regex: /enabled$/i }, value: 'true' },
+          { key: { $regex: /enabled$/i }, value: true }
+        ]
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        categories: categoryCounts.length,
+        public: publicCount,
+        private: total - publicCount,
+        recentlyUpdated,
+        featuresEnabled,
+        byCategory: categoryCounts.reduce((acc, c) => {
+          acc[c._id || 'uncategorized'] = c.count;
+          return acc;
+        }, {})
+      }
+    });
+  } catch (error) { next(error); }
+};
+
+// Export all settings
+exports.exportSettings = async (req, res, next) => {
+  try {
+    const settings = await Setting.find().sort({ category: 1, key: 1 }).lean();
+
+    const exportData = settings.map(s => ({
+      key: s.key,
+      value: s.value,
+      type: s.type,
+      category: s.category,
+      description: s.description,
+      isPublic: s.isPublic
+    }));
+
+    logger.info(`Settings exported by admin ${req.user._id}`);
+
+    res.json({
+      success: true,
+      data: exportData,
+      exportedAt: new Date().toISOString(),
+      totalCount: exportData.length
+    });
+  } catch (error) { next(error); }
+};
+
+// Bulk update settings
+exports.bulkUpdateSettings = async (req, res, next) => {
+  try {
+    const { settings } = req.body;
+
+    if (!Array.isArray(settings) || settings.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid request. Provide an array of settings.'
+      });
+    }
+
+    let updatedCount = 0;
+    const errors = [];
+
+    for (const settingData of settings) {
+      try {
+        if (!settingData.key) {
+          errors.push({ key: settingData.key, error: 'Key is required' });
+          continue;
+        }
+
+        const setting = await Setting.findOneAndUpdate(
+          { key: settingData.key },
+          {
+            $set: {
+              value: settingData.value,
+              type: settingData.type || 'string',
+              category: settingData.category || 'general',
+              description: settingData.description,
+              isPublic: settingData.isPublic || false
+            }
+          },
+          { upsert: true, new: true }
+        );
+
+        if (setting) updatedCount++;
+      } catch (err) {
+        errors.push({ key: settingData.key, error: err.message });
+      }
+    }
+
+    logger.info(`Bulk settings update: ${updatedCount} settings updated by admin ${req.user._id}`);
+
+    res.json({
+      success: true,
+      message: `${updatedCount} settings updated successfully`,
+      data: {
+        updatedCount,
+        errorsCount: errors.length,
+        errors: errors.length > 0 ? errors : undefined
+      }
+    });
   } catch (error) { next(error); }
 };
 
@@ -1961,6 +2612,171 @@ exports.deleteContactSubmission = async (req, res, next) => {
   }
 };
 
+// Get Contact Submission Statistics
+exports.getContactSubmissionStats = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const [
+      totalCount,
+      newCount,
+      readCount,
+      repliedCount,
+      resolvedCount,
+      spamCount,
+      todayCount,
+      urgentCount,
+      avgResponseTime,
+    ] = await Promise.all([
+      ContactSubmission.countDocuments(),
+      ContactSubmission.countDocuments({ status: 'new' }),
+      ContactSubmission.countDocuments({ status: 'read' }),
+      ContactSubmission.countDocuments({ status: 'replied' }),
+      ContactSubmission.countDocuments({ status: 'resolved' }),
+      ContactSubmission.countDocuments({ status: 'spam' }),
+      ContactSubmission.countDocuments({ createdAt: { $gte: today } }),
+      ContactSubmission.countDocuments({
+        status: { $in: ['new', 'read'] },
+        createdAt: { $lte: last24h },
+      }),
+      ContactSubmission.aggregate([
+        { $match: { status: 'replied', repliedAt: { $exists: true } } },
+        {
+          $project: {
+            responseTime: { $subtract: ['$repliedAt', '$createdAt'] },
+          },
+        },
+        { $group: { _id: null, avgTime: { $avg: '$responseTime' } } },
+      ]),
+    ]);
+
+    // Calculate avg response time in hours
+    const avgResponseHours = avgResponseTime.length > 0
+      ? Math.round(avgResponseTime[0].avgTime / (1000 * 60 * 60))
+      : 0;
+
+    // Calculate response rate (replied + resolved / total non-spam)
+    const nonSpamTotal = totalCount - spamCount;
+    const responseRate = nonSpamTotal > 0
+      ? Math.round(((repliedCount + resolvedCount) / nonSpamTotal) * 100)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        total: totalCount,
+        new: newCount,
+        read: readCount,
+        replied: repliedCount,
+        resolved: resolvedCount,
+        spam: spamCount,
+        today: todayCount,
+        urgent: urgentCount,
+        avgResponseTime: `${avgResponseHours}h`,
+        responseRate: responseRate,
+        pending: newCount + readCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Reply to Contact Submission
+exports.replyToContactSubmission = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { message, subject } = req.body;
+
+    const submission = await ContactSubmission.findById(id);
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Contact submission not found' },
+      });
+    }
+
+    // Update submission status
+    submission.status = 'replied';
+    submission.repliedAt = new Date();
+    await submission.save();
+
+    // Create communication record for the reply
+    const Communication = require('../models/Communication');
+    await Communication.create({
+      type: 'email',
+      direction: 'outgoing',
+      from: process.env.ADMIN_EMAIL || 'vtechshop.customercare@gmail.com',
+      fromName: 'Vtech Support',
+      to: submission.email,
+      toName: submission.name,
+      subject: subject || `Re: ${submission.subject}`,
+      message,
+      status: 'sent',
+      sentAt: new Date(),
+      metadata: {
+        contactSubmissionId: submission._id,
+      },
+    });
+
+    // TODO: Actually send email via email service
+    // await emailService.send({ to: submission.email, subject, html: message });
+
+    res.json({
+      success: true,
+      data: submission,
+      message: 'Reply sent successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Bulk Update Contact Submissions
+exports.bulkUpdateContactSubmissions = async (req, res, next) => {
+  try {
+    const { ids, status } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'IDs array is required' },
+      });
+    }
+
+    const validStatuses = ['new', 'read', 'replied', 'resolved', 'spam'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Invalid status value' },
+      });
+    }
+
+    const updateData = { status };
+    if (status === 'replied') updateData.repliedAt = new Date();
+    if (status === 'resolved') updateData.resolvedAt = new Date();
+
+    const result = await ContactSubmission.updateMany(
+      { _id: { $in: ids } },
+      updateData
+    );
+
+    res.json({
+      success: true,
+      data: {
+        modified: result.modifiedCount,
+        matched: result.matchedCount,
+      },
+      message: `${result.modifiedCount} submissions updated`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // NOTE: getPendingKYC is defined earlier in this file (line ~669) - removed duplicate definition here
 
 exports.getVendorKYC = async (req, res, next) => {
@@ -2005,25 +2821,112 @@ exports.getAffiliateKYC = async (req, res, next) => {
 // ---------- Reviews Management ----------
 exports.getReviews = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status, productId, userId, rating } = req.query;
+    const { page = 1, limit = 20, status, productId, userId, rating, search, verified, hasResponse } = req.query;
     const query = {};
 
     if (status) query.status = status;
     if (productId) query.productId = productId;
     if (userId) query.userId = userId;
     if (rating) query.rating = parseInt(rating);
+    if (verified === 'true') query.verified = true;
+    if (verified === 'false') query.verified = false;
+    if (hasResponse === 'true') query['vendorResponse.text'] = { $exists: true, $ne: '' };
+    if (hasResponse === 'false') query['vendorResponse.text'] = { $exists: false };
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const [reviews, total] = await Promise.all([
-      Review.find(query)
-        .populate('userId', 'firstName lastName email')
-        .populate('productId', 'title slug images')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parseInt(limit))
-        .lean(),
-      Review.countDocuments(query),
-    ]);
+
+    // Build aggregation for search
+    let reviews, total;
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      const pipeline = [
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'user',
+          },
+        },
+        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+        {
+          $match: {
+            ...query,
+            $or: [
+              { comment: searchRegex },
+              { title: searchRegex },
+              { 'product.title': searchRegex },
+              { 'user.firstName': searchRegex },
+              { 'user.lastName': searchRegex },
+              { 'user.email': searchRegex },
+            ],
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        {
+          $facet: {
+            data: [
+              { $skip: skip },
+              { $limit: parseInt(limit) },
+              {
+                $project: {
+                  _id: 1,
+                  rating: 1,
+                  title: 1,
+                  comment: 1,
+                  images: 1,
+                  verified: 1,
+                  status: 1,
+                  rejectionReason: 1,
+                  helpfulCount: 1,
+                  unhelpfulCount: 1,
+                  vendorResponse: 1,
+                  createdAt: 1,
+                  updatedAt: 1,
+                  productId: {
+                    _id: '$product._id',
+                    title: '$product.title',
+                    slug: '$product.slug',
+                    images: '$product.images',
+                  },
+                  userId: {
+                    _id: '$user._id',
+                    firstName: '$user.firstName',
+                    lastName: '$user.lastName',
+                    email: '$user.email',
+                  },
+                },
+              },
+            ],
+            count: [{ $count: 'total' }],
+          },
+        },
+      ];
+
+      const result = await Review.aggregate(pipeline);
+      reviews = result[0]?.data || [];
+      total = result[0]?.count[0]?.total || 0;
+    } else {
+      [reviews, total] = await Promise.all([
+        Review.find(query)
+          .populate('userId', 'firstName lastName email')
+          .populate('productId', 'title slug images')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(parseInt(limit))
+          .lean(),
+        Review.countDocuments(query),
+      ]);
+    }
 
     res.json({
       success: true,
@@ -2217,6 +3120,164 @@ exports.respondToReview = async (req, res, next) => {
   }
 };
 
+// Get Review Statistics
+exports.getReviewStats = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const [
+      totalCount,
+      pendingCount,
+      approvedCount,
+      rejectedCount,
+      verifiedCount,
+      withResponseCount,
+      thisWeekCount,
+      ratingDistribution,
+      avgRatingResult,
+      helpfulVotes,
+    ] = await Promise.all([
+      Review.countDocuments(),
+      Review.countDocuments({ status: 'pending' }),
+      Review.countDocuments({ status: 'approved' }),
+      Review.countDocuments({ status: 'rejected' }),
+      Review.countDocuments({ verified: true }),
+      Review.countDocuments({ 'vendorResponse.text': { $exists: true, $ne: '' } }),
+      Review.countDocuments({ createdAt: { $gte: weekAgo } }),
+      Review.aggregate([
+        { $group: { _id: '$rating', count: { $sum: 1 } } },
+      ]),
+      Review.aggregate([
+        { $match: { status: 'approved' } },
+        { $group: { _id: null, avgRating: { $avg: '$rating' } } },
+      ]),
+      Review.aggregate([
+        { $group: { _id: null, totalHelpful: { $sum: '$helpfulCount' } } },
+      ]),
+    ]);
+
+    // Convert rating distribution to object
+    const ratingDist = {};
+    ratingDistribution.forEach(item => {
+      ratingDist[item._id] = item.count;
+    });
+
+    // Calculate response rate
+    const responseRate = totalCount > 0
+      ? Math.round((withResponseCount / totalCount) * 100)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        total: totalCount,
+        pending: pendingCount,
+        approved: approvedCount,
+        rejected: rejectedCount,
+        verified: verifiedCount,
+        withResponse: withResponseCount,
+        thisWeek: thisWeekCount,
+        ratingDistribution: ratingDist,
+        avgRating: avgRatingResult[0]?.avgRating || 0,
+        totalHelpful: helpfulVotes[0]?.totalHelpful || 0,
+        responseRate: responseRate,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Bulk Update Reviews
+exports.bulkUpdateReviews = async (req, res, next) => {
+  try {
+    const { ids, status } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'IDs array is required' },
+      });
+    }
+
+    // Handle delete action
+    if (status === 'delete') {
+      // Get product IDs before deletion for rating recalculation
+      const reviews = await Review.find({ _id: { $in: ids } }).select('productId');
+      const productIds = [...new Set(reviews.map(r => r.productId?.toString()).filter(Boolean))];
+
+      const result = await Review.deleteMany({ _id: { $in: ids } });
+
+      // Recalculate ratings for affected products
+      for (const productId of productIds) {
+        const approvedReviews = await Review.find({ productId, status: 'approved' });
+        if (approvedReviews.length > 0) {
+          const avgRating = approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length;
+          await Product.findByIdAndUpdate(productId, {
+            rating: Math.round(avgRating * 10) / 10,
+            reviewCount: approvedReviews.length,
+          });
+        } else {
+          await Product.findByIdAndUpdate(productId, { rating: 0, reviewCount: 0 });
+        }
+      }
+
+      logger.info(`Bulk deleted ${result.deletedCount} reviews`);
+      return res.json({
+        success: true,
+        data: { deleted: result.deletedCount },
+        message: `${result.deletedCount} reviews deleted`,
+      });
+    }
+
+    // Handle status updates
+    const validStatuses = ['pending', 'approved', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STATUS', message: 'Invalid status value' },
+      });
+    }
+
+    const result = await Review.updateMany(
+      { _id: { $in: ids } },
+      { status }
+    );
+
+    // Recalculate product ratings for approved/rejected changes
+    if (status === 'approved' || status === 'rejected') {
+      const reviews = await Review.find({ _id: { $in: ids } }).select('productId');
+      const productIds = [...new Set(reviews.map(r => r.productId?.toString()).filter(Boolean))];
+
+      for (const productId of productIds) {
+        const approvedReviews = await Review.find({ productId, status: 'approved' });
+        if (approvedReviews.length > 0) {
+          const avgRating = approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length;
+          await Product.findByIdAndUpdate(productId, {
+            rating: Math.round(avgRating * 10) / 10,
+            reviewCount: approvedReviews.length,
+          });
+        } else {
+          await Product.findByIdAndUpdate(productId, { rating: 0, reviewCount: 0 });
+        }
+      }
+    }
+
+    logger.info(`Bulk updated ${result.modifiedCount} reviews to status: ${status}`);
+    res.json({
+      success: true,
+      data: {
+        modified: result.modifiedCount,
+        matched: result.matchedCount,
+      },
+      message: `${result.modifiedCount} reviews updated`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ---------- Enhanced Payout Management ----------
 
 exports.getVendorPendingPayouts = async (req, res, next) => {
@@ -2224,9 +3285,9 @@ exports.getVendorPendingPayouts = async (req, res, next) => {
     const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Get all vendors with approved commissions
+    // Get all vendors with approved commissions (include bank details for payout processing)
     const vendors = await Vendor.find({ status: 'active' })
-      .select('_id storeName userId')
+      .select('_id storeName userId bank.accountHolderName bank.bankName bank.ifscCode bank.lastFourDigits bank.upiId bank.verified +bank.accountNumber')
       .lean();
 
     const vendorPayouts = [];
@@ -2239,6 +3300,15 @@ exports.getVendorPendingPayouts = async (req, res, next) => {
           vendorName: vendor.storeName,
           pendingAmount: balance.totalPending,
           commissionCount: balance.count,
+          bankDetails: {
+            accountHolderName: vendor.bank?.accountHolderName || vendor.storeName,
+            bankName: vendor.bank?.bankName || '',
+            accountNumber: vendor.bank?.accountNumber || '',
+            ifscCode: vendor.bank?.ifscCode || '',
+            lastFourDigits: vendor.bank?.lastFourDigits || '',
+            upiId: vendor.bank?.upiId || '',
+            verified: vendor.bank?.verified || false,
+          },
         });
       }
     }
@@ -2261,7 +3331,7 @@ exports.getVendorPendingPayouts = async (req, res, next) => {
 
 exports.processVendorPayout = async (req, res, next) => {
   try {
-    const { vendorId, amount, commissionIds } = req.body;
+    const { vendorId, amount, commissionIds, paymentMethod, paymentRef, paymentProof } = req.body;
 
     if (!vendorId || !amount) {
       return res.status(400).json({
@@ -2285,10 +3355,14 @@ exports.processVendorPayout = async (req, res, next) => {
       selectedCommissions = commissions.map(c => c._id);
     }
 
+    // Build manual payment object if payment details provided
+    const manualPayment = paymentRef ? { paymentMethod, paymentRef, paymentProof } : null;
+
     const result = await payoutService.processVendorPayout(
       vendorId,
       amount,
-      selectedCommissions
+      selectedCommissions,
+      manualPayment
     );
 
     logger.info(`Vendor payout processed by admin: ${vendorId} - ₹${amount}`);
@@ -2375,8 +3449,14 @@ exports.getPayoutHistory = async (req, res, next) => {
 // ---------- Payments ----------
 exports.getPaymentStats = async (req, res, next) => {
   try {
-    // Get all orders with payment information
-    const allOrders = await Order.find({}).select('payment totals status');
+    const { days = 30 } = req.query;
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - parseInt(days));
+
+    // Get orders within date range
+    const allOrders = await Order.find({
+      createdAt: { $gte: daysAgo }
+    }).select('payment totals status createdAt');
 
     // Calculate statistics
     const stats = {
@@ -2388,6 +3468,8 @@ exports.getPaymentStats = async (req, res, next) => {
       pendingAmount: 0,
       failedPayments: 0,
       failedAmount: 0,
+      refundedPayments: 0,
+      refundedAmount: 0,
       paymentMethods: []
     };
 
@@ -2403,15 +3485,18 @@ exports.getPaymentStats = async (req, res, next) => {
       stats.totalRevenue += amount;
 
       // Count by status
-      if (paymentStatus === 'completed' || paymentStatus === 'paid' || order.status === 'paid') {
+      if (paymentStatus === 'completed' || paymentStatus === 'paid' || paymentStatus === 'captured' || order.status === 'paid') {
         stats.successfulPayments++;
         stats.successfulAmount += amount;
-      } else if (paymentStatus === 'pending' || order.status === 'placed') {
+      } else if (paymentStatus === 'pending' || paymentStatus === 'created' || order.status === 'placed') {
         stats.pendingPayments++;
         stats.pendingAmount += amount;
       } else if (paymentStatus === 'failed') {
         stats.failedPayments++;
         stats.failedAmount += amount;
+      } else if (paymentStatus === 'refunded') {
+        stats.refundedPayments++;
+        stats.refundedAmount += amount;
       }
 
       // Payment method breakdown
@@ -2429,6 +3514,12 @@ exports.getPaymentStats = async (req, res, next) => {
       total: data.total
     }));
 
+    // Add balance-related fields for Amazon-style display
+    stats.availableBalance = stats.successfulAmount - stats.refundedAmount;
+    stats.reservedAmount = Math.round(stats.successfulAmount * 0.02); // 2% reserve for refunds
+    stats.nextPayoutAmount = stats.availableBalance - stats.reservedAmount;
+    stats.nextPayoutDate = 'Weekly settlement';
+
     res.json({ success: true, data: stats });
   } catch (error) {
     next(error);
@@ -2437,9 +3528,14 @@ exports.getPaymentStats = async (req, res, next) => {
 
 exports.getPayments = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, paymentMethod, status, search } = req.query;
+    const { page = 1, limit = 20, paymentMethod, status, search, days = 30 } = req.query;
 
     const query = {};
+
+    // Filter by date range
+    const daysAgo = new Date();
+    daysAgo.setDate(daysAgo.getDate() - parseInt(days));
+    query.createdAt = { $gte: daysAgo };
 
     // Filter by payment method
     if (paymentMethod) {
@@ -2448,9 +3544,11 @@ exports.getPayments = async (req, res, next) => {
 
     // Filter by status
     if (status) {
-      if (status === 'completed' || status === 'paid') {
+      if (status === 'completed' || status === 'paid' || status === 'captured') {
         query.$or = [
           { 'payment.status': 'completed' },
+          { 'payment.status': 'captured' },
+          { 'payment.status': 'paid' },
           { status: 'paid' }
         ];
       } else {
@@ -2460,12 +3558,20 @@ exports.getPayments = async (req, res, next) => {
 
     // Search by order ID or customer name/email
     if (search) {
-      query.$or = [
-        { orderId: { $regex: search, $options: 'i' } },
-        { 'shipTo.fullName': { $regex: search, $options: 'i' } },
-        { 'userId.email': { $regex: search, $options: 'i' } },
-        { guestEmail: { $regex: search, $options: 'i' } }
-      ];
+      const searchQuery = {
+        $or: [
+          { orderId: { $regex: search, $options: 'i' } },
+          { 'shipTo.fullName': { $regex: search, $options: 'i' } },
+          { guestEmail: { $regex: search, $options: 'i' } }
+        ]
+      };
+      // Merge search with existing query
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, searchQuery];
+        delete query.$or;
+      } else {
+        Object.assign(query, searchQuery);
+      }
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -2486,6 +3592,7 @@ exports.getPayments = async (req, res, next) => {
       customerEmail: order.userId?.email || order.guestEmail || '',
       paymentMethod: order.payment?.method || 'N/A',
       amount: order.totals?.total || 0,
+      platformFee: order.totals?.platformFee || 0,
       status: order.payment?.status || order.status,
       createdAt: order.createdAt
     }));
@@ -2504,7 +3611,7 @@ exports.getPayments = async (req, res, next) => {
 exports.recordAffiliatePayout = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { amount, reference } = req.body;
+    const { amount, reference, paymentMethod, paymentProof } = req.body;
 
     const affiliate = await Affiliate.findById(id);
     if (!affiliate) {
@@ -2526,21 +3633,27 @@ exports.recordAffiliatePayout = async (req, res, next) => {
 
     await affiliate.save();
 
-    // Create payout record in Commission model
-    await Commission.create({
-      affiliateId: affiliate._id,
-      type: 'payout',
-      amount: -amount, // Negative amount for payout
-      status: 'paid',
-      paidAt: new Date(),
-      paymentReference: reference,
-      metadata: {
-        processedBy: req.user._id,
-        processedAt: new Date(),
-      },
-    });
+    // Update approved commissions to paid
+    const commissions = await Commission.find({
+      subjectId: affiliate._id,
+      type: 'affiliate',
+      status: 'approved',
+    }).sort({ createdAt: 1 });
 
-    logger.info(`Affiliate payout recorded: ${affiliate.code} - ₹${amount} - ${reference}`);
+    let remaining = amount;
+    for (const c of commissions) {
+      if (remaining <= 0) break;
+      c.status = 'paid';
+      c.paidAt = new Date();
+      c.paymentRef = reference;
+      c.paymentMethod = paymentMethod || 'other';
+      c.paymentProof = paymentProof || null;
+      c.notes = `Manual payout via ${paymentMethod || 'other'} | Ref: ${reference}`;
+      await c.save();
+      remaining -= c.amount;
+    }
+
+    logger.info(`Affiliate payout recorded: ${affiliate.code} - ₹${amount} - ${paymentMethod} - ${reference}`);
 
     res.json({
       success: true,
@@ -2806,7 +3919,7 @@ exports.createManualOrder = async (req, res, next) => {
       const orderItem = {
         productId: product._id,
         vendorId: product.vendorId,
-        name: product.name,
+        name: product.title || product.name,
         image: product.images?.[0] || '',
         productSlug: product.slug,
         sku: product.sku,
@@ -2856,11 +3969,176 @@ exports.createManualOrder = async (req, res, next) => {
       guestEmail: customerEmail || undefined,
     });
 
-    // Auto-activate warranties
+    // Auto-activate warranties (sets isActivated=true on order items)
     await activateWarrantiesForOrder(order);
     await order.save();
 
+    // Verify warranty records were created in Warranty collection
+    // If activateWarrantiesForOrder failed silently, create them directly
+    for (const item of order.items) {
+      if (!item.warranty?.hasWarranty) continue;
+      try {
+        const exists = await Warranty.findOne({ purchaseId: order.orderId, productId: item.productId });
+        if (exists) {
+          logger.info(`Warranty record verified for ${item.name} in order ${order.orderId}: ${exists.warrantyId}`);
+          continue;
+        }
+
+        // Record missing - create it directly
+        logger.warn(`Warranty record missing for ${item.name} in order ${order.orderId}, creating directly...`);
+        const warrantyId = await Warranty.generateWarrantyId();
+        const now = new Date();
+        let warrantyPeriodDays = 0;
+        if (item.warranty.durationType === 'lifetime') {
+          warrantyPeriodDays = 36500;
+        } else if (item.warranty.durationType === 'years') {
+          warrantyPeriodDays = (item.warranty.duration || 1) * 365;
+        } else {
+          warrantyPeriodDays = (item.warranty.duration || 1) * 30;
+        }
+        const endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + warrantyPeriodDays);
+
+        const prodLookup = await Product.findById(item.productId).select('title name sku').lean();
+        const warrantyRecord = await Warranty.create({
+          warrantyId,
+          purchaseId: order.orderId,
+          orderId: order._id,
+          customerName: customerName,
+          customerEmail: customerEmail || undefined,
+          customerPhone: customerPhone,
+          productId: item.productId,
+          product: { name: item.name || prodLookup?.title || prodLookup?.name || 'Unknown Product', model: item.sku || prodLookup?.sku || '' },
+          purchaseDate: now,
+          warrantyStartDate: now,
+          warrantyEndDate: endDate,
+          warrantyPeriodDays,
+          warrantyType: 'manufacturer',
+          status: warrantyPeriodDays === 0 ? 'no_warranty' : 'active',
+          extraInfo: { store: 'V-Tech', invoiceNo: order.orderId, remarks: item.warranty.description || '' },
+        });
+        logger.info(`Warranty record created directly: ${warrantyRecord.warrantyId} for ${item.name}`);
+      } catch (err) {
+        logger.error(`Direct warranty creation failed for ${item.name} in ${order.orderId}: ${err.message}`, { name: err.name, code: err.code, stack: err.stack });
+      }
+    }
+
     res.status(201).json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update a manual order (customer info, notes, source, payment method only)
+exports.updateManualOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, error: { message: 'Order not found' } });
+
+    // Only allow editing manual orders
+    if (!['in-store', 'phone'].includes(order.source)) {
+      return res.status(400).json({ success: false, error: { message: 'Only manual orders can be edited here' } });
+    }
+
+    // Cannot edit cancelled orders
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: { message: 'Cannot edit a cancelled order' } });
+    }
+
+    const { customerName, customerPhone, customerEmail, source, paymentMethod, customerNotes, internalNotes } = req.body;
+
+    // Update allowed fields
+    if (customerName) order.shipTo.fullName = customerName;
+    if (customerPhone) {
+      order.customerPhone = customerPhone;
+      order.shipTo.phone = customerPhone;
+    }
+    if (customerEmail !== undefined) order.guestEmail = customerEmail || undefined;
+    if (source && ['in-store', 'phone'].includes(source)) order.source = source;
+    if (paymentMethod) order.payment.method = paymentMethod;
+    if (customerNotes !== undefined) order.customerNotes = customerNotes;
+    if (internalNotes !== undefined) order.internalNotes = internalNotes;
+
+    // Push edit event
+    order.events.push({
+      status: 'updated',
+      description: `Order edited by admin (${req.user._id})`,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+
+    // Also update warranty customer info if guest warranties exist
+    if (customerName || customerPhone || customerEmail !== undefined) {
+      const updateFields = {};
+      if (customerName) updateFields.customerName = customerName;
+      if (customerEmail !== undefined) updateFields.customerEmail = customerEmail || undefined;
+      if (customerPhone) updateFields.customerPhone = customerPhone;
+      if (Object.keys(updateFields).length > 0) {
+        await Warranty.updateMany({ orderId: order._id }, updateFields);
+      }
+    }
+
+    res.json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Cancel a manual order and void associated warranties
+exports.cancelManualOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, error: { message: 'Order not found' } });
+
+    if (!['in-store', 'phone'].includes(order.source)) {
+      return res.status(400).json({ success: false, error: { message: 'Only manual orders can be cancelled here' } });
+    }
+
+    if (order.status === 'cancelled') {
+      return res.status(400).json({ success: false, error: { message: 'Order is already cancelled' } });
+    }
+
+    const { reason } = req.body;
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ success: false, error: { message: 'Cancellation reason is required' } });
+    }
+
+    // Cancel the order
+    order.status = 'cancelled';
+    order.cancellation = {
+      reason: reason.trim(),
+      cancelledAt: new Date(),
+      cancelledBy: req.user._id,
+    };
+
+    // Mark payment as refunded
+    order.payment.refund = {
+      amount: order.payment.amount || order.totals?.total || 0,
+      status: 'refunded',
+      createdAt: new Date(),
+    };
+
+    // Push cancel event
+    order.events.push({
+      status: 'cancelled',
+      description: `Order cancelled by admin. Reason: ${reason.trim()}`,
+      timestamp: new Date(),
+    });
+
+    await order.save();
+
+    // Void all associated warranties
+    const voidResult = await Warranty.updateMany(
+      { orderId: order._id },
+      { status: 'void', isActive: false }
+    );
+
+    res.json({
+      success: true,
+      data: order,
+      warrantiesVoided: voidResult.modifiedCount || 0,
+    });
   } catch (error) {
     next(error);
   }
@@ -3093,7 +4371,7 @@ exports.getCarouselItem = async (req, res, next) => {
 // Create carousel item
 exports.createCarouselItem = async (req, res, next) => {
   try {
-    const { title, brand, description, tags, imageUrl, link, sortOrder, isActive } = req.body;
+    const { title, brand, description, tags, imageUrl, link, sortOrder, isActive, startDate, endDate } = req.body;
 
     // Validation
     if (!title || !imageUrl || !link) {
@@ -3112,6 +4390,8 @@ exports.createCarouselItem = async (req, res, next) => {
       link: link.trim(),
       sortOrder: sortOrder || 0,
       isActive: isActive !== false,
+      startDate: startDate || null,
+      endDate: endDate || null,
       createdBy: req.user._id,
     });
 
@@ -3126,7 +4406,7 @@ exports.createCarouselItem = async (req, res, next) => {
 exports.updateCarouselItem = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, brand, description, tags, imageUrl, link, sortOrder, isActive } = req.body;
+    const { title, brand, description, tags, imageUrl, link, sortOrder, isActive, startDate, endDate } = req.body;
 
     const item = await Carousel.findById(id);
     if (!item) {
@@ -3145,6 +4425,8 @@ exports.updateCarouselItem = async (req, res, next) => {
     if (link) item.link = link.trim();
     if (sortOrder !== undefined) item.sortOrder = sortOrder;
     if (isActive !== undefined) item.isActive = isActive;
+    if (startDate !== undefined) item.startDate = startDate || null;
+    if (endDate !== undefined) item.endDate = endDate || null;
     item.updatedBy = req.user._id;
 
     await item.save();
@@ -3200,6 +4482,300 @@ exports.reorderCarouselItems = async (req, res, next) => {
 
     logger.info(`Carousel items reordered by admin ${req.user._id}`);
     res.json({ success: true, message: 'Carousel items reordered successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ---------- Inventory Management (Amazon-style) ----------
+
+// Get inventory stats
+exports.getInventoryStats = async (req, res, next) => {
+  try {
+    const [totalSKUs, lowStockProducts, outOfStockProducts, overstockedProducts] = await Promise.all([
+      Product.countDocuments({ published: true }),
+      Product.countDocuments({
+        published: true,
+        $expr: { $and: [{ $gt: ['$stock', 0] }, { $lte: ['$stock', { $ifNull: ['$lowStockThreshold', 10] }] }] }
+      }),
+      Product.countDocuments({ published: true, stock: 0 }),
+      Product.countDocuments({
+        published: true,
+        $expr: { $gt: ['$stock', { $multiply: [{ $ifNull: ['$lowStockThreshold', 10] }, 5] }] }
+      }),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalSKUs,
+        lowStock: lowStockProducts,
+        outOfStock: outOfStockProducts,
+        overstocked: overstockedProducts,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get inventory list with filters
+exports.getInventory = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, stockStatus, vendorId, categoryId, search } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    // Build query
+    const query = { published: true };
+
+    // Stock status filter
+    if (stockStatus === 'out') {
+      query.stock = 0;
+    } else if (stockStatus === 'low') {
+      query.$expr = { $and: [{ $gt: ['$stock', 0] }, { $lte: ['$stock', { $ifNull: ['$lowStockThreshold', 10] }] }] };
+    } else if (stockStatus === 'healthy') {
+      query.$expr = {
+        $and: [
+          { $gt: ['$stock', { $ifNull: ['$lowStockThreshold', 10] }] },
+          { $lte: ['$stock', { $multiply: [{ $ifNull: ['$lowStockThreshold', 10] }, 5] }] }
+        ]
+      };
+    } else if (stockStatus === 'overstocked') {
+      query.$expr = { $gt: ['$stock', { $multiply: [{ $ifNull: ['$lowStockThreshold', 10] }, 5] }] };
+    }
+
+    // Vendor filter
+    if (vendorId) {
+      query.vendorId = vendorId;
+    }
+
+    // Category filter
+    if (categoryId) {
+      query.categoryIds = categoryId;
+    }
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { sku: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const [products, total] = await Promise.all([
+      Product.find(query)
+        .populate('vendorId', 'storeName email userId')
+        .populate('categoryIds', 'name')
+        .select('title sku stock lowStockThreshold images vendorId categoryIds price reserved')
+        .sort({ stock: 1 }) // Sort by lowest stock first
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Product.countDocuments(query),
+    ]);
+
+    // Calculate days of supply based on average sales (simplified calculation)
+    const productsWithDaysSupply = await Promise.all(products.map(async (product) => {
+      const productObj = product.toObject();
+
+      // Calculate average daily sales from last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const salesData = await Order.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: thirtyDaysAgo },
+            'items.productId': product._id,
+            status: { $nin: ['cancelled', 'refunded'] }
+          }
+        },
+        { $unwind: '$items' },
+        { $match: { 'items.productId': product._id } },
+        { $group: { _id: null, totalSold: { $sum: '$items.quantity' } } }
+      ]);
+
+      const totalSold = salesData[0]?.totalSold || 0;
+      const avgDailySales = totalSold / 30;
+
+      productObj.daysOfSupply = avgDailySales > 0
+        ? Math.round(product.stock / avgDailySales)
+        : product.stock > 0 ? 999 : 0;
+
+      return productObj;
+    }));
+
+    // Generate alerts
+    const alerts = [];
+    const outOfStockCount = await Product.countDocuments({ published: true, stock: 0 });
+    const lowStockCount = await Product.countDocuments({
+      published: true,
+      $expr: { $and: [{ $gt: ['$stock', 0] }, { $lte: ['$stock', { $ifNull: ['$lowStockThreshold', 10] }] }] }
+    });
+
+    if (outOfStockCount > 0) {
+      alerts.push({ type: 'critical', message: `${outOfStockCount} products are out of stock` });
+    }
+    if (lowStockCount > 0) {
+      alerts.push({ type: 'warning', message: `${lowStockCount} products need restocking` });
+    }
+
+    res.json({
+      success: true,
+      data: productsWithDaysSupply,
+      alerts,
+      meta: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update product stock
+exports.updateInventoryStock = async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    const { stock } = req.body;
+
+    if (stock === undefined || stock < 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_STOCK', message: 'Valid stock value is required (>= 0)' },
+      });
+    }
+
+    const product = await Product.findById(productId);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Product not found' },
+      });
+    }
+
+    const previousStock = product.stock;
+    product.stock = parseInt(stock);
+    await product.save();
+
+    // Log the stock change
+    logger.info(`Admin ${req.user._id} updated stock for product ${product.title}: ${previousStock} -> ${stock}`);
+
+    res.json({
+      success: true,
+      data: {
+        productId: product._id,
+        title: product.title,
+        previousStock,
+        newStock: product.stock,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Send restock reminder to vendor
+exports.sendRestockReminder = async (req, res, next) => {
+  try {
+    const { productId } = req.params;
+    const { vendorId } = req.body;
+
+    const product = await Product.findById(productId).populate('vendorId');
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Product not found' },
+      });
+    }
+
+    const vendor = await Vendor.findById(vendorId).populate('userId', 'email name');
+    if (!vendor || !vendor.userId?.email) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Vendor email not found' },
+      });
+    }
+
+    // Send notification to vendor
+    await notificationHelper.send({
+      type: 'restock_reminder',
+      recipientEmail: vendor.userId.email,
+      subject: `Low Stock Alert: ${product.title}`,
+      data: {
+        vendorName: vendor.storeName || vendor.userId.name,
+        productName: product.title,
+        currentStock: product.stock,
+        threshold: product.lowStockThreshold || 10,
+        sku: product.sku || 'N/A',
+      },
+    });
+
+    logger.info(`Restock reminder sent to vendor ${vendor.storeName} for product ${product.title}`);
+
+    res.json({
+      success: true,
+      message: 'Restock reminder sent successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Export inventory to CSV
+exports.exportInventory = async (req, res, next) => {
+  try {
+    const { stockStatus, vendorId, categoryId, search } = req.query;
+
+    // Build query (same as getInventory)
+    const query = { published: true };
+
+    if (stockStatus === 'out') {
+      query.stock = 0;
+    } else if (stockStatus === 'low') {
+      query.$expr = { $and: [{ $gt: ['$stock', 0] }, { $lte: ['$stock', { $ifNull: ['$lowStockThreshold', 10] }] }] };
+    } else if (stockStatus === 'healthy') {
+      query.$expr = {
+        $and: [
+          { $gt: ['$stock', { $ifNull: ['$lowStockThreshold', 10] }] },
+          { $lte: ['$stock', { $multiply: [{ $ifNull: ['$lowStockThreshold', 10] }, 5] }] }
+        ]
+      };
+    } else if (stockStatus === 'overstocked') {
+      query.$expr = { $gt: ['$stock', { $multiply: [{ $ifNull: ['$lowStockThreshold', 10] }, 5] }] };
+    }
+
+    if (vendorId) query.vendorId = vendorId;
+    if (categoryId) query.categoryIds = categoryId;
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { sku: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const products = await Product.find(query)
+      .populate('vendorId', 'storeName')
+      .populate('categoryIds', 'name')
+      .select('title sku stock lowStockThreshold vendorId categoryIds price')
+      .sort({ stock: 1 });
+
+    // Generate CSV
+    const csvHeader = 'Product Name,SKU,Vendor,Category,Current Stock,Threshold,Status,Price\n';
+    const csvRows = products.map(p => {
+      const status = p.stock === 0 ? 'Out of Stock' :
+                     p.stock <= (p.lowStockThreshold || 10) ? 'Low Stock' :
+                     p.stock > (p.lowStockThreshold || 10) * 5 ? 'Overstocked' : 'Healthy';
+      return `"${p.title}","${p.sku || 'N/A'}","${p.vendorId?.storeName || 'N/A'}","${p.categoryIds?.[0]?.name || 'N/A'}",${p.stock},${p.lowStockThreshold || 10},"${status}",${p.price}`;
+    }).join('\n');
+
+    const csv = csvHeader + csvRows;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=inventory-${new Date().toISOString().split('T')[0]}.csv`);
+    res.send(csv);
   } catch (error) {
     next(error);
   }

@@ -4,18 +4,35 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, ShoppingCart } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
-import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency } from '@/utils/format';
-import { normalizeImageUrl } from '@/utils/placeholders';
+import { normalizeImageUrl, getResponsiveImageUrls } from '@/utils/placeholders';
 import { useAddToCartAnimation } from '@/components/animations/AddToCartAnimation';
 import { playAddToCart, playError } from '@/utils/sounds';
 
 const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const dispatch = useDispatch();
-  const toast = useToast();
   const navigate = useNavigate();
   const addToCartButtonRef = useRef(null);
+  const cardRef = useRef(null);
   const { triggerAnimation, AnimationComponent } = useAddToCartAnimation();
+
+  // 3D tilt effect on hover (desktop only, uses refs for performance)
+  const handleMouseMove = useCallback((e) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const rotateX = (0.5 - y) * 10; // max ±5deg
+    const rotateY = (x - 0.5) * 10;
+    card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    card.style.transform = '';
+  }, []);
 
   // Memoize discount calculation
   const hasDiscount = React.useMemo(() => product.compareAt && product.compareAt > product.price, [product.compareAt, product.price]);
@@ -45,12 +62,11 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
       // Play add to cart sound
       playAddToCart();
 
-      toast.success('Added to cart!');
+      // Cart drawer auto-opens via Redux (addToCart.fulfilled)
     } catch (error) {
       playError();
-      toast.error(error?.message || 'Failed to add to cart');
     }
-  }, [dispatch, product._id, product, toast, triggerAnimation]);
+  }, [dispatch, product._id, product, triggerAnimation]);
 
   // Memoize rating rendering
   const ratingStars = React.useMemo(() => {
@@ -72,22 +88,35 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   return (
     <>
     <Link
+      ref={cardRef}
       to={`/product/${product.slug}`}
       onClick={handleClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       className="etsy-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden block h-full group"
+      style={{ transition: 'transform 0.15s ease-out, box-shadow 0.15s ease-out', willChange: 'transform' }}
       data-testid="product-card"
       data-cy="product-card"
     >
       {/* Image Container */}
       <div className="relative aspect-square bg-gray-50 overflow-hidden">
         {product.images && product.images.length > 0 ? (
-          <img
-            src={normalizeImageUrl(product.images[0])}
-            alt={product.seo?.title || product.title}
-            loading="lazy"
-            decoding="async"
-            className="etsy-image w-full h-full object-contain p-3"
-          />
+          (() => {
+            const { src, srcSet, sizes } = getResponsiveImageUrls(product.images[0]);
+            return (
+              <img
+                src={src}
+                srcSet={srcSet}
+                sizes={sizes || '(max-width: 480px) 160px, (max-width: 768px) 200px, 300px'}
+                alt={product.seo?.title || product.title}
+                width={150}
+                height={150}
+                loading="lazy"
+                decoding="async"
+                className="etsy-image w-full h-full object-contain p-3"
+              />
+            );
+          })()
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
             No image
@@ -165,7 +194,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
             {formatCurrency(product.price)}
           </span>
           {hasDiscount && (
-            <span className="text-sm text-gray-400 line-through">
+            <span className="text-sm text-gray-600 line-through">
               {formatCurrency(product.compareAt)}
             </span>
           )}

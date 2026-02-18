@@ -1,6 +1,16 @@
+import { useEffect } from 'react';
 import { RotateCcw, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
+import { updateMetaTags } from '@/utils/seo';
 
 const Returns = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Returns & Refunds Policy - V-Tech Kitchen',
+      description: 'Easy returns and refunds at V-Tech Kitchen. 7-day return policy with free pickup, quick refund processing, and hassle-free exchange options for all products.',
+      canonical: 'https://www.vtechkitchen.com/page/returns',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">

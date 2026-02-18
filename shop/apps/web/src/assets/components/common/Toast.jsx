@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 
-const Toast = ({ id, type = 'info', message, duration = 5000, onClose }) => {
+const Toast = ({ id, type = 'info', message, duration = 3000, onClose }) => {
   useEffect(() => {
     if (duration) {
       const timer = setTimeout(() => {

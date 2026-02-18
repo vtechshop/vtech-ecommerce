@@ -341,20 +341,33 @@ app.use('/api', require('./routes/index'));
 // SEO Routes - Sitemap and robots.txt
 app.use('/', require('./routes/sitemap'));
 
-// Static files (uploads)
-app.use('/uploads', express.static('uploads'));
+// Static files (uploads) - cache images for 7 days
+app.use('/uploads', express.static('uploads', { maxAge: '7d' }));
 
 // SPA Fallback for Production (only if frontend build exists)
 // This allows the API to optionally serve the frontend when deployed together
 if (env.NODE_ENV === 'production') {
   const frontendPath = path.join(__dirname, '../../web/dist');
   const fs = require('fs');
+  const seoController = require('./controllers/seoController');
+
+  // Bot User-Agent detection pattern
+  const BOT_UA_PATTERN = /googlebot|google-inspectiontool|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|rogerbot|screaming frog/i;
 
   // Only serve frontend if the build exists (for combined deployments)
   // If frontend is deployed separately (e.g., Vercel), this will be skipped
   if (fs.existsSync(path.join(frontendPath, 'index.html'))) {
-    // Serve static files from the React build
-    app.use(express.static(frontendPath));
+    // Serve static files from the React build with long cache for hashed assets
+    app.use(express.static(frontendPath, {
+      maxAge: '1y',
+      immutable: true,
+      setHeaders: (res, filePath) => {
+        // HTML files should not be cached (SPA routing)
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      }
+    }));
 
     // Handle SPA routing - serve index.html for all non-API routes
     app.get('*', (req, res, next) => {
@@ -362,6 +375,14 @@ if (env.NODE_ENV === 'production') {
       if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
         return next();
       }
+
+      // Serve pre-rendered HTML to search engine bots for SEO
+      const userAgent = req.headers['user-agent'] || '';
+      if (BOT_UA_PATTERN.test(userAgent)) {
+        req.query.path = req.path;
+        return seoController.renderPage(req, res, next);
+      }
+
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
   }

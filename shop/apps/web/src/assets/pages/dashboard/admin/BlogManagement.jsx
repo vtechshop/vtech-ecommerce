@@ -8,7 +8,7 @@ import Pagination from '@/components/common/Pagination';
 import CustomSelect from '@/components/common/CustomSelect';
 import {
   Plus, Edit, Trash2, Eye, Video, FileText, Calendar,
-  Search, Filter, BarChart3, X
+  Search, Filter, BarChart3, X, RefreshCw
 } from 'lucide-react';
 import { formatDate } from '@/utils/format';
 import toast from 'react-hot-toast';
@@ -39,7 +39,7 @@ const BlogManagement = () => {
   const queryClient = useQueryClient();
 
   // Fetch blogs
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-blogs', page, filters],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -192,13 +192,18 @@ const BlogManagement = () => {
             <h1 className="text-2xl font-bold text-gray-900">Blog Management</h1>
             <p className="text-gray-700">Manage your blog posts and videos</p>
           </div>
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-          >
-            <Plus className="w-5 h-5" />
-            Create Blog Post
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+              <RefreshCw className="w-4 h-4" /> Refresh
+            </button>
+            <button
+              onClick={handleCreate}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+            >
+              <Plus className="w-5 h-5" />
+              Create Blog Post
+            </button>
+          </div>
         </div>
 
         {/* Stats Cards */}

@@ -1,7 +1,8 @@
 // FILE: apps/api/src/services/notificationService.js
-const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
+const { MailerSend, EmailParams, Sender, Recipient, Attachment } = require('mailersend');
 const env = require('../config/env');
 const logger = require('../config/logger');
+const { generateInvoiceBuffer, buildSellerFromVendor } = require('./invoiceService');
 
 class NotificationService {
   constructor() {
@@ -28,7 +29,7 @@ class NotificationService {
     }
   }
 
-  async sendEmail(to, subject, html, text) {
+  async sendEmail(to, subject, html, text, attachments) {
     if (!this.isConfigured || !this.mailerSend) {
       logger.warn('Cannot send email - MailerSend not configured:', { to, subject });
       return { success: false, reason: 'MAILERSEND_NOT_CONFIGURED', messageId: null };
@@ -54,9 +55,14 @@ class NotificationService {
         emailParams.setReplyTo({ email: env.REPLY_TO_EMAIL, name: env.REPLY_TO_NAME || 'VTech Support' });
       }
 
+      // Add attachments if provided
+      if (attachments && attachments.length > 0) {
+        emailParams.setAttachments(attachments);
+      }
+
       const response = await this.mailerSend.email.send(emailParams);
 
-      logger.info(`Email sent successfully to ${to}`);
+      logger.info(`Email sent successfully to ${to}${attachments?.length ? ` with ${attachments.length} attachment(s)` : ''}`);
       return { success: true, messageId: response.headers?.['x-message-id'] || 'sent' };
     } catch (error) {
       logger.error('Email send failed:', error);
@@ -65,6 +71,25 @@ class NotificationService {
   }
 
   async sendOrderConfirmation(user, order) {
+    // Generate invoice PDF attachment with correct seller details
+    let attachments = [];
+    try {
+      let seller = null;
+      if (order.isVendorOrder && order.items?.[0]?.vendorId) {
+        const Vendor = require('../models/Vendor');
+        const vendor = await Vendor.findById(order.items[0].vendorId).populate('userId', 'email').lean();
+        if (vendor) seller = buildSellerFromVendor(vendor);
+      }
+      const invoiceBuffer = await generateInvoiceBuffer(order, seller);
+      const attachment = new Attachment(
+        invoiceBuffer.toString('base64'),
+        `Invoice-${order.orderId}.pdf`
+      );
+      attachments.push(attachment);
+    } catch (err) {
+      logger.warn(`Failed to generate invoice PDF for order ${order.orderId}:`, err.message);
+    }
+
     // Generate items list HTML
     const itemsHtml = order.items.map(item => `
       <tr>
@@ -167,7 +192,7 @@ class NotificationService {
       </html>
     `;
 
-    return this.sendEmail(user.email, `Order Confirmation - ${order.orderId}`, html);
+    return this.sendEmail(user.email, `Order Confirmation - ${order.orderId}`, html, null, attachments);
   }
 
   async sendMultiVendorOrderConfirmation(user, vendorOrders, totalAmount) {
@@ -175,6 +200,26 @@ class NotificationService {
     if (!vendorOrders || vendorOrders.length === 0) {
       logger.warn('sendMultiVendorOrderConfirmation called with empty vendorOrders');
       return { success: false, reason: 'NO_ORDERS' };
+    }
+
+    // Generate invoice PDF attachments for each vendor order (with correct seller details)
+    const Vendor = require('../models/Vendor');
+    const attachments = [];
+    for (const vOrder of vendorOrders) {
+      try {
+        let seller = null;
+        if (vOrder.isVendorOrder && vOrder.items?.[0]?.vendorId) {
+          const vendor = await Vendor.findById(vOrder.items[0].vendorId).populate('userId', 'email').lean();
+          if (vendor) seller = buildSellerFromVendor(vendor);
+        }
+        const invoiceBuffer = await generateInvoiceBuffer(vOrder, seller);
+        attachments.push(new Attachment(
+          invoiceBuffer.toString('base64'),
+          `Invoice-${vOrder.orderId}.pdf`
+        ));
+      } catch (err) {
+        logger.warn(`Failed to generate invoice PDF for order ${vOrder.orderId}:`, err.message);
+      }
     }
 
     // Build summary of all orders
@@ -301,7 +346,9 @@ class NotificationService {
     return this.sendEmail(
       user.email,
       `Order Confirmation - ${vendorOrders.length} Orders (${orderIds})`,
-      html
+      html,
+      null,
+      attachments
     );
   }
 

@@ -11,8 +11,8 @@ module.exports = {
   // User session TTL - 1 month
   USER_SESSION_TTL: ONE_MONTH_SECONDS,
 
-  // User data cache TTL - 1 month
-  USER_CACHE_TTL: ONE_MONTH_SECONDS,
+  // User data cache TTL - 3 hours (users update profiles frequently)
+  USER_CACHE_TTL: 3 * 60 * 60, // 10,800 seconds
 
   // General cache TTL - 5 minutes (for product listings, etc.)
   GENERAL_CACHE_TTL: 5 * 60, // 300 seconds
@@ -26,8 +26,8 @@ module.exports = {
   // Cart cache TTL - 1 week (shorter than session)
   CART_CACHE_TTL: 7 * 24 * 60 * 60, // 604,800 seconds
 
-  // Search cache TTL - 15 minutes
-  SEARCH_CACHE_TTL: 15 * 60, // 900 seconds
+  // Search cache TTL - 30 minutes (search results are stable)
+  SEARCH_CACHE_TTL: 30 * 60, // 1800 seconds
 
   // Rate limiting window - 15 minutes
   RATE_LIMIT_WINDOW: 15 * 60, // 900 seconds

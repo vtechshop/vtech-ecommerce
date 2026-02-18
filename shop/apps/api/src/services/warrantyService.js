@@ -49,7 +49,11 @@ class WarrantyService {
       warrantyId,
       purchaseId,
       orderId,
-      userId: user.id,
+      userId: user.id || undefined,
+      // Store guest info for manual/in-store orders without registered user
+      customerName: !user.id ? user.name : undefined,
+      customerEmail: !user.id ? user.email : undefined,
+      customerPhone: !user.id ? user.phone : undefined,
       productId: product.id,
       product: {
         name: product.name,

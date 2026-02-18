@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Plus, Eye, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Eye, Edit, Trash2, X, RefreshCw } from 'lucide-react';
 import api from '../../../utils/api';
 import { useToast } from '../../../components/common/ToastContainer';
 
@@ -23,7 +23,7 @@ const CMSManagement = () => {
   });
 
   // Fetch posts (using blog API)
-  const { data: posts, isLoading: postsLoading } = useQuery({
+  const { data: posts, isLoading: postsLoading, refetch: refetchPosts } = useQuery({
     queryKey: ['admin-posts'],
     queryFn: async () => {
       const response = await api.get('/blog/admin/all');
@@ -33,7 +33,7 @@ const CMSManagement = () => {
   });
 
   // Fetch pages
-  const { data: pages, isLoading: pagesLoading } = useQuery({
+  const { data: pages, isLoading: pagesLoading, refetch: refetchPages } = useQuery({
     queryKey: ['admin-pages'],
     queryFn: async () => {
       const response = await api.get('/admin/pages');
@@ -91,6 +91,8 @@ const CMSManagement = () => {
       toast.error(error.response?.data?.error?.message || `Failed to delete ${activeTab === 'posts' ? 'post' : 'page'}`);
     },
   });
+
+  const handleRefresh = () => { refetchPosts(); refetchPages(); };
 
   const resetForm = () => {
     setFormData({
@@ -170,13 +172,18 @@ const CMSManagement = () => {
           <h1 className="text-2xl font-bold text-gray-900">Content Management</h1>
           <p className="text-gray-700 mt-1">Manage blog posts and pages</p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Create {activeTab === 'posts' ? 'Post' : 'Page'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleRefresh} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+          <button
+            onClick={handleCreate}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Create {activeTab === 'posts' ? 'Post' : 'Page'}
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

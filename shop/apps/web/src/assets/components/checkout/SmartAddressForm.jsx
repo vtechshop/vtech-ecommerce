@@ -1,6 +1,6 @@
 // FILE: apps/web/src/components/checkout/SmartAddressForm.jsx
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, MapPin, CheckCircle, AlertCircle, LocateFixed } from 'lucide-react';
 import Input from '@/components/common/Input';
 
 const INDIA_CODE = 'IN';
@@ -20,6 +20,11 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
   const [pincodeError, setPincodeError] = useState('');
   const [pincodeSuccess, setPincodeSuccess] = useState('');
   const [postOffices, setPostOffices] = useState([]); // Multiple areas from pincode
+
+  // GPS location detection
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState('');
+  const [locationSuccess, setLocationSuccess] = useState('');
 
   // International cascading dropdowns
   const [states, setStates] = useState([]);
@@ -200,6 +205,85 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
     }
   };
 
+  // ─── GPS: Detect location using browser + Nominatim ────────
+  const detectLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setLocationError('Location is not supported by your browser');
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError('');
+    setLocationSuccess('');
+
+    try {
+      // Get GPS coordinates
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000, // 5 min cache
+        });
+      });
+
+      const { latitude, longitude } = position.coords;
+
+      // Reverse geocode using OpenStreetMap Nominatim (free, no API key)
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&accept-language=en`
+      );
+      const data = await res.json();
+
+      if (data.address) {
+        const addr = data.address;
+        const countryCode = (addr.country_code || '').toUpperCase();
+        const pincode = addr.postcode || '';
+        const state = addr.state || '';
+        const district = addr.state_district || addr.county || '';
+        const city = addr.city || addr.town || addr.village || district;
+        const area = addr.suburb || addr.neighbourhood || '';
+        const road = addr.road || '';
+
+        const updatedAddress = {
+          ...address,
+          country: countryCode || address.country,
+          zipCode: pincode,
+          state,
+          district: countryCode === INDIA_CODE ? (district || city) : address.district,
+          city: countryCode === INDIA_CODE ? (district || city) : city,
+          area: area || road,
+          addressLine2: area ? `${area}${road ? ', ' + road : ''}` : road,
+        };
+
+        onChange(updatedAddress);
+        setLocationSuccess(
+          countryCode === INDIA_CODE
+            ? `${area || city}, ${district || city}, ${state} - ${pincode}`
+            : `${city}, ${state} ${pincode}`
+        );
+
+        // For India: trigger pincode lookup for post office list
+        if (countryCode === INDIA_CODE && pincode && /^\d{6}$/.test(pincode)) {
+          lookupPincode(pincode, updatedAddress);
+        }
+      } else {
+        setLocationError('Could not determine address from your location');
+      }
+    } catch (err) {
+      if (err.code === 1) {
+        setLocationError('Location access denied. Please allow location access in your browser settings.');
+      } else if (err.code === 2) {
+        setLocationError('Location unavailable. Please try again or enter manually.');
+      } else if (err.code === 3) {
+        setLocationError('Location request timed out. Please try again.');
+      } else {
+        setLocationError('Failed to detect location. Please enter address manually.');
+      }
+    } finally {
+      setLocationLoading(false);
+    }
+  }, [address, onChange, lookupPincode]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Guest Email */}
@@ -232,6 +316,38 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
         value={address.phone}
         onChange={(e) => onChange({ ...address, phone: e.target.value })}
       />
+
+      {/* ═══════════ DETECT LOCATION BUTTON ═══════════ */}
+      <div className="md:col-span-2">
+        <button
+          type="button"
+          onClick={detectLocation}
+          disabled={locationLoading}
+          className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 border-2 border-dashed border-blue-300 rounded-xl text-blue-700 bg-blue-50/50 hover:bg-blue-100 hover:border-blue-400 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed group"
+        >
+          {locationLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="font-medium">Detecting your location...</span>
+            </>
+          ) : (
+            <>
+              <LocateFixed className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              <span className="font-medium">Use my current location</span>
+            </>
+          )}
+        </button>
+        {locationError && (
+          <p className="text-sm text-red-600 mt-1.5 flex items-center gap-1">
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {locationError}
+          </p>
+        )}
+        {locationSuccess && (
+          <p className="text-sm text-green-600 mt-1.5 flex items-center gap-1">
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" /> {locationSuccess}
+          </p>
+        )}
+      </div>
 
       {/* Country Selector */}
       <div className="md:col-span-2">
@@ -340,10 +456,10 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
             placeholder="Area, Colony (optional)"
           />
 
-          {/* District, City, State - auto-filled from pincode but always editable */}
-          {pincodeSuccess && (
+          {/* District, City, State - auto-filled from pincode/GPS but always editable */}
+          {(pincodeSuccess || locationSuccess) && (
             <p className="md:col-span-2 text-xs text-gray-500 -mb-2">
-              Auto-filled from pincode. You can edit if incorrect.
+              Auto-filled from {locationSuccess ? 'your location' : 'pincode'}. You can edit if incorrect.
             </p>
           )}
           <Input

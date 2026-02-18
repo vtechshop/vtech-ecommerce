@@ -1,12 +1,13 @@
 // FILE: apps/web/src/pages/Product.jsx
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
 import { useToast } from '@/components/common/ToastContainer';
 import api from '@/utils/api';
-import { Star, Heart, ShoppingCart, Truck, Shield, RotateCcw, Share2, Minus, Plus, Check, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import { Star, Heart, ShoppingCart, Truck, Shield, RotateCcw, Minus, Plus, Check, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
+import ShareProduct from '@/components/common/ShareProduct';
 import { formatCurrency } from '@/utils/format';
 import { normalizeImageUrl } from '@/utils/placeholders';
 import { addToRecentlyViewed } from '@/utils/recentlyViewed';
@@ -18,6 +19,7 @@ import ProductImageCarousel from '@/components/product/ProductImageCarousel';
 import ReviewForm from '@/components/product/ReviewForm';
 import EditReviewModal from '@/components/product/EditReviewModal';
 import AdBanner from '@/components/common/AdBanner';
+import { closeCartDrawer } from '@/store/slices/cartSlice';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
 import SEO from '@/components/common/SEO';
@@ -158,19 +160,33 @@ const Product = () => {
   const dispatch = useDispatch();
   const toast = useToast();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const cartLoading = useSelector((state) => state.cart.loading);
   const [searchParams] = useSearchParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [addedToCart, setAddedToCart] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [showBottomBar, setShowBottomBar] = useState(false);
+  const addToCartRef = useRef(null);
 
   // Capture affiliate code from URL on page load
   useEffect(() => {
     captureAffiliateFromURL(searchParams);
   }, [searchParams]);
+
+  // Show mobile bottom bar when Add to Cart button scrolls out of view
+  useEffect(() => {
+    const node = addToCartRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowBottomBar(!entry.isIntersecting),
+      { threshold: 0 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [addToCartRef.current]);
 
   const { data: product, isLoading, error: productError, refetch } = useQuery({
     queryKey: ['product', slug],
@@ -288,18 +304,14 @@ const Product = () => {
   };
 
   const handleAddToCart = async () => {
-    // Prevent multiple rapid clicks
-    if (addedToCart) return;
+    // Prevent double-clicks while loading
+    if (cartLoading) return;
 
-    // Allow guests to add to cart (stored locally)
     const variantId = Object.keys(selectedVariants).length > 0
       ? JSON.stringify(selectedVariants)
       : undefined;
 
     try {
-      setAddedToCart(true);
-
-      // Validate product data
       if (!product?._id) {
         throw new Error('Product information is missing. Please refresh the page.');
       }
@@ -313,22 +325,16 @@ const Product = () => {
       // Play add to cart sound
       playAddToCart();
 
-      // Show message - same for all users (3 seconds)
-      toast.success('Added to cart!', 3000);
-
-      // Reset after 2 seconds
-      setTimeout(() => setAddedToCart(false), 2000);
+      // Cart drawer auto-opens via Redux (addToCart.fulfilled)
     } catch (error) {
       playError();
       console.error('Add to cart error:', error);
       const errorMsg = error.message || error.error?.message || 'Failed to add to cart. Please try again.';
       toast.error(errorMsg);
-      setAddedToCart(false);
     }
   };
 
   const handleBuyNow = async () => {
-    // Allow guests to proceed, they'll be prompted to login at checkout
     const variantId = Object.keys(selectedVariants).length > 0
       ? JSON.stringify(selectedVariants)
       : undefined;
@@ -339,7 +345,9 @@ const Product = () => {
         quantity,
         variantId,
       })).unwrap();
-      navigate('/checkout'); // Checkout will handle login/register prompt
+      // Close drawer immediately - Buy Now goes straight to checkout
+      dispatch(closeCartDrawer());
+      navigate('/checkout');
     } catch (error) {
       console.error('Buy now error:', error);
       toast.error(error.message || 'Failed to process. Please try again.');
@@ -353,38 +361,6 @@ const Product = () => {
       return;
     }
     toggleWishlistMutation.mutate(product._id);
-  };
-
-  const handleShare = async () => {
-    const shareData = {
-      title: product.title,
-      text: `Check out ${product.title} for ${formatCurrency(product.price)}!`,
-      url: window.location.href,
-    };
-
-    try {
-      // Check if Web Share API is supported
-      if (navigator.share) {
-        await navigator.share(shareData);
-        // Share dialog shown by browser/OS - no toast needed
-      } else {
-        // Fallback: Copy link to clipboard
-        await navigator.clipboard.writeText(window.location.href);
-        // Silently copied to clipboard
-      }
-    } catch (error) {
-      // User cancelled share or error occurred
-      if (error.name !== 'AbortError') {
-        // Fallback: Copy to clipboard
-        try {
-          await navigator.clipboard.writeText(window.location.href);
-          // Silently copied to clipboard
-        } catch (clipboardError) {
-          // Only show error if everything fails
-          toast.error('Failed to share product');
-        }
-      }
-    }
   };
 
   const handleEditReview = (review) => {
@@ -436,7 +412,7 @@ const Product = () => {
 
   // SEO metadata for Google indexing
   const seoTitle = product.seo?.title || `${product.title} - V-Tech Kitchen`;
-  const seoDescription = product.seo?.description || product.description?.substring(0, 160) || `Buy ${product.title} at the best price. ${product.brand ? `${product.brand} ` : ''}High-quality kitchen products with fast shipping.`;
+  const seoDescription = (product.seo?.description || product.description?.substring(0, 155) || `Buy ${product.title} at the best price. ${product.brand ? `${product.brand} ` : ''}High-quality kitchen products with fast shipping.`).substring(0, 155);
   const seoKeywords = product.seo?.keywords?.join(', ') || product.tags?.join(', ') || product.title;
   const productImage = normalizedImages[0] || 'https://www.vtechkitchen.com/og-image.jpg';
   const productUrl = `https://www.vtechkitchen.com/product/${product.slug}`;
@@ -464,6 +440,41 @@ const Product = () => {
       "seller": {
         "@type": "Organization",
         "name": product.vendorId?.storeName || "V-Tech Kitchen"
+      },
+      "hasMerchantReturnPolicy": {
+        "@type": "MerchantReturnPolicy",
+        "applicableCountry": "IN",
+        "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+        "merchantReturnDays": 7,
+        "returnMethod": "https://schema.org/ReturnByMail",
+        "returnFees": "https://schema.org/FreeReturn"
+      },
+      "shippingDetails": {
+        "@type": "OfferShippingDetails",
+        "shippingRate": {
+          "@type": "MonetaryAmount",
+          "value": 100,
+          "currency": "INR"
+        },
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "IN"
+        },
+        "deliveryTime": {
+          "@type": "ShippingDeliveryTime",
+          "handlingTime": {
+            "@type": "QuantitativeValue",
+            "minValue": 1,
+            "maxValue": 2,
+            "unitCode": "DAY"
+          },
+          "transitTime": {
+            "@type": "QuantitativeValue",
+            "minValue": 3,
+            "maxValue": 7,
+            "unitCode": "DAY"
+          }
+        }
       }
     },
     "aggregateRating": product.reviewCount > 0 ? {
@@ -472,7 +483,22 @@ const Product = () => {
       "reviewCount": product.reviewCount || 0,
       "bestRating": 5,
       "worstRating": 1
-    } : undefined
+    } : undefined,
+    "review": reviewsData?.data?.length > 0 ? reviewsData.data.slice(0, 5).filter(r => r.createdAt && r.rating).map(review => ({
+      "@type": "Review",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": review.rating,
+        "bestRating": 5,
+        "worstRating": 1
+      },
+      "author": {
+        "@type": "Person",
+        "name": review.userId?.name || "Anonymous"
+      },
+      "datePublished": new Date(review.createdAt).toISOString(),
+      "reviewBody": review.comment || ""
+    })) : undefined
   };
 
   return (
@@ -509,7 +535,7 @@ const Product = () => {
                 </span>
               </div>
             )}
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-snug fade-in-down">{product.title}</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 leading-snug fade-in-down">{product.title}</h1>
 
             {/* Tags hidden - used only for SEO keywords */}
 
@@ -550,13 +576,11 @@ const Product = () => {
               >
                 <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
               </button>
-              <button
-                onClick={handleShare}
-                className="p-2 rounded-lg border border-gray-300 hover:border-gray-400 hover:bg-blue-100 transition-all"
-                title="Share product"
-              >
-                <Share2 className="w-5 h-5" />
-              </button>
+              <ShareProduct
+                title={product.title}
+                price={product.price}
+                url={window.location.href}
+              />
             </div>
           </div>
 
@@ -641,7 +665,7 @@ const Product = () => {
                       <button
                         key={option}
                         onClick={() => setSelectedVariants({ ...selectedVariants, [key]: option })}
-                        className={`px-3 py-1.5 text-sm border rounded ${
+                        className={`px-3 py-2 sm:px-4 sm:py-2.5 text-sm border rounded min-h-[44px] ${
                           selectedVariants[key] === option
                             ? 'border-primary-600 bg-primary-600 text-white'
                             : 'border-gray-300 hover:border-gray-400'
@@ -696,58 +720,47 @@ const Product = () => {
             </div>
           </div>
 
-          <div className="flex gap-4 pt-2 fade-in stagger-3">
-            <button
-              onClick={handleAddToCart}
-              disabled={product.stock === 0}
-              data-testid="add-to-cart-btn"
-              data-cy="add-to-cart-btn"
-              className={`btn-add-to-cart btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
-                addedToCart
-                  ? 'bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-400'
-                  : product.stock === 0
+          <div ref={addToCartRef} className="flex gap-4 pt-2 fade-in stagger-3">
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock === 0 || cartLoading}
+                data-testid="add-to-cart-btn"
+                data-cy="add-to-cart-btn"
+                className={`btn-add-to-cart btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 rounded-2xl font-bold text-base sm:text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
+                  product.stock === 0
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-2 border-gray-400'
                   : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 border-2 border-primary-400'
-              }`}
-            >
-              {addedToCart ? (
-                <>
-                  <Check className="w-6 h-6 checkmark" />
-                  Added to Cart
-                </>
-              ) : (
-                <>
-                  <ShoppingCart className="w-6 h-6" />
-                  Add to Cart
-                </>
-              )}
-            </button>
+                }`}
+              >
+                <ShoppingCart className="w-6 h-6" />
+                {cartLoading ? 'Adding...' : 'Add to Cart'}
+              </button>
             <button
               onClick={handleBuyNow}
               disabled={product.stock === 0}
-              className="btn-scale hover-lift flex-1 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white py-4 rounded-2xl font-bold text-lg hover:from-secondary-600 hover:to-secondary-700 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed border-2 border-secondary-400 disabled:border-gray-400"
+              className="btn-scale hover-lift flex-1 bg-gradient-to-r from-secondary-500 to-secondary-600 text-white py-3 sm:py-4 rounded-2xl font-bold text-base sm:text-lg hover:from-secondary-600 hover:to-secondary-700 transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed border-2 border-secondary-400 disabled:border-gray-400"
             >
               Buy Now
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t-2 border-gray-200">
-            <div className="text-center p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-2xl border-2 border-primary-200 hover:shadow-lg transition-all transform hover:scale-105">
-              <div className="bg-blue-500 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 border-t-2 border-gray-200">
+            <div className="text-center p-2 sm:p-4 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl sm:rounded-2xl border-2 border-primary-200 hover:shadow-lg transition-all transform hover:scale-105">
+              <div className="bg-blue-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
                 <Truck className="w-6 h-6 text-white" />
               </div>
               <p className="text-sm font-bold text-gray-900">Fast Delivery</p>
               <p className="text-xs text-gray-700 mt-1">Quick shipping</p>
             </div>
-            <div className="text-center p-4 bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-2xl border-2 border-secondary-200 hover:shadow-lg transition-all transform hover:scale-105">
-              <div className="bg-secondary-500 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
+            <div className="text-center p-2 sm:p-4 bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl sm:rounded-2xl border-2 border-secondary-200 hover:shadow-lg transition-all transform hover:scale-105">
+              <div className="bg-secondary-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <p className="text-sm font-bold text-gray-900">Secure Payment</p>
               <p className="text-xs text-gray-700 mt-1">100% protected</p>
             </div>
-            <div className="text-center p-4 bg-gradient-to-br from-dark-50 to-gray-100 rounded-2xl border-2 border-dark-200 hover:shadow-lg transition-all transform hover:scale-105">
-              <div className="bg-gray-900 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
+            <div className="text-center p-2 sm:p-4 bg-gradient-to-br from-dark-50 to-gray-100 rounded-xl sm:rounded-2xl border-2 border-dark-200 hover:shadow-lg transition-all transform hover:scale-105">
+              <div className="bg-gray-900 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-md">
                 <RotateCcw className="w-6 h-6 text-white" />
               </div>
               <p className="text-sm font-bold text-gray-900">Easy Returns</p>
@@ -1070,6 +1083,41 @@ const Product = () => {
         onSubmit={handleEditSubmit}
         isLoading={editReviewMutation.isPending}
       />
+
+      {/* Mobile Sticky Bottom Bar - shows when Add to Cart button scrolls out of view */}
+      {showBottomBar && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] px-3 py-2 safe-area-bottom">
+          <div className="flex items-center gap-3">
+            {/* Price */}
+            <div className="flex-shrink-0">
+              <p className="text-lg font-bold text-gray-900 leading-tight">{formatCurrency(product.price)}</p>
+              {product.comparePrice && discountPercentage > 0 && (
+                <p className="text-xs text-red-600 font-medium">-{discountPercentage}% off</p>
+              )}
+            </div>
+            {/* Add to Cart */}
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock === 0 || cartLoading}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                  product.stock === 0
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-primary-600 text-white active:bg-primary-700'
+                }`}
+              >
+                <ShoppingCart className="w-4 h-4" /> {cartLoading ? 'Adding...' : 'Add to Cart'}
+              </button>
+            {/* Buy Now */}
+            <button
+              onClick={handleBuyNow}
+              disabled={product.stock === 0}
+              className="flex-1 py-2.5 rounded-xl font-semibold text-sm bg-secondary-600 text-white active:bg-secondary-700 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              Buy Now
+            </button>
+          </div>
+        </div>
+      )}
       </div>
     </>
   );

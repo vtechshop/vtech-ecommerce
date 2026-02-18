@@ -1059,6 +1059,26 @@ exports.requestReturn = async (req, res, next) => {
   }
 };
 
+exports.getReturnDetails = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const Return = require('../models/Return');
+
+    const returnDoc = await Return.findOne({
+      orderId: id,
+      userId: req.user._id,
+    }).lean();
+
+    if (!returnDoc) {
+      return res.json({ success: true, data: null });
+    }
+
+    res.json({ success: true, data: returnDoc });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // SECURITY NOTE: Webhook handlers are in razorpayController.js
 // The secure implementations with replay attack prevention, signature verification,
 // and WebhookEvent logging are in src/controllers/razorpayController.js

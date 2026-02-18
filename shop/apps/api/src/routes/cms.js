@@ -86,14 +86,30 @@ router.get('/pages/:slug', async (req, res) => {
 // GET /cms/carousel - Public endpoint for active carousel items
 router.get('/carousel', async (req, res) => {
   try {
-    const items = await Carousel.find({ isActive: true })
+    const now = new Date();
+
+    // Filter by isActive AND schedule (startDate/endDate)
+    const items = await Carousel.find({
+      isActive: true,
+      $or: [
+        { startDate: null },
+        { startDate: { $exists: false } },
+        { startDate: { $lte: now } }
+      ]
+    })
       .sort({ sortOrder: 1, createdAt: -1 })
-      .select('title brand description tags imageUrl link')
+      .select('title brand description tags imageUrl link startDate endDate')
       .lean();
+
+    // Filter out expired items (endDate < now)
+    const activeItems = items.filter(item => {
+      if (!item.endDate) return true;
+      return new Date(item.endDate) >= now;
+    });
 
     res.json({
       success: true,
-      data: items,
+      data: activeItems,
     });
   } catch (error) {
     res.status(500).json({

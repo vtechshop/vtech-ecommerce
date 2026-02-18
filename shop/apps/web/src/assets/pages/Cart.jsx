@@ -151,7 +151,7 @@ const Cart = () => {
                       <div className="flex items-center border border-gray-300 rounded">
                         <button
                           onClick={() => handleUpdateQuantity(item._id, item.qty - 1)}
-                          className="px-2 py-1 hover:bg-blue-100"
+                          className="px-3 py-2 hover:bg-blue-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
                           disabled={item.qty <= 1}
                         >
                           <Minus className="w-4 h-4 text-gray-700" />
@@ -166,12 +166,12 @@ const Cart = () => {
                               handleUpdateQuantity(item._id, value);
                             }
                           }}
-                          className="w-14 text-center py-1 font-semibold text-gray-900 text-sm border-0 focus:outline-none focus:ring-0"
+                          className="w-14 text-center py-2 font-semibold text-gray-900 text-sm border-0 focus:outline-none focus:ring-0"
                           min="1"
                         />
                         <button
                           onClick={() => handleUpdateQuantity(item._id, item.qty + 1)}
-                          className="px-2 py-1 hover:bg-blue-100"
+                          className="px-3 py-2 hover:bg-blue-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
                         >
                           <Plus className="w-4 h-4 text-gray-700" />
                         </button>

@@ -14,6 +14,9 @@ router.post('/', ticketController.createTicket);
 // Get all tickets (filtered by role)
 router.get('/', ticketController.getTickets);
 
+// Get user-specific ticket statistics (Any authenticated user)
+router.get('/my-stats', ticketController.getUserStats);
+
 // Get ticket statistics (Admin only)
 router.get('/stats', authorize(['admin']), ticketController.getStats);
 

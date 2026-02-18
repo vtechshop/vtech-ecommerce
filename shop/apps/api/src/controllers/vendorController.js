@@ -8,6 +8,7 @@ const { slugify, generateSKU, getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
 const notificationHelper = require('../services/notificationHelper');
 const notificationService = require('../services/notificationService');
+const indexNow = require('../services/indexNowService');
 
 // ---------- CONTROLLERS ----------
 async function getVendorBySlug(req, res, next) {
@@ -84,8 +85,53 @@ async function onboard(req, res, next) {
   }
 }
 
+// Helper: Get date range for period
+const getVendorDateRange = (period) => {
+  const now = new Date();
+  let startDate, endDate, prevStartDate, prevEndDate;
+
+  switch (period) {
+    case 'today':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      endDate = now;
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 1);
+      prevEndDate = new Date(startDate);
+      break;
+    case '7days':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 7);
+      endDate = now;
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 7);
+      prevEndDate = new Date(startDate);
+      break;
+    case '30days':
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 30);
+      endDate = now;
+      prevStartDate = new Date(startDate);
+      prevStartDate.setDate(prevStartDate.getDate() - 30);
+      prevEndDate = new Date(startDate);
+      break;
+    case 'month':
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = now;
+      prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      prevEndDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      break;
+    default:
+      return { startDate: null, endDate: null, prevStartDate: null, prevEndDate: null };
+  }
+
+  return { startDate, endDate, prevStartDate, prevEndDate };
+};
+
 async function getDashboardStats(req, res, next) {
   try {
+    const { period = '30days' } = req.query;
+    const { startDate, endDate, prevStartDate, prevEndDate } = getVendorDateRange(period);
+
     const vendor = await Vendor.findOne({ userId: req.user._id });
     if (!vendor) {
       return res.status(404).json({
@@ -94,27 +140,83 @@ async function getDashboardStats(req, res, next) {
       });
     }
 
-    const [totalProducts, activeProducts, totalOrders, pendingOrders, totalCommissions, salesAgg] =
+    // Build date filters
+    const dateFilter = startDate ? { createdAt: { $gte: startDate, $lte: endDate } } : {};
+    const prevDateFilter = prevStartDate ? { createdAt: { $gte: prevStartDate, $lt: prevEndDate } } : {};
+
+    // Current period stats
+    const [totalProducts, activeProducts, totalOrders, pendingOrders, totalCommissions, salesAgg, lowStockProducts] =
       await Promise.all([
-        Product.countDocuments({ vendorId: vendor._id }),
+        Product.countDocuments({ vendorId: vendor._id, ...dateFilter }),
         Product.countDocuments({ vendorId: vendor._id, published: true }),
-        Order.countDocuments({ 'items.vendorId': vendor._id }),
+        Order.countDocuments({ 'items.vendorId': vendor._id, ...dateFilter }),
         Order.countDocuments({ 'items.vendorId': vendor._id, status: { $in: ['placed', 'paid'] } }),
         Commission.aggregate([
-          { $match: { subjectId: vendor._id, type: 'vendor' } },
+          { $match: { subjectId: vendor._id, type: 'vendor', ...dateFilter } },
           { $group: { _id: null, total: { $sum: '$amount' }, paid: { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] } } } },
         ]),
         // Calculate actual sales from paid orders containing this vendor's items
         Order.aggregate([
-          { $match: { 'items.vendorId': vendor._id, status: { $nin: ['pending', 'pending_payment', 'cancelled'] } } },
+          { $match: { 'items.vendorId': vendor._id, status: { $nin: ['pending', 'pending_payment', 'cancelled'] }, ...dateFilter } },
           { $unwind: '$items' },
           { $match: { 'items.vendorId': vendor._id } },
           { $group: { _id: null, total: { $sum: { $multiply: ['$items.priceSnapshot', '$items.qty'] } } } },
         ]),
+        // Low stock products (stock < 10)
+        Product.countDocuments({ vendorId: vendor._id, published: true, stock: { $lt: 10, $gt: 0 } }),
       ]);
 
+    // Previous period stats for trend comparison
+    const [prevProducts, prevOrders, prevCommissions, prevSalesAgg] = await Promise.all([
+      prevStartDate ? Product.countDocuments({ vendorId: vendor._id, ...prevDateFilter }) : Promise.resolve(0),
+      prevStartDate ? Order.countDocuments({ 'items.vendorId': vendor._id, ...prevDateFilter }) : Promise.resolve(0),
+      prevStartDate ? Commission.aggregate([
+        { $match: { subjectId: vendor._id, type: 'vendor', ...prevDateFilter } },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ]) : Promise.resolve([]),
+      prevStartDate ? Order.aggregate([
+        { $match: { 'items.vendorId': vendor._id, status: { $nin: ['pending', 'pending_payment', 'cancelled'] }, ...prevDateFilter } },
+        { $unwind: '$items' },
+        { $match: { 'items.vendorId': vendor._id } },
+        { $group: { _id: null, total: { $sum: { $multiply: ['$items.priceSnapshot', '$items.qty'] } } } },
+      ]) : Promise.resolve([]),
+    ]);
+
+    // Generate sales chart data based on period
+    let salesChart = [];
+    const chartDays = period === 'today' ? 24 : period === '7days' ? 7 : period === 'month' ? 30 : 30;
+
+    if (period === 'today') {
+      // Hourly data for today
+      const hourlyData = await Order.aggregate([
+        { $match: { 'items.vendorId': vendor._id, createdAt: { $gte: startDate, $lte: endDate }, status: { $nin: ['pending', 'pending_payment', 'cancelled'] } } },
+        { $unwind: '$items' },
+        { $match: { 'items.vendorId': vendor._id } },
+        { $group: { _id: { $hour: '$createdAt' }, sales: { $sum: { $multiply: ['$items.priceSnapshot', '$items.qty'] } } } },
+        { $sort: { _id: 1 } },
+      ]);
+      const hourMap = new Map(hourlyData.map(d => [d._id, d.sales]));
+      for (let h = 0; h < 24; h++) {
+        salesChart.push({ name: `${h}:00`, sales: hourMap.get(h) || 0 });
+      }
+    } else {
+      // Daily data
+      const dailyData = await Order.aggregate([
+        { $match: { 'items.vendorId': vendor._id, createdAt: { $gte: startDate, $lte: endDate }, status: { $nin: ['pending', 'pending_payment', 'cancelled'] } } },
+        { $unwind: '$items' },
+        { $match: { 'items.vendorId': vendor._id } },
+        { $group: { _id: { $dayOfWeek: '$createdAt' }, sales: { $sum: { $multiply: ['$items.priceSnapshot', '$items.qty'] } } } },
+        { $sort: { _id: 1 } },
+      ]);
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dayMap = new Map(dailyData.map(d => [d._id, d.sales]));
+      for (let d = 1; d <= 7; d++) {
+        salesChart.push({ name: dayNames[d % 7], sales: dayMap.get(d) || 0 });
+      }
+    }
+
     // Debug: log vendor identity for data isolation verification
-    logger.info(`Dashboard stats for vendor: ${vendor._id} (${vendor.storeName}), userId: ${req.user._id}, products: ${totalProducts}, orders: ${totalOrders}`);
+    logger.info(`Dashboard stats for vendor: ${vendor._id} (${vendor.storeName}), userId: ${req.user._id}, period: ${period}, products: ${totalProducts}, orders: ${totalOrders}`);
 
     res.json({
       success: true,
@@ -126,6 +228,66 @@ async function getDashboardStats(req, res, next) {
         totalEarnings: totalCommissions[0]?.total || 0,
         paidEarnings: totalCommissions[0]?.paid || 0,
         totalSales: salesAgg[0]?.total || 0,
+        lowStockProducts,
+        pendingReviews: 0, // TODO: Implement when reviews model has vendor response tracking
+        salesChart,
+        // Previous period for trend indicators
+        previousPeriod: {
+          totalProducts: prevProducts,
+          totalOrders: prevOrders,
+          totalEarnings: prevCommissions[0]?.total || 0,
+          totalSales: prevSalesAgg[0]?.total || 0,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Get product statistics for dashboard cards
+async function getProductStats(req, res, next) {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    const [
+      total,
+      published,
+      draft,
+      outOfStock,
+      lowStock,
+      mediumStock,
+      inventoryValue,
+    ] = await Promise.all([
+      Product.countDocuments({ vendorId: vendor._id }),
+      Product.countDocuments({ vendorId: vendor._id, published: true }),
+      Product.countDocuments({ vendorId: vendor._id, published: false }),
+      Product.countDocuments({ vendorId: vendor._id, stock: 0 }),
+      Product.countDocuments({ vendorId: vendor._id, stock: { $gt: 0, $lt: 10 } }),
+      Product.countDocuments({ vendorId: vendor._id, stock: { $gte: 10, $lt: 50 } }),
+      Product.aggregate([
+        { $match: { vendorId: vendor._id } },
+        { $group: { _id: null, total: { $sum: { $multiply: ['$price', '$stock'] } } } },
+      ]),
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        total,
+        published,
+        draft,
+        outOfStock,
+        lowStock,
+        mediumStock,
+        inStock: total - outOfStock - lowStock - mediumStock,
+        inventoryValue: inventoryValue[0]?.total || 0,
       },
     });
   } catch (error) {
@@ -135,7 +297,7 @@ async function getDashboardStats(req, res, next) {
 
 async function getVendorProducts(req, res, next) {
   try {
-    const { page = 1, limit = 20, search, published } = req.query;
+    const { page = 1, limit = 20, search, published, stockLevel, sortField = 'createdAt', sortOrder = 'desc' } = req.query;
 
     // SECURITY: Explicit vendor verification with null check
     const vendor = await Vendor.findOne({ userId: req.user._id });
@@ -147,16 +309,41 @@ async function getVendorProducts(req, res, next) {
     }
 
     const query = { vendorId: vendor._id };
-    if (search) query.$text = { $search: String(search) };
+
+    // Search filter
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { sku: { $regex: search, $options: 'i' } },
+        { brand: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    // Status filter
     if (published !== undefined) query.published = published === 'true';
+
+    // Stock level filter
+    if (stockLevel === 'out-of-stock') {
+      query.stock = 0;
+    } else if (stockLevel === 'low-stock') {
+      query.stock = { $gt: 0, $lt: 10 };
+    } else if (stockLevel === 'in-stock') {
+      query.stock = { $gte: 10 };
+    }
 
     // SECURITY: Enforce maximum limit to prevent DoS
     const safeLimit = Math.min(parseInt(limit) || 20, 100); // Max 100 items
     const safePage = Math.max(parseInt(page) || 1, 1); // Min page 1
     const skip = (safePage - 1) * safeLimit;
 
+    // Build sort object
+    const allowedSortFields = ['title', 'price', 'stock', 'createdAt', 'updatedAt'];
+    const safeSortField = allowedSortFields.includes(sortField) ? sortField : 'createdAt';
+    const safeSortOrder = sortOrder === 'asc' ? 1 : -1;
+    const sort = { [safeSortField]: safeSortOrder };
+
     const [products, total] = await Promise.all([
-      Product.find(query).sort({ createdAt: -1 }).skip(skip).limit(safeLimit).lean(),
+      Product.find(query).sort(sort).skip(skip).limit(safeLimit).lean(),
       Product.countDocuments(query),
     ]);
 
@@ -213,6 +400,7 @@ async function createProduct(req, res, next) {
 
     logger.info(`Product created: ${product.title}`);
     res.status(201).json({ success: true, data: product });
+    indexNow.notifyContentChange('product', product.slug);
   } catch (error) {
     next(error);
   }
@@ -243,7 +431,7 @@ async function updateProduct(req, res, next) {
     // SECURITY: Use whitelist approach instead of Object.assign to prevent mass assignment
     const allowedFields = [
       'title', 'description', 'price', 'compareAt', 'cost', 'stock',
-      'sku', 'barcode', 'brand', 'images', 'categoryIds', 'tags',
+      'sku', 'barcode', 'brand', 'images', 'imageAlts', 'categoryIds', 'tags',
       'variants', 'specifications', 'shippingInfo', 'published',
       'featured', 'taxable', 'taxRate', 'taxIncluded', 'seo', 'hasWarranty', 'warranty', 'faqs', 'structuredData', 'youtubeLink'
     ];
@@ -265,6 +453,7 @@ async function updateProduct(req, res, next) {
 
     await product.save();
     res.json({ success: true, data: product });
+    indexNow.notifyContentChange('product', product.slug);
   } catch (error) {
     next(error);
   }
@@ -304,6 +493,147 @@ async function deleteProduct(req, res, next) {
   }
 }
 
+// Bulk delete products
+async function bulkDeleteProducts(req, res, next) {
+  try {
+    const { productIds } = req.body;
+
+    if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INVALID_INPUT', message: 'Product IDs array is required' },
+      });
+    }
+
+    // SECURITY: Limit bulk operations to prevent abuse
+    if (productIds.length > 50) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'LIMIT_EXCEEDED', message: 'Cannot delete more than 50 products at once' },
+      });
+    }
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    // Delete only products belonging to this vendor
+    const result = await Product.deleteMany({
+      _id: { $in: productIds },
+      vendorId: vendor._id,
+    });
+
+    // Update vendor product count
+    if (result.deletedCount > 0) {
+      await Vendor.findByIdAndUpdate(vendor._id, {
+        $inc: { totalProducts: -result.deletedCount },
+      });
+    }
+
+    logger.info(`Bulk delete: ${result.deletedCount} products deleted by vendor ${vendor._id}`);
+
+    res.json({
+      success: true,
+      data: {
+        deletedCount: result.deletedCount,
+        message: `${result.deletedCount} product(s) deleted successfully`,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// Export products to CSV
+async function exportProducts(req, res, next) {
+  try {
+    const { status, stockLevel } = req.query;
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    const query = { vendorId: vendor._id };
+
+    // Status filter
+    if (status === 'published') query.published = true;
+    else if (status === 'draft') query.published = false;
+
+    // Stock level filter
+    if (stockLevel === 'out-of-stock') query.stock = 0;
+    else if (stockLevel === 'low-stock') query.stock = { $gt: 0, $lt: 10 };
+    else if (stockLevel === 'in-stock') query.stock = { $gte: 10 };
+
+    const products = await Product.find(query)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Build CSV
+    const headers = [
+      'Product ID',
+      'Title',
+      'SKU',
+      'Brand',
+      'Price',
+      'Compare At',
+      'Stock',
+      'Status',
+      'Published',
+      'Featured',
+      'Created At',
+    ];
+
+    const rows = products.map(p => [
+      p._id.toString(),
+      p.title || '',
+      p.sku || '',
+      p.brand || '',
+      p.price?.toFixed(2) || '0.00',
+      p.compareAt?.toFixed(2) || '',
+      p.stock || 0,
+      p.stock === 0 ? 'Out of Stock' : p.stock < 10 ? 'Low Stock' : 'In Stock',
+      p.published ? 'Yes' : 'No',
+      p.featured ? 'Yes' : 'No',
+      p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : '',
+    ]);
+
+    // Summary rows
+    const totalProducts = products.length;
+    const publishedCount = products.filter(p => p.published).length;
+    const outOfStockCount = products.filter(p => p.stock === 0).length;
+    const lowStockCount = products.filter(p => p.stock > 0 && p.stock < 10).length;
+    const totalInventoryValue = products.reduce((sum, p) => sum + (p.price * p.stock), 0);
+
+    rows.push([]);
+    rows.push(['Summary']);
+    rows.push(['Total Products', totalProducts]);
+    rows.push(['Published', publishedCount]);
+    rows.push(['Draft', totalProducts - publishedCount]);
+    rows.push(['Out of Stock', outOfStockCount]);
+    rows.push(['Low Stock', lowStockCount]);
+    rows.push(['Inventory Value', totalInventoryValue.toFixed(2)]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const filename = `products_${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvContent);
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function importProducts(req, res, next) {
   try {
     const { products } = req.body;
@@ -337,6 +667,13 @@ async function importProducts(req, res, next) {
 
     logger.info(`Bulk import: ${imported.length} products created, ${errors.length} errors`);
     res.json({ success: true, data: { imported: imported.length, errors } });
+
+    // Notify IndexNow for all imported products
+    const slugs = imported.map(p => p.slug).filter(Boolean);
+    if (slugs.length > 0) {
+      const urls = slugs.map(s => `${indexNow.BASE_URL}/product/${s}`);
+      indexNow.submitUrls(urls).catch(err => console.error('IndexNow bulk import notify failed:', err.message));
+    }
   } catch (error) {
     next(error);
   }
@@ -365,7 +702,7 @@ async function getInventory(req, res, next) {
 
     const [products, total] = await Promise.all([
       Product.find(query)
-        .select('title sku stock lowStockThreshold variants')
+        .select('title sku stock lowStockThreshold variants images price')
         .sort({ stock: 1 })
         .skip(skip)
         .limit(safeLimit)
@@ -374,6 +711,43 @@ async function getInventory(req, res, next) {
     ]);
 
     res.json({ success: true, data: products, meta: getPaginationMeta(total, safePage, safeLimit) });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getInventoryStats(req, res, next) {
+  try {
+    // SECURITY: Explicit vendor verification
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    const products = await Product.find({ vendorId: vendor._id })
+      .select('stock lowStockThreshold price')
+      .lean();
+
+    const totalProducts = products.length;
+    const outOfStock = products.filter(p => p.stock === 0).length;
+    const lowStock = products.filter(p => p.stock > 0 && p.stock <= (p.lowStockThreshold || 10)).length;
+    const totalUnits = products.reduce((sum, p) => sum + (p.stock || 0), 0);
+    const inventoryValue = products.reduce((sum, p) => sum + ((p.price || 0) * (p.stock || 0)), 0);
+
+    res.json({
+      success: true,
+      data: {
+        totalProducts,
+        outOfStock,
+        lowStock,
+        totalUnits,
+        inventoryValue,
+        needsAttention: outOfStock + lowStock,
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -516,6 +890,71 @@ async function getSettlements(req, res, next) {
   }
 }
 
+// ---------- SETTLEMENT STATS ----------
+async function getSettlementStats(req, res, next) {
+  try {
+    // SECURITY: Explicit vendor verification
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({
+        success: false,
+        error: { code: 'NOT_VENDOR', message: 'Vendor profile required' },
+      });
+    }
+
+    const query = { subjectId: vendor._id, type: 'vendor' };
+
+    // Aggregate stats by status
+    const stats = await Commission.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: '$status',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // Get lifetime stats
+    const lifetimeStats = await Commission.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: null,
+          totalEarnings: { $sum: '$amount' },
+          totalTransactions: { $sum: 1 },
+          avgEarningsPerOrder: { $avg: '$amount' },
+        },
+      },
+    ]);
+
+    // Map to response format
+    const statsByStatus = {};
+    stats.forEach(s => {
+      statsByStatus[s._id] = { total: s.total, count: s.count };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        pending: statsByStatus.pending || { total: 0, count: 0 },
+        approved: statsByStatus.approved || { total: 0, count: 0 },
+        paid: statsByStatus.paid || { total: 0, count: 0 },
+        cancelled: statsByStatus.cancelled || { total: 0, count: 0 },
+        lifetime: {
+          totalEarnings: lifetimeStats[0]?.totalEarnings || 0,
+          totalTransactions: lifetimeStats[0]?.totalTransactions || 0,
+          avgEarningsPerOrder: lifetimeStats[0]?.avgEarningsPerOrder || 0,
+        },
+        availableBalance: (statsByStatus.approved?.total || 0),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // ---------- SETTLEMENT REPORT EXPORT ----------
 async function exportSettlements(req, res, next) {
   try {
@@ -613,9 +1052,148 @@ async function getKYC(req, res, next) {
   }
 }
 
+async function getKYCStats(req, res, next) {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+
+    if (!vendor) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Vendor profile not found. Please complete vendor onboarding first.'
+        },
+      });
+    }
+
+    const kyc = vendor.kyc || {};
+    const documents = kyc.documents || [];
+
+    // Calculate business info completion
+    const businessInfoFields = ['businessName', 'businessType', 'businessAddress', 'phoneNumber'];
+    const businessInfoComplete = businessInfoFields.filter(field => kyc[field]).length;
+    const businessInfoTotal = businessInfoFields.length;
+    const businessInfoPercentage = Math.round((businessInfoComplete / businessInfoTotal) * 100);
+
+    // GST verification status
+    const gstComplete = kyc.gstVerified === true;
+    const gstPercentage = gstComplete ? 100 : (kyc.taxId ? 50 : 0);
+
+    // Document requirements
+    const requiredDocTypes = ['id_proof', 'address_proof'];
+    const uploadedDocTypes = documents.map(d => d.type);
+    const documentsComplete = requiredDocTypes.filter(type => uploadedDocTypes.includes(type)).length;
+    const documentsTotal = requiredDocTypes.length;
+    const documentsPercentage = Math.round((documentsComplete / documentsTotal) * 100);
+
+    // Overall completion
+    const overallPercentage = Math.round(
+      (businessInfoPercentage * 0.3) + // 30% weight for business info
+      (gstPercentage * 0.3) + // 30% weight for GST
+      (documentsPercentage * 0.4) // 40% weight for documents
+    );
+
+    // Step statuses for progress stepper
+    const getStepStatus = (stepNum) => {
+      if (kyc.status === 'approved') return 'completed';
+      if (kyc.status === 'rejected') return stepNum === 4 ? 'rejected' : 'completed';
+
+      switch (stepNum) {
+        case 1: // Business Info
+          return businessInfoPercentage === 100 ? 'completed' :
+                 businessInfoPercentage > 0 ? 'current' : 'pending';
+        case 2: // GST Verify
+          if (businessInfoPercentage < 100) return 'pending';
+          return gstComplete ? 'completed' :
+                 kyc.taxId ? 'current' : 'pending';
+        case 3: // Documents
+          if (!gstComplete) return 'pending';
+          return documentsPercentage === 100 ? 'completed' :
+                 documentsPercentage > 0 ? 'current' : 'pending';
+        case 4: // Review/Approved
+          if (documentsPercentage < 100) return 'pending';
+          return kyc.status === 'approved' ? 'completed' : 'current';
+        default:
+          return 'pending';
+      }
+    };
+
+    const steps = [
+      { number: 1, title: 'Business Info', status: getStepStatus(1) },
+      { number: 2, title: 'GST Verify', status: getStepStatus(2) },
+      { number: 3, title: 'Documents', status: getStepStatus(3) },
+      { number: 4, title: kyc.status === 'approved' ? 'Approved' : 'Review', status: getStepStatus(4) }
+    ];
+
+    // Document status breakdown
+    const documentStatus = {
+      id_proof: {
+        uploaded: uploadedDocTypes.includes('id_proof'),
+        document: documents.find(d => d.type === 'id_proof') || null
+      },
+      address_proof: {
+        uploaded: uploadedDocTypes.includes('address_proof'),
+        document: documents.find(d => d.type === 'address_proof') || null
+      },
+      business_license: {
+        uploaded: uploadedDocTypes.includes('business_license'),
+        document: documents.find(d => d.type === 'business_license') || null,
+        optional: true
+      },
+      tax_certificate: {
+        uploaded: uploadedDocTypes.includes('tax_certificate'),
+        document: documents.find(d => d.type === 'tax_certificate') || null,
+        optional: true
+      }
+    };
+
+    res.json({
+      success: true,
+      data: {
+        status: kyc.status || 'pending',
+        rejectionReason: kyc.rejectionReason,
+        verifiedAt: kyc.verifiedAt,
+        completion: {
+          overall: overallPercentage,
+          businessInfo: {
+            percentage: businessInfoPercentage,
+            completed: businessInfoComplete,
+            total: businessInfoTotal,
+            fields: {
+              businessName: !!kyc.businessName,
+              businessType: !!kyc.businessType,
+              businessAddress: !!kyc.businessAddress,
+              phoneNumber: !!kyc.phoneNumber
+            }
+          },
+          gst: {
+            percentage: gstPercentage,
+            taxIdEntered: !!kyc.taxId,
+            verified: kyc.gstVerified || false,
+            details: kyc.gstDetails || null
+          },
+          documents: {
+            percentage: documentsPercentage,
+            completed: documentsComplete,
+            total: documentsTotal,
+            status: documentStatus
+          }
+        },
+        steps,
+        canSubmitForReview: businessInfoPercentage === 100 && gstComplete && documentsPercentage === 100,
+        isApproved: kyc.status === 'approved',
+        isRejected: kyc.status === 'rejected',
+        isPending: kyc.status === 'pending' || !kyc.status
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 async function updateKYC(req, res, next) {
   try {
-    const { businessName, businessType, businessAddress, taxId, phoneNumber, gstVerified, gstDetails } = req.body;
+    const { businessName, businessType, businessAddress, taxId, phoneNumber, gstVerified, gstDetails, submit } = req.body;
 
     const vendor = await Vendor.findOne({ userId: req.user._id });
 
@@ -624,6 +1202,33 @@ async function updateKYC(req, res, next) {
         success: false,
         error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
       });
+    }
+
+    // If submitting for review, validate mandatory fields
+    if (submit) {
+      const missing = [];
+      if (!businessName?.trim() && !vendor.kyc.businessName) missing.push('Business Name');
+      if (!businessType && !vendor.kyc.businessType) missing.push('Business Type');
+      if (!businessAddress?.trim() && !vendor.kyc.businessAddress) missing.push('Business Address');
+      if (!phoneNumber?.trim() && !vendor.kyc.phoneNumber) missing.push('Phone Number');
+      if (!gstVerified && !vendor.kyc.gstVerified) missing.push('GST Verification');
+      // Check documents
+      const docs = vendor.kyc.documents || [];
+      const hasIdProof = docs.some(d => d.type === 'id_proof');
+      const hasAddressProof = docs.some(d => d.type === 'address_proof');
+      if (!hasIdProof) missing.push('ID Proof Document');
+      if (!hasAddressProof) missing.push('Address Proof Document');
+
+      if (missing.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_REQUIRED_FIELDS',
+            message: `Please complete the following before submitting: ${missing.join(', ')}`,
+            missingFields: missing,
+          },
+        });
+      }
     }
 
     // Update KYC fields
@@ -648,15 +1253,20 @@ async function updateKYC(req, res, next) {
       vendor.kyc.rejectionReason = undefined;
     }
 
+    // If submitting for review, set status to pending
+    if (submit && vendor.kyc.status !== 'approved') {
+      vendor.kyc.status = 'pending';
+    }
+
     await vendor.save();
 
-    logger.info(`KYC updated for vendor: ${vendor.storeName}`);
+    logger.info(`KYC ${submit ? 'submitted' : 'updated'} for vendor: ${vendor.storeName}`);
 
     res.json({
       success: true,
       data: {
         kyc: vendor.kyc,
-        message: 'KYC information updated successfully',
+        message: submit ? 'KYC submitted for review successfully' : 'KYC information updated successfully',
       },
     });
   } catch (error) {
@@ -678,7 +1288,7 @@ async function uploadKYCDocument(req, res, next) {
     }
 
     // Validate document type
-    const validTypes = ['business_license', 'tax_certificate', 'id_proof', 'other'];
+    const validTypes = ['business_license', 'tax_certificate', 'id_proof', 'address_proof', 'other'];
     if (!validTypes.includes(type)) {
       return res.status(400).json({
         success: false,
@@ -825,7 +1435,7 @@ async function updateProfile(req, res, next) {
 // Update bank details
 async function updateBank(req, res, next) {
   try {
-    const { accountHolderName, bankName, accountNumber, ifscCode, swiftCode, panNumber } = req.body;
+    const { accountHolderName, bankName, accountNumber, ifscCode, swiftCode, panNumber, upiId } = req.body;
 
     const vendor = await Vendor.findOne({ userId: req.user._id });
     if (!vendor) {
@@ -846,6 +1456,7 @@ async function updateBank(req, res, next) {
     }
     if (ifscCode !== undefined) vendor.bank.ifscCode = ifscCode.toUpperCase();
     if (swiftCode !== undefined) vendor.bank.swiftCode = swiftCode.toUpperCase();
+    if (upiId !== undefined) vendor.bank.upiId = upiId;
 
     // Save PAN number for TDS compliance
     if (panNumber !== undefined) {
@@ -1204,10 +1815,77 @@ async function getVendorReviews(req, res, next) {
 // ---------- CATEGORY MANAGEMENT ----------
 async function getCategories(req, res, next) {
   try {
-    const categories = await Category.find({ isActive: true })
+    const { search, includeInactive } = req.query;
+
+    // Build filter - vendors can see all categories including inactive
+    const filter = {};
+    if (includeInactive !== 'true') {
+      filter.isActive = true;
+    }
+
+    // Search by name
+    if (search) {
+      filter.name = { $regex: search, $options: 'i' };
+    }
+
+    const categories = await Category.find(filter)
       .sort({ sortOrder: 1, name: 1 })
       .lean();
-    res.json({ success: true, data: categories });
+
+    // Get product counts for each category
+    const categoryIds = categories.map(c => c._id);
+    const productCounts = await Product.aggregate([
+      { $match: { categoryIds: { $in: categoryIds } } },
+      { $unwind: '$categoryIds' },
+      { $group: { _id: '$categoryIds', count: { $sum: 1 } } }
+    ]);
+
+    // Map counts to categories
+    const countMap = {};
+    productCounts.forEach(pc => { countMap[pc._id.toString()] = pc.count; });
+
+    const categoriesWithCounts = categories.map(cat => ({
+      ...cat,
+      productCount: countMap[cat._id.toString()] || 0
+    }));
+
+    res.json({ success: true, data: categoriesWithCounts });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function getCategoryStats(req, res, next) {
+  try {
+    const userId = req.user._id;
+
+    // Get all categories
+    const categories = await Category.find().lean();
+
+    // Count stats
+    const totalCategories = categories.length;
+    const activeCategories = categories.filter(c => c.isActive).length;
+    const yourCategories = categories.filter(c => c.createdBy?.toString() === userId.toString()).length;
+    const pendingDeletion = categories.filter(c => c.deleteRequested).length;
+
+    // Get categories with products
+    const categoryIds = categories.map(c => c._id);
+    const categoriesWithProducts = await Product.aggregate([
+      { $match: { categoryIds: { $in: categoryIds } } },
+      { $unwind: '$categoryIds' },
+      { $group: { _id: '$categoryIds' } }
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalCategories,
+        activeCategories,
+        yourCategories,
+        categoriesWithProducts: categoriesWithProducts.length,
+        pendingDeletion
+      }
+    });
   } catch (error) {
     next(error);
   }
@@ -1310,19 +1988,25 @@ module.exports = {
   getVendorReviews,
   onboard,
   getDashboardStats,
+  getProductStats,
   getVendorProducts,
   createProduct,
   updateProduct,
   deleteProduct,
+  bulkDeleteProducts,
+  exportProducts,
   importProducts,
   getInventory,
+  getInventoryStats,
   updateInventory,
   getVendorOrderCounts,
   getVendorOrders,
   updateOrderStatus,
   getSettlements,
+  getSettlementStats,
   exportSettlements,
   getKYC,
+  getKYCStats,
   updateKYC,
   uploadKYCDocument,
   deleteKYCDocument,
@@ -1334,6 +2018,7 @@ module.exports = {
   updatePayout,
   // Categories
   getCategories,
+  getCategoryStats,
   createCategory,
   updateCategory,
   deleteCategory,

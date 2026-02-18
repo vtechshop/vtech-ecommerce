@@ -12,7 +12,7 @@ import {
 import {
   TrendingUp, TrendingDown, MousePointer, ShoppingCart,
   DollarSign, Percent, Copy, Check, ExternalLink,
-  Calendar, Users, Award, Link2, ArrowRight
+  Calendar, Users, Award, Link2, ArrowRight, RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
 
@@ -20,7 +20,7 @@ const AffiliateDashboard = () => {
   const [copiedLink, setCopiedLink] = useState(null);
   const toast = useToast();
 
-  const { data: stats, isLoading: statsLoading, isFetching: statsFetching, error: statsError } = useQuery({
+  const { data: stats, isLoading: statsLoading, isFetching: statsFetching, error: statsError, refetch: refetchStats } = useQuery({
     queryKey: ['affiliate-stats'],
     queryFn: async () => {
       const response = await api.get('/affiliates/dashboard/stats');
@@ -31,7 +31,7 @@ const AffiliateDashboard = () => {
     retry: false,
   });
 
-  const { data: linksData, isLoading: linksLoading, error: linksError } = useQuery({
+  const { data: linksData, isLoading: linksLoading, error: linksError, refetch: refetchLinks } = useQuery({
     queryKey: ['affiliate-links'],
     queryFn: async () => {
       const response = await api.get('/affiliates/links');
@@ -41,6 +41,8 @@ const AffiliateDashboard = () => {
     cacheTime: 15 * 60 * 1000,
     retry: false,
   });
+
+  const handleRefresh = () => { refetchStats(); refetchLinks(); };
 
   const handleCopyLink = (url, linkId) => {
     navigator.clipboard.writeText(url);
@@ -163,6 +165,10 @@ const AffiliateDashboard = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={handleRefresh} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
             <Link
               to="/affiliate-dashboard/all-product-links"
               className="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-primary-50 transition-colors shadow-md flex items-center gap-2"

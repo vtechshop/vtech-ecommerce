@@ -149,6 +149,7 @@ const ThreeDCarousel = ({
                       <Link
                         to={item.link}
                         className="text-primary-600 flex items-center hover:underline relative group"
+                        aria-label={`Learn more about ${item.title}`}
                       >
                         <span className="relative z-10">Learn more</span>
                         <ArrowRight className="ml-2 w-4 h-4 relative z-10 transition-transform group-hover:translate-x-1" />

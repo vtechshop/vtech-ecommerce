@@ -1,4 +1,15 @@
+import { useEffect } from 'react';
+import { updateMetaTags } from '@/utils/seo';
+
 const CookiePolicy = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Cookie Policy - V-Tech Kitchen',
+      description: 'Learn how V-Tech Kitchen uses cookies to improve your shopping experience. Understand cookie types, your choices, and how to manage browser cookie settings.',
+      canonical: 'https://www.vtechkitchen.com/cookie-policy',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">

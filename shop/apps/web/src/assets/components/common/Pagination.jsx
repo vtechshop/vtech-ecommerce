@@ -23,11 +23,11 @@ const Pagination = ({ currentPage, totalPages, onPageChange, showPages = 5 }) =>
   const pages = getPageNumbers();
 
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div className="flex items-center justify-center gap-1 sm:gap-2">
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-3 py-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+        className="px-2 py-2 sm:px-3 sm:py-2.5 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-sm min-h-[44px]"
       >
         Previous
       </button>
@@ -36,11 +36,11 @@ const Pagination = ({ currentPage, totalPages, onPageChange, showPages = 5 }) =>
         <>
           <button
             onClick={() => onPageChange(1)}
-            className="px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-50"
+            className="px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-md border border-gray-300 hover:bg-gray-50 text-sm min-h-[44px] min-w-[44px]"
           >
             1
           </button>
-          {pages[0] > 2 && <span className="px-2">...</span>}
+          {pages[0] > 2 && <span className="px-1 sm:px-2">...</span>}
         </>
       )}
 
@@ -49,7 +49,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, showPages = 5 }) =>
           key={page}
           onClick={() => onPageChange(page)}
           className={clsx(
-            'px-3 py-2 rounded-md border',
+            'px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-md border text-sm min-h-[44px] min-w-[44px]',
             page === currentPage
               ? 'bg-primary-600 text-white border-primary-600'
               : 'border-gray-300 hover:bg-gray-50'
@@ -61,10 +61,10 @@ const Pagination = ({ currentPage, totalPages, onPageChange, showPages = 5 }) =>
 
       {pages[pages.length - 1] < totalPages && (
         <>
-          {pages[pages.length - 1] < totalPages - 1 && <span className="px-2">...</span>}
+          {pages[pages.length - 1] < totalPages - 1 && <span className="px-1 sm:px-2">...</span>}
           <button
             onClick={() => onPageChange(totalPages)}
-            className="px-3 py-2 rounded-md border border-gray-300 hover:bg-gray-50"
+            className="px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-md border border-gray-300 hover:bg-gray-50 text-sm min-h-[44px] min-w-[44px]"
           >
             {totalPages}
           </button>
@@ -74,7 +74,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, showPages = 5 }) =>
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-3 py-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+        className="px-2 py-2 sm:px-3 sm:py-2.5 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-sm min-h-[44px]"
       >
         Next
       </button>

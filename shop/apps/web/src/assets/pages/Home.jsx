@@ -1,18 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import api from '@/utils/api';
 import ProductCard from '@/components/product/ProductCard';
-import FlashSaleBanner from '@/components/flash-sale/FlashSaleBanner';
-import ProductRecommendations from '@/components/product/ProductRecommendations';
-import Spinner from '@/components/common/Spinner';
-import SponsorAd from '@/components/ads/SponsorAd';
 import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
-import ThreeDCarousel from '@/components/home/ThreeDCarousel';
 import BounceCards from '@/components/home/BounceCards';
+
+// Lazy load below-fold components for better initial load
+const FlashSaleBanner = lazy(() => import('@/components/flash-sale/FlashSaleBanner'));
+const ProductRecommendations = lazy(() => import('@/components/product/ProductRecommendations'));
+const SponsorAd = lazy(() => import('@/components/ads/SponsorAd'));
+const ThreeDCarousel = lazy(() => import('@/components/home/ThreeDCarousel'));
 
 const Home = React.memo(() => {
   const { t } = useTranslation();
@@ -37,12 +38,12 @@ const Home = React.memo(() => {
 
   useEffect(() => {
     updateMetaTags({
-      title: 'V-Tech - Multi-Vendor Marketplace',
-      description: 'Discover amazing products from trusted vendors. Free shipping on orders over ₹500.',
-      canonical: window.location.origin,
-      ogTitle: 'V-Tech - Multi-Vendor Marketplace',
-      ogDescription: 'Discover amazing products from trusted vendors.',
-      ogUrl: window.location.origin,
+      title: 'V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment',
+      description: 'Shop premium kitchen appliances, commercial equipment, and cookware at V-Tech Kitchen. Cast iron tawa, cutting machines, and more from trusted vendors. Free shipping on orders over ₹500.',
+      canonical: 'https://www.vtechkitchen.com',
+      ogTitle: 'V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment',
+      ogDescription: 'Shop premium kitchen appliances, commercial equipment, and cookware at V-Tech Kitchen. Free shipping on orders over ₹500.',
+      ogUrl: 'https://www.vtechkitchen.com',
     });
   }, []);
 
@@ -107,6 +108,7 @@ const Home = React.memo(() => {
               <Link
                 to="/page/about"
                 className="inline-block bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-all duration-300 shadow-lg btn-scale"
+                aria-label="Learn more about V-Tech Kitchen"
               >
                 {t('home.learnMore')}
               </Link>
@@ -124,9 +126,11 @@ const Home = React.memo(() => {
         }`}>
           {/* Left Sidebar */}
           {!leftLoading && leftAd && (
-            <aside className="lg:col-span-1">
-              <SponsorAd ad={leftAd} variant="sidebar" />
-            </aside>
+            <Suspense fallback={null}>
+              <aside className="lg:col-span-1">
+                <SponsorAd ad={leftAd} variant="sidebar" />
+              </aside>
+            </Suspense>
           )}
 
           {/* Main Content */}
@@ -140,29 +144,33 @@ const Home = React.memo(() => {
 
             {/* Flash Sales */}
             {flashSales && flashSales.length > 0 && (
-              <section className="mb-8">
-                {flashSales.map((sale) => (
-                  <FlashSaleBanner key={sale._id} sale={sale} />
-                ))}
-              </section>
+              <Suspense fallback={<div className="mb-8 h-24 bg-gray-100 rounded-lg animate-pulse"></div>}>
+                <section className="mb-8">
+                  {flashSales.map((sale) => (
+                    <FlashSaleBanner key={sale._id} sale={sale} />
+                  ))}
+                </section>
+              </Suspense>
             )}
 
             {/* Sponsored Banner */}
             {!bannerLoading && bannerAd && (
-              <section className="mb-8">
-                <SponsorAd ad={bannerAd} variant="banner" />
-              </section>
+              <Suspense fallback={null}>
+                <section className="mb-8">
+                  <SponsorAd ad={bannerAd} variant="banner" />
+                </section>
+              </Suspense>
             )}
 
             {/* Categories */}
             {categories?.length > 0 && (
               <section className="mb-8">
                 <h2 className="text-xl md:text-2xl font-bold mb-6">{t('home.shopByCategory')}</h2>
-                <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 ${
+                <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 ${
                   leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
                 }`}>
-                  {categories.map((category) => (
-                    <Link key={category.slug} to={`/category/${category.slug}`} className="group">
+                  {categories.map((category, index) => (
+                    <Link key={category.slug} to={`/category/${category.slug}`} className="group stagger-grid-item" style={{ animationDelay: `${index * 0.06}s` }}>
                       <div className="bg-white rounded-lg overflow-hidden hover:shadow-md transition-all duration-300 border border-gray-200">
                         <div className="flex items-center justify-center py-4 px-4">
                           <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
@@ -185,8 +193,8 @@ const Home = React.memo(() => {
               </section>
             )}
 
-            {/* Featured Products */}
-            <section className="mb-8">
+            {/* Featured Products - contain layout to prevent CLS */}
+            <section className="mb-8" style={{ contain: 'layout' }}>
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl md:text-2xl font-bold">{t('home.featuredProducts')}</h2>
                 <Link to="/products?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold">
@@ -194,43 +202,80 @@ const Home = React.memo(() => {
                 </Link>
               </div>
 
-              {isLoading ? (
-                <div className="flex justify-center py-12">
-                  <Spinner size="lg" />
-                </div>
-              ) : featuredProducts?.length > 0 ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
-                  {featuredProducts.map((p) => (
-                    <div key={p._id}>
+              {/* Grid with stable layout - contain to prevent CLS propagation */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6" style={{ contain: 'layout style' }}>
+                {isLoading ? (
+                  // Skeleton placeholders - EXACTLY match ProductCard height
+                  [...Array(8)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-pulse h-full">
+                      <div className="aspect-square bg-gray-200"></div>
+                      <div className="p-3 sm:p-4">
+                        {/* Vendor name - mb-2 like ProductCard */}
+                        <div className="h-3 bg-gray-200 rounded w-20 mb-2"></div>
+                        {/* Title - mb-2 leading-snug like ProductCard */}
+                        <div className="mb-2">
+                          <div className="h-4 bg-gray-200 rounded w-full mb-1"></div>
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                        {/* Rating - mb-3 like ProductCard */}
+                        <div className="flex items-center gap-1 mb-3">
+                          <div className="flex gap-0.5">
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="h-3 bg-gray-200 rounded w-8 ml-1"></div>
+                        </div>
+                        {/* Price - mb-3 like ProductCard */}
+                        <div className="flex items-baseline gap-2 mb-3">
+                          <div className="h-6 sm:h-7 bg-gray-200 rounded w-20"></div>
+                          <div className="h-4 bg-gray-200 rounded w-14"></div>
+                        </div>
+                      </div>
+                      {/* Button - desktop only, exact padding match */}
+                      <div className="px-3 sm:px-4 pb-3 sm:pb-4 hidden sm:block">
+                        <div className="h-10 bg-gray-200 rounded-lg w-full"></div>
+                      </div>
+                    </div>
+                  ))
+                ) : featuredProducts?.length > 0 ? (
+                  featuredProducts.map((p, index) => (
+                    <div key={p._id} className="stagger-grid-item" style={{ animationDelay: `${index * 0.07}s` }}>
                       <ProductCard product={p} />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <p>{t('home.noFeaturedProducts')}</p>
-                </div>
-              )}
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-12 text-gray-500">
+                    <p>{t('home.noFeaturedProducts')}</p>
+                  </div>
+                )}
+              </div>
             </section>
 
             {/* Sponsored Ad - Middle */}
             {!middleLoading && middleAd && (
-              <section className="mb-8">
-                <SponsorAd ad={middleAd} variant="banner" />
-              </section>
+              <Suspense fallback={null}>
+                <section className="mb-8">
+                  <SponsorAd ad={middleAd} variant="banner" />
+                </section>
+              </Suspense>
             )}
 
             {/* 3D Carousel - Featured Brands/Categories */}
             {carouselItems && carouselItems.length > 0 && (
-              <section className="mb-8">
-                <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
-                <ThreeDCarousel
-                  items={carouselItems.map(item => ({ ...item, id: item._id }))}
-                  autoRotate={true}
-                  rotateInterval={5000}
-                  cardHeight={560}
-                />
-              </section>
+              <Suspense fallback={<div className="mb-8 h-96 bg-gray-100 rounded-lg animate-pulse"></div>}>
+                <section className="mb-8">
+                  <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
+                  <ThreeDCarousel
+                    items={carouselItems.map(item => ({ ...item, id: item._id }))}
+                    autoRotate={true}
+                    rotateInterval={5000}
+                    cardHeight={560}
+                  />
+                </section>
+              </Suspense>
             )}
 
             {/* Join as Vendor or Affiliate */}
@@ -243,14 +288,14 @@ const Home = React.memo(() => {
                     : 'md:grid-cols-2'
                 }`}>
                   {user?.role !== 'vendor' && (
-                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-8 border border-primary-200 hover:shadow-xl transition-shadow">
+                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-primary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.1s' }}>
                       <div className="flex items-center mb-4">
-                        <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-4">
-                          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-3 sm:mr-4">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeVendor')}</h3>
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{t('home.becomeVendor')}</h3>
                       </div>
                       <p className="text-gray-700 mb-6 leading-relaxed">{t('home.vendorDesc')}</p>
                       <ul className="space-y-2 mb-6">
@@ -289,14 +334,14 @@ const Home = React.memo(() => {
                   )}
 
                   {user?.role !== 'affiliate' && (
-                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-8 border border-secondary-200 hover:shadow-xl transition-shadow">
+                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-secondary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.2s' }}>
                       <div className="flex items-center mb-4">
-                        <div className="w-12 h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-4">
-                          <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-3 sm:mr-4">
+                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900">{t('home.becomeAffiliate')}</h3>
+                        <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{t('home.becomeAffiliate')}</h3>
                       </div>
                       <p className="text-gray-700 mb-6 leading-relaxed">{t('home.affiliateDesc')}</p>
                       <ul className="space-y-2 mb-6">
@@ -366,39 +411,47 @@ const Home = React.memo(() => {
 
             {/* Personalized Recommendations */}
             {user && (
-              <section className="mb-8">
-                <ProductRecommendations
-                  type="personalized"
-                  limit={8}
-                  showViewAll={true}
-                  viewAllLink="/products"
-                />
-              </section>
+              <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
+                <section className="mb-8">
+                  <ProductRecommendations
+                    type="personalized"
+                    limit={8}
+                    showViewAll={true}
+                    viewAllLink="/products"
+                  />
+                </section>
+              </Suspense>
             )}
 
             {/* Trending Products */}
-            <section className="mb-8">
-              <ProductRecommendations
-                type="trending"
-                limit={8}
-                showViewAll={true}
-                viewAllLink="/products?sort=-sold"
-              />
-            </section>
+            <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
+              <section className="mb-8">
+                <ProductRecommendations
+                  type="trending"
+                  limit={8}
+                  showViewAll={true}
+                  viewAllLink="/products?sort=-sold"
+                />
+              </section>
+            </Suspense>
 
             {/* Sponsored Ad - Bottom */}
             {!bottomLoading && bottomAd && (
-              <section className="mb-8">
-                <SponsorAd ad={bottomAd} variant="banner" />
-              </section>
+              <Suspense fallback={null}>
+                <section className="mb-8">
+                  <SponsorAd ad={bottomAd} variant="banner" />
+                </section>
+              </Suspense>
             )}
           </main>
 
           {/* Right Sidebar */}
           {!rightLoading && rightAd && (
-            <aside className="lg:col-span-1">
-              <SponsorAd ad={rightAd} variant="sidebar" />
-            </aside>
+            <Suspense fallback={null}>
+              <aside className="lg:col-span-1">
+                <SponsorAd ad={rightAd} variant="sidebar" />
+              </aside>
+            </Suspense>
           )}
         </div>
 

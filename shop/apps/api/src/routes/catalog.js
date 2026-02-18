@@ -19,8 +19,22 @@ router.get('/products', async (req, res, next) => {
 
     const query = { published: true }; // Only show published products
     if (featured === 'true') query.featured = true;
-    if (q) query.$text = { $search: q };
     if (tag) query.tags = tag.toLowerCase(); // Filter by specific tag
+
+    // Text search: multi-word uses AND logic (like Amazon) so only relevant products show
+    let searchWords = [];
+    if (q) {
+      searchWords = q.trim().split(/\s+/)
+        .map(w => w.replace(/^[+\-"]+/, '')) // sanitize operators
+        .filter(w => w.length >= 2);
+
+      if (searchWords.length > 1) {
+        // Require ALL words — "+chapati +pressing +machine" = AND with stemming
+        query.$text = { $search: searchWords.map(w => `+${w}`).join(' ') };
+      } else {
+        query.$text = { $search: q };
+      }
+    }
 
     // Filter by vendor slug
     if (vendor) {
@@ -36,10 +50,33 @@ router.get('/products', async (req, res, next) => {
 
     const skip = (parseInt(page) - 1) * cappedLimit;
 
-    const [items, total] = await Promise.all([
-      Product.find(query).populate('vendorId', 'storeName slug').sort(sort).skip(skip).limit(cappedLimit).lean(),
+    // When text search is active, project text score for relevance sorting
+    let sortOption = sort;
+    let projection = {};
+    if (q) {
+      projection = { score: { $meta: 'textScore' } };
+      // Sort by relevance (text score) by default or when explicitly requested
+      if (sort === 'relevance' || sort === '-createdAt') {
+        sortOption = { score: { $meta: 'textScore' } };
+      }
+    } else if (sort === 'relevance') {
+      // No text query but relevance sort requested — fall back to newest
+      sortOption = '-createdAt';
+    }
+
+    let [items, total] = await Promise.all([
+      Product.find(query, projection).populate('vendorId', 'storeName slug').sort(sortOption).skip(skip).limit(cappedLimit).lean(),
       Product.countDocuments(query),
     ]);
+
+    // Fallback: if strict AND search returns 0 results, try broader OR search
+    if (q && total === 0 && searchWords.length > 1) {
+      query.$text = { $search: q };
+      [items, total] = await Promise.all([
+        Product.find(query, projection).populate('vendorId', 'storeName slug').sort(sortOption).skip(skip).limit(cappedLimit).lean(),
+        Product.countDocuments(query),
+      ]);
+    }
 
     res.json({ success: true, data: items, meta: { total, page: Number(page), limit: cappedLimit } });
   } catch (err) {
@@ -105,6 +142,64 @@ router.get('/autocomplete', async (req, res, next) => {
       success: true,
       data: { suggestions, products, categories },
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /catalog/search-related?q=banana&limit=8 — Amazon-style "Related to your search"
+// Finds products in the same categories as search results (but not the results themselves)
+router.get('/search-related', async (req, res, next) => {
+  try {
+    const { q, limit = 8, exclude = '' } = req.query;
+    if (!q || q.trim().length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+    const cappedLimit = Math.min(parseInt(limit), 20);
+
+    // Step 1: Find products matching the query to identify relevant categories
+    const matched = await Product.find(
+      { published: true, $text: { $search: q } },
+      { score: { $meta: 'textScore' } }
+    ).sort({ score: { $meta: 'textScore' } }).limit(10).select('_id categoryIds').lean();
+
+    // Collect IDs to exclude (matched products + any the frontend already shows)
+    const excludeIds = matched.map(p => p._id);
+    if (exclude) {
+      exclude.split(',').forEach(id => {
+        if (mongoose.Types.ObjectId.isValid(id.trim())) {
+          excludeIds.push(new mongoose.Types.ObjectId(id.trim()));
+        }
+      });
+    }
+
+    // Step 2: Collect category IDs from matched products
+    const categoryIds = [...new Set(
+      matched.flatMap(p => (p.categoryIds || []).map(id => id.toString()))
+    )];
+
+    if (categoryIds.length === 0) {
+      // No category context — return trending products as fallback
+      const trending = await Product.find({ published: true, _id: { $nin: excludeIds } })
+        .sort({ sold: -1, rating: -1 })
+        .limit(cappedLimit)
+        .populate('vendorId', 'storeName slug')
+        .lean();
+      return res.json({ success: true, data: trending });
+    }
+
+    // Step 3: Find other products in same categories (excluding already-matched ones)
+    const related = await Product.find({
+      published: true,
+      _id: { $nin: excludeIds },
+      categoryIds: { $in: categoryIds.map(id => new mongoose.Types.ObjectId(id)) },
+    })
+      .sort({ rating: -1, sold: -1 })
+      .limit(cappedLimit)
+      .populate('vendorId', 'storeName slug')
+      .lean();
+
+    res.json({ success: true, data: related });
   } catch (err) {
     next(err);
   }
@@ -308,7 +403,7 @@ router.post('/track/view', catalogTrackingLimiter, async (req, res, next) => {
 // POST /catalog/track/search - Track search query
 router.post('/track/search', catalogTrackingLimiter, async (req, res, next) => {
   try {
-    const { query, filters, resultsCount } = req.body;
+    const { query, filters, resultsCount, source } = req.body;
 
     // SECURITY: Validate query string length
     if (!query || typeof query !== 'string') {
@@ -339,6 +434,7 @@ router.post('/track/search', catalogTrackingLimiter, async (req, res, next) => {
       query: query.substring(0, 200),
       filters: filters || {},
       resultsCount: parsedResultsCount,
+      source: ['text', 'voice', 'autocomplete'].includes(source) ? source : 'text',
     };
 
     // Add userId if authenticated
@@ -379,6 +475,48 @@ router.post('/track/search-click', catalogTrackingLimiter, async (req, res, next
     await recommendationService.trackSearchClick(searchId, productId);
 
     res.json({ success: true, message: 'Search click tracked successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /catalog/settings - Public settings for frontend
+router.get('/settings', async (req, res, next) => {
+  try {
+    const Setting = require('../models/Setting');
+    const { category, keys } = req.query;
+
+    const query = { isPublic: true };
+
+    // Filter by category if provided
+    if (category) {
+      query.category = category;
+    }
+
+    // Filter by specific keys if provided (comma-separated)
+    if (keys) {
+      const keyList = keys.split(',').map(k => k.trim());
+      query.key = { $in: keyList };
+    }
+
+    const settings = await Setting.find(query)
+      .select('key value type category description')
+      .lean();
+
+    // Convert to key-value object for easier frontend consumption
+    const settingsMap = {};
+    settings.forEach(s => {
+      settingsMap[s.key] = s.value;
+    });
+
+    res.json({
+      success: true,
+      data: settingsMap,
+      meta: {
+        count: settings.length,
+        details: settings, // Full setting details if needed
+      },
+    });
   } catch (err) {
     next(err);
   }

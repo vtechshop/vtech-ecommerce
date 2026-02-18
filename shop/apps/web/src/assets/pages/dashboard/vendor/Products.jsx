@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/dashboard/vendor/Products.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/utils/api';
@@ -7,7 +7,22 @@ import Button from '@/components/common/Button';
 import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
-import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, ZoomIn, Upload } from 'lucide-react';
+import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, ZoomIn, Upload, Search, Filter, ChevronUp, ChevronDown, Package, AlertTriangle, CheckCircle, MoreVertical, Copy, Archive, TrendingUp, Download, RefreshCw } from 'lucide-react';
+
+// Stock level thresholds
+const STOCK_THRESHOLDS = {
+  OUT_OF_STOCK: 0,
+  LOW: 10,
+  MEDIUM: 50,
+};
+
+// Get stock status with color
+const getStockStatus = (stock) => {
+  if (stock === 0) return { label: 'Out of Stock', color: 'text-red-600 bg-red-50', icon: AlertTriangle };
+  if (stock < STOCK_THRESHOLDS.LOW) return { label: 'Low Stock', color: 'text-orange-600 bg-orange-50', icon: AlertTriangle };
+  if (stock < STOCK_THRESHOLDS.MEDIUM) return { label: 'Medium', color: 'text-yellow-600 bg-yellow-50', icon: Package };
+  return { label: 'In Stock', color: 'text-green-600 bg-green-50', icon: CheckCircle };
+};
 
 const Products = () => {
   const queryClient = useQueryClient();
@@ -23,10 +38,21 @@ const Products = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success'); // 'success', 'error', 'warning'
-  const { data, isLoading, error } = useQuery({
+
+  // Amazon-style filters and search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // all, published, draft
+  const [stockFilter, setStockFilter] = useState('all'); // all, in-stock, low-stock, out-of-stock
+  const [sortField, setSortField] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [showActionsDropdown, setShowActionsDropdown] = useState(null);
+
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['vendor-products', page],
     queryFn: async () => {
-      const response = await api.get(`/vendors/products?page=${page}&limit=10`);
+      const response = await api.get(`/vendors/products?page=${page}&limit=50`);
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
@@ -69,9 +95,68 @@ const Products = () => {
     },
   });
 
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (productIds) => {
+      const response = await api.post('/vendors/products/bulk-delete', { productIds });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-products'] });
+      setSelectedProducts([]);
+      setToastMessage(`${data.data.deletedCount} product(s) deleted successfully`);
+      setToastType('success');
+      setShowToast(true);
+    },
+    onError: (error) => {
+      setToastMessage(error.response?.data?.error?.message || 'Failed to delete products');
+      setToastType('error');
+      setShowToast(true);
+    },
+  });
+
   const handleDelete = (id) => {
     if (confirm('Are you sure you want to delete this product?')) {
       deleteMutation.mutate(id);
+    }
+  };
+
+  // Handle bulk delete
+  const handleBulkDelete = () => {
+    if (selectedProducts.length === 0) return;
+    if (confirm(`Delete ${selectedProducts.length} selected product(s)?`)) {
+      bulkDeleteMutation.mutate(selectedProducts);
+    }
+  };
+
+  // Handle export products
+  const handleExportProducts = async () => {
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (stockFilter !== 'all') params.append('stockLevel', stockFilter);
+
+      const response = await api.get(`/vendors/products/export?${params.toString()}`, {
+        responseType: 'blob',
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `products_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setToastMessage('Products exported successfully');
+      setToastType('success');
+      setShowToast(true);
+    } catch (error) {
+      setToastMessage('Failed to export products');
+      setToastType('error');
+      setShowToast(true);
     }
   };
 
@@ -108,15 +193,133 @@ const Products = () => {
     }
   };
 
-  // Auto-hide toast after 5 seconds
+  // Auto-hide toast after 3 seconds
   useEffect(() => {
     if (showToast) {
       const timer = setTimeout(() => {
         setShowToast(false);
-      }, 5000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [showToast]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowActionsDropdown(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const allProducts = data?.data || [];
+
+  // Calculate stats for summary cards
+  const stats = useMemo(() => {
+    const total = allProducts.length;
+    const published = allProducts.filter(p => p.published).length;
+    const draft = allProducts.filter(p => !p.published).length;
+    const outOfStock = allProducts.filter(p => p.stock === 0).length;
+    const lowStock = allProducts.filter(p => p.stock > 0 && p.stock < STOCK_THRESHOLDS.LOW).length;
+    const totalValue = allProducts.reduce((sum, p) => sum + (p.price * p.stock), 0);
+    return { total, published, draft, outOfStock, lowStock, totalValue };
+  }, [allProducts]);
+
+  // Filter and sort products
+  const filteredProducts = useMemo(() => {
+    let result = [...allProducts];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(p =>
+        p.title?.toLowerCase().includes(query) ||
+        p.sku?.toLowerCase().includes(query) ||
+        p.brand?.toLowerCase().includes(query)
+      );
+    }
+
+    // Status filter
+    if (statusFilter === 'published') {
+      result = result.filter(p => p.published);
+    } else if (statusFilter === 'draft') {
+      result = result.filter(p => !p.published);
+    }
+
+    // Stock filter
+    if (stockFilter === 'in-stock') {
+      result = result.filter(p => p.stock >= STOCK_THRESHOLDS.LOW);
+    } else if (stockFilter === 'low-stock') {
+      result = result.filter(p => p.stock > 0 && p.stock < STOCK_THRESHOLDS.LOW);
+    } else if (stockFilter === 'out-of-stock') {
+      result = result.filter(p => p.stock === 0);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+
+      if (sortField === 'title') {
+        aVal = aVal?.toLowerCase() || '';
+        bVal = bVal?.toLowerCase() || '';
+      }
+
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      }
+      return aVal < bVal ? 1 : -1;
+    });
+
+    return result;
+  }, [allProducts, searchQuery, statusFilter, stockFilter, sortField, sortOrder]);
+
+  // Pagination for filtered results
+  const itemsPerPage = 10;
+  const totalFilteredPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+  // Handle select all
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedProducts(paginatedProducts.map(p => p._id));
+    } else {
+      setSelectedProducts([]);
+    }
+  };
+
+  // Handle individual select
+  const handleSelectProduct = (productId) => {
+    setSelectedProducts(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  // Handle sort
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // Sortable header component
+  const SortableHeader = ({ field, children, className = '' }) => (
+    <th
+      className={`text-left py-3 px-4 font-semibold text-sm cursor-pointer hover:bg-blue-200 transition-colors select-none ${className}`}
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        <span className="flex flex-col">
+          <ChevronUp className={`w-3 h-3 -mb-1 ${sortField === field && sortOrder === 'asc' ? 'text-blue-700' : 'text-gray-400'}`} />
+          <ChevronDown className={`w-3 h-3 ${sortField === field && sortOrder === 'desc' ? 'text-blue-700' : 'text-gray-400'}`} />
+        </span>
+      </div>
+    </th>
+  );
 
   if (isLoading) {
     return (
@@ -126,8 +329,8 @@ const Products = () => {
     );
   }
 
-  const products = data?.data || [];
-  const totalPages = Math.ceil((data?.meta?.total || 0) / 10);
+  const products = paginatedProducts;
+  const totalPages = totalFilteredPages;
 
   return (
     <div>
@@ -162,95 +365,365 @@ const Products = () => {
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">My Products</h1>
-        <Button onClick={handleAddProductClick} variant="primary">
-          Add Product
-        </Button>
+        <div className="flex items-center gap-3">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          {allProducts.length > 0 && (
+            <button
+              onClick={handleExportProducts}
+              className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
+          )}
+          <Button onClick={handleAddProductClick} variant="primary" className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add Product
+          </Button>
+        </div>
       </div>
 
-      {products.length === 0 ? (
+      {/* Stats Summary Cards */}
+      {allProducts.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-sm transition-shadow">
+            <p className="text-xs text-gray-500 font-medium">Total Products</p>
+            <p className="text-xl font-bold text-gray-900">{stats.total}</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-sm transition-shadow">
+            <p className="text-xs text-gray-500 font-medium">Published</p>
+            <p className="text-xl font-bold text-green-600">{stats.published}</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-sm transition-shadow">
+            <p className="text-xs text-gray-500 font-medium">Draft</p>
+            <p className="text-xl font-bold text-gray-600">{stats.draft}</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-sm transition-shadow cursor-pointer" onClick={() => setStockFilter('low-stock')}>
+            <p className="text-xs text-gray-500 font-medium">Low Stock</p>
+            <p className="text-xl font-bold text-orange-600">{stats.lowStock}</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-sm transition-shadow cursor-pointer" onClick={() => setStockFilter('out-of-stock')}>
+            <p className="text-xs text-gray-500 font-medium">Out of Stock</p>
+            <p className="text-xl font-bold text-red-600">{stats.outOfStock}</p>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-sm transition-shadow">
+            <p className="text-xs text-gray-500 font-medium">Inventory Value</p>
+            <p className="text-xl font-bold text-blue-600">{formatCurrency(stats.totalValue)}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Low Stock Alert Banner */}
+      {(stats.lowStock > 0 || stats.outOfStock > 0) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm text-amber-800">
+              <strong>{stats.outOfStock + stats.lowStock} products need attention:</strong>{' '}
+              {stats.outOfStock > 0 && <span>{stats.outOfStock} out of stock</span>}
+              {stats.outOfStock > 0 && stats.lowStock > 0 && ', '}
+              {stats.lowStock > 0 && <span>{stats.lowStock} low stock</span>}
+            </p>
+          </div>
+          <button
+            onClick={() => setStockFilter(stats.outOfStock > 0 ? 'out-of-stock' : 'low-stock')}
+            className="text-sm font-medium text-amber-700 hover:text-amber-900 whitespace-nowrap"
+          >
+            View Items →
+          </button>
+        </div>
+      )}
+
+      {/* Search and Filter Bar */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+        <div className="flex flex-col md:flex-row gap-3">
+          {/* Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by title, SKU, or brand..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+          </select>
+
+          {/* Stock Filter */}
+          <select
+            value={stockFilter}
+            onChange={(e) => { setStockFilter(e.target.value); setPage(1); }}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Stock Levels</option>
+            <option value="in-stock">In Stock (≥10)</option>
+            <option value="low-stock">Low Stock (&lt;10)</option>
+            <option value="out-of-stock">Out of Stock</option>
+          </select>
+
+          {/* Clear Filters */}
+          {(searchQuery || statusFilter !== 'all' || stockFilter !== 'all') && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+                setStockFilter('all');
+                setPage(1);
+              }}
+              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 font-medium"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+
+        {/* Bulk Actions Bar */}
+        {selectedProducts.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-3">
+            <span className="text-sm text-gray-600">
+              {selectedProducts.length} selected
+            </span>
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+              className="px-3 py-1.5 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 font-medium disabled:opacity-50"
+            >
+              {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete Selected'}
+            </button>
+            <button
+              onClick={() => setSelectedProducts([])}
+              className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 font-medium"
+            >
+              Clear Selection
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Results Info */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-gray-600">
+          Showing {products.length > 0 ? ((page - 1) * itemsPerPage) + 1 : 0}-{Math.min(page * itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+          {filteredProducts.length !== allProducts.length && (
+            <span className="text-gray-400"> (filtered from {allProducts.length})</span>
+          )}
+        </p>
+      </div>
+
+      {allProducts.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-          <h3 className="text-xl font-semibold mb-2">No products yet</h3>
-          <p className="text-gray-700 mb-6">Start by adding your first product</p>
-          <Button onClick={handleAddProductClick} variant="primary">
-            Add Product
+          <Package className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+          <h3 className="text-xl font-semibold mb-2 text-gray-900">No products yet</h3>
+          <p className="text-gray-500 mb-6">Start by adding your first product to your store</p>
+          <Button onClick={handleAddProductClick} variant="primary" className="inline-flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Add Your First Product
           </Button>
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <table className="w-full">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[800px]">
               <thead className="bg-blue-100 border-b">
                 <tr>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Product</th>
+                  {/* Checkbox */}
+                  <th className="py-3 px-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={selectedProducts.length === products.length && products.length > 0}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  <SortableHeader field="title">Product</SortableHeader>
                   <th className="text-left py-3 px-4 font-semibold text-sm">SKU</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Price</th>
-                  <th className="text-left py-3 px-4 font-semibold text-sm">Stock</th>
+                  <SortableHeader field="price">Price</SortableHeader>
+                  <SortableHeader field="stock">Stock</SortableHeader>
                   <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
                   <th className="text-right py-3 px-4 font-semibold text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {products.map((product) => (
-                  <tr key={product._id} className="border-b last:border-b-0">
-                    <td className="py-3 px-3 sm:px-4">
-                      <div className="flex items-center gap-3">
-                        {product.images?.[0] && (
-                          <img src={product.images[0]} alt={product.title} className="w-12 h-12 object-cover rounded" />
-                        )}
-                        <div>
-                          <p className="font-medium">{product.title}</p>
-                          <p className="text-sm text-gray-700">{product.brand}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm font-mono">{product.sku}</td>
-                    <td className="py-3 px-4 font-semibold">{formatCurrency(product.price)}</td>
-                    <td className="py-3 px-3 sm:px-4">
-                      <span className={product.stock < 10 ? 'text-red-600' : 'text-green-600'}>
-                        {product.stock}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 sm:px-4">
-                      <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full ${
-                        product.published ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-gray-900'
-                      }`}>
-                        {product.published ? 'Published' : 'Draft'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          to={`/product/${product.slug}`}
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-                          title="View on storefront"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          View
-                        </Link>
-                        <button
-                          onClick={() => {
-                            setEditingProduct(product);
-                            setIsModalOpen(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product._id)}
-                          className="text-red-600 hover:text-red-700 text-sm font-medium"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                {products.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-gray-500">
+                      <Filter className="w-10 h-10 mx-auto text-gray-300 mb-3" />
+                      <p className="font-medium">No products match your filters</p>
+                      <p className="text-sm mt-1">Try adjusting your search or filter criteria</p>
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  products.map((product) => {
+                    const stockStatus = getStockStatus(product.stock);
+                    const StockIcon = stockStatus.icon;
+                    return (
+                      <tr
+                        key={product._id}
+                        className={`border-b last:border-b-0 hover:bg-gray-50 transition-colors ${
+                          selectedProducts.includes(product._id) ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <td className="py-3 px-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedProducts.includes(product._id)}
+                            onChange={() => handleSelectProduct(product._id)}
+                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
+                        {/* Product */}
+                        <td className="py-3 px-3 sm:px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                              {product.images?.[0] ? (
+                                <img src={product.images[0]} alt={product.title} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Package className="w-6 h-6 text-gray-400" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium text-gray-900 truncate max-w-[200px]" title={product.title}>
+                                {product.title}
+                              </p>
+                              <p className="text-xs text-gray-500">{product.brand || 'No brand'}</p>
+                            </div>
+                          </div>
+                        </td>
+                        {/* SKU */}
+                        <td className="py-3 px-4 text-sm font-mono text-gray-600">{product.sku || '—'}</td>
+                        {/* Price */}
+                        <td className="py-3 px-4">
+                          <span className="font-semibold text-gray-900">{formatCurrency(product.price)}</span>
+                          {product.compareAt && product.compareAt > product.price && (
+                            <span className="block text-xs text-gray-400 line-through">{formatCurrency(product.compareAt)}</span>
+                          )}
+                        </td>
+                        {/* Stock */}
+                        <td className="py-3 px-3 sm:px-4">
+                          <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ${stockStatus.color}`}>
+                            <StockIcon className="w-3 h-3" />
+                            {product.stock}
+                          </div>
+                        </td>
+                        {/* Status */}
+                        <td className="py-3 px-3 sm:px-4">
+                          <span className={`inline-block px-2.5 py-1 text-xs font-semibold rounded-full ${
+                            product.published ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {product.published ? 'Published' : 'Draft'}
+                          </span>
+                        </td>
+                        {/* Actions */}
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Link
+                              to={`/product/${product.slug}`}
+                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View on storefront"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </Link>
+                            <button
+                              onClick={() => {
+                                setEditingProduct(product);
+                                setIsModalOpen(true);
+                              }}
+                              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="Edit product"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            {/* More Actions Dropdown */}
+                            <div className="relative">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowActionsDropdown(showActionsDropdown === product._id ? null : product._id);
+                                }}
+                                className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="More actions"
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                              {showActionsDropdown === product._id && (
+                                <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard.writeText(product._id);
+                                      setToastMessage('Product ID copied!');
+                                      setToastType('success');
+                                      setShowToast(true);
+                                      setShowActionsDropdown(null);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                    Copy ID
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // Duplicate product logic could be added here
+                                      setToastMessage('Duplicate feature coming soon!');
+                                      setToastType('info');
+                                      setShowToast(true);
+                                      setShowActionsDropdown(null);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                    Duplicate
+                                  </button>
+                                  <hr className="my-1" />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(product._id);
+                                      setShowActionsDropdown(null);
+                                    }}
+                                    className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -329,7 +802,15 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
 
   const [showSchemaSection, setShowSchemaSection] = useState(false);
 
-  const [images, setImages] = useState(product?.images || []);
+  // Images with alt tags: [{url: string, alt: string}]
+  const [images, setImages] = useState(() => {
+    const existingImages = product?.images || [];
+    const existingAlts = product?.imageAlts || [];
+    return existingImages.map((url, idx) => ({
+      url: typeof url === 'string' ? url : url.url,
+      alt: existingAlts[idx] || (typeof url === 'object' ? url.alt : '') || ''
+    }));
+  });
   const [uploading, setUploading] = useState(false);
 
   // Fetch categories
@@ -381,8 +862,8 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      const uploadedUrls = response?.data?.data?.map(file => file.url) || [];
-      setImages([...images, ...uploadedUrls]);
+      const uploadedImages = response?.data?.data?.map(file => ({ url: file.url, alt: '' })) || [];
+      setImages([...images, ...uploadedImages]);
     } catch (error) {
       alert('Image upload failed: ' + (error.response?.data?.error?.message || error.message));
     } finally {
@@ -416,7 +897,8 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
       stock: parseInt(formData.stock),
       sku: formData.sku,
       brand: formData.brand,
-      images,
+      images: images.map(img => img.url), // Extract URLs only
+      imageAlts: images.map(img => img.alt || ''), // Alt tags for SEO
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       published: formData.published,
       featured: formData.featured,
@@ -532,22 +1014,68 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
               />
               {uploading && <p className="text-sm text-gray-500 mt-1">Uploading images...</p>}
               {images.length > 0 && (
-                <div className="mt-3 grid grid-cols-4 gap-3">
+                <div className="mt-3 space-y-3">
                   {images.map((img, idx) => (
-                    <div key={idx} className="relative group">
-                      <img
-                        src={img}
-                        alt={`Product ${idx + 1}`}
-                        className="w-full h-24 object-cover rounded border border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(idx)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Remove image"
-                      >
-                        ×
-                      </button>
+                    <div key={idx} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="relative group flex-shrink-0">
+                        <img
+                          src={img.url}
+                          alt={img.alt || `${formData.title || 'Product'} - Image ${idx + 1}`}
+                          className="w-20 h-20 object-cover rounded border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                          title="Remove image"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-medium text-gray-700">
+                            Image {idx + 1} Alt Tag (SEO)
+                          </label>
+                          {!img.alt && formData.title && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const suggested = `${formData.title}${formData.brand ? ` by ${formData.brand}` : ''} - Image ${idx + 1}`;
+                                const updated = [...images];
+                                updated[idx] = { ...updated[idx], alt: suggested.slice(0, 125) };
+                                setImages(updated);
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                            >
+                              Auto-generate
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          type="text"
+                          value={img.alt}
+                          maxLength={125}
+                          onChange={(e) => {
+                            const updated = [...images];
+                            updated[idx] = { ...updated[idx], alt: e.target.value };
+                            setImages(updated);
+                          }}
+                          placeholder={`e.g., ${formData.title || 'Product name'} front view`}
+                          className={`input w-full text-sm ${img.alt.length > 125 ? 'border-red-300 focus:ring-red-500' : ''}`}
+                        />
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-gray-500">
+                            Include product name, brand, color
+                          </p>
+                          <span className={`text-xs font-medium ${
+                            img.alt.length === 0 ? 'text-gray-400' :
+                            img.alt.length <= 125 ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {img.alt.length}/125
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

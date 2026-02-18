@@ -22,12 +22,72 @@ export const handleImageError = (e, placeholder = PLACEHOLDER_IMAGE) => {
 };
 
 /**
+ * Optimize Cloudinary URL with transformations for better performance
+ * @param {string} url - Cloudinary URL
+ * @param {object} options - Transformation options
+ * @returns {string} - Optimized Cloudinary URL
+ */
+const optimizeCloudinaryUrl = (url, options = {}) => {
+  const { width = 200, quality = 'auto', format = 'auto' } = options;
+
+  // Check if it's a Cloudinary URL
+  if (!url.includes('res.cloudinary.com')) {
+    return url;
+  }
+
+  // Check if transformations already exist
+  if (url.includes('/q_auto') || url.includes('/f_auto') || url.includes('/w_')) {
+    return url;
+  }
+
+  // Add transformations to Cloudinary URL with c_fill for proper cropping
+  const transformations = `q_${quality},f_${format},w_${width},c_fill`;
+  return url.replace('/upload/', `/upload/${transformations}/`);
+};
+
+/**
+ * Generate srcset for responsive Cloudinary images
+ * @param {string} url - Cloudinary URL
+ * @returns {object} - { src, srcSet, sizes } for responsive images
+ */
+export const getResponsiveImageUrls = (url) => {
+  if (!url || !url.includes('res.cloudinary.com')) {
+    return { src: url, srcSet: null, sizes: null };
+  }
+
+  // Remove existing transformations if any
+  let baseUrl = url;
+  const uploadMatch = url.match(/\/upload\/([^/]+)\//);
+  if (uploadMatch && uploadMatch[1].includes(',')) {
+    // Has transformations (comma-separated), remove them
+    baseUrl = url.replace(`/upload/${uploadMatch[1]}/`, '/upload/');
+  }
+
+  // Responsive widths matching actual card display sizes
+  const widths = [200, 300, 400];
+  const srcSet = widths.map(w => {
+    const optimized = baseUrl.replace('/upload/', `/upload/q_auto,f_auto,w_${w},c_fill/`);
+    return `${optimized} ${w}w`;
+  }).join(', ');
+
+  // Default src - good quality for most screens
+  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_300,c_fill/');
+
+  // Sizes attribute - match actual card display sizes
+  const sizes = '(max-width: 480px) 160px, (max-width: 768px) 200px, 300px';
+
+  return { src, srcSet, sizes };
+};
+
+/**
  * Normalize image URL to fix mixed content issues
  * Converts localhost URLs to production API URL and ensures HTTPS
+ * Also optimizes Cloudinary URLs for better performance
  * @param {string} url - The image URL to normalize
+ * @param {object} options - Optional optimization settings
  * @returns {string} - Normalized image URL
  */
-export const normalizeImageUrl = (url) => {
+export const normalizeImageUrl = (url, options = {}) => {
   if (!url) return PLACEHOLDER_IMAGE;
 
   // If it's already a data URL or blob, return as-is
@@ -62,6 +122,11 @@ export const normalizeImageUrl = (url) => {
       !normalizedUrl.includes('localhost') &&
       !normalizedUrl.includes('127.0.0.1')) {
     normalizedUrl = normalizedUrl.replace('http://', 'https://');
+  }
+
+  // Optimize Cloudinary URLs in production
+  if (import.meta.env.MODE === 'production') {
+    normalizedUrl = optimizeCloudinaryUrl(normalizedUrl, options);
   }
 
   return normalizedUrl;

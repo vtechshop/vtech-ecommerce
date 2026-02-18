@@ -11,7 +11,7 @@ const PageLoader = () => {
     setIsLoading(true);
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 500); // Simulate loading time
+    }, 250); // Fast loading bar
 
     return () => clearTimeout(timer);
   }, [location.pathname]);
@@ -24,7 +24,7 @@ const PageLoader = () => {
           initial={{ width: '0%' }}
           animate={{ width: '100%' }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: 'easeInOut' }}
+          transition={{ duration: 0.25, ease: 'easeInOut' }}
         />
       )}
     </AnimatePresence>

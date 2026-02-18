@@ -22,7 +22,8 @@ import {
   Calendar,
   IndianRupee,
   Box,
-  Search
+  Search,
+  RefreshCw
 } from 'lucide-react';
 
 const VendorOrders = () => {
@@ -43,7 +44,7 @@ const VendorOrders = () => {
   const [expandedOrder, setExpandedOrder] = useState(null);
 
   // Fetch orders with current filters
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ['vendor-orders', page, statusFilter, searchTerm],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -151,8 +152,14 @@ const VendorOrders = () => {
           <p className="text-sm text-gray-600 mt-1">View and fulfill your customer orders</p>
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-72">
+        <div className="flex items-center gap-2">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+
+          {/* Search */}
+          <div className="relative w-full sm:w-72">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -164,6 +171,7 @@ const VendorOrders = () => {
             }}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
+          </div>
         </div>
       </div>
 

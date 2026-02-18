@@ -70,12 +70,36 @@ export default defineConfig({
     cssCodeSplit: true,
     cssMinify: true,
 
-    // 🚨 IMPORTANT: NO manualChunks — let Vite handle React bundling safely
     rollupOptions: {
       output: {
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
+        // Split vendor chunks for better caching
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            // React core - keep together
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              return 'react-vendor';
+            }
+            // Router
+            if (id.includes('react-router')) {
+              return 'router';
+            }
+            // State management
+            if (id.includes('redux') || id.includes('@reduxjs')) {
+              return 'redux';
+            }
+            // React Query
+            if (id.includes('@tanstack')) {
+              return 'query';
+            }
+            // UI libraries
+            if (id.includes('lucide') || id.includes('framer-motion')) {
+              return 'ui';
+            }
+          }
+        },
       },
     },
   },

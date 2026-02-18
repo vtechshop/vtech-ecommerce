@@ -20,6 +20,9 @@ const initialState = {
   ...emptyCart,
   loading: false,
   error: null,
+  drawerOpen: false,
+  drawerJustAdded: false,
+  lastAddedProductId: null,
 };
 
 /**
@@ -53,6 +56,7 @@ export const addToCart = createAsyncThunk(
       return {
         items: Array.isArray(data.items) ? data.items : [],
         totals: { ...emptyCart.totals, ...(data.totals || {}) },
+        addedProductId: productId,
       };
     } catch (err) {
       return rejectWithValue(err.response?.data || { message: err.message });
@@ -115,7 +119,17 @@ export const clearCart = createAsyncThunk('cart/clear', async (_, { rejectWithVa
 const cartSlice = createSlice({
   name: 'cart',
   initialState,
-  reducers: {},
+  reducers: {
+    openCartDrawer: (state, action) => {
+      state.drawerOpen = true;
+      state.drawerJustAdded = action.payload?.justAdded ?? false;
+    },
+    closeCartDrawer: (state) => {
+      state.drawerOpen = false;
+      state.drawerJustAdded = false;
+      state.lastAddedProductId = null;
+    },
+  },
   extraReducers: (builder) => {
     const pending = (state) => {
       state.loading = true;
@@ -137,7 +151,12 @@ const cartSlice = createSlice({
       .addCase(loadCart.rejected, rejected)
 
       .addCase(addToCart.pending, pending)
-      .addCase(addToCart.fulfilled, fulfilled)
+      .addCase(addToCart.fulfilled, (state, action) => {
+        fulfilled(state, action);
+        state.drawerOpen = true;
+        state.drawerJustAdded = true;
+        state.lastAddedProductId = action.payload.addedProductId || null;
+      })
       .addCase(addToCart.rejected, rejected)
 
       .addCase(updateCartItem.pending, pending)
@@ -154,4 +173,5 @@ const cartSlice = createSlice({
   },
 });
 
+export const { openCartDrawer, closeCartDrawer } = cartSlice.actions;
 export default cartSlice.reducer;

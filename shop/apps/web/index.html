@@ -3,8 +3,8 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="./src/cropped-vtech-logo.webp" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/webp" href="/cropped-vtech-logo.webp" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <!-- Mobile-Specific Optimizations -->
     <meta name="mobile-web-app-capable" content="yes" />
@@ -16,49 +16,68 @@
 
     <!-- SEO Meta Tags -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-    <meta name="description" content="Shop premium kitchen appliances and utensils at V-Tech Kitchen. Discover quality cookware, gadgets, and tools for your modern kitchen. Fast shipping, great prices.">
+    <meta name="description" content="Shop premium kitchen appliances, commercial equipment, and cookware at V-Tech Kitchen. Cast iron tawa, cutting machines, and more from trusted vendors. Free shipping on orders over ₹500.">
     <meta name="keywords" content="kitchen appliances, cookware, kitchen utensils, kitchen gadgets, cooking tools, premium kitchenware">
-    <link rel="canonical" href="https://vtechkitchen.com" />
+    <link rel="canonical" href="https://www.vtechkitchen.com" />
 
     <!-- Open Graph Meta Tags (Facebook, LinkedIn) -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://vtechkitchen.com" />
-    <meta property="og:title" content="V-Tech Kitchen - Premium Kitchen Appliances & Utensils" />
-    <meta property="og:description" content="Shop premium kitchen appliances and utensils at V-Tech Kitchen. Discover quality cookware, gadgets, and tools for your modern kitchen." />
-    <meta property="og:image" content="https://vtechkitchen.com/og-image.jpg" />
+    <meta property="og:url" content="https://www.vtechkitchen.com" />
+    <meta property="og:title" content="V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment" />
+    <meta property="og:description" content="Shop premium kitchen appliances, commercial equipment, and cookware at V-Tech Kitchen. Free shipping on orders over ₹500." />
+    <meta property="og:image" content="https://www.vtechkitchen.com/og-image.jpg" />
     <meta property="og:site_name" content="V-Tech Kitchen" />
     
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://vtechkitchen.com" />
-    <meta name="twitter:title" content="V-Tech Kitchen - Premium Kitchen Appliances & Utensils" />
-    <meta name="twitter:description" content="Shop premium kitchen appliances and utensils at V-Tech Kitchen. Discover quality cookware, gadgets, and tools for your modern kitchen." />
-    <meta name="twitter:image" content="https://vtechkitchen.com/og-image.jpg" />
+    <meta name="twitter:url" content="https://www.vtechkitchen.com" />
+    <meta name="twitter:title" content="V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment" />
+    <meta name="twitter:description" content="Shop premium kitchen appliances, commercial equipment, and cookware at V-Tech Kitchen. Free shipping on orders over ₹500." />
+    <meta name="twitter:image" content="https://www.vtechkitchen.com/og-image.jpg" />
 
     <!-- Additional SEO -->
     <meta name="author" content="V-Tech Kitchen" />
 
     <!-- Preconnect for Performance -->
-    <link rel="preconnect" href="https://api.vtechkitchen.com">
+    <link rel="preconnect" href="https://api.vtechkitchen.com" crossorigin>
     <link rel="dns-prefetch" href="https://api.vtechkitchen.com">
-    <link rel="preconnect" href="https://res.cloudinary.com">
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+    <link rel="preconnect" href="https://www.google-analytics.com" crossorigin>
 
-    <!-- Google Fonts - Optimized with display=swap -->
+    <!-- Google Fonts - Only essential weights for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"></noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
 
-    <title>V-Tech Kitchen - Premium Kitchen Appliances & Utensils</title>
+    <title>V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment</title>
 
-    <!-- Google Analytics - Load once async -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MGV9FDZXSL"></script>
+    <!-- Google Analytics - Deferred load for better LCP -->
     <script>
-       window.dataLayer = window.dataLayer || [];
-       function gtag(){dataLayer.push(arguments);}
-       gtag('js', new Date());
-       gtag('config', 'G-MGV9FDZXSL');
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      // Defer GTM loading until after page is interactive
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(function() {
+          var s = document.createElement('script');
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-MGV9FDZXSL';
+          s.async = true;
+          document.head.appendChild(s);
+          gtag('js', new Date());
+          gtag('config', 'G-MGV9FDZXSL');
+        });
+      } else {
+        setTimeout(function() {
+          var s = document.createElement('script');
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-MGV9FDZXSL';
+          s.async = true;
+          document.head.appendChild(s);
+          gtag('js', new Date());
+          gtag('config', 'G-MGV9FDZXSL');
+        }, 3000);
+      }
     </script>
 
     <!-- Structured Data (Schema.org) -->
@@ -68,14 +87,13 @@
       "@type": "Store",
       "name": "V-Tech Kitchen",
       "description": "Premium kitchen appliances and utensils marketplace",
-      "url": "https://vtechkitchen.com",
-      "logo": "https://vtechkitchen.com/logo.png",
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "reviewCount": "1000"
-      },
-      "priceRange": "₹₹"
+      "url": "https://www.vtechkitchen.com",
+      "logo": "https://www.vtechkitchen.com/cropped-vtech-logo.webp",
+      "priceRange": "₹₹",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "IN"
+      }
     }
     </script>
   </head>
@@ -105,7 +123,7 @@
               <li><a href="/category/appliances" style="display: inline-block; padding: 12px 24px; background: #f3f4f6; color: #374151; text-decoration: none; border-radius: 8px;">Kitchen Appliances</a></li>
               <li><a href="/category/utensils" style="display: inline-block; padding: 12px 24px; background: #f3f4f6; color: #374151; text-decoration: none; border-radius: 8px;">Utensils</a></li>
               <li><a href="/category/gadgets" style="display: inline-block; padding: 12px 24px; background: #f3f4f6; color: #374151; text-decoration: none; border-radius: 8px;">Kitchen Gadgets</a></li>
-              <li><a href="/search" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px;">View All Products</a></li>
+              <li><a href="/products" style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 8px;">View All Products</a></li>
             </ul>
           </section>
 
@@ -130,13 +148,13 @@
           <nav style="margin-bottom: 40px;">
             <h2 style="font-size: 1.5rem; color: #1f2937; margin-bottom: 15px;">Quick Links</h2>
             <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 20px;">
-              <li><a href="/search" style="color: #3b82f6; text-decoration: none;">All Products</a></li>
+              <li><a href="/products" style="color: #3b82f6; text-decoration: none;">All Products</a></li>
               <li><a href="/blog" style="color: #3b82f6; text-decoration: none;">Blog</a></li>
               <li><a href="/page/about" style="color: #3b82f6; text-decoration: none;">About Us</a></li>
               <li><a href="/page/contact" style="color: #3b82f6; text-decoration: none;">Contact</a></li>
               <li><a href="/track-order" style="color: #3b82f6; text-decoration: none;">Track Order</a></li>
-              <li><a href="/page/privacy-policy" style="color: #3b82f6; text-decoration: none;">Privacy Policy</a></li>
-              <li><a href="/page/terms-of-service" style="color: #3b82f6; text-decoration: none;">Terms of Service</a></li>
+              <li><a href="/page/privacy" style="color: #3b82f6; text-decoration: none;">Privacy Policy</a></li>
+              <li><a href="/page/terms" style="color: #3b82f6; text-decoration: none;">Terms of Service</a></li>
             </ul>
           </nav>
         </main>

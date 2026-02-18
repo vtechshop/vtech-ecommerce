@@ -1,5 +1,5 @@
 # VTech Kitchen - Robots.txt
-# https://vtechkitchen.com
+# https://www.vtechkitchen.com
 
 User-agent: *
 Allow: /
@@ -26,4 +26,4 @@ Disallow: /*?ref=
 Crawl-delay: 1
 
 # Sitemap location
-Sitemap: https://vtechkitchen.com/sitemap.xml
+Sitemap: https://www.vtechkitchen.com/sitemap.xml

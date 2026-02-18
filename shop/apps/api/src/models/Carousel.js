@@ -39,6 +39,15 @@ const carouselSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  // Scheduling - for time-based visibility
+  startDate: {
+    type: Date,
+    default: null,
+  },
+  endDate: {
+    type: Date,
+    default: null,
+  },
   // Track who created/updated
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,

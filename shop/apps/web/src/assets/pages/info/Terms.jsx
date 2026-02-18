@@ -1,6 +1,16 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { updateMetaTags } from '@/utils/seo';
 
 const Terms = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Terms of Service - V-Tech Kitchen',
+      description: 'Read V-Tech Kitchen terms of service covering account usage, orders, payments, shipping, returns, intellectual property, and user responsibilities on our platform.',
+      canonical: 'https://www.vtechkitchen.com/page/terms',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
@@ -15,11 +25,6 @@ const Terms = () => {
                 By accessing and using Vtech's e-commerce platform, you accept and agree to be bound by these Terms of Service.
                 If you do not agree to these terms, please do not use our services.
               </p>
-           
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Use of Service</h2>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">2.1 Eligibility</h3>
               <p className="text-gray-700 leading-relaxed mb-4">
                 You must be at least 18 years old to use our services. By using our platform, you represent that you are of legal age to form a binding contract.

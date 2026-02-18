@@ -8,6 +8,7 @@ import Spinner from '@/components/common/Spinner';
 import { formatCurrency, formatDate } from '@/utils/format';
 import { useToast } from '@/components/common/ToastContainer';
 import CancelOrderModal from '@/components/common/CancelOrderModal';
+import ReturnOrderModal from '@/components/common/ReturnOrderModal';
 import TrackingTimeline from '@/components/common/TrackingTimeline';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 
@@ -17,6 +18,9 @@ const OrderDetail = () => {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnSuccess, setReturnSuccess] = useState(null);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['order', id],
@@ -56,6 +60,51 @@ const OrderDetail = () => {
     },
   });
 
+  const returnMutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await api.post(`/orders/${order?._id}/return`, data);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setReturnSuccess(data.data);
+      queryClient.invalidateQueries({ queryKey: ['order', id] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to submit return request');
+    },
+  });
+
+  // Fetch return details if order is returned
+  const { data: returnData } = useQuery({
+    queryKey: ['return', id],
+    queryFn: async () => {
+      const response = await api.get(`/orders/${order?._id}/return`);
+      return response.data.data;
+    },
+    enabled: order?.status === 'returned',
+  });
+
+  const handleDownloadInvoice = async () => {
+    setDownloadingInvoice(true);
+    try {
+      const response = await api.get(`/orders/${id}/invoice`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Invoice-${order.orderId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Invoice downloaded');
+    } catch (error) {
+      toast.error('Failed to download invoice');
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
+
   const handleCancelOrder = () => {
     setShowCancelModal(true);
   };
@@ -89,6 +138,7 @@ const OrderDetail = () => {
 
   // Allow cancellation for pending_payment, placed, and paid orders (before shipping)
   const canCancel = ['pending_payment', 'placed', 'paid'].includes(order.status);
+  const canDownloadInvoice = ['paid', 'packed', 'shipped', 'out_for_delivery', 'delivered'].includes(order.status);
 
   return (
     <div>
@@ -260,6 +310,21 @@ const OrderDetail = () => {
             </div>
           </div>
 
+          {/* Download Invoice */}
+          {canDownloadInvoice && (
+            <Button
+              variant="outline"
+              fullWidth
+              onClick={handleDownloadInvoice}
+              loading={downloadingInvoice}
+            >
+              <svg className="w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Download Invoice
+            </Button>
+          )}
+
           {/* Actions */}
           {canCancel && (
             <Button
@@ -273,9 +338,55 @@ const OrderDetail = () => {
           )}
 
           {order.status === 'delivered' && (
-            <Button variant="outline" fullWidth>
+            <Button variant="outline" fullWidth onClick={() => setShowReturnModal(true)}>
               Request Return
             </Button>
+          )}
+
+          {/* Return Status */}
+          {order.status === 'returned' && returnData && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <h2 className="text-lg font-bold mb-3">Return Status</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-700">RMA Number:</span>
+                  <span className="font-semibold font-mono text-primary-600">{returnData.rma}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Status:</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    returnData.status === 'refunded' ? 'bg-green-100 text-green-800' :
+                    returnData.status === 'approved' ? 'bg-blue-100 text-blue-800' :
+                    returnData.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {returnData.status.charAt(0).toUpperCase() + returnData.status.slice(1)}
+                  </span>
+                </div>
+                {returnData.reason && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-700">Reason:</span>
+                    <span className="text-sm text-gray-600 capitalize">{returnData.reason.replace(/_/g, ' ')}</span>
+                  </div>
+                )}
+                {returnData.events?.length > 0 && (
+                  <div className="border-t pt-3 mt-3">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Timeline</p>
+                    <div className="space-y-2">
+                      {returnData.events.map((event, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm">
+                          <div className="w-2 h-2 rounded-full bg-primary-500 mt-1.5 flex-shrink-0" />
+                          <div>
+                            <span className="text-gray-800">{event.description}</span>
+                            <p className="text-xs text-gray-400">{new Date(event.timestamp).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -287,6 +398,16 @@ const OrderDetail = () => {
         onConfirm={confirmCancelOrder}
         isLoading={cancelMutation.isPending}
         orderId={order?.orderId}
+      />
+
+      {/* Return Order Modal */}
+      <ReturnOrderModal
+        isOpen={showReturnModal}
+        onClose={() => { setShowReturnModal(false); setReturnSuccess(null); }}
+        onConfirm={(data) => returnMutation.mutate(data)}
+        isLoading={returnMutation.isPending}
+        order={order}
+        successData={returnSuccess}
       />
     </div>
   );

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const affiliateController = require('../controllers/affiliateController');
 const razorpayAccountController = require('../controllers/razorpayAccountController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireApprovedAffiliateKYC } = require('../middleware/auth');
 const { catalogTrackingLimiter } = require('../middleware/rateLimiter');
 
 // Public routes - SECURITY: Added rate limiting to prevent click fraud
@@ -17,13 +17,20 @@ router.use(authenticate);
 router.get('/me', affiliateController.getAffiliateProfile);
 router.put('/payment-details', affiliateController.updatePaymentDetails);
 router.get('/dashboard/stats', affiliateController.getDashboardStats);
-router.get('/links', affiliateController.getLinks);
+router.get('/links', requireApprovedAffiliateKYC, affiliateController.getLinks);
+router.get('/links/stats', requireApprovedAffiliateKYC, affiliateController.getLinkStats);
+router.get('/products/stats', requireApprovedAffiliateKYC, affiliateController.getProductStats);
+router.get('/commissions/stats', affiliateController.getCommissionStats);
 router.get('/commissions', affiliateController.getCommissions);
 router.get('/payouts', affiliateController.getPayouts);
 
-// Product-specific affiliate links
-router.post('/links/generate', affiliateController.generateProductLink);
-router.get('/links/product', affiliateController.getProductLinks);
+// Preferences routes
+router.get('/preferences', affiliateController.getPreferences);
+router.put('/preferences', affiliateController.updatePreferences);
+
+// Product-specific affiliate links - require approved KYC
+router.post('/links/generate', requireApprovedAffiliateKYC, affiliateController.generateProductLink);
+router.get('/links/product', requireApprovedAffiliateKYC, affiliateController.getProductLinks);
 router.delete('/links/:linkId', affiliateController.deleteAffiliateLink);
 
 // KYC routes

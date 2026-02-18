@@ -1,7 +1,7 @@
 // FILE: apps/web/src/components/product/ProductFilters.jsx
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, X, Filter, Star } from 'lucide-react';
+import { ChevronDown, X, Filter, Star } from 'lucide-react';
 import api from '@/utils/api';
 import { formatCurrency } from '@/utils/format';
 
@@ -124,14 +124,11 @@ const ProductFilters = ({
           className="flex items-center justify-between w-full text-left"
         >
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">Price Range</h3>
-          {expandedSections.price ? (
-            <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          )}
+          <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 accordion-chevron ${expandedSections.price ? 'open' : ''}`} />
         </button>
 
-        {expandedSections.price && (
+        <div className={`accordion-collapse ${expandedSections.price ? 'open' : ''}`}>
+          <div className="accordion-inner">
           <div className="mt-4 space-y-3">
             <div className="flex gap-2">
               <input
@@ -181,7 +178,8 @@ const ProductFilters = ({
               ))}
             </div>
           </div>
-        )}
+          </div>
+        </div>
       </div>
 
       {/* Customer Rating */}
@@ -191,14 +189,11 @@ const ProductFilters = ({
           className="flex items-center justify-between w-full text-left"
         >
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">Customer Rating</h3>
-          {expandedSections.rating ? (
-            <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          )}
+          <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 accordion-chevron ${expandedSections.rating ? 'open' : ''}`} />
         </button>
 
-        {expandedSections.rating && (
+        <div className={`accordion-collapse ${expandedSections.rating ? 'open' : ''}`}>
+          <div className="accordion-inner">
           <div className="mt-4 space-y-2">
             {[4, 3, 2, 1].map((rating) => (
               <button
@@ -226,7 +221,8 @@ const ProductFilters = ({
               </button>
             ))}
           </div>
-        )}
+          </div>
+        </div>
       </div>
 
       {/* Categories */}
@@ -237,14 +233,11 @@ const ProductFilters = ({
             className="flex items-center justify-between w-full text-left"
           >
             <h3 className="font-semibold text-gray-900 dark:text-gray-100">Categories</h3>
-            {expandedSections.categories ? (
-              <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            )}
+            <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 accordion-chevron ${expandedSections.categories ? 'open' : ''}`} />
           </button>
 
-          {expandedSections.categories && (
+          <div className={`accordion-collapse ${expandedSections.categories ? 'open' : ''}`}>
+            <div className="accordion-inner">
             <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
               {categories.slice(0, 10).map((cat) => (
                 <button
@@ -263,7 +256,8 @@ const ProductFilters = ({
                 </button>
               ))}
             </div>
-          )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -274,14 +268,11 @@ const ProductFilters = ({
           className="flex items-center justify-between w-full text-left"
         >
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">Availability</h3>
-          {expandedSections.availability ? (
-            <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          )}
+          <ChevronDown className={`w-5 h-5 text-gray-500 dark:text-gray-400 accordion-chevron ${expandedSections.availability ? 'open' : ''}`} />
         </button>
 
-        {expandedSections.availability && (
+        <div className={`accordion-collapse ${expandedSections.availability ? 'open' : ''}`}>
+          <div className="accordion-inner">
           <div className="mt-4 space-y-2">
             <button
               onClick={() => handleAvailabilityFilter('in-stock')}
@@ -326,7 +317,8 @@ const ProductFilters = ({
               <span>On Sale</span>
             </button>
           </div>
-        )}
+          </div>
+        </div>
       </div>
     </div>
   );

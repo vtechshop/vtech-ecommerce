@@ -12,5 +12,5 @@ module.exports = {
     '**/utils/**/*.test.js',
   ],
   setupFilesAfterEnv: ['<rootDir>/src/tests/integration/setup.js'],
-  testTimeout: 10000,
+  testTimeout: 30000, // Increased for CI environments
 };

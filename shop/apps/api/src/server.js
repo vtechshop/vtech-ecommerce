@@ -185,6 +185,11 @@ function setupCronJobs() {
     const PORT = Number(process.env.PORT) || 3000;
     const server = app.listen(PORT, () => logger.info(`API listening on port ${PORT}`));
 
+    // Set server-level request timeout (30 seconds) to kill hung requests
+    server.timeout = 30000;
+    server.keepAliveTimeout = 65000; // Slightly higher than common LB idle timeout (60s)
+    server.headersTimeout = 66000;   // Must be > keepAliveTimeout
+
     // Graceful shutdown helper
     const gracefulShutdown = async (signal) => {
       logger.info(`${signal} received, shutting down gracefully`);

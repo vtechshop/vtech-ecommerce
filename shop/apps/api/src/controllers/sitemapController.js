@@ -59,14 +59,20 @@ exports.generateSitemap = async (req, res, next) => {
 
     // ===== STATIC PAGES (NO /search) =====
     const staticPages = [
-      { path: '/products', priority: '0.9', changefreq: 'daily' }, // IMPORTANT
+      { path: '/products', priority: '0.9', changefreq: 'daily' },
       { path: '/blog', priority: '0.8', changefreq: 'weekly' },
       { path: '/page/about', priority: '0.7', changefreq: 'monthly' },
       { path: '/page/contact', priority: '0.7', changefreq: 'monthly' },
       { path: '/track-order', priority: '0.6', changefreq: 'monthly' },
-      { path: '/page/privacy-policy', priority: '0.5', changefreq: 'monthly' },
-      { path: '/page/terms-of-service', priority: '0.5', changefreq: 'monthly' },
-      { path: '/page/return-policy', priority: '0.5', changefreq: 'monthly' },
+      { path: '/warranty-check', priority: '0.6', changefreq: 'monthly' },
+      { path: '/page/privacy', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/terms', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/returns', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/shipping', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/faq', priority: '0.5', changefreq: 'monthly' },
+      { path: '/cookie-policy', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/affiliate-terms', priority: '0.4', changefreq: 'monthly' },
+      { path: '/page/vendor-terms', priority: '0.4', changefreq: 'monthly' },
     ];
 
     staticPages.forEach(page => {
@@ -176,6 +182,31 @@ exports.generateSitemap = async (req, res, next) => {
 };
 
 // ======================
+// INDEXNOW KEY VERIFICATION
+// ======================
+const INDEXNOW_KEY = 'b4d7f2e8a1c94d5b8e3f6a7c0d2e1b9a';
+
+exports.getIndexNowKey = async (req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(INDEXNOW_KEY);
+};
+
+// ======================
+// INDEXNOW BULK SUBMIT (Admin)
+// ======================
+exports.submitIndexNow = async (req, res, next) => {
+  try {
+    const indexNow = require('../services/indexNowService');
+    const result = await indexNow.submitAllUrls();
+    res.json({ success: result.success, data: result });
+  } catch (error) {
+    console.error('IndexNow bulk submit failed:', error);
+    next(error);
+  }
+};
+
+// ======================
 // ROBOTS.TXT GENERATOR
 // ======================
 exports.generateRobotsTxt = async (req, res, next) => {
@@ -195,7 +226,17 @@ Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /api/
-Disallow: /search
+
+Allow: /products
+Allow: /product/
+Allow: /category/
+Allow: /blog/
+Allow: /vendor/
+Allow: /page/
+
+Disallow: /*?ref=
+
+Crawl-delay: 1
 
 Sitemap: ${BASE_URL}/sitemap.xml
 `;

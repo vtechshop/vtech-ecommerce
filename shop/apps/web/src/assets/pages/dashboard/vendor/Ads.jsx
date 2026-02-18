@@ -1,5 +1,5 @@
 ﻿// FILE: apps/web/src/pages/dashboard/vendor/Ads.jsx
-import { useState, useMemo, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '@/utils/api';
@@ -7,11 +7,10 @@ import Button from '@/components/common/Button';
 import Modal from '@/components/common/Modal';
 import Spinner from '@/components/common/Spinner';
 import Input from '@/components/common/Input';
-import ImageCropUpload from '@/components/common/ImageCropUpload';
 import { useToast } from '@/components/common/ToastContainer';
-import { formatCurrency } from '@/utils/format';
+import { formatCurrency, formatDate } from '@/utils/format';
 import { loadRazorpayScript } from '@/utils/razorpay';
-import { Search, Filter, Download, Copy } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 
 const Ads = () => {
   const queryClient = useQueryClient();
@@ -20,21 +19,6 @@ const Ads = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
   const [rechargeAmount, setRechargeAmount] = useState('');
-  const [reportModalOpen, setReportModalOpen] = useState(false);
-  const [selectedCampaignForReport, setSelectedCampaignForReport] = useState(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-
-  // NEW: Search, Filter, Sort states
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('date'); // date, spend, ctr, clicks, impressions
-  const [productSearch, setProductSearch] = useState('');
-
-  // NEW: Ad Creative management state
-  const [creativesModalOpen, setCreativesModalOpen] = useState(false);
-  const [selectedCampaignForCreatives, setSelectedCampaignForCreatives] = useState(null);
-  const [uploadingCreative, setUploadingCreative] = useState(false);
-  const creativeUploadRef = useRef(null);
 
   // Campaign form state
   const [campaignForm, setCampaignForm] = useState({
@@ -48,9 +32,7 @@ const Ads = () => {
     placement: 'homepage_banner',
     position: 'top',
     bannerSize: 'hero',
-    dimensions: { width: '', height: '' },
     productIds: [],
-    keywords: '', // Amazon-style: Keywords for ad targeting
   });
 
   // Fetch pricing settings for selected placement
@@ -60,10 +42,10 @@ const Ads = () => {
       const response = await api.get(`/admin/ads/pricing-settings/${campaignForm.placement}`);
       return response.data.data;
     },
-    enabled: !!campaignForm.placement && (isCreateModalOpen || isEditMode),
+    enabled: !!campaignForm.placement && isCreateModalOpen,
   });
 
-  const { data: campaigns, isLoading } = useQuery({
+  const { data: campaigns, isLoading, refetch } = useQuery({
     queryKey: ['ad-campaigns'],
     queryFn: async () => {
       const response = await api.get('/ads/campaigns');
@@ -87,23 +69,12 @@ const Ads = () => {
     },
   });
 
-  // Fetch creatives for a campaign
-  const { data: creatives } = useQuery({
-    queryKey: ['ad-creatives', selectedCampaignForCreatives?._id],
-    queryFn: async () => {
-      const response = await api.get(`/ads/campaigns/${selectedCampaignForCreatives._id}/creatives`);
-      return response.data.data;
-    },
-    enabled: !!selectedCampaignForCreatives && creativesModalOpen,
-  });
-
   const pauseMutation = useMutation({
     mutationFn: async (id) => {
       await api.put(`/ads/campaigns/${id}`, { status: 'paused' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
-      toast.success('Campaign paused successfully');
     },
   });
 
@@ -113,26 +84,6 @@ const Ads = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
-      toast.success('Campaign resumed successfully');
-    },
-  });
-
-  // Amazon-style status update mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }) => {
-      await api.put(`/ads/campaigns/${id}`, { status });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
-      const statusMessages = {
-        active: 'Campaign activated successfully',
-        paused: 'Campaign paused successfully',
-        draft: 'Campaign moved to draft successfully',
-      };
-      toast.success(statusMessages[variables.status] || 'Campaign status updated');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to update campaign status');
     },
   });
 
@@ -142,65 +93,10 @@ const Ads = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
-      queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
       toast.success('Campaign deleted successfully');
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to delete campaign');
-    },
-  });
-
-  // NEW: Duplicate campaign mutation
-  const duplicateMutation = useMutation({
-    mutationFn: async (campaign) => {
-      const data = {
-        name: `${campaign.name} (Copy)`,
-        type: campaign.type,
-        pricing: campaign.pricing,
-        bid: campaign.bid,
-        dailyBudget: campaign.dailyBudget,
-        startAt: new Date(),
-        placement: campaign.placement,
-        position: campaign.position,
-        bannerSize: campaign.bannerSize,
-        dimensions: campaign.dimensions,
-        status: 'draft',
-      };
-
-      if (campaign.targeting?.products) {
-        data.targeting = { products: campaign.targeting.products };
-      }
-
-      const response = await api.post('/ads/campaigns', data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
-      queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
-      toast.success('Campaign duplicated successfully!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to duplicate campaign');
-    },
-  });
-
-  // NEW: Update campaign mutation (for edit)
-  const updateCampaignMutation = useMutation({
-    mutationFn: async ({ id, data }) => {
-      const response = await api.put(`/ads/campaigns/${id}`, data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
-      queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
-      toast.success('Campaign updated successfully!');
-      setIsCreateModalOpen(false);
-      setIsEditMode(false);
-      setEditingCampaign(null);
-      resetForm();
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to update campaign');
+      toast.error(error.response?.data?.message || 'Failed to delete campaign');
     },
   });
 
@@ -213,138 +109,27 @@ const Ads = () => {
       queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
       queryClient.invalidateQueries({ queryKey: ['ad-wallet'] });
       toast.success('Campaign created successfully! Waiting for admin approval.');
-      setIsCreateModalOpen(false);
-      resetForm();
+      handleCloseModal();
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to create campaign');
     },
   });
 
-  // NEW: Upload creative mutation
-  const uploadCreativeMutation = useMutation({
-    mutationFn: async ({ campaignId, file }) => {
-      // Validate file
-      if (!file) {
-        throw new Error('Please select a file');
-      }
-
-      // Validate file type
-      const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/bmp', 'image/svg+xml', 'image/tiff', 'image/x-icon'];
-      if (!validTypes.includes(file.type)) {
-        throw new Error('Invalid file type. Please upload an image file (PNG, JPG, GIF, WebP, BMP, SVG, TIFF, ICO)');
-      }
-
-      // Validate file size (10MB max)
-      if (file.size > 10 * 1024 * 1024) {
-        throw new Error('File size must be less than 10MB');
-      }
-
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', 'ad-creatives');
-
-      const uploadResponse = await api.post('/upload/single', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      if (!uploadResponse.data?.data?.url) {
-        throw new Error('Failed to get upload URL from server');
-      }
-
-      const creativeData = {
-        imageUrl: uploadResponse.data.data.url,
-        title: file.name,
-      };
-
-      const response = await api.post(`/ads/campaigns/${campaignId}/creatives`, creativeData);
+  const updateCampaignMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const response = await api.put(`/ads/campaigns/${id}`, data);
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ad-creatives'] });
-      toast.success('Creative uploaded successfully!');
-      // Reset file input
-      if (creativeUploadRef.current) {
-        creativeUploadRef.current.value = '';
-      }
+      queryClient.invalidateQueries({ queryKey: ['ad-campaigns'] });
+      toast.success('Campaign updated successfully!');
+      handleCloseModal();
     },
     onError: (error) => {
-      console.error('Creative upload error:', error);
-      const errorMessage = error.message || error.response?.data?.error?.message || 'Failed to upload creative';
-      toast.error(errorMessage);
-      // Reset file input on error too
-      if (creativeUploadRef.current) {
-        creativeUploadRef.current.value = '';
-      }
+      toast.error(error.response?.data?.error?.message || 'Failed to update campaign');
     },
   });
-
-  // NEW: Delete creative mutation
-  const deleteCreativeMutation = useMutation({
-    mutationFn: async ({ campaignId, creativeId }) => {
-      if (!campaignId || !creativeId) {
-        throw new Error('Campaign ID and Creative ID are required');
-      }
-      const response = await api.delete(`/ads/campaigns/${campaignId}/creatives/${creativeId}`);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ad-creatives'] });
-      toast.success('Creative deleted successfully!');
-    },
-    onError: (error) => {
-      console.error('Creative delete error:', error);
-      const errorMessage = error.response?.data?.error?.message || error.message || 'Failed to delete creative';
-      toast.error(errorMessage);
-    },
-  });
-
-  const resetForm = () => {
-    setCampaignForm({
-      name: '',
-      type: 'SponsoredProduct',
-      pricing: 'CPC',
-      bid: '',
-      dailyBudget: '',
-      startAt: new Date().toISOString().split('T')[0],
-      endAt: '',
-      placement: 'homepage_banner',
-      position: 'top',
-      bannerSize: 'hero',
-      dimensions: { width: '', height: '' },
-      productIds: [],
-      keywords: '',
-    });
-  };
-
-  // NEW: Handle edit campaign
-  const handleEditCampaign = (campaign) => {
-    setIsEditMode(true);
-    setEditingCampaign(campaign);
-    setCampaignForm({
-      name: campaign.name || '',
-      type: campaign.type || 'SponsoredProduct',
-      pricing: campaign.pricing || 'CPC',
-      bid: campaign.bid || '',
-      dailyBudget: campaign.dailyBudget || '',
-      startAt: campaign.startAt ? new Date(campaign.startAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      endAt: campaign.endAt ? new Date(campaign.endAt).toISOString().split('T')[0] : '',
-      placement: campaign.placement || 'homepage_banner',
-      position: campaign.position || 'top',
-      bannerSize: campaign.bannerSize || 'hero',
-      dimensions: campaign.dimensions || { width: '', height: '' },
-      productIds: campaign.targeting?.products || [],
-      keywords: campaign.targeting?.keywords?.map(k => k.keyword).join(', ') || '',
-    });
-    setIsCreateModalOpen(true);
-  };
-
-  // NEW: Handle duplicate campaign
-  const handleDuplicateCampaign = (campaign) => {
-    if (window.confirm(`Duplicate campaign "${campaign.name}"? This will create a copy in draft status.`)) {
-      duplicateMutation.mutate(campaign);
-    }
-  };
 
   const handleCreateCampaign = (e) => {
     e.preventDefault();
@@ -381,9 +166,6 @@ const Ads = () => {
       placement: campaignForm.placement,
       position: campaignForm.position,
       bannerSize: campaignForm.bannerSize,
-      dimensions: campaignForm.bannerSize === 'custom' && campaignForm.dimensions.width && campaignForm.dimensions.height
-        ? { width: parseInt(campaignForm.dimensions.width), height: parseInt(campaignForm.dimensions.height) }
-        : undefined,
     };
 
     // Only set status to draft for new campaigns
@@ -395,25 +177,11 @@ const Ads = () => {
       data.endAt = new Date(campaignForm.endAt);
     }
 
-    // Amazon-style: Add targeting with keywords and products
-    const keywords = campaignForm.keywords
-      ? campaignForm.keywords.split(',').map(k => k.trim()).filter(Boolean)
-      : [];
-
     if (campaignForm.type === 'SponsoredProduct' && campaignForm.productIds.length > 0) {
       data.targeting = {
         products: campaignForm.productIds,
-        keywords: keywords.map(k => ({ keyword: k, matchType: 'broad' })),
-      };
-    } else if (keywords.length > 0) {
-      // For non-product campaigns or search placements, still send keywords
-      data.targeting = {
-        keywords: keywords.map(k => ({ keyword: k, matchType: 'broad' })),
-        products: [],
       };
     }
-
-    console.log('🎯 [VENDOR DEBUG] Creating campaign with targeting:', data.targeting);
 
     // Use update mutation if editing, otherwise create
     if (editingCampaign) {
@@ -567,100 +335,23 @@ const Ads = () => {
     initiateWalletRecharge(amount);
   };
 
-  // NEW: Download report as CSV
-  const downloadReportCSV = (campaign) => {
-    const impressions = campaign.stats?.impressions || 0;
-    const clicks = campaign.stats?.clicks || 0;
-    const conversions = campaign.stats?.conversions || 0;
-    const spend = campaign.stats?.spend || 0;
-    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : 0;
-    const conversionRate = clicks > 0 ? ((conversions / clicks) * 100).toFixed(2) : 0;
-    const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : 0;
-    const cpa = conversions > 0 ? (spend / conversions).toFixed(2) : 0;
-
-    const csvContent = [
-      ['Campaign Report', campaign.name],
-      ['Generated on', new Date().toLocaleString()],
-      [''],
-      ['Metric', 'Value'],
-      ['Campaign Type', campaign.type],
-      ['Pricing Model', campaign.pricing],
-      ['Current Bid', `₹${campaign.bid}`],
-      ['Daily Budget', `₹${campaign.dailyBudget}`],
-      ['Status', campaign.status],
-      [''],
-      ['Performance Metrics', ''],
-      ['Impressions', impressions],
-      ['Clicks', clicks],
-      ['CTR', `${ctr}%`],
-      ['Conversions', conversions],
-      ['Conversion Rate', `${conversionRate}%`],
-      ['Avg CPC', `₹${cpc}`],
-      ['CPA', `₹${cpa}`],
-      ['Total Spend', `₹${spend}`],
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${campaign.name.replace(/[^a-z0-9]/gi, '_')}_report_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-    toast.success('Report downloaded successfully!');
-  };
-
-  // NEW: Filter and sort campaigns
-  const filteredAndSortedCampaigns = useMemo(() => {
-    if (!campaigns) return [];
-
-    let filtered = campaigns;
-
-    // Search filter
-    if (searchQuery) {
-      filtered = filtered.filter(campaign =>
-        campaign.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(campaign => campaign.status === statusFilter);
-    }
-
-    // Sort
-    const sorted = [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case 'date':
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        case 'spend':
-          return (b.stats?.spend || 0) - (a.stats?.spend || 0);
-        case 'ctr':
-          const ctrA = (a.stats?.impressions || 0) > 0 ? ((a.stats?.clicks || 0) / (a.stats?.impressions || 0)) * 100 : 0;
-          const ctrB = (b.stats?.impressions || 0) > 0 ? ((b.stats?.clicks || 0) / (b.stats?.impressions || 0)) * 100 : 0;
-          return ctrB - ctrA;
-        case 'clicks':
-          return (b.stats?.clicks || 0) - (a.stats?.clicks || 0);
-        case 'impressions':
-          return (b.stats?.impressions || 0) - (a.stats?.impressions || 0);
-        default:
-          return 0;
-      }
+  const handleEditCampaign = (campaign) => {
+    setEditingCampaign(campaign);
+    setCampaignForm({
+      name: campaign.name,
+      type: campaign.type,
+      pricing: campaign.pricing,
+      bid: campaign.bid.toString(),
+      dailyBudget: campaign.dailyBudget.toString(),
+      startAt: new Date(campaign.startAt).toISOString().split('T')[0],
+      endAt: campaign.endAt ? new Date(campaign.endAt).toISOString().split('T')[0] : '',
+      placement: campaign.placement,
+      position: campaign.position || 'top',
+      bannerSize: campaign.bannerSize || 'hero',
+      productIds: campaign.targeting?.products || [],
     });
-
-    return sorted;
-  }, [campaigns, searchQuery, statusFilter, sortBy]);
-
-  // NEW: Filter products in modal
-  const filteredProducts = useMemo(() => {
-    if (!products) return [];
-    if (!productSearch) return products;
-    return products.filter(product =>
-      product.title.toLowerCase().includes(productSearch.toLowerCase())
-    );
-  }, [products, productSearch]);
+    setIsCreateModalOpen(true);
+  };
 
   const handleDeleteCampaign = (campaignId, campaignName) => {
     if (window.confirm(`Are you sure you want to delete "${campaignName}"? This action cannot be undone.`)) {
@@ -682,9 +373,7 @@ const Ads = () => {
       placement: 'homepage_banner',
       position: 'top',
       bannerSize: 'hero',
-      dimensions: { width: '', height: '' },
       productIds: [],
-      keywords: '',
     });
   };
 
@@ -698,24 +387,23 @@ const Ads = () => {
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Sponsored Ads</h1>
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-          <div className="text-left sm:text-right">
-            <p className="text-xs sm:text-sm text-gray-700">Wallet Balance</p>
-            <p className="text-xl sm:text-2xl font-bold text-green-600">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Sponsored Ads</h1>
+        <div className="flex items-center gap-4">
+          <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          <div className="text-right">
+            <p className="text-sm text-gray-700">Wallet Balance</p>
+            <p className="text-2xl font-bold text-green-600">
               {formatCurrency(wallet?.balance || 0)}
             </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} variant="outline" className="text-sm">
+          <Button onClick={() => setIsModalOpen(true)} variant="outline">
             Recharge Wallet
           </Button>
-          <Button variant="primary" onClick={() => {
-            setIsEditMode(false);
-            setEditingCampaign(null);
-            resetForm();
-            setIsCreateModalOpen(true);
-          }} className="text-sm">
+          <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
             Create Campaign
           </Button>
         </div>
@@ -759,433 +447,150 @@ const Ads = () => {
         </div>
       </div>
 
-      {/* NEW: Search, Filter, Sort Bar */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Search */}
-          <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search campaigns..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-            </div>
-          </div>
-
-          {/* Status Filter */}
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-600" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="budget_exhausted">Budget Exhausted</option>
-            </select>
-          </div>
-
-          {/* Sort By */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Sort by:</span>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="date">Latest</option>
-              <option value="spend">Highest Spend</option>
-              <option value="ctr">Highest CTR</option>
-              <option value="clicks">Most Clicks</option>
-              <option value="impressions">Most Impressions</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {filteredAndSortedCampaigns?.length === 0 ? (
+      {campaigns?.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
           <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
-          <h3 className="text-xl font-semibold mb-2">No campaigns found</h3>
-          <p className="text-gray-700 mb-6">
-            {searchQuery || statusFilter !== 'all' ? 'Try adjusting your search or filters' : 'Start promoting your products with sponsored ads'}
-          </p>
-          <Button variant="primary" onClick={() => {
-            setIsEditMode(false);
-            setEditingCampaign(null);
-            resetForm();
-            setIsCreateModalOpen(true);
-          }}>
+          <h3 className="text-xl font-semibold mb-2">No campaigns yet</h3>
+          <p className="text-gray-700 mb-6">Start promoting your products with sponsored ads</p>
+          <Button variant="primary" onClick={() => setIsCreateModalOpen(true)}>
             Create Your First Campaign
           </Button>
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredAndSortedCampaigns.map((campaign) => {
-            const impressions = campaign.stats?.impressions || 0;
-            const clicks = campaign.stats?.clicks || 0;
-            const conversions = campaign.stats?.conversions || 0;
-            const spend = campaign.stats?.spend || 0;
-            const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : 0;
-            const conversionRate = clicks > 0 ? ((conversions / clicks) * 100).toFixed(2) : 0;
-            const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : 0;
-            const budgetUsed = campaign.dailyBudget > 0 ? ((campaign.dailySpend?.amount || 0) / campaign.dailyBudget * 100).toFixed(0) : 0;
-
-            return (
-              <div key={campaign._id} className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-md border-2 border-gray-200 hover:border-primary-400 hover:shadow-xl transition-all duration-300 overflow-hidden">
-                {/* Status Bar - Always Visible at Top */}
-                <div className={`px-4 py-2 flex items-center justify-between border-b-2 ${
-                  campaign.status === 'active' ? 'bg-green-50 border-green-500' :
-                  campaign.status === 'paused' ? 'bg-yellow-50 border-yellow-500' :
-                  campaign.status === 'pending_approval' ? 'bg-blue-50 border-blue-500' :
-                  campaign.status === 'approved' ? 'bg-green-50 border-green-500' :
-                  campaign.status === 'rejected' ? 'bg-red-50 border-red-500' :
-                  campaign.status === 'budget_exhausted' ? 'bg-red-50 border-red-600' :
-                  campaign.status === 'draft' ? 'bg-gray-50 border-gray-400' :
-                  'bg-gray-50 border-gray-400'
-                }`}>
-                  <span className="text-xs sm:text-sm font-semibold text-gray-700">Campaign Status</span>
-                  <span className={`px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-extrabold rounded-full ${
-                    campaign.status === 'active' ? 'bg-green-600 text-white animate-pulse' :
-                    campaign.status === 'pending_approval' ? 'bg-blue-600 text-white' :
-                    campaign.status === 'approved' ? 'bg-green-600 text-white' :
-                    campaign.status === 'rejected' ? 'bg-red-600 text-white' :
-                    campaign.status === 'paused' ? 'bg-yellow-500 text-black font-black' :
-                    campaign.status === 'budget_exhausted' ? 'bg-red-700 text-white' :
-                    campaign.status === 'draft' ? 'bg-gray-500 text-white' :
-                    'bg-gray-600 text-white'
-                  }`}>
-                    {campaign.status === 'active' ? '🟢 ACTIVE' :
-                     campaign.status === 'paused' ? '⏸️ PAUSED' :
-                     campaign.status === 'pending_approval' ? '🕐 PENDING' :
-                     campaign.status === 'approved' ? '✅ APPROVED' :
-                     campaign.status === 'rejected' ? '❌ REJECTED' :
-                     campaign.status === 'budget_exhausted' ? '💰 BUDGET EXHAUSTED' :
-                     campaign.status === 'draft' ? '📝 DRAFT' :
-                     campaign.status.replace('_', ' ').toUpperCase()}
-                  </span>
-                </div>
-
-                {/* Header Section - Amazon Style */}
-                <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-4 sm:px-6 py-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex-1 w-full">
-                      <div className="flex flex-col gap-2 mb-2">
-                        <h3 className="text-lg sm:text-xl font-bold text-white">{campaign.name}</h3>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-white text-xs sm:text-sm">
-                        <span className="flex items-center gap-1 shrink-0">
-                          <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                            <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd"/>
-                          </svg>
-                          <span className="truncate max-w-[120px] sm:max-w-none">{campaign.type}</span>
-                        </span>
-                        <span className="flex items-center gap-1 shrink-0">
-                          <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                          </svg>
-                          <span className="whitespace-nowrap">{campaign.pricing} - Bid: {formatCurrency(campaign.bid)}</span>
-                        </span>
-                        {campaign.placement && (
-                          <span className="flex items-center gap-1 min-w-0">
-                            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                            </svg>
-                            <span className="truncate">{campaign.placement.replace(/_/g, ' ')}</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
+          {campaigns.map((campaign) => (
+            <div key={campaign._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <h3 className="text-lg font-semibold">{campaign.name}</h3>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      campaign.status === 'active' ? 'bg-green-100 text-green-800' :
+                      campaign.status === 'pending_approval' ? 'bg-blue-100 text-blue-800' :
+                      campaign.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      campaign.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                      campaign.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
+                      campaign.status === 'budget_exhausted' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-900'
+                    }`}>
+                      {campaign.status.replace('_', ' ')}
+                    </span>
+                    {campaign.approval?.status && (
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        campaign.approval.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        campaign.approval.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {campaign.approval.status === 'approved' ? '✓ Approved' :
+                         campaign.approval.status === 'rejected' ? '✗ Rejected' :
+                         '⏳ Pending Review'}
+                      </span>
+                    )}
+                    {campaign.qualityScore?.overall && (
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                        Quality: {campaign.qualityScore.overall}/10
+                      </span>
+                    )}
                   </div>
-                </div>
-
-                {/* Campaign Details - Amazon Style */}
-                <div className="px-4 sm:px-6 py-4 bg-white border-b border-gray-200">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full sm:w-auto">
-                      {campaign.approval?.status && (
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
-                          <span className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Approval Status:</span>
-                          <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                            campaign.approval.status === 'approved' ? 'bg-green-100 text-green-800 border border-green-300' :
-                            campaign.approval.status === 'rejected' ? 'bg-red-100 text-red-800 border border-red-300' :
-                            'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                          }`}>
-                            {campaign.approval.status === 'approved' ? '✅ APPROVED' :
-                             campaign.approval.status === 'rejected' ? '❌ REJECTED' :
-                             '🕐 PENDING REVIEW'}
-                          </span>
-                        </div>
-                      )}
-                      {campaign.qualityScore?.overall && (
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
-                          <span className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Quality Score:</span>
-                          <div className="flex items-center gap-1">
-                            <div className="flex">
-                              {[...Array(10)].map((_, i) => (
-                                <svg
-                                  key={i}
-                                  className={`w-3 h-3 sm:w-4 sm:h-4 ${i < campaign.qualityScore.overall ? 'text-yellow-400' : 'text-gray-300'}`}
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                              ))}
-                            </div>
-                            <span className="text-xs sm:text-sm font-bold text-purple-600">{campaign.qualityScore.overall}/10</span>
-                          </div>
-                        </div>
-                      )}
-                      {campaign.auctionScore && (
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full sm:w-auto">
-                          <span className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Auction Score:</span>
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded font-bold text-xs sm:text-sm">
-                            {campaign.auctionScore.toFixed(2)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
-                      <div className="w-full sm:w-auto">
-                        <p className="text-xs text-gray-600">Daily Budget</p>
-                        <p className="text-base sm:text-lg font-bold text-gray-900">{formatCurrency(campaign.dailyBudget)}</p>
-                      </div>
-                      <div className="w-full sm:w-auto">
-                        <p className="text-xs text-gray-600">Spent Today</p>
-                        <p className={`text-base sm:text-lg font-bold ${budgetUsed > 90 ? 'text-red-600' : budgetUsed > 70 ? 'text-yellow-600' : 'text-green-600'}`}>
-                          {formatCurrency(campaign.dailySpend?.amount || 0)}
-                          <span className="text-xs ml-1">({budgetUsed}%)</span>
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <p className="text-sm text-gray-700">
+                    {campaign.type} • {campaign.pricing} • Bid: {formatCurrency(campaign.bid)}
+                    {campaign.auctionScore && ` • Score: ${campaign.auctionScore.toFixed(2)}`}
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    Daily Budget: {formatCurrency(campaign.dailyBudget)} •
+                    Spent Today: {formatCurrency(campaign.dailySpend?.amount || 0)}
+                  </p>
                   {campaign.approval?.rejectionReason && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-800">
-                        <strong className="font-bold">❌ Rejection Reason:</strong> {campaign.approval.rejectionReason}
-                      </p>
-                    </div>
+                    <p className="text-sm text-red-600 mt-2">
+                      <strong>Rejection Reason:</strong> {campaign.approval.rejectionReason}
+                    </p>
                   )}
                 </div>
-
-                {/* Performance Stats - Amazon Advertising Style */}
-                <div className="px-6 py-5 bg-gradient-to-br from-gray-50 to-white">
-                  <h4 className="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-                    </svg>
-                    Campaign Performance Metrics
-                  </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                    {/* Impressions */}
-                    <div className="bg-white rounded-lg p-4 border-2 border-blue-200 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-blue-700 uppercase">Impressions</span>
-                        <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
-                        </svg>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{impressions.toLocaleString()}</p>
-                      <p className="text-xs text-gray-600 mt-1">Total views</p>
-                    </div>
-
-                    {/* Clicks */}
-                    <div className="bg-white rounded-lg p-4 border-2 border-green-200 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-green-700 uppercase">Clicks</span>
-                        <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518l.259.966a1 1 0 001.932-.518l-.26-.966zM2.429 4.74a1 1 0 10-.517 1.932l.966.259a1 1 0 00.517-1.932l-.966-.26zm8.814-.569a1 1 0 00-1.415-1.414l-.707.707a1 1 0 101.415 1.415l.707-.708zm-7.071 7.072l.707-.707A1 1 0 003.465 9.12l-.708.707a1 1 0 001.415 1.415zm3.2-5.171a1 1 0 00-1.3 1.3l4 10a1 1 0 001.823.075l1.38-2.759 3.018 3.02a1 1 0 001.414-1.415l-3.019-3.02 2.76-1.379a1 1 0 00-.076-1.822l-10-4z" clipRule="evenodd"/>
-                        </svg>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{clicks.toLocaleString()}</p>
-                      <p className="text-xs text-gray-600 mt-1">User clicks</p>
-                    </div>
-
-                    {/* CTR */}
-                    <div className="bg-white rounded-lg p-4 border-2 border-purple-200 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-purple-700 uppercase">CTR</span>
-                        <svg className="w-5 h-5 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd"/>
-                        </svg>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{ctr}%</p>
-                      <p className="text-xs text-gray-600 mt-1">Click-through rate</p>
-                    </div>
-
-                    {/* Conversions */}
-                    <div className="bg-white rounded-lg p-4 border-2 border-yellow-200 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-yellow-700 uppercase">Conversions</span>
-                        <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
-                          <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
-                        </svg>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{conversions}</p>
-                      <p className="text-xs text-gray-600 mt-1">Sales generated</p>
-                    </div>
-
-                    {/* Conversion Rate */}
-                    <div className="bg-white rounded-lg p-4 border-2 border-indigo-200 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-indigo-700 uppercase">Conv. Rate</span>
-                        <svg className="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-                        </svg>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{conversionRate}%</p>
-                      <p className="text-xs text-gray-600 mt-1">Click to sale</p>
-                    </div>
-
-                    {/* CPC */}
-                    <div className="bg-white rounded-lg p-4 border-2 border-pink-200 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-pink-700 uppercase">Avg CPC</span>
-                        <svg className="w-5 h-5 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd"/>
-                        </svg>
-                      </div>
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(cpc)}</p>
-                      <p className="text-xs text-gray-600 mt-1">Cost per click</p>
-                    </div>
-
-                    {/* Total Spend */}
-                    <div className="bg-white rounded-lg p-4 border-2 border-red-200 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-red-700 uppercase">Total Spend</span>
-                        <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                        </svg>
-                      </div>
-                      <p className="text-2xl font-bold text-red-600">{formatCurrency(spend)}</p>
-                      <p className="text-xs text-gray-600 mt-1">Total ad spend</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons Footer */}
-                <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200">
-                  {/* All buttons in a clean responsive grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-                    <button
+                <div className="flex flex-col gap-2 min-w-[140px]">
+                  <div className="flex gap-2">
+                    {campaign.status === 'active' ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => pauseMutation.mutate(campaign._id)}
+                        className="flex-1"
+                      >
+                        Pause
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => resumeMutation.mutate(campaign._id)}
+                        className="flex-1"
+                      >
+                        Resume
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleEditCampaign(campaign)}
-                      className="px-3 sm:px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
-                      title="Edit Campaign"
+                      className="flex-1"
+                      title="Edit campaign"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      <span className="hidden sm:inline">Edit</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleDuplicateCampaign(campaign)}
-                      disabled={duplicateMutation.isPending}
-                      className="px-3 sm:px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-50"
-                      title="Duplicate Campaign"
-                    >
-                      <Copy className="w-4 h-4" />
-                      <span className="hidden sm:inline">Duplicate</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setSelectedCampaignForCreatives(campaign);
-                        setCreativesModalOpen(true);
-                      }}
-                      className="px-3 sm:px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
-                      title="Manage Creatives"
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="primary" size="sm" disabled title="Detailed reports coming soon" className="flex-1">
+                      View Report
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteCampaign(campaign._id, campaign.name)}
+                      className="flex-1 text-red-600 border-red-300 hover:bg-red-50"
+                      title="Delete campaign"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      <span className="hidden sm:inline">Creatives</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setSelectedCampaignForReport(campaign);
-                        setReportModalOpen(true);
-                      }}
-                      className="px-3 sm:px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2 text-sm font-medium whitespace-nowrap transition-colors"
-                      title="View Report"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span className="hidden sm:inline">Report</span>
-                    </button>
-
-                    {/* Status Control - Vendors can only Draft/Delete */}
-                    <div className="relative inline-block min-w-[120px]">
-                      <select
-                        value={campaign.status}
-                        onChange={(e) => {
-                          const newStatus = e.target.value;
-                          if (newStatus === 'delete') {
-                            if (window.confirm(`Are you sure you want to delete "${campaign.name}"?\n\nThis cannot be undone.`)) {
-                              deleteMutation.mutate(campaign._id);
-                            }
-                            e.target.value = campaign.status;
-                          } else if (newStatus !== campaign.status) {
-                            updateStatusMutation.mutate({ id: campaign._id, status: newStatus });
-                          }
-                        }}
-                        className={`w-full px-3 py-2 pr-8 text-sm font-medium rounded-lg border cursor-pointer transition-colors [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
-                          campaign.status === 'active' ? 'bg-green-100 text-green-800 border-green-300' :
-                          campaign.status === 'paused' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' :
-                          campaign.status === 'draft' ? 'bg-gray-100 text-gray-800 border-gray-300' :
-                          campaign.status === 'pending_approval' ? 'bg-blue-100 text-blue-800 border-blue-300' :
-                          'bg-gray-100 text-gray-800 border-gray-300'
-                        }`}
-                        style={{
-                          appearance: 'none',
-                          WebkitAppearance: 'none',
-                          MozAppearance: 'none',
-                          backgroundImage: 'none'
-                        }}
-                      >
-                        {/* Show current status (read-only) */}
-                        {(campaign.status === 'active' || campaign.status === 'paused' || campaign.status === 'pending_approval') && (
-                          <option value={campaign.status} disabled>
-                            {campaign.status === 'active' && '🟢 Active (Admin Controlled)'}
-                            {campaign.status === 'paused' && '⏸️ Paused (Admin Controlled)'}
-                            {campaign.status === 'pending_approval' && '🕐 Pending Approval'}
-                          </option>
-                        )}
-
-                        {/* Vendor can only move to Draft or Delete */}
-                        <option value="draft">📝 Move to Draft</option>
-                        <option value="delete">🗑️ Delete Forever</option>
-                      </select>
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    </div>
+                    </Button>
                   </div>
                 </div>
               </div>
-            );
-          })}
+
+              {/* Stats */}
+              <div className="grid grid-cols-5 gap-4 pt-4 border-t">
+                <div>
+                  <p className="text-xs text-gray-700">Impressions</p>
+                  <p className="text-lg font-bold">{campaign.stats?.impressions || 0}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-700">Clicks</p>
+                  <p className="text-lg font-bold">{campaign.stats?.clicks || 0}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-700">CTR</p>
+                  <p className="text-lg font-bold">
+                    {campaign.stats?.impressions > 0
+                      ? ((campaign.stats.clicks / campaign.stats.impressions) * 100).toFixed(2)
+                      : 0}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-700">Conversions</p>
+                  <p className="text-lg font-bold">{campaign.stats?.conversions || 0}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-700">Spend</p>
+                  <p className="text-lg font-bold text-red-600">
+                    {formatCurrency(campaign.stats?.spend || 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -1220,325 +625,11 @@ const Ads = () => {
         </form>
       </Modal>
 
-      {/* Campaign Report Modal */}
-      {reportModalOpen && selectedCampaignForReport && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-[95vw] sm:max-w-6xl w-full max-h-[90vh] overflow-y-auto shadow-2xl mx-4">
-            {/* Report Header */}
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">📊 Campaign Performance Report</h2>
-                <p className="text-white/90 text-sm">{selectedCampaignForReport.name}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => downloadReportCSV(selectedCampaignForReport)}
-                  className="px-4 py-2 bg-white text-primary-600 rounded-lg hover:bg-gray-100 transition-colors font-semibold flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" />
-                  Download CSV
-                </button>
-                <button
-                  onClick={() => {
-                    setReportModalOpen(false);
-                    setSelectedCampaignForReport(null);
-                  }}
-                  className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Campaign Overview */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-                  </svg>
-                  Campaign Overview
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Campaign Type</p>
-                    <p className="text-lg font-bold text-gray-900">{selectedCampaignForReport.type}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Pricing Model</p>
-                    <p className="text-lg font-bold text-gray-900">{selectedCampaignForReport.pricing}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Current Bid</p>
-                    <p className="text-lg font-bold text-blue-600">{formatCurrency(selectedCampaignForReport.bid)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Status</p>
-                    <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${
-                      selectedCampaignForReport.status === 'active' ? 'bg-green-500 text-white' :
-                      selectedCampaignForReport.status === 'paused' ? 'bg-yellow-500 text-white' :
-                      'bg-gray-500 text-white'
-                    }`}>
-                      {selectedCampaignForReport.status.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Performance Metrics */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd"/>
-                  </svg>
-                  Performance Metrics
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-white rounded-lg p-5 border-2 border-blue-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-blue-700 uppercase">Impressions</span>
-                      <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                    <p className="text-3xl font-bold text-gray-900">{(selectedCampaignForReport.stats?.impressions || 0).toLocaleString()}</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-5 border-2 border-green-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-green-700 uppercase">Clicks</span>
-                      <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6.672 1.911a1 1 0 10-1.932.518l.259.966a1 1 0 001.932-.518l-.26-.966zM2.429 4.74a1 1 0 10-.517 1.932l.966.259a1 1 0 00.517-1.932l-.966-.26zm8.814-.569a1 1 0 00-1.415-1.414l-.707.707a1 1 0 101.415 1.415l.707-.708zm-7.071 7.072l.707-.707A1 1 0 003.465 9.12l-.708.707a1 1 0 001.415 1.415zm3.2-5.171a1 1 0 00-1.3 1.3l4 10a1 1 0 001.823.075l1.38-2.759 3.018 3.02a1 1 0 001.414-1.415l-3.019-3.02 2.76-1.379a1 1 0 00-.076-1.822l-10-4z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                    <p className="text-3xl font-bold text-gray-900">{(selectedCampaignForReport.stats?.clicks || 0).toLocaleString()}</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-5 border-2 border-yellow-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-yellow-700 uppercase">Conversions</span>
-                      <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
-                        <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
-                      </svg>
-                    </div>
-                    <p className="text-3xl font-bold text-gray-900">{selectedCampaignForReport.stats?.conversions || 0}</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-5 border-2 border-red-200 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-medium text-red-700 uppercase">Total Spend</span>
-                      <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                    <p className="text-3xl font-bold text-red-600">{formatCurrency(selectedCampaignForReport.stats?.spend || 0)}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Calculated Metrics */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
-                  </svg>
-                  Calculated Metrics (Amazon-Style)
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {(() => {
-                    const impressions = selectedCampaignForReport.stats?.impressions || 0;
-                    const clicks = selectedCampaignForReport.stats?.clicks || 0;
-                    const conversions = selectedCampaignForReport.stats?.conversions || 0;
-                    const spend = selectedCampaignForReport.stats?.spend || 0;
-                    const ctr = impressions > 0 ? ((clicks / impressions) * 100).toFixed(2) : 0;
-                    const conversionRate = clicks > 0 ? ((conversions / clicks) * 100).toFixed(2) : 0;
-                    const cpc = clicks > 0 ? (spend / clicks).toFixed(2) : 0;
-                    const cpa = conversions > 0 ? (spend / conversions).toFixed(2) : 0;
-
-                    return (
-                      <>
-                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-                          <p className="text-sm text-purple-700 font-medium mb-1">CTR (Click-Through Rate)</p>
-                          <p className="text-2xl font-bold text-purple-600">{ctr}%</p>
-                          <p className="text-xs text-gray-600 mt-1">Industry avg: 0.5-2%</p>
-                        </div>
-                        <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
-                          <p className="text-sm text-indigo-700 font-medium mb-1">Conversion Rate</p>
-                          <p className="text-2xl font-bold text-indigo-600">{conversionRate}%</p>
-                          <p className="text-xs text-gray-600 mt-1">Clicks to sales</p>
-                        </div>
-                        <div className="bg-pink-50 rounded-lg p-4 border border-pink-200">
-                          <p className="text-sm text-pink-700 font-medium mb-1">Avg CPC</p>
-                          <p className="text-2xl font-bold text-pink-600">{formatCurrency(cpc)}</p>
-                          <p className="text-xs text-gray-600 mt-1">Cost per click</p>
-                        </div>
-                        <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                          <p className="text-sm text-orange-700 font-medium mb-1">CPA (Cost Per Acquisition)</p>
-                          <p className="text-2xl font-bold text-orange-600">{formatCurrency(cpa)}</p>
-                          <p className="text-xs text-gray-600 mt-1">Cost per sale</p>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-
-              {/* Budget Information */}
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd"/>
-                  </svg>
-                  Budget & Spending
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Daily Budget</p>
-                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(selectedCampaignForReport.dailyBudget)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Spent Today</p>
-                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(selectedCampaignForReport.dailySpend?.amount || 0)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Budget Remaining</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {formatCurrency(selectedCampaignForReport.dailyBudget - (selectedCampaignForReport.dailySpend?.amount || 0))}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Close Button */}
-              <div className="flex justify-end pt-4 border-t">
-                <button
-                  onClick={() => {
-                    setReportModalOpen(false);
-                    setSelectedCampaignForReport(null);
-                  }}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
-                >
-                  Close Report
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* NEW: Ad Creatives Modal */}
-      {creativesModalOpen && selectedCampaignForCreatives && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-[95vw] sm:max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl mx-4">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-1">🎨 Ad Creatives</h2>
-                <p className="text-white/90 text-sm">{selectedCampaignForCreatives.name}</p>
-              </div>
-              <button
-                onClick={() => {
-                  setCreativesModalOpen(false);
-                  setSelectedCampaignForCreatives(null);
-                }}
-                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Upload Creative - Amazon Style with Preview & Crop */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Upload Creative</h3>
-                {uploadingCreative ? (
-                  <div className="text-center py-12">
-                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-                    <p className="text-blue-600 font-medium">Uploading creative...</p>
-                  </div>
-                ) : (
-                  <ImageCropUpload
-                    onImageCropped={(file, preview) => {
-                      setUploadingCreative(true);
-                      uploadCreativeMutation.mutate(
-                        {
-                          campaignId: selectedCampaignForCreatives._id,
-                          file: file,
-                        },
-                        {
-                          onSettled: () => setUploadingCreative(false),
-                        }
-                      );
-                    }}
-                    accept="image/*"
-                    maxSize={10}
-                  />
-                )}
-              </div>
-
-              {/* Creatives List */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Uploaded Creatives</h3>
-                {!creatives || creatives.length === 0 ? (
-                  <p className="text-center text-gray-500 py-8">No creatives uploaded yet</p>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {creatives.map((creative) => (
-                      <div key={creative._id} className="relative group">
-                        <img
-                          src={creative.bannerAsset?.imageUrl || creative.imageUrl}
-                          alt={creative.bannerAsset?.imageAlt || creative.headline || 'Creative'}
-                          className="w-full h-40 object-cover rounded-lg border-2 border-gray-200"
-                        />
-                        <button
-                          onClick={() => {
-                            if (window.confirm('Delete this creative?')) {
-                              deleteCreativeMutation.mutate({
-                                campaignId: selectedCampaignForCreatives._id,
-                                creativeId: creative._id,
-                              });
-                            }
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          ×
-                        </button>
-                        <p className="text-xs text-gray-600 mt-1 truncate">{creative.title}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end pt-4 border-t">
-                <button
-                  onClick={() => {
-                    setCreativesModalOpen(false);
-                    setSelectedCampaignForCreatives(null);
-                  }}
-                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Create/Edit Campaign Modal */}
       <Modal
         isOpen={isCreateModalOpen}
-        onClose={() => {
-          setIsCreateModalOpen(false);
-          setIsEditMode(false);
-          setEditingCampaign(null);
-          resetForm();
-        }}
-        title={isEditMode ? 'Edit Ad Campaign' : 'Create Ad Campaign'}
+        onClose={handleCloseModal}
+        title={editingCampaign ? "Edit Ad Campaign" : "Create Ad Campaign"}
         size="lg"
       >
         <form onSubmit={handleCreateCampaign} className="space-y-6">
@@ -1582,9 +673,7 @@ const Ads = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Placement (Page/Location)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Placement</label>
               <select
                 value={campaignForm.placement}
                 onChange={(e) => setCampaignForm({ ...campaignForm, placement: e.target.value })}
@@ -1592,155 +681,73 @@ const Ads = () => {
                 required
               >
                 <optgroup label="Homepage">
-                  <option value="homepage_banner">Homepage - Banner (Hero Section)</option>
-                  <option value="homepage_sidebar_left">Homepage - Left Sidebar</option>
-                  <option value="homepage_sidebar_right">Homepage - Right Sidebar</option>
-                  <option value="homepage_middle">Homepage - Middle Section</option>
-                  <option value="homepage_bottom">Homepage - Bottom Section</option>
+                  <option value="homepage_banner">Homepage Banner</option>
+                  <option value="homepage_top">Homepage Top</option>
+                  <option value="homepage_sidebar_left">Homepage Sidebar Left</option>
+                  <option value="homepage_sidebar_right">Homepage Sidebar Right</option>
                 </optgroup>
                 <optgroup label="Search & Category">
-                  <option value="search_sponsored_products">Search Results - Sponsored Products</option>
-                  <option value="search_top">Search Results - Top Banner</option>
-                  <option value="category_top_banner">Category Page - Top Banner</option>
-                  <option value="category_grid">Category Page - In Product Grid</option>
-                  <option value="category_sidebar">Category Page - Sidebar</option>
+                  <option value="search_sponsored_products">Search Sponsored Products</option>
+                  <option value="category_top_banner">Category Top Banner</option>
+                  <option value="category_grid">Category Grid</option>
                 </optgroup>
-                <optgroup label="Blog Pages">
-                  <option value="blog_top">Blog - Top Banner</option>
-                  <option value="blog_sidebar">Blog - Sidebar</option>
-                  <option value="blog_in_content">Blog Post - In Content</option>
-                  <option value="blog_bottom">Blog Post - Bottom Banner</option>
+                <optgroup label="Product Pages">
+                  <option value="product_sidebar">Product Sidebar</option>
+                  <option value="product_related">Product Related</option>
                 </optgroup>
               </select>
-              <p className="text-xs text-gray-500 mt-1">
-                🎯 Select which page and section your ad will appear on
-              </p>
             </div>
 
-            {/* Banner Position */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Banner Position
-              </label>
-              <select
-                value={campaignForm.position}
-                onChange={(e) => setCampaignForm({ ...campaignForm, position: e.target.value })}
-                className="w-full px-5 py-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 border-3 border-blue-400 rounded-xl text-gray-900 font-semibold text-base shadow-md focus:ring-4 focus:ring-blue-300 focus:border-blue-600 hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                style={{
-                  appearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563eb'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 1rem center',
-                  backgroundSize: '1.5em 1.5em',
-                  paddingRight: '3rem'
-                }}
-                required
-              >
-                <option value="" style={{ background: '#f9fafb', color: '#6b7280', padding: '12px' }}>Select position...</option>
-                <option value="top" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top - Full Width</option>
-                <option value="right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Right - Sidebar</option>
-                <option value="bottom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom - Full Width</option>
-                <option value="left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Left - Sidebar</option>
-                <option value="center" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Center - Overlay</option>
-                <option value="top-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top-Right - Corner</option>
-                <option value="top-left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Top-Left - Corner</option>
-                <option value="bottom-right" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom-Right - Corner</option>
-                <option value="bottom-left" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📍 Bottom-Left - Corner</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Choose where the banner ad will be displayed on the page
-              </p>
-            </div>
-
-            {/* Banner Size/Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Banner Size/Type
-              </label>
-              <select
-                value={campaignForm.bannerSize}
-                onChange={(e) => setCampaignForm({ ...campaignForm, bannerSize: e.target.value })}
-                className="w-full px-5 py-3.5 bg-gradient-to-r from-purple-50 to-pink-50 border-3 border-purple-400 rounded-xl text-gray-900 font-semibold text-base shadow-md focus:ring-4 focus:ring-purple-300 focus:border-purple-600 hover:border-purple-500 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                style={{
-                  appearance: 'none',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239333ea'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 1rem center',
-                  backgroundSize: '1.5em 1.5em',
-                  paddingRight: '3rem'
-                }}
-                required
-              >
-                <option value="hero" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>🎯 Hero Banner - Full Width Header (1920x600px)</option>
-                <option value="leaderboard" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📏 Leaderboard - Top Banner (728x90px)</option>
-                <option value="side-large" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📱 Large Sidebar Banner (300x600px)</option>
-                <option value="side-small" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>📦 Small Sidebar Banner (300x250px)</option>
-                <option value="rectangle" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>⬛ Medium Rectangle (300x250px)</option>
-                <option value="skyscraper" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>🏢 Skyscraper - Tall Sidebar (160x600px)</option>
-                <option value="square" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>◼️ Square Banner (250x250px)</option>
-                <option value="custom" style={{ background: '#ffffff', color: '#111827', padding: '12px' }}>✏️ Custom Size (Specify Dimensions)</option>
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                💡 Choose banner size based on placement. Hero for homepage, sidebar for product pages.
-              </p>
-            </div>
-
-            {/* Custom Dimensions */}
-            {campaignForm.bannerSize === 'custom' && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Width (px) *
-                  </label>
-                  <input
-                    type="number"
-                    value={campaignForm.dimensions.width}
-                    onChange={(e) => setCampaignForm({
-                      ...campaignForm,
-                      dimensions: { ...campaignForm.dimensions, width: e.target.value }
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="e.g., 300"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Height (px) *
-                  </label>
-                  <input
-                    type="number"
-                    value={campaignForm.dimensions.height}
-                    onChange={(e) => setCampaignForm({
-                      ...campaignForm,
-                      dimensions: { ...campaignForm.dimensions, height: e.target.value }
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                    placeholder="e.g., 250"
-                    required
-                  />
-                </div>
+            {/* Position and Banner Size - Amazon Style */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Ad Position</label>
+                <select
+                  value={campaignForm.position}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, position: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  required
+                >
+                  <option value="top">Top</option>
+                  <option value="right">Right</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="left">Left</option>
+                  <option value="center">Center</option>
+                  <option value="top-right">Top Right</option>
+                  <option value="top-left">Top Left</option>
+                  <option value="bottom-right">Bottom Right</option>
+                  <option value="bottom-left">Bottom Left</option>
+                </select>
               </div>
-            )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Banner Size</label>
+                <select
+                  value={campaignForm.bannerSize}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, bannerSize: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  required
+                >
+                  <option value="hero">Hero (Large Banner)</option>
+                  <option value="leaderboard">Leaderboard (728x90)</option>
+                  <option value="rectangle">Rectangle (300x250)</option>
+                  <option value="skyscraper">Skyscraper (160x600)</option>
+                  <option value="square">Square (250x250)</option>
+                  <option value="side-small">Side Small</option>
+                  <option value="side-large">Side Large</option>
+                  <option value="custom">Custom Size</option>
+                </select>
+              </div>
+            </div>
 
             {campaignForm.type === 'SponsoredProduct' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Products to Promote
                 </label>
-                {/* NEW: Product Search */}
-                <div className="mb-2">
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  />
-                </div>
                 <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
-                  {filteredProducts?.map((product) => (
-                    <label key={product._id} className="flex items-center gap-2 cursor-pointer hover:bg-blue-100 p-2 rounded">
+                  {products?.map((product) => (
+                    <label key={product._id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
                       <input
                         type="checkbox"
                         checked={campaignForm.productIds.includes(product._id)}
@@ -1855,31 +862,10 @@ const Ads = () => {
               />
             </div>
 
-            {/* Amazon-style: Keywords Targeting */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Target Keywords (comma-separated) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={campaignForm.keywords}
-                onChange={(e) => setCampaignForm({ ...campaignForm, keywords: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                placeholder="e.g., yoga, fitness, mat, exercise, all"
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                <strong>💡 Amazon-style Tips:</strong> Enter keywords that customers might search for. Use "all" to show for all searches on the search page. Separate multiple keywords with commas.
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                Examples: "all" (shows for all searches) | "yoga, mat, fitness" (shows when users search for these terms)
-              </p>
-            </div>
-
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <p className="text-sm text-yellow-800">
-                <strong>Note:</strong> {isEditMode ? 'Changes will be applied to the campaign immediately.' : 'Campaign will be submitted for admin approval before it goes live.'}
-                Make sure you have sufficient balance in your ad wallet.
+                <strong>Note:</strong> Campaign will start automatically on the selected date.
+                Make sure you have sufficient balance in your ad wallet before creating the campaign.
               </p>
             </div>
           </div>
@@ -1888,21 +874,16 @@ const Ads = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                setIsCreateModalOpen(false);
-                setIsEditMode(false);
-                setEditingCampaign(null);
-                resetForm();
-              }}
+              onClick={handleCloseModal}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="primary"
-              loading={isEditMode ? updateCampaignMutation.isPending : createCampaignMutation.isPending}
+              loading={editingCampaign ? updateCampaignMutation.isPending : createCampaignMutation.isPending}
             >
-              {isEditMode ? 'Update Campaign' : 'Create Campaign'}
+              {editingCampaign ? 'Update Campaign' : 'Create Campaign'}
             </Button>
           </div>
         </form>

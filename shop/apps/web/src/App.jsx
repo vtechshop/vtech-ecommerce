@@ -146,7 +146,6 @@ const BlogManagement = lazy(() => import('./assets/pages/dashboard/admin/BlogMan
 const KYCReview = lazy(() => import('./assets/pages/dashboard/admin/KYCReview'));
 const CRMCustomers = lazy(() => import('./assets/pages/dashboard/admin/CRMCustomers'));
 const CRMTickets = lazy(() => import('./assets/pages/dashboard/admin/CRMTickets'));
-const VendorPayouts = lazy(() => import('./assets/pages/dashboard/admin/VendorPayouts'));
 const VendorCommissions = lazy(() => import('./assets/pages/dashboard/admin/VendorCommissions'));
 const AffiliateCommissions = lazy(() => import('./assets/pages/dashboard/admin/AffiliateCommissions'));
 const ManualOrders = lazy(() => import('./assets/pages/dashboard/admin/ManualOrders'));
@@ -156,6 +155,7 @@ const CouponsManagement = lazy(() => import('./assets/pages/dashboard/admin/Coup
 const GamificationManagement = lazy(() => import('./assets/pages/dashboard/admin/GamificationManagement'));
 const AppConfigManagement = lazy(() => import('./assets/pages/dashboard/admin/AppConfigManagement'));
 const MobileDevModules = lazy(() => import('./assets/pages/dashboard/admin/MobileDevModules'));
+const AdminInventory = lazy(() => import('./assets/pages/dashboard/admin/Inventory'));
 const VendorKYC = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
 const AffiliateKYC = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateKYC'));
 
@@ -178,11 +178,11 @@ function App() {
     // Initialize auth with timeout fallback
     const authPromise = dispatch(initializeAuth());
 
-    // Fallback: If auth initialization takes more than 5 seconds, force completion
+    // Fallback: If auth initialization takes more than 2 seconds, force completion
     const timeoutId = setTimeout(() => {
       console.warn('Auth initialization timeout - forcing completion');
       dispatch(forceInitialized());
-    }, 5000);
+    }, 2000);
 
     // Clear timeout when auth completes
     authPromise.finally(() => clearTimeout(timeoutId));
@@ -366,6 +366,7 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="products" element={<AdminProducts />} />
+            <Route path="inventory" element={<AdminInventory />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="orders/:id" element={<AdminOrderDetail />} />
@@ -385,7 +386,6 @@ function App() {
             <Route path="warranties" element={<AdminWarranties />} />
             <Route path="manual-orders" element={<ManualOrders />} />
             <Route path="kyc-review" element={<KYCReview />} />
-            <Route path="payouts" element={<VendorPayouts />} />
             <Route path="vendor-commissions" element={<VendorCommissions />} />
             <Route path="crm/customers" element={<CRMCustomers />} />
             <Route path="crm/tickets" element={<CRMTickets />} />

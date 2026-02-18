@@ -42,7 +42,7 @@ const ResetPassword = () => {
       setSuccess(true);
       setTimeout(() => {
         navigate('/login');
-      }, 3000);
+      }, 1500);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to reset password');
     } finally {

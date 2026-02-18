@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react';
 import api from '@/utils/api';
+import { updateMetaTags } from '@/utils/seo';
 
 const Contact = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Contact Us - V-Tech Kitchen',
+      description: 'Get in touch with V-Tech Kitchen for product inquiries, orders, or support. Call +91 99445 56683, email us, or use our contact form. Mon-Sat 9AM-7PM IST.',
+      canonical: 'https://www.vtechkitchen.com/page/contact',
+    });
+  }, []);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -27,7 +35,7 @@ const Contact = () => {
         setTimeout(() => {
           setSubmitted(false);
           setFormData({ name: '', email: '', subject: '', message: '' });
-        }, 5000);
+        }, 3000);
       }
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Failed to send message. Please try again.');

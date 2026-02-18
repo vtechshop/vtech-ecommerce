@@ -445,28 +445,62 @@ exports.getStats = async (req, res, next) => {
   try {
     const mongoose = require('mongoose');
     const Order = require('../models/Order');
-    const user = await User.findById(req.user._id).select('wishlist');
+    const user = await User.findById(req.user._id).select('wishlist addresses createdAt');
 
-    // Get total orders count
-    const totalOrders = await Order.countDocuments({ userId: req.user._id });
+    const userId = new mongoose.Types.ObjectId(req.user._id);
 
-    // Get total spent (sum of all completed orders)
-    const ordersAggregate = await Order.aggregate([
-      { $match: { userId: new mongoose.Types.ObjectId(req.user._id), status: { $nin: ['cancelled', 'returned'] } } },
-      { $group: { _id: null, totalSpent: { $sum: '$totals.total' } } }
+    // Run all queries in parallel for better performance
+    const [
+      totalOrders,
+      pendingOrders,
+      deliveredOrders,
+      ordersAggregate,
+      recentOrdersData,
+      savingsAggregate
+    ] = await Promise.all([
+      // Total orders count
+      Order.countDocuments({ userId: req.user._id }),
+      // Pending orders (not delivered/cancelled)
+      Order.countDocuments({
+        userId: req.user._id,
+        status: { $in: ['placed', 'paid', 'packed', 'shipped'] }
+      }),
+      // Delivered orders
+      Order.countDocuments({ userId: req.user._id, status: 'delivered' }),
+      // Total spent (sum of all non-cancelled orders)
+      Order.aggregate([
+        { $match: { userId, status: { $nin: ['cancelled', 'returned'] } } },
+        { $group: { _id: null, totalSpent: { $sum: '$totals.total' } } }
+      ]),
+      // Recent orders (last 30 days)
+      Order.countDocuments({
+        userId: req.user._id,
+        createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+      }),
+      // Total savings from discounts
+      Order.aggregate([
+        { $match: { userId, status: { $nin: ['cancelled', 'returned'] } } },
+        { $group: { _id: null, totalSavings: { $sum: '$totals.discount' } } }
+      ])
     ]);
 
     const totalSpent = ordersAggregate.length > 0 ? ordersAggregate[0].totalSpent : 0;
-
-    // Get wishlist count
+    const totalSavings = savingsAggregate.length > 0 ? savingsAggregate[0].totalSavings : 0;
     const wishlistCount = user.wishlist ? user.wishlist.length : 0;
+    const addressCount = user.addresses ? user.addresses.length : 0;
 
     res.json({
       success: true,
       data: {
         totalOrders,
+        pendingOrders,
+        deliveredOrders,
+        recentOrders: recentOrdersData,
         totalSpent,
+        totalSavings,
         wishlistCount,
+        addressCount,
+        memberSince: user.createdAt,
       },
     });
   } catch (error) {

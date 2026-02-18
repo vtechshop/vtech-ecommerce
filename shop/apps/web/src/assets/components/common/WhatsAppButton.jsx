@@ -9,7 +9,7 @@ const WhatsAppButton = () => {
 
   // Entrance animation delay
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 1000);
+    const timer = setTimeout(() => setMounted(true), 300);
     return () => clearTimeout(timer);
   }, []);
 

@@ -1,12 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen, DollarSign, TrendingUp, Package, ShoppingCart,
   CreditCard, Target, BarChart3, HelpCircle, CheckCircle,
   AlertCircle, Info, PlayCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
+import { updateMetaTags } from '@/utils/seo';
 
 const VendorGuide = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Vendor Guide - V-Tech Kitchen',
+      description: 'Step-by-step guide to selling on V-Tech Kitchen marketplace. Set up your store, list products, manage orders, and grow your business.',
+      canonical: 'https://www.vtechkitchen.com/page/vendor-guide',
+    });
+  }, []);
   const [openSection, setOpenSection] = useState('commission');
 
   const toggleSection = (section) => {

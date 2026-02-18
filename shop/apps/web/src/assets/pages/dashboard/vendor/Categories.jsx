@@ -1,11 +1,12 @@
 // FILE: apps/web/src/pages/dashboard/vendor/Categories.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
 import useAuth from '@/hooks/useAuth';
-import { Plus, Edit, Trash2, X, FolderTree, Folder, ZoomIn, Upload, Clock } from 'lucide-react';
+import { Plus, Edit, Trash2, X, FolderTree, Folder, ZoomIn, Upload, Clock, Search, ChevronDown, ChevronRight, Package, LayoutGrid, User, AlertTriangle, ShieldCheck, PlusCircle } from 'lucide-react';
 
 const Categories = () => {
   const queryClient = useQueryClient();
@@ -15,19 +16,69 @@ const Categories = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState({});
 
+  // Fetch categories with product counts
   const { data: categories, isLoading } = useQuery({
     queryKey: ['vendor-categories'],
     queryFn: async () => {
-      const response = await api.get('/vendors/categories');
+      const response = await api.get('/vendors/categories?includeInactive=true');
       return response.data.data;
     },
   });
+
+  // Fetch category stats
+  const { data: stats } = useQuery({
+    queryKey: ['vendor-category-stats'],
+    queryFn: async () => {
+      const response = await api.get('/vendors/categories/stats');
+      return response.data.data;
+    },
+  });
+
+  // Filter categories based on search
+  const filteredCategories = useMemo(() => {
+    if (!categories) return [];
+    if (!searchQuery) return categories;
+
+    const query = searchQuery.toLowerCase();
+    return categories.filter(cat =>
+      cat.name.toLowerCase().includes(query) ||
+      cat.slug.toLowerCase().includes(query) ||
+      cat.description?.toLowerCase().includes(query)
+    );
+  }, [categories, searchQuery]);
+
+  // Get parent categories
+  const parentCategories = useMemo(() => {
+    return filteredCategories.filter(cat => !cat.parentId);
+  }, [filteredCategories]);
+
+  // Get child categories for a parent
+  const getChildCategories = (parentId) => {
+    return filteredCategories.filter(cat => cat.parentId === parentId);
+  };
+
+  // Toggle expand/collapse
+  const toggleExpand = (categoryId) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [categoryId]: !prev[categoryId]
+    }));
+  };
+
+  // Expand all by default when there's a search query
+  const isExpanded = (categoryId) => {
+    if (searchQuery) return true;
+    return expandedCategories[categoryId] ?? true; // Default expanded
+  };
 
   const createMutation = useMutation({
     mutationFn: async (data) => api.post('/vendors/categories', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-category-stats'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setShowModal(false);
       setEditingCategory(null);
@@ -42,6 +93,7 @@ const Categories = () => {
     mutationFn: async ({ id, data }) => api.put(`/vendors/categories/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-category-stats'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setShowModal(false);
       setEditingCategory(null);
@@ -56,6 +108,7 @@ const Categories = () => {
     mutationFn: async (id) => api.delete(`/vendors/categories/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-category-stats'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       showToastMsg('Delete request submitted. Admin will review it.', 'success');
     },
@@ -68,7 +121,7 @@ const Categories = () => {
     setToastMessage(message);
     setToastType(type);
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 4000);
+    setTimeout(() => setShowToast(false), 3000);
   };
 
   const handleEdit = (category) => {
@@ -91,10 +144,10 @@ const Categories = () => {
   }
 
   return (
-    <div>
+    <div className="px-2 sm:px-0">
       {/* Toast */}
       {showToast && (
-        <div className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all ${
+        <div className={`fixed top-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-sm z-50 px-4 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all ${
           toastType === 'success' ? 'bg-green-600' : 'bg-red-600'
         }`}>
           {toastMessage}
@@ -102,154 +155,506 @@ const Categories = () => {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold">Category Management</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Category Management</h1>
         <Button
           onClick={() => {
             setEditingCategory(null);
             setShowModal(true);
           }}
-          className="flex items-center gap-2"
+          className="flex items-center justify-center gap-2 w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           Add Category
         </Button>
       </div>
 
-      {/* Categories Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-blue-100 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Slug</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sort</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {categories?.filter(cat => !cat.parentId).map((parent) => (
-              <React.Fragment key={parent._id}>
-                <tr className="hover:bg-blue-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {parent.image ? (
-                        <img src={parent.image} alt={parent.name} className="w-8 h-8 object-cover rounded" />
-                      ) : (
-                        <FolderTree className="w-5 h-5 text-blue-600" />
-                      )}
-                      <div>
-                        <div className="font-medium text-gray-900 flex items-center gap-2">
-                          {parent.name}
-                          {parent.createdBy === user?._id && (
-                            <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">You</span>
-                          )}
-                        </div>
-                        {parent.description && (
-                          <div className="text-sm text-gray-500">{parent.description}</div>
-                        )}
-                      </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Total Categories</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats?.totalCategories || 0}</p>
+            </div>
+            <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
+              <LayoutGrid className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Active</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600">{stats?.activeCategories || 0}</p>
+            </div>
+            <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
+              <FolderTree className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 truncate">Your Categories</p>
+              <p className="text-xl sm:text-2xl font-bold text-primary-600">{stats?.yourCategories || 0}</p>
+            </div>
+            <div className="p-2 sm:p-3 bg-primary-100 rounded-lg flex-shrink-0">
+              <User className="w-5 h-5 sm:w-6 sm:h-6 text-primary-600" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+          <div className="flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500 truncate">With Products</p>
+              <p className="text-xl sm:text-2xl font-bold text-secondary-600">{stats?.categoriesWithProducts || 0}</p>
+            </div>
+            <div className="p-2 sm:p-3 bg-secondary-100 rounded-lg flex-shrink-0">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-secondary-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pending Deletion Alert */}
+      {stats?.pendingDeletion > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+          <AlertTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 flex-shrink-0" />
+          <p className="text-xs sm:text-sm text-amber-800">
+            <span className="font-semibold">{stats.pendingDeletion} categor{stats.pendingDeletion > 1 ? 'ies' : 'y'}</span> pending admin approval for deletion
+          </p>
+        </div>
+      )}
+
+      {/* Search Bar */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search categories..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input pl-9 sm:pl-10 w-full text-sm sm:text-base"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <p className="text-xs sm:text-sm text-gray-500 mt-2">
+            Found {filteredCategories.length} categor{filteredCategories.length !== 1 ? 'ies' : 'y'} matching "{searchQuery}"
+          </p>
+        )}
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="block lg:hidden space-y-3">
+        {parentCategories.map((parent) => {
+          const children = getChildCategories(parent._id);
+          const hasChildren = children.length > 0;
+          const expanded = isExpanded(parent._id);
+
+          return (
+            <div key={parent._id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              {/* Parent Category Card */}
+              <div className="p-3 sm:p-4">
+                <div className="flex items-start gap-3">
+                  {parent.image ? (
+                    <img src={parent.image} alt={parent.name} className="w-12 h-12 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <FolderTree className="w-6 h-6 text-blue-600" />
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <code className="text-sm bg-blue-100 px-2 py-1 rounded">{parent.slug}</code>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{parent.sortOrder || 0}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-1">
-                      <span className={`inline-block w-fit px-2 py-1 text-xs font-semibold rounded-full ${
-                        parent.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {parent.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                      {parent.deleteRequested && (
-                        <span className="inline-flex items-center gap-1 w-fit px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">
-                          <Clock className="w-3 h-3" /> Delete Pending
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-medium text-gray-900">{parent.name}</h3>
+                      {parent.createdBy === user?._id ? (
+                        <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">You</span>
+                      ) : (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                          <ShieldCheck className="w-2.5 h-2.5" /> Admin
+                        </span>
+                      )}
+                      {hasChildren && (
+                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium">
+                          {children.length} sub
                         </span>
                       )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
+                    {parent.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{parent.description}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <code className="text-xs bg-blue-100 px-1.5 py-0.5 rounded">{parent.slug}</code>
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                        parent.productCount > 0 ? 'text-green-700' : 'text-gray-400'
+                      }`}>
+                        <Package className="w-3 h-3" />
+                        {parent.productCount || 0} products
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status & Actions Row */}
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-full ${
+                      parent.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {parent.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                    {parent.deleteRequested && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">
+                        <Clock className="w-3 h-3" /> Pending
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {hasChildren && (
+                      <button
+                        onClick={() => toggleExpand(parent._id)}
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                      >
+                        {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      </button>
+                    )}
+                    <Link
+                      to={`/vendor-dashboard/products?action=add&category=${parent._id}`}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                      title="Add Product"
+                    >
+                      <PlusCircle className="w-4 h-4" />
+                    </Link>
                     {parent.createdBy === user?._id && (
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => handleEdit(parent)} className="text-blue-600 hover:text-blue-800" title="Edit">
+                      <>
+                        <button onClick={() => handleEdit(parent)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
                           <Edit className="w-4 h-4" />
                         </button>
                         {!parent.deleteRequested && (
-                          <button onClick={() => handleDelete(parent._id)} className="text-red-600 hover:text-red-800" title="Request deletion">
+                          <button onClick={() => handleDelete(parent._id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         )}
-                      </div>
+                      </>
                     )}
-                  </td>
-                </tr>
-                {/* Subcategories */}
-                {categories?.filter(cat => cat.parentId === parent._id).map((child) => (
-                  <tr key={child._id} className="hover:bg-blue-50 bg-gray-25">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2 ml-8">
-                        <span className="text-gray-400">└─</span>
-                        <Folder className="w-4 h-4 text-gray-400" />
-                        <div>
-                          <div className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                            {child.name}
-                            {child.createdBy === user?._id && (
+                  </div>
+                </div>
+              </div>
+
+              {/* Subcategories */}
+              {expanded && children.length > 0 && (
+                <div className="bg-gray-50 border-t border-gray-200">
+                  {children.map((child) => (
+                    <div key={child._id} className="p-3 sm:p-4 border-b border-gray-100 last:border-b-0">
+                      <div className="flex items-start gap-3 ml-4">
+                        <span className="text-gray-300 mt-2">└─</span>
+                        {child.image ? (
+                          <img src={child.image} alt={child.name} className="w-10 h-10 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Folder className="w-5 h-5 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-medium text-gray-700">{child.name}</h4>
+                            {child.createdBy === user?._id ? (
                               <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">You</span>
+                            ) : (
+                              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                                <ShieldCheck className="w-2.5 h-2.5" /> Admin
+                              </span>
                             )}
                           </div>
-                          {child.description && (
-                            <div className="text-xs text-gray-500">{child.description}</div>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <code className="text-xs bg-blue-100 px-1.5 py-0.5 rounded">{child.slug}</code>
+                            <span className={`inline-flex items-center gap-1 text-xs ${
+                              child.productCount > 0 ? 'text-green-700' : 'text-gray-400'
+                            }`}>
+                              <Package className="w-3 h-3" />
+                              {child.productCount || 0}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Link
+                            to={`/vendor-dashboard/products?action=add&category=${child._id}`}
+                            className="p-1.5 text-green-600 hover:bg-green-50 rounded"
+                            title="Add Product"
+                          >
+                            <PlusCircle className="w-4 h-4" />
+                          </Link>
+                          {child.createdBy === user?._id && (
+                            <>
+                              <button onClick={() => handleEdit(child)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              {!child.deleteRequested && (
+                                <button onClick={() => handleDelete(child._id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <code className="text-sm bg-blue-100 px-2 py-1 rounded">{child.slug}</code>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{child.sortOrder || 0}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col gap-1">
-                        <span className={`inline-block w-fit px-2 py-1 text-xs font-semibold rounded-full ${
-                          child.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {child.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                        {child.deleteRequested && (
-                          <span className="inline-flex items-center gap-1 w-fit px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">
-                            <Clock className="w-3 h-3" /> Delete Pending
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {child.createdBy === user?._id && (
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px]">
+            <thead className="bg-blue-100 border-b border-gray-200">
+              <tr>
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Slug</th>
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Products</th>
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Sort</th>
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {parentCategories.map((parent) => {
+                const children = getChildCategories(parent._id);
+                const hasChildren = children.length > 0;
+                const expanded = isExpanded(parent._id);
+
+                return (
+                  <React.Fragment key={parent._id}>
+                    <tr className="hover:bg-blue-50">
+                      <td className="px-4 xl:px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button onClick={() => handleEdit(child)} className="text-blue-600 hover:text-blue-800" title="Edit">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          {!child.deleteRequested && (
-                            <button onClick={() => handleDelete(child._id)} className="text-red-600 hover:text-red-800" title="Request deletion">
-                              <Trash2 className="w-4 h-4" />
+                          {hasChildren && (
+                            <button
+                              onClick={() => toggleExpand(parent._id)}
+                              className="p-1 hover:bg-gray-200 rounded transition-colors"
+                            >
+                              {expanded ? (
+                                <ChevronDown className="w-4 h-4 text-gray-500" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-500" />
+                              )}
                             </button>
                           )}
+                          {!hasChildren && <div className="w-6" />}
+                          {parent.image ? (
+                            <img src={parent.image} alt={parent.name} className="w-10 h-10 object-cover rounded-lg border border-gray-200" />
+                          ) : (
+                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <FolderTree className="w-5 h-5 text-blue-600" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium text-gray-900 flex items-center gap-2">
+                              {parent.name}
+                              {parent.createdBy === user?._id ? (
+                                <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">You</span>
+                              ) : (
+                                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                                  <ShieldCheck className="w-2.5 h-2.5" /> Admin
+                                </span>
+                              )}
+                              {hasChildren && (
+                                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium">
+                                  {children.length} sub
+                                </span>
+                              )}
+                            </div>
+                            {parent.description && (
+                              <div className="text-sm text-gray-500 truncate max-w-xs">{parent.description}</div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-        {!categories || categories.length === 0 ? (
+                      </td>
+                      <td className="px-4 xl:px-6 py-4">
+                        <code className="text-sm bg-blue-100 px-2 py-1 rounded">{parent.slug}</code>
+                      </td>
+                      <td className="px-4 xl:px-6 py-4">
+                        <span className={`inline-flex items-center gap-1 text-sm font-medium ${
+                          parent.productCount > 0 ? 'text-green-700' : 'text-gray-400'
+                        }`}>
+                          <Package className="w-4 h-4" />
+                          {parent.productCount || 0}
+                        </span>
+                      </td>
+                      <td className="px-4 xl:px-6 py-4 text-sm text-gray-700">{parent.sortOrder || 0}</td>
+                      <td className="px-4 xl:px-6 py-4">
+                        <div className="flex flex-col gap-1">
+                          <span className={`inline-block w-fit px-2 py-1 text-xs font-semibold rounded-full ${
+                            parent.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {parent.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                          {parent.deleteRequested && (
+                            <span className="inline-flex items-center gap-1 w-fit px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">
+                              <Clock className="w-3 h-3" /> Delete Pending
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 xl:px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            to={`/vendor-dashboard/products?action=add&category=${parent._id}`}
+                            className="text-green-600 hover:text-green-800 p-1.5 hover:bg-green-50 rounded inline-flex items-center gap-1 text-xs font-medium"
+                            title="Add Product in this category"
+                          >
+                            <PlusCircle className="w-4 h-4" />
+                            <span className="hidden xl:inline">Add Product</span>
+                          </Link>
+                          {parent.createdBy === user?._id && (
+                            <>
+                              <button onClick={() => handleEdit(parent)} className="text-blue-600 hover:text-blue-800 p-1.5 hover:bg-blue-50 rounded" title="Edit">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              {!parent.deleteRequested && (
+                                <button onClick={() => handleDelete(parent._id)} className="text-red-600 hover:text-red-800 p-1.5 hover:bg-red-50 rounded" title="Request deletion">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Subcategories */}
+                    {expanded && children.map((child) => (
+                      <tr key={child._id} className="hover:bg-blue-50 bg-gray-50">
+                        <td className="px-4 xl:px-6 py-4">
+                          <div className="flex items-center gap-2 ml-12">
+                            <span className="text-gray-300">└─</span>
+                            {child.image ? (
+                              <img src={child.image} alt={child.name} className="w-8 h-8 object-cover rounded-lg border border-gray-200" />
+                            ) : (
+                              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                                <Folder className="w-4 h-4 text-gray-400" />
+                              </div>
+                            )}
+                            <div>
+                              <div className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                                {child.name}
+                                {child.createdBy === user?._id ? (
+                                  <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">You</span>
+                                ) : (
+                                  <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                                    <ShieldCheck className="w-2.5 h-2.5" /> Admin
+                                  </span>
+                                )}
+                              </div>
+                              {child.description && (
+                                <div className="text-xs text-gray-500 truncate max-w-xs">{child.description}</div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 xl:px-6 py-4">
+                          <code className="text-xs bg-blue-100 px-2 py-1 rounded">{child.slug}</code>
+                        </td>
+                        <td className="px-4 xl:px-6 py-4">
+                          <span className={`inline-flex items-center gap-1 text-sm font-medium ${
+                            child.productCount > 0 ? 'text-green-700' : 'text-gray-400'
+                          }`}>
+                            <Package className="w-3.5 h-3.5" />
+                            {child.productCount || 0}
+                          </span>
+                        </td>
+                        <td className="px-4 xl:px-6 py-4 text-sm text-gray-700">{child.sortOrder || 0}</td>
+                        <td className="px-4 xl:px-6 py-4">
+                          <div className="flex flex-col gap-1">
+                            <span className={`inline-block w-fit px-2 py-1 text-xs font-semibold rounded-full ${
+                              child.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {child.isActive ? 'Active' : 'Inactive'}
+                            </span>
+                            {child.deleteRequested && (
+                              <span className="inline-flex items-center gap-1 w-fit px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">
+                                <Clock className="w-3 h-3" /> Delete Pending
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 xl:px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <Link
+                              to={`/vendor-dashboard/products?action=add&category=${child._id}`}
+                              className="text-green-600 hover:text-green-800 p-1.5 hover:bg-green-50 rounded inline-flex items-center gap-1 text-xs font-medium"
+                              title="Add Product in this category"
+                            >
+                              <PlusCircle className="w-4 h-4" />
+                              <span className="hidden xl:inline">Add Product</span>
+                            </Link>
+                            {child.createdBy === user?._id && (
+                              <>
+                                <button onClick={() => handleEdit(child)} className="text-blue-600 hover:text-blue-800 p-1.5 hover:bg-blue-50 rounded" title="Edit">
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                                {!child.deleteRequested && (
+                                  <button onClick={() => handleDelete(child._id)} className="text-red-600 hover:text-red-800 p-1.5 hover:bg-red-50 rounded" title="Request deletion">
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {(!categories || categories.length === 0) && (
           <div className="text-center py-12">
             <FolderTree className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500">No categories found. Create your first category!</p>
           </div>
-        ) : null}
+        )}
+        {categories && categories.length > 0 && filteredCategories.length === 0 && (
+          <div className="text-center py-12">
+            <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">No categories match your search.</p>
+          </div>
+        )}
       </div>
+
+      {/* Mobile Empty State */}
+      {parentCategories.length === 0 && (
+        <div className="block lg:hidden text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+          {categories && categories.length > 0 ? (
+            <>
+              <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No categories match your search.</p>
+            </>
+          ) : (
+            <>
+              <FolderTree className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No categories found. Create your first category!</p>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Category Modal */}
       {showModal && (
@@ -339,48 +744,47 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
   ) || [];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50 rounded-t-xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b bg-gray-50 rounded-t-2xl sm:rounded-t-xl">
           <h2 className="text-lg font-bold text-gray-900">
             {category ? 'Edit Category' : 'Create New Category'}
           </h2>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-5">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
             {/* Image Upload Section */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Category Image</label>
               {formData.image ? (
                 <div className="relative border-2 border-gray-200 rounded-lg overflow-hidden bg-white">
-                  <div className="relative w-full h-44 flex items-center justify-center bg-gray-50">
+                  <div className="relative w-full h-36 sm:h-44 flex items-center justify-center bg-gray-50">
                     <img src={formData.image} alt="Category" className="max-w-full max-h-full object-contain" />
                   </div>
-                  <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-t">
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => setImageZoom(true)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-100 transition-colors">
-                        <ZoomIn className="w-3.5 h-3.5" /> Preview
+                  <div className="flex items-center justify-between px-2 sm:px-3 py-2 bg-gray-50 border-t">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <button type="button" onClick={() => setImageZoom(true)} className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-100 transition-colors">
+                        <ZoomIn className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Preview</span>
                       </button>
-                      <label className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-100 transition-colors cursor-pointer">
-                        <Upload className="w-3.5 h-3.5" /> Replace
+                      <label className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-gray-700 bg-white border rounded-md hover:bg-gray-100 transition-colors cursor-pointer">
+                        <Upload className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Replace</span>
                         <input type="file" accept="image/*" onChange={handleImageUpload} disabled={imageUploading} className="hidden" />
                       </label>
                     </div>
-                    <button type="button" onClick={() => setFormData({ ...formData, image: '' })} className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 transition-colors">
-                      <Trash2 className="w-3.5 h-3.5" /> Remove
+                    <button type="button" onClick={() => setFormData({ ...formData, image: '' })} className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Remove</span>
                     </button>
                   </div>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors">
-                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <span className="text-sm font-medium text-gray-600">Click to upload image</span>
+                <label className="flex flex-col items-center justify-center w-full h-32 sm:h-36 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors">
+                  <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mb-2" />
+                  <span className="text-xs sm:text-sm font-medium text-gray-600">Click to upload image</span>
                   <span className="text-xs text-gray-400 mt-1">JPG, PNG, WebP, SVG supported</span>
-                  <span className="text-xs text-gray-400">Displayed on homepage & category pages</span>
                   <input type="file" accept="image/*" onChange={handleImageUpload} disabled={imageUploading} className="hidden" />
                 </label>
               )}
@@ -405,7 +809,7 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
             )}
 
             {/* Name & Slug */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
                 <input
@@ -432,7 +836,7 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
             </div>
 
             {/* Parent & Sort Order */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">Parent Category</label>
                 <select
@@ -491,12 +895,12 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50 rounded-b-xl">
-            <Button type="button" variant="outline" onClick={onClose}>
+          <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-4 border-t bg-gray-50 rounded-b-2xl sm:rounded-b-xl">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Saving...' : category ? 'Update Category' : 'Create Category'}
+            <Button type="submit" disabled={isLoading} className="flex-1 sm:flex-none">
+              {isLoading ? 'Saving...' : category ? 'Update' : 'Create'}
             </Button>
           </div>
         </form>

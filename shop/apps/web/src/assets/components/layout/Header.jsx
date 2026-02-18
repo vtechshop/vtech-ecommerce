@@ -124,8 +124,11 @@ const Header = ({ onMobileMenuToggle }) => {
                   className="flex items-center gap-2 hover:text-primary-600 dark:text-gray-200 dark:hover:text-primary-400"
                   data-testid="user-menu"
                   data-cy="user-menu"
+                  aria-label="User account menu"
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="true"
                 >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -177,8 +180,8 @@ const Header = ({ onMobileMenuToggle }) => {
                 )}
               </div>
             ) : (
-              <Link to="/login" className="hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <Link to="/login" className="hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400" aria-label="Login to your account">
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -195,8 +198,9 @@ const Header = ({ onMobileMenuToggle }) => {
               className="relative hover:text-gray-600 dark:text-gray-200 dark:hover:text-primary-400"
               data-testid="cart-button"
               data-cy="cart-button"
+              aria-label={`Shopping cart${cartItemCount > 0 ? ` with ${cartItemCount} items` : ''}`}
             >
-              <svg className={`w-6 h-6 ${cartBounce ? 'cart-bounce' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className={`w-6 h-6 ${cartBounce ? 'cart-bounce' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -221,8 +225,10 @@ const Header = ({ onMobileMenuToggle }) => {
             <button
               onClick={handleMobileMenuToggle}
               className="md:hidden dark:text-gray-200"
+              aria-label="Open navigation menu"
+              aria-expanded={mobileMenuOpen}
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"

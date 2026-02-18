@@ -1,7 +1,17 @@
+import { useEffect } from 'react';
 import { Users, Target, Eye, Shield, Heart, Lightbulb, MapPin, Mail, Phone, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { updateMetaTags } from '@/utils/seo';
 
 const About = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'About V-Tech Kitchen - Commercial Kitchen Equipment Manufacturer in Coimbatore',
+      description: 'V-Tech Kitchen is a leading manufacturer of commercial kitchen equipment in Coimbatore. Premium blenders, grinders, cutting machines, and cookware.',
+      canonical: 'https://www.vtechkitchen.com/page/about',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-blue-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl py-8">
