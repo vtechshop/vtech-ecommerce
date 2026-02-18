@@ -18,7 +18,9 @@ const commissionSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'approved', 'paid', 'cancelled'], default: 'pending' },
   approvedAt: Date,
   paidAt: Date,
-  paymentRef: String,
+  paymentRef: String, // UTR / Transaction ID
+  paymentMethod: { type: String, enum: ['upi', 'neft', 'imps', 'rtgs', 'razorpay', 'cash', 'other'] },
+  paymentProof: String, // URL to uploaded screenshot
   notes: String,
   // Razorpay Route/Transfer details
   transfer: {

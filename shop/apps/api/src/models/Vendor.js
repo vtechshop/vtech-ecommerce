@@ -53,7 +53,7 @@ const vendorSchema = new mongoose.Schema({
     }],
     gstVerified: { type: Boolean, default: false },
     gstDetails: { type: mongoose.Schema.Types.Mixed }, // Cached AppyFlow response
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    status: { type: String, enum: ['not_submitted', 'pending', 'approved', 'rejected'], default: 'not_submitted' },
     verifiedAt: Date,
     verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     rejectionReason: String,
@@ -83,6 +83,7 @@ const vendorSchema = new mongoose.Schema({
     ifscCode: String, // For India
     accountHolderName: String,
     lastFourDigits: String, // Safe to display (last 4 digits only)
+    upiId: String, // UPI ID for manual payouts (e.g. vendor@upi)
     verified: { type: Boolean, default: false },
     verifiedAt: Date,
   },

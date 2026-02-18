@@ -10,7 +10,7 @@ import {
   ExternalLink, Share2, QrCode, MousePointerClick, TrendingUp,
   DollarSign, ChevronRight, Lightbulb, Globe, Image, FileText,
   Facebook, Twitter, MessageCircle, Mail, ChevronDown, ChevronUp,
-  Sparkles, Target, Clock, Zap, RefreshCw
+  Sparkles, Target, Clock, Zap, RefreshCw, Shield
 } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
 
@@ -143,6 +143,31 @@ const Links = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  // KYC not approved - show gate directing user to complete KYC
+  if (error?.response?.status === 403 && error?.response?.data?.error?.code === 'KYC_NOT_APPROVED') {
+    const kycStatus = error?.response?.data?.error?.kycStatus;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <Shield className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">KYC Verification Required</h2>
+          <p className="text-gray-600 mb-4">
+            {kycStatus === 'not_submitted' || kycStatus === 'rejected'
+              ? 'Please complete and submit your KYC verification to access affiliate links and start earning commissions.'
+              : 'Your KYC verification is pending review. You will be able to access affiliate links once approved.'}
+          </p>
+          <Link
+            to="/affiliate-dashboard/kyc"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            {kycStatus === 'not_submitted' || kycStatus === 'rejected' ? 'Complete KYC' : 'View KYC Status'}
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
     );
   }

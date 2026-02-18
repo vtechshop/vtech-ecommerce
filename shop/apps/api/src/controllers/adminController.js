@@ -2030,7 +2030,7 @@ exports.getPayouts = async (req, res, next) => {
 
 exports.createPayout = async (req, res, next) => {
   try {
-    const { type, subjectId, amount, paymentRef } = req.body;
+    const { type, subjectId, amount, paymentRef, paymentMethod, paymentProof } = req.body;
     const list = await Commission.find({ type, subjectId, status: 'approved' });
     const available = list.reduce((s, c) => s + c.amount, 0);
     if (amount > available) {
@@ -2043,6 +2043,8 @@ exports.createPayout = async (req, res, next) => {
       c.status = 'paid';
       c.paidAt = new Date();
       c.paymentRef = paymentRef;
+      c.paymentMethod = paymentMethod || 'other';
+      c.paymentProof = paymentProof || null;
       await c.save();
       remaining -= payAmount;
     }
@@ -3283,9 +3285,9 @@ exports.getVendorPendingPayouts = async (req, res, next) => {
     const { page = 1, limit = 20 } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    // Get all vendors with approved commissions
+    // Get all vendors with approved commissions (include bank details for payout processing)
     const vendors = await Vendor.find({ status: 'active' })
-      .select('_id storeName userId')
+      .select('_id storeName userId bank.accountHolderName bank.bankName bank.ifscCode bank.lastFourDigits bank.upiId bank.verified +bank.accountNumber')
       .lean();
 
     const vendorPayouts = [];
@@ -3298,6 +3300,15 @@ exports.getVendorPendingPayouts = async (req, res, next) => {
           vendorName: vendor.storeName,
           pendingAmount: balance.totalPending,
           commissionCount: balance.count,
+          bankDetails: {
+            accountHolderName: vendor.bank?.accountHolderName || vendor.storeName,
+            bankName: vendor.bank?.bankName || '',
+            accountNumber: vendor.bank?.accountNumber || '',
+            ifscCode: vendor.bank?.ifscCode || '',
+            lastFourDigits: vendor.bank?.lastFourDigits || '',
+            upiId: vendor.bank?.upiId || '',
+            verified: vendor.bank?.verified || false,
+          },
         });
       }
     }
@@ -3320,7 +3331,7 @@ exports.getVendorPendingPayouts = async (req, res, next) => {
 
 exports.processVendorPayout = async (req, res, next) => {
   try {
-    const { vendorId, amount, commissionIds } = req.body;
+    const { vendorId, amount, commissionIds, paymentMethod, paymentRef, paymentProof } = req.body;
 
     if (!vendorId || !amount) {
       return res.status(400).json({
@@ -3344,10 +3355,14 @@ exports.processVendorPayout = async (req, res, next) => {
       selectedCommissions = commissions.map(c => c._id);
     }
 
+    // Build manual payment object if payment details provided
+    const manualPayment = paymentRef ? { paymentMethod, paymentRef, paymentProof } : null;
+
     const result = await payoutService.processVendorPayout(
       vendorId,
       amount,
-      selectedCommissions
+      selectedCommissions,
+      manualPayment
     );
 
     logger.info(`Vendor payout processed by admin: ${vendorId} - ₹${amount}`);
@@ -3596,7 +3611,7 @@ exports.getPayments = async (req, res, next) => {
 exports.recordAffiliatePayout = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { amount, reference } = req.body;
+    const { amount, reference, paymentMethod, paymentProof } = req.body;
 
     const affiliate = await Affiliate.findById(id);
     if (!affiliate) {
@@ -3618,21 +3633,27 @@ exports.recordAffiliatePayout = async (req, res, next) => {
 
     await affiliate.save();
 
-    // Create payout record in Commission model
-    await Commission.create({
-      affiliateId: affiliate._id,
-      type: 'payout',
-      amount: -amount, // Negative amount for payout
-      status: 'paid',
-      paidAt: new Date(),
-      paymentReference: reference,
-      metadata: {
-        processedBy: req.user._id,
-        processedAt: new Date(),
-      },
-    });
+    // Update approved commissions to paid
+    const commissions = await Commission.find({
+      subjectId: affiliate._id,
+      type: 'affiliate',
+      status: 'approved',
+    }).sort({ createdAt: 1 });
 
-    logger.info(`Affiliate payout recorded: ${affiliate.code} - ₹${amount} - ${reference}`);
+    let remaining = amount;
+    for (const c of commissions) {
+      if (remaining <= 0) break;
+      c.status = 'paid';
+      c.paidAt = new Date();
+      c.paymentRef = reference;
+      c.paymentMethod = paymentMethod || 'other';
+      c.paymentProof = paymentProof || null;
+      c.notes = `Manual payout via ${paymentMethod || 'other'} | Ref: ${reference}`;
+      await c.save();
+      remaining -= c.amount;
+    }
+
+    logger.info(`Affiliate payout recorded: ${affiliate.code} - ₹${amount} - ${paymentMethod} - ${reference}`);
 
     res.json({
       success: true,

@@ -1,7 +1,17 @@
+import { useEffect } from 'react';
 import { Truck, Package, Clock, MapPin, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { updateMetaTags } from '@/utils/seo';
 
 const Shipping = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Shipping Information - V-Tech Kitchen',
+      description: 'Free shipping on orders over ₹500 at V-Tech Kitchen. Standard delivery in 2-10 days, express in 2-3 days. Pan-India coverage with real-time order tracking.',
+      canonical: 'https://www.vtechkitchen.com/page/shipping',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">

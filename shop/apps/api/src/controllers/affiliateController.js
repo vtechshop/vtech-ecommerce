@@ -475,6 +475,7 @@ exports.updateKYC = async (req, res, next) => {
       gstNumber,
       gstVerified,
       gstDetails,
+      submit,
     } = req.body;
 
     let affiliate = await Affiliate.findOne({ userId: req.user._id });
@@ -503,6 +504,38 @@ exports.updateKYC = async (req, res, next) => {
       });
     }
 
+    // If submitting for review, validate mandatory fields
+    if (submit) {
+      const missing = [];
+      if (!fullName?.trim() && !affiliate.kyc.fullName) missing.push('Full Name');
+      if (!phoneNumber?.trim() && !affiliate.kyc.phoneNumber) missing.push('Phone Number');
+      if (!idType && !affiliate.kyc.idType) missing.push('ID Type');
+      if (!idNumber?.trim() && !affiliate.kyc.idNumber) missing.push('ID Number');
+      if (!address?.trim() && !affiliate.kyc.address) missing.push('Address');
+      if (!city?.trim() && !affiliate.kyc.city) missing.push('City');
+      if (!state?.trim() && !affiliate.kyc.state) missing.push('State');
+      if (!country?.trim() && !affiliate.kyc.country) missing.push('Country');
+      // Check bank details
+      if (!affiliate.bankDetails?.accountNumber) missing.push('Bank Account Number');
+      if (!affiliate.bankDetails?.ifscCode) missing.push('IFSC Code');
+      if (!affiliate.panNumber) missing.push('PAN Number');
+      // Check documents
+      const docs = affiliate.kyc.documents || [];
+      const hasIdProof = docs.some(d => d.type === 'id_proof');
+      if (!hasIdProof) missing.push('ID Proof Document');
+
+      if (missing.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_REQUIRED_FIELDS',
+            message: `Please complete the following before submitting: ${missing.join(', ')}`,
+            missingFields: missing,
+          },
+        });
+      }
+    }
+
     // Update KYC fields
     if (fullName !== undefined) affiliate.kyc.fullName = fullName;
     if (address !== undefined) affiliate.kyc.address = address;
@@ -523,15 +556,20 @@ exports.updateKYC = async (req, res, next) => {
       affiliate.kyc.rejectionReason = undefined;
     }
 
+    // If submitting for review, set status to pending
+    if (submit && affiliate.kyc.status !== 'approved') {
+      affiliate.kyc.status = 'pending';
+    }
+
     await affiliate.save();
 
-    logger.info(`KYC updated for affiliate: ${affiliate.code}`);
+    logger.info(`KYC ${submit ? 'submitted' : 'updated'} for affiliate: ${affiliate.code}`);
 
     res.json({
       success: true,
       data: {
         kyc: affiliate.kyc,
-        message: 'KYC information updated successfully',
+        message: submit ? 'KYC submitted for review successfully' : 'KYC information updated successfully',
       },
     });
   } catch (error) {

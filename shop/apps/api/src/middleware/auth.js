@@ -174,6 +174,52 @@ async function requireApprovedKYC(req, res, next) {
   }
 }
 
+// Middleware to require approved KYC for affiliate operations (link sharing, commissions)
+async function requireApprovedAffiliateKYC(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+    });
+  }
+
+  // Admins bypass KYC check
+  if (req.user.role === 'admin') {
+    return next();
+  }
+
+  try {
+    const Affiliate = require('../models/Affiliate');
+    const affiliate = await Affiliate.findOne({ userId: req.user._id });
+
+    if (!affiliate) {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'KYC_REQUIRED',
+          message: 'Affiliate profile not found. Please complete your profile first.',
+        },
+      });
+    }
+
+    if (affiliate.kyc.status !== 'approved') {
+      return res.status(403).json({
+        success: false,
+        error: {
+          code: 'KYC_NOT_APPROVED',
+          message: 'Please complete KYC verification to access affiliate links and earn commissions.',
+          kycStatus: affiliate.kyc.status,
+        },
+      });
+    }
+
+    req.affiliate = affiliate;
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
 // Optional authentication - attach user if token exists, but don't require it
 async function optionalAuth(req, res, next) {
   try {
@@ -213,4 +259,4 @@ async function optionalAuth(req, res, next) {
   }
 }
 
-module.exports = { authenticate, authorize, requireVerifiedEmail, requireApprovedKYC, optionalAuth };
+module.exports = { authenticate, authorize, requireVerifiedEmail, requireApprovedKYC, requireApprovedAffiliateKYC, optionalAuth };

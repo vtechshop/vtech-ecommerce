@@ -1,7 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
+import { updateMetaTags } from '@/utils/seo';
 
 const FAQ = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Frequently Asked Questions - V-Tech Kitchen',
+      description: 'Find answers to common questions about orders, payments, shipping, returns, vendor program, and affiliate commissions at V-Tech Kitchen. Quick help for all queries.',
+      canonical: 'https://www.vtechkitchen.com/page/faq',
+    });
+  }, []);
   const [openIndex, setOpenIndex] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 

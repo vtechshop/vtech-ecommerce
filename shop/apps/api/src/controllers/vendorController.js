@@ -1193,7 +1193,7 @@ async function getKYCStats(req, res, next) {
 
 async function updateKYC(req, res, next) {
   try {
-    const { businessName, businessType, businessAddress, taxId, phoneNumber, gstVerified, gstDetails } = req.body;
+    const { businessName, businessType, businessAddress, taxId, phoneNumber, gstVerified, gstDetails, submit } = req.body;
 
     const vendor = await Vendor.findOne({ userId: req.user._id });
 
@@ -1202,6 +1202,33 @@ async function updateKYC(req, res, next) {
         success: false,
         error: { code: 'NOT_FOUND', message: 'Vendor profile not found' },
       });
+    }
+
+    // If submitting for review, validate mandatory fields
+    if (submit) {
+      const missing = [];
+      if (!businessName?.trim() && !vendor.kyc.businessName) missing.push('Business Name');
+      if (!businessType && !vendor.kyc.businessType) missing.push('Business Type');
+      if (!businessAddress?.trim() && !vendor.kyc.businessAddress) missing.push('Business Address');
+      if (!phoneNumber?.trim() && !vendor.kyc.phoneNumber) missing.push('Phone Number');
+      if (!gstVerified && !vendor.kyc.gstVerified) missing.push('GST Verification');
+      // Check documents
+      const docs = vendor.kyc.documents || [];
+      const hasIdProof = docs.some(d => d.type === 'id_proof');
+      const hasAddressProof = docs.some(d => d.type === 'address_proof');
+      if (!hasIdProof) missing.push('ID Proof Document');
+      if (!hasAddressProof) missing.push('Address Proof Document');
+
+      if (missing.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_REQUIRED_FIELDS',
+            message: `Please complete the following before submitting: ${missing.join(', ')}`,
+            missingFields: missing,
+          },
+        });
+      }
     }
 
     // Update KYC fields
@@ -1226,15 +1253,20 @@ async function updateKYC(req, res, next) {
       vendor.kyc.rejectionReason = undefined;
     }
 
+    // If submitting for review, set status to pending
+    if (submit && vendor.kyc.status !== 'approved') {
+      vendor.kyc.status = 'pending';
+    }
+
     await vendor.save();
 
-    logger.info(`KYC updated for vendor: ${vendor.storeName}`);
+    logger.info(`KYC ${submit ? 'submitted' : 'updated'} for vendor: ${vendor.storeName}`);
 
     res.json({
       success: true,
       data: {
         kyc: vendor.kyc,
-        message: 'KYC information updated successfully',
+        message: submit ? 'KYC submitted for review successfully' : 'KYC information updated successfully',
       },
     });
   } catch (error) {
@@ -1403,7 +1435,7 @@ async function updateProfile(req, res, next) {
 // Update bank details
 async function updateBank(req, res, next) {
   try {
-    const { accountHolderName, bankName, accountNumber, ifscCode, swiftCode, panNumber } = req.body;
+    const { accountHolderName, bankName, accountNumber, ifscCode, swiftCode, panNumber, upiId } = req.body;
 
     const vendor = await Vendor.findOne({ userId: req.user._id });
     if (!vendor) {
@@ -1424,6 +1456,7 @@ async function updateBank(req, res, next) {
     }
     if (ifscCode !== undefined) vendor.bank.ifscCode = ifscCode.toUpperCase();
     if (swiftCode !== undefined) vendor.bank.swiftCode = swiftCode.toUpperCase();
+    if (upiId !== undefined) vendor.bank.upiId = upiId;
 
     // Save PAN number for TDS compliance
     if (panNumber !== undefined) {

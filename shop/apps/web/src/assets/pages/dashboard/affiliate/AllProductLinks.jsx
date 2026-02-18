@@ -9,7 +9,7 @@ import {
   Copy, Check, Download, Eye, EyeOff, AlertCircle, Search, Filter,
   Package, TrendingUp, DollarSign, MousePointerClick, Star, Grid3X3,
   List, ChevronDown, ChevronUp, ExternalLink, Share2, Tag, Percent,
-  SlidersHorizontal, X, ArrowUpDown, Sparkles, ShoppingBag, LayoutGrid, RefreshCw
+  SlidersHorizontal, X, ArrowUpDown, Sparkles, ShoppingBag, LayoutGrid, RefreshCw, Shield
 } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
@@ -338,6 +338,30 @@ const AllProductLinks = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  // KYC not approved - show gate directing user to complete KYC
+  if (affiliateError?.response?.status === 403 && affiliateError?.response?.data?.error?.code === 'KYC_NOT_APPROVED') {
+    const kycStatus = affiliateError?.response?.data?.error?.kycStatus;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center max-w-md">
+          <Shield className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">KYC Verification Required</h2>
+          <p className="text-gray-600 mb-4">
+            {kycStatus === 'not_submitted' || kycStatus === 'rejected'
+              ? 'Please complete and submit your KYC verification to access affiliate links and start earning commissions.'
+              : 'Your KYC verification is pending review. You will be able to access affiliate links once approved.'}
+          </p>
+          <Link
+            to="/affiliate-dashboard/kyc"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          >
+            {kycStatus === 'not_submitted' || kycStatus === 'rejected' ? 'Complete KYC' : 'View KYC Status'}
+          </Link>
+        </div>
       </div>
     );
   }

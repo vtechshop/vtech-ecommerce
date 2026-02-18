@@ -19,15 +19,15 @@ router.post('/categories', authenticate, authorize(['vendor', 'admin']), vendorC
 router.put('/categories/:id', authenticate, authorize(['vendor', 'admin']), vendorController.updateCategory);
 router.delete('/categories/:id', authenticate, authorize(['vendor', 'admin']), vendorController.deleteCategory);
 
-// Product routes - allow vendors to manage products without KYC approval
+// Product routes - require approved KYC for creating/modifying products
 router.get('/products/stats', authenticate, authorize(['vendor', 'admin']), vendorController.getProductStats);
 router.get('/products/export', authenticate, authorize(['vendor', 'admin']), vendorController.exportProducts);
 router.get('/products', authenticate, authorize(['vendor', 'admin']), vendorController.getVendorProducts);
-router.post('/products', authenticate, authorize(['vendor', 'admin']), vendorController.createProduct);
-router.post('/products/bulk-delete', authenticate, authorize(['vendor', 'admin']), vendorController.bulkDeleteProducts);
-router.post('/products/import', authenticate, authorize(['vendor', 'admin']), vendorController.importProducts);
-router.put('/products/:id', authenticate, authorize(['vendor', 'admin']), vendorController.updateProduct);
-router.delete('/products/:id', authenticate, authorize(['vendor', 'admin']), vendorController.deleteProduct);
+router.post('/products', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.createProduct);
+router.post('/products/bulk-delete', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.bulkDeleteProducts);
+router.post('/products/import', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.importProducts);
+router.put('/products/:id', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.updateProduct);
+router.delete('/products/:id', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.deleteProduct);
 
 // Inventory routes - allow vendors to manage inventory without KYC approval
 router.get('/inventory/stats', authenticate, authorize(['vendor', 'admin']), vendorController.getInventoryStats);

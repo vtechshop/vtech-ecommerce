@@ -139,6 +139,7 @@ const VendorSettings = () => {
     accountNumber: '',
     ifscCode: '',
     swiftCode: '',
+    upiId: '',
     panNumber: '',
   });
 
@@ -168,6 +169,7 @@ const VendorSettings = () => {
         accountNumber: vendorData.bank?.accountNumber || '',
         ifscCode: vendorData.bank?.ifscCode || '',
         swiftCode: vendorData.bank?.swiftCode || '',
+        upiId: vendorData.bank?.upiId || '',
         panNumber: vendorData.panNumber || '',
       });
       setPoliciesData({
@@ -686,6 +688,19 @@ const VendorSettings = () => {
                     onChange={(e) => setBankData({ ...bankData, swiftCode: e.target.value.toUpperCase() })}
                     placeholder="e.g., SBININBB123"
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono uppercase"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    UPI ID <span className="text-gray-400 text-xs">(For quick payouts)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={bankData.upiId}
+                    onChange={(e) => setBankData({ ...bankData, upiId: e.target.value })}
+                    placeholder="e.g., yourname@upi or 9876543210@paytm"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm font-mono"
                   />
                 </div>
 

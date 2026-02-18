@@ -38,7 +38,7 @@ const affiliateSchema = new mongoose.Schema({
     gstNumber: { type: String, uppercase: true },
     gstVerified: { type: Boolean, default: false },
     gstDetails: { type: mongoose.Schema.Types.Mixed }, // Cached AppyFlow response
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    status: { type: String, enum: ['not_submitted', 'pending', 'approved', 'rejected'], default: 'not_submitted' },
     verifiedAt: Date,
     rejectionReason: String,
   },

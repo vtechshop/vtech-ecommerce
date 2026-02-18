@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/dashboard/admin/VendorCommissions.jsx
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import { formatCurrency } from '@/utils/format';
@@ -10,7 +10,8 @@ import {
   Check, X, Clock, Filter, Download, Eye,
   TrendingUp, Store, CheckCircle, AlertCircle,
   Wallet, RefreshCw, CreditCard, PieChart,
-  Banknote, ArrowRight
+  Banknote, Building2, Smartphone, Upload,
+  Copy, IndianRupee, FileText, ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/components/common/ToastContainer';
 import PendingBadge from '@/components/common/PendingBadge';
@@ -23,6 +24,47 @@ const DATE_RANGE_OPTIONS = [
   { value: '365', label: 'Last 1 year' },
   { value: 'all', label: 'All time' },
 ];
+
+const PAYMENT_METHODS = [
+  { value: 'upi', label: 'UPI', icon: Smartphone, color: 'purple' },
+  { value: 'neft', label: 'NEFT', icon: Building2, color: 'blue' },
+  { value: 'imps', label: 'IMPS', icon: CreditCard, color: 'green' },
+  { value: 'rtgs', label: 'RTGS', icon: IndianRupee, color: 'orange' },
+  { value: 'cash', label: 'Cash', icon: IndianRupee, color: 'gray' },
+];
+
+const CopyButton = ({ text, label }) => {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* fallback */ }
+  };
+  return (
+    <button onClick={handleCopy} className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors" title={`Copy ${label}`}>
+      {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
+      {copied ? 'Copied!' : 'Copy'}
+    </button>
+  );
+};
+
+const UpiQrCode = ({ upiId, amount, name }) => {
+  if (!upiId) return null;
+  const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(name || 'Vendor')}&am=${amount}&cu=INR`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiUrl)}`;
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <img src={qrUrl} alt="UPI QR Code" className="w-40 h-40 rounded-lg border border-gray-200" />
+      <p className="text-xs text-gray-500">Scan with any UPI app</p>
+      <a href={upiUrl} className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors">
+        <ExternalLink className="w-3 h-3" /> Open UPI App
+      </a>
+    </div>
+  );
+};
 
 const getDateRange = (days) => {
   if (days === 'all') return { startDate: '', endDate: '' };
@@ -41,6 +83,16 @@ const VendorCommissions = () => {
   const [page, setPage] = useState(1);
   const queryClient = useQueryClient();
   const toast = useToast();
+
+  // Payout modal state
+  const [selectedVendorPayout, setSelectedVendorPayout] = useState(null);
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [paymentStep, setPaymentStep] = useState('method');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [paymentRef, setPaymentRef] = useState('');
+  const [paymentProof, setPaymentProof] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Export panel state
   const [showExport, setShowExport] = useState(false);
@@ -85,6 +137,33 @@ const VendorCommissions = () => {
     },
   });
 
+  // Fetch pending payouts with bank details (for payout modal)
+  const { data: pendingPayouts } = useQuery({
+    queryKey: ['admin', 'payouts', 'pending'],
+    queryFn: async () => {
+      const response = await api.get('/admin/payouts/pending');
+      return response.data.data;
+    },
+  });
+
+  // Process manual payout mutation
+  const processPayoutMutation = useMutation({
+    mutationFn: async (payoutData) => {
+      const response = await api.post('/admin/payouts/process', payoutData);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Payout recorded successfully!');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'payouts', 'pending'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
+      closePayoutModal();
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to process payout');
+    },
+  });
+
   // Fetch vendor list for export dropdown
   const { data: vendorsData } = useQuery({
     queryKey: ['admin-vendors-list'],
@@ -108,22 +187,6 @@ const VendorCommissions = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to approve commission');
-    },
-  });
-
-  // Pay commission mutation
-  const payCommissionMutation = useMutation({
-    mutationFn: async (commissionId) => {
-      const response = await api.put(`/admin/commissions/${commissionId}/pay`);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
-      toast.success('Commission paid via Razorpay!');
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to pay commission');
     },
   });
 
@@ -158,24 +221,6 @@ const VendorCommissions = () => {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to approve commissions');
-    },
-  });
-
-  // Bulk pay commissions mutation (batch payout)
-  const bulkPayMutation = useMutation({
-    mutationFn: async (commissionIds) => {
-      const response = await api.post('/admin/commissions/bulk-pay', {
-        commissionIds,
-      });
-      return response.data;
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-vendor-commissions'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-commission-stats'] });
-      toast.success(`Batch payout processed! ${data.data?.success?.length || 0} payouts successful`);
-    },
-    onError: (error) => {
-      toast.error(error.response?.data?.error?.message || 'Failed to process batch payout');
     },
   });
 
@@ -254,19 +299,62 @@ const VendorCommissions = () => {
     }
   };
 
-  // Pay all approved commissions (batch payout)
-  const handlePayAllApproved = () => {
-    const approvedIds = data?.commissions
-      ?.filter(c => c.status === 'approved')
-      ?.map(c => c._id) || [];
-
-    if (approvedIds.length === 0) {
-      toast.info('No approved commissions to pay');
+  // Payout modal helpers
+  const openPayoutModal = (vendorId) => {
+    const vendor = pendingPayouts?.find(v => v.vendorId === vendorId);
+    if (!vendor) {
+      toast.error('No pending payout found for this vendor');
       return;
     }
+    setSelectedVendorPayout(vendor);
+    setShowPayoutModal(true);
+    setPaymentStep('method');
+    setPaymentMethod('');
+    setPaymentRef('');
+    setPaymentProof(null);
+  };
 
-    if (window.confirm(`Process batch payout for ${approvedIds.length} approved commissions via Razorpay?`)) {
-      bulkPayMutation.mutate(approvedIds);
+  const closePayoutModal = () => {
+    setShowPayoutModal(false);
+    setSelectedVendorPayout(null);
+    setPaymentStep('method');
+    setPaymentMethod('');
+    setPaymentRef('');
+    setPaymentProof(null);
+  };
+
+  const handleSubmitPayout = () => {
+    if (!paymentRef.trim()) {
+      toast.error('Please enter the UTR / Transaction ID');
+      return;
+    }
+    if (!paymentMethod) {
+      toast.error('Please select a payment method');
+      return;
+    }
+    processPayoutMutation.mutate({
+      vendorId: selectedVendorPayout.vendorId,
+      amount: selectedVendorPayout.pendingAmount,
+      paymentMethod,
+      paymentRef: paymentRef.trim(),
+      paymentProof,
+    });
+  };
+
+  const handleUploadProof = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await api.post('/upload/single', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setPaymentProof(res.data.data?.url || res.data.data?.path || res.data.url);
+      toast.success('Payment proof uploaded');
+    } catch {
+      toast.error('Failed to upload proof');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -474,15 +562,9 @@ const VendorCommissions = () => {
               <Wallet className="w-6 h-6 text-white" />
             </div>
             {(stats?.approvedCount || 0) > 0 && (
-              <Button
-                variant="outline-light"
-                size="xs"
-                onClick={handlePayAllApproved}
-                disabled={bulkPayMutation.isPending}
-              >
-                <Banknote className="w-3 h-3 mr-1" />
-                Pay All
-              </Button>
+              <span className="text-xs bg-white/20 px-2 py-1 rounded-full">
+                {pendingPayouts?.length || 0} vendors
+              </span>
             )}
           </div>
           <h3 className="text-blue-100 text-sm font-medium mb-1">Ready to Pay</h3>
@@ -712,8 +794,7 @@ const VendorCommissions = () => {
                           <Button
                             variant="primary"
                             size="xs"
-                            onClick={() => payCommissionMutation.mutate(commission._id)}
-                            disabled={payCommissionMutation.isPending}
+                            onClick={() => openPayoutModal(commission.subjectId?._id)}
                           >
                             <DollarSign className="w-3 h-3 mr-1" />
                             Pay
@@ -767,6 +848,291 @@ const VendorCommissions = () => {
           </div>
         )}
       </div>
+      {/* ============ PAYOUT MODAL ============ */}
+      {showPayoutModal && selectedVendorPayout && (() => {
+        const bank = selectedVendorPayout.bankDetails;
+        const upiUrl = bank?.upiId ? `upi://pay?pa=${encodeURIComponent(bank.upiId)}&pn=${encodeURIComponent(bank.accountHolderName || selectedVendorPayout.vendorName)}&am=${selectedVendorPayout.pendingAmount}&cu=INR` : '';
+        const copyAllBankDetails = () => {
+          const lines = [];
+          if (bank?.accountHolderName) lines.push(`Name: ${bank.accountHolderName}`);
+          if (bank?.bankName) lines.push(`Bank: ${bank.bankName}`);
+          if (bank?.accountNumber) lines.push(`A/C: ${bank.accountNumber}`);
+          if (bank?.ifscCode) lines.push(`IFSC: ${bank.ifscCode}`);
+          lines.push(`Amount: ${selectedVendorPayout.pendingAmount}`);
+          navigator.clipboard.writeText(lines.join('\n'));
+          toast.success('Bank details copied!');
+        };
+        return (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl z-10">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    {paymentStep === 'method' ? 'Pay Vendor' : paymentStep === 'pay' ? 'Make Payment' : 'Confirm Payment'}
+                  </h2>
+                  <p className="text-sm text-gray-500">{selectedVendorPayout.vendorName} — {formatCurrency(selectedVendorPayout.pendingAmount)}</p>
+                </div>
+                <button onClick={closePayoutModal} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Step Indicator */}
+              <div className="px-6 pt-4">
+                <div className="flex items-center gap-2 mb-6">
+                  {['method', 'pay', 'record'].map((step, i) => (
+                    <div key={step} className="flex items-center gap-2 flex-1">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                        paymentStep === step ? 'bg-blue-600 text-white' :
+                        ['method', 'pay', 'record'].indexOf(paymentStep) > i ? 'bg-green-500 text-white' :
+                        'bg-gray-200 text-gray-500'
+                      }`}>{['method', 'pay', 'record'].indexOf(paymentStep) > i ? '✓' : i + 1}</div>
+                      <span className={`text-xs font-medium hidden sm:block ${paymentStep === step ? 'text-blue-600' : 'text-gray-400'}`}>
+                        {step === 'method' ? 'Method' : step === 'pay' ? 'Pay' : 'Confirm'}
+                      </span>
+                      {i < 2 && <div className="flex-1 h-0.5 bg-gray-200 rounded" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="px-6 pb-6">
+                {/* ====== STEP 1: Choose Payment Method ====== */}
+                {paymentStep === 'method' && (
+                  <>
+                    <p className="text-sm text-gray-600 mb-4">How do you want to pay {selectedVendorPayout.vendorName}?</p>
+                    <div className="grid grid-cols-1 gap-3 mb-6">
+                      {bank?.upiId && (
+                        <button onClick={() => { setPaymentMethod('upi'); setPaymentStep('pay'); }}
+                          className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-purple-400 hover:bg-purple-50 transition-all text-left group">
+                          <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-200 transition-colors">
+                            <Smartphone className="w-6 h-6 text-purple-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900">UPI</p>
+                            <p className="text-xs text-gray-500">Scan QR or open UPI app — {bank.upiId}</p>
+                          </div>
+                          <span className="text-purple-600 font-bold text-lg">&rarr;</span>
+                        </button>
+                      )}
+                      {bank?.accountNumber && (
+                        <>
+                          <button onClick={() => { setPaymentMethod('neft'); setPaymentStep('pay'); }}
+                            className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all text-left group">
+                            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                              <Building2 className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-gray-900">NEFT</p>
+                              <p className="text-xs text-gray-500">{bank.bankName || 'Bank Transfer'} — ****{bank.accountNumber.slice(-4)}</p>
+                            </div>
+                            <span className="text-blue-600 font-bold text-lg">&rarr;</span>
+                          </button>
+                          <button onClick={() => { setPaymentMethod('imps'); setPaymentStep('pay'); }}
+                            className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-green-400 hover:bg-green-50 transition-all text-left group">
+                            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                              <CreditCard className="w-6 h-6 text-green-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-gray-900">IMPS</p>
+                              <p className="text-xs text-gray-500">Instant transfer — {bank.bankName || 'Bank'}</p>
+                            </div>
+                            <span className="text-green-600 font-bold text-lg">&rarr;</span>
+                          </button>
+                          <button onClick={() => { setPaymentMethod('rtgs'); setPaymentStep('pay'); }}
+                            className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-orange-400 hover:bg-orange-50 transition-all text-left group">
+                            <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                              <IndianRupee className="w-6 h-6 text-orange-600" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-gray-900">RTGS</p>
+                              <p className="text-xs text-gray-500">High value transfer — {bank.bankName || 'Bank'}</p>
+                            </div>
+                            <span className="text-orange-600 font-bold text-lg">&rarr;</span>
+                          </button>
+                        </>
+                      )}
+                      <button onClick={() => { setPaymentMethod('cash'); setPaymentStep('pay'); }}
+                        className="flex items-center gap-4 p-4 border-2 border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all text-left group">
+                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                          <Banknote className="w-6 h-6 text-gray-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">Cash</p>
+                          <p className="text-xs text-gray-500">Hand cash or other method</p>
+                        </div>
+                        <span className="text-gray-600 font-bold text-lg">&rarr;</span>
+                      </button>
+                    </div>
+                    {!bank?.upiId && !bank?.accountNumber && (
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                        <p className="text-sm text-red-700">No bank details found. Ask the vendor to add bank/UPI details in their settings.</p>
+                      </div>
+                    )}
+                    <Button onClick={closePayoutModal} variant="secondary" className="w-full">Cancel</Button>
+                  </>
+                )}
+
+                {/* ====== STEP 2: Make Payment ====== */}
+                {paymentStep === 'pay' && (
+                  <>
+                    {/* Amount Card */}
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-green-600 font-medium">Pay this amount</p>
+                          <p className="text-3xl font-bold text-green-700">{formatCurrency(selectedVendorPayout.pendingAmount)}</p>
+                        </div>
+                        <span className={`px-3 py-1.5 rounded-lg text-sm font-bold uppercase ${
+                          paymentMethod === 'upi' ? 'bg-purple-100 text-purple-700' :
+                          paymentMethod === 'neft' ? 'bg-blue-100 text-blue-700' :
+                          paymentMethod === 'imps' ? 'bg-green-100 text-green-700' :
+                          paymentMethod === 'rtgs' ? 'bg-orange-100 text-orange-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>{paymentMethod}</span>
+                      </div>
+                    </div>
+
+                    {/* UPI Payment */}
+                    {paymentMethod === 'upi' && bank?.upiId && (
+                      <div className="space-y-4 mb-6">
+                        <div className="bg-purple-50 border border-purple-200 rounded-xl p-6 flex flex-col items-center gap-4">
+                          <UpiQrCode upiId={bank.upiId} amount={selectedVendorPayout.pendingAmount} name={bank.accountHolderName || selectedVendorPayout.vendorName} />
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
+                          <div>
+                            <span className="text-xs text-gray-500">UPI ID</span>
+                            <p className="text-sm font-mono font-semibold text-purple-700">{bank.upiId}</p>
+                          </div>
+                          <CopyButton text={bank.upiId} label="UPI ID" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bank Transfer (NEFT/IMPS/RTGS) */}
+                    {['neft', 'imps', 'rtgs'].includes(paymentMethod) && bank?.accountNumber && (
+                      <div className="mb-6">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                            <Building2 className="w-4 h-4" /> Transfer to this account
+                          </h3>
+                          <button onClick={copyAllBankDetails}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-700 transition-colors">
+                            <Copy className="w-3 h-3" /> Copy All
+                          </button>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                          {bank.accountHolderName && (
+                            <div className="flex items-center justify-between">
+                              <div><span className="text-xs text-gray-500">Account Holder</span><p className="text-sm font-medium text-gray-900">{bank.accountHolderName}</p></div>
+                              <CopyButton text={bank.accountHolderName} label="Name" />
+                            </div>
+                          )}
+                          {bank.bankName && (
+                            <div className="flex items-center justify-between">
+                              <div><span className="text-xs text-gray-500">Bank</span><p className="text-sm font-medium text-gray-900">{bank.bankName}</p></div>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <div><span className="text-xs text-gray-500">Account Number</span><p className="text-sm font-mono font-bold text-gray-900">{bank.accountNumber}</p></div>
+                            <CopyButton text={bank.accountNumber} label="Account Number" />
+                          </div>
+                          {bank.ifscCode && (
+                            <div className="flex items-center justify-between">
+                              <div><span className="text-xs text-gray-500">IFSC Code</span><p className="text-sm font-mono font-bold text-gray-900">{bank.ifscCode}</p></div>
+                              <CopyButton text={bank.ifscCode} label="IFSC" />
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between border-t border-gray-200 pt-3">
+                            <div><span className="text-xs text-gray-500">Amount</span><p className="text-sm font-bold text-green-700">{formatCurrency(selectedVendorPayout.pendingAmount)}</p></div>
+                            <CopyButton text={String(selectedVendorPayout.pendingAmount)} label="Amount" />
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-3 text-center">Open your bank app → {paymentMethod.toUpperCase()} Transfer → Paste these details → Send</p>
+                      </div>
+                    )}
+
+                    {/* Cash */}
+                    {paymentMethod === 'cash' && (
+                      <div className="bg-gray-50 rounded-xl p-6 mb-6 text-center">
+                        <Banknote className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                        <p className="text-sm text-gray-700">Hand over <span className="font-bold text-green-700">{formatCurrency(selectedVendorPayout.pendingAmount)}</span> to the vendor</p>
+                        <p className="text-xs text-gray-500 mt-1">Take a photo of receipt if available</p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <Button onClick={() => { setPaymentMethod(''); setPaymentStep('method'); }} variant="secondary" className="flex-1">Back</Button>
+                      <Button onClick={() => setPaymentStep('record')} variant="primary" className="flex-1">
+                        Done — Enter UTR
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {/* ====== STEP 3: Record Payment ====== */}
+                {paymentStep === 'record' && (
+                  <>
+                    <p className="text-sm text-gray-600 mb-4">Enter the transaction reference from your {paymentMethod.toUpperCase()} payment</p>
+
+                    {/* UTR / Transaction ID */}
+                    <div className="mb-5">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">UTR / Transaction ID *</label>
+                      <input type="text" value={paymentRef} onChange={(e) => setPaymentRef(e.target.value)}
+                        placeholder={paymentMethod === 'upi' ? 'e.g. 412345678901' : paymentMethod === 'cash' ? 'e.g. CASH-001 or receipt number' : 'e.g. NEFT1234567890'}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        autoFocus />
+                      <p className="mt-1 text-xs text-gray-500">
+                        {paymentMethod === 'upi' ? 'Find UTR in your UPI app → Transaction history' :
+                         paymentMethod === 'cash' ? 'Enter receipt number or any reference' :
+                         `Find UTR in your bank app → ${paymentMethod.toUpperCase()} transaction history`}
+                      </p>
+                    </div>
+
+                    {/* Payment Proof */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Payment Screenshot (optional)</label>
+                      <input type="file" ref={fileInputRef} onChange={handleUploadProof} accept="image/*,.pdf" className="hidden" />
+                      {paymentProof ? (
+                        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                          <Check className="w-5 h-5 text-green-600" />
+                          <span className="text-sm text-green-700 flex-1">Screenshot uploaded</span>
+                          <button onClick={() => { setPaymentProof(null); fileInputRef.current.value = ''; }} className="text-xs text-red-600 hover:underline">Remove</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                          className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-colors text-sm text-gray-600">
+                          <Upload className="w-4 h-4" />
+                          {uploading ? 'Uploading...' : 'Upload payment screenshot'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Summary */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                      <div className="text-sm space-y-1">
+                        <div className="flex justify-between"><span className="text-blue-700">Vendor:</span><span className="font-medium">{selectedVendorPayout.vendorName}</span></div>
+                        <div className="flex justify-between"><span className="text-blue-700">Amount:</span><span className="font-bold text-green-700">{formatCurrency(selectedVendorPayout.pendingAmount)}</span></div>
+                        <div className="flex justify-between"><span className="text-blue-700">Method:</span><span className="font-medium uppercase">{paymentMethod}</span></div>
+                        <div className="flex justify-between"><span className="text-blue-700">UTR:</span><span className="font-mono">{paymentRef || '—'}</span></div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button onClick={() => setPaymentStep('pay')} variant="secondary" className="flex-1">Back</Button>
+                      <Button onClick={handleSubmitPayout} variant="primary" className="flex-1"
+                        disabled={processPayoutMutation.isPending || !paymentRef.trim()}>
+                        {processPayoutMutation.isPending ? 'Recording...' : 'Confirm & Mark as Paid'}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

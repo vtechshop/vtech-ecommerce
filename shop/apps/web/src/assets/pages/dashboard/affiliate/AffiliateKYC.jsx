@@ -88,6 +88,26 @@ const AffiliateKYC = () => {
     },
   });
 
+  // Submit for review mutation (validates mandatory fields and sets status to pending)
+  const submitForReviewMutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await api.put('/affiliates/kyc', { ...data, submit: true });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['affiliate-kyc'] });
+      toast.success('KYC application submitted for review! We will verify your details within 2-3 business days.');
+    },
+    onError: (error) => {
+      const errData = error.response?.data?.error;
+      if (errData?.code === 'MISSING_REQUIRED_FIELDS') {
+        toast.error(errData.message);
+      } else {
+        toast.error(errData?.message || 'Failed to submit KYC application');
+      }
+    },
+  });
+
   // Upload document mutation
   const uploadDocMutation = useMutation({
     mutationFn: async ({ type, url, filename }) => {
@@ -154,6 +174,41 @@ const AffiliateKYC = () => {
     updateKYCMutation.mutate(payload);
   };
 
+  const handleSubmitForReview = () => {
+    const missing = [];
+    if (!formData.fullName?.trim()) missing.push('Full Name');
+    if (!formData.phoneNumber?.trim()) missing.push('Phone Number');
+    if (!formData.idType) missing.push('ID Type');
+    if (!formData.idNumber?.trim()) missing.push('ID Number');
+    if (!formData.address?.trim()) missing.push('Address');
+    if (!formData.city?.trim()) missing.push('City');
+    if (!formData.state?.trim()) missing.push('State');
+    if (!formData.country?.trim()) missing.push('Country');
+
+    // Check bank details from saved data
+    const payment = kycData?.paymentDetails;
+    if (!payment?.accountNumber) missing.push('Bank Account Number');
+    if (!payment?.ifscCode) missing.push('IFSC Code');
+    if (!kycData?.panNumber && !paymentData.panNumber?.trim()) missing.push('PAN Number');
+
+    // Check documents
+    const docs = kycData?.kyc?.documents || [];
+    if (!docs.some(d => d.type === 'id_proof')) missing.push('ID Proof Document');
+
+    if (missing.length > 0) {
+      toast.error(`Please complete the following before submitting: ${missing.join(', ')}`);
+      return;
+    }
+
+    const payload = { ...formData };
+    if (gstNumber.trim()) {
+      payload.gstNumber = gstNumber.trim().toUpperCase();
+      payload.gstVerified = gstVerified;
+      payload.gstDetails = gstDetails;
+    }
+    submitForReviewMutation.mutate(payload);
+  };
+
   const handleFileUpload = async (e, docType) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -197,6 +252,11 @@ const AffiliateKYC = () => {
 
   const getStatusBadge = (status) => {
     const badges = {
+      not_submitted: {
+        icon: <AlertCircle className="w-4 h-4" />,
+        text: 'Not Submitted',
+        className: 'bg-gray-100 text-gray-700 border-gray-200',
+      },
       pending: {
         icon: <Clock className="w-4 h-4" />,
         text: 'Pending Review',
@@ -214,7 +274,7 @@ const AffiliateKYC = () => {
       },
     };
 
-    const badge = badges[status] || badges.pending;
+    const badge = badges[status] || badges.not_submitted;
 
     return (
       <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${badge.className}`}>
@@ -747,6 +807,58 @@ const AffiliateKYC = () => {
         </div>
       </div>
 
+      {/* Submit for Review Section */}
+      {kyc.status !== 'approved' && (
+        <div className="bg-white rounded-lg shadow-sm border-2 border-blue-200 p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+            <Shield className="w-5 h-5 text-blue-600" />
+            Submit for Review
+          </h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Complete all sections below, then submit your KYC for admin verification.
+          </p>
+
+          {/* Checklist */}
+          <div className="space-y-2 mb-6">
+            {[
+              { label: 'Personal information filled', done: !!(formData.fullName && formData.phoneNumber && formData.idType && formData.idNumber && formData.address && formData.city && formData.state && formData.country) },
+              { label: 'Bank details saved', done: !!(kycData?.paymentDetails?.accountNumber && kycData?.paymentDetails?.ifscCode) },
+              { label: 'PAN number added', done: !!(kycData?.panNumber || paymentData.panNumber) },
+              { label: 'ID proof uploaded', done: !!(kyc.documents?.some(d => d.type === 'id_proof')) },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                {item.done ? (
+                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                )}
+                <span className={item.done ? 'text-green-700' : 'text-gray-500'}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {kyc.status === 'pending' ? (
+            <div className="flex items-center gap-2 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+              <Clock className="w-4 h-4 flex-shrink-0" />
+              Your application is under review. We'll notify you via email once it's processed.
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmitForReview}
+              disabled={submitForReviewMutation.isLoading}
+              className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center gap-2"
+            >
+              {submitForReviewMutation.isLoading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
+              ) : (
+                <><Shield className="w-4 h-4" /> Submit for Review</>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Info Box */}
       <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
         <h3 className="font-semibold text-gray-900 mb-2">Verification Process</h3>
@@ -754,9 +866,10 @@ const AffiliateKYC = () => {
           <li>Fill out all required personal information</li>
           <li>Upload all required documents (ID Proof and Address Proof)</li>
           <li><strong>Add your bank account details for receiving payouts</strong></li>
+          <li>Submit your KYC for review using the button above</li>
           <li>Our team will review your application within 2-3 business days</li>
           <li>You will be notified via email once your application is approved</li>
-          <li>After approval, you can start earning commissions and receiving payouts</li>
+          <li>After approval, you can start earning commissions and sharing affiliate links</li>
         </ul>
       </div>
     </div>

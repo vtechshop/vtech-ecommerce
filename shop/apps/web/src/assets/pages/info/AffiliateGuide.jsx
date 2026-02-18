@@ -1,7 +1,17 @@
+import { useEffect } from 'react';
 import { DollarSign, TrendingUp, Link2, Share2, BarChart3, CheckCircle, AlertCircle, Award, Users, Clock, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { updateMetaTags } from '@/utils/seo';
 
 const AffiliateGuide = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Affiliate Guide - V-Tech Kitchen',
+      description: 'Complete guide to V-Tech Kitchen affiliate program. Learn how to earn 5-8% commissions by promoting products and maximize your earnings.',
+      canonical: 'https://www.vtechkitchen.com/page/affiliate-guide',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">

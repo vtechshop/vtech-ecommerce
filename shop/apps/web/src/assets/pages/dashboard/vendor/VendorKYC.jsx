@@ -263,6 +263,27 @@ const VendorKYC = () => {
     },
   });
 
+  // Submit for review mutation (validates mandatory fields and sets status to pending)
+  const submitForReviewMutation = useMutation({
+    mutationFn: async (data) => {
+      const response = await api.put('/vendors/kyc', { ...data, submit: true });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-kyc'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-kyc-stats'] });
+      toast.success('KYC application submitted for review! We will verify your details within 2-3 business days.');
+    },
+    onError: (error) => {
+      const errData = error.response?.data?.error;
+      if (errData?.code === 'MISSING_REQUIRED_FIELDS') {
+        toast.error(errData.message);
+      } else {
+        toast.error(errData?.message || 'Failed to submit KYC application');
+      }
+    },
+  });
+
   const uploadDocMutation = useMutation({
     mutationFn: async ({ type, url, filename }) => {
       const response = await api.post('/vendors/kyc/documents', { type, url, filename });
@@ -330,11 +351,28 @@ const VendorKYC = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!gstVerified) {
-      toast.error('Please verify your GST number before submitting');
+    updateKYCMutation.mutate({ ...formData, gstVerified, gstDetails });
+  };
+
+  const handleSubmitForReview = () => {
+    const missing = [];
+    if (!formData.businessName?.trim()) missing.push('Business Name');
+    if (!formData.businessType) missing.push('Business Type');
+    if (!formData.businessAddress?.trim()) missing.push('Business Address');
+    if (!formData.phoneNumber?.trim()) missing.push('Phone Number');
+    if (!gstVerified) missing.push('GST Verification');
+
+    // Check documents
+    const docs = kycData?.kyc?.documents || [];
+    if (!docs.some(d => d.type === 'id_proof')) missing.push('ID Proof Document');
+    if (!docs.some(d => d.type === 'address_proof')) missing.push('Address Proof Document');
+
+    if (missing.length > 0) {
+      toast.error(`Please complete the following before submitting: ${missing.join(', ')}`);
       return;
     }
-    updateKYCMutation.mutate({ ...formData, gstVerified, gstDetails });
+
+    submitForReviewMutation.mutate({ ...formData, gstVerified, gstDetails });
   };
 
   const handleFileUpload = async (e, docType) => {
@@ -455,12 +493,14 @@ const VendorKYC = () => {
             <div className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border ${
               status === 'approved' ? 'bg-green-100 text-green-800 border-green-200' :
               status === 'rejected' ? 'bg-red-100 text-red-800 border-red-200' :
-              'bg-yellow-100 text-yellow-800 border-yellow-200'
+              status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+              'bg-gray-100 text-gray-700 border-gray-200'
             }`}>
               {status === 'approved' ? <CheckCircle className="w-4 h-4" /> :
                status === 'rejected' ? <AlertCircle className="w-4 h-4" /> :
-               <Clock className="w-4 h-4" />}
-              {status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : 'Pending'}
+               status === 'pending' ? <Clock className="w-4 h-4" /> :
+               <AlertCircle className="w-4 h-4" />}
+              {status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : status === 'pending' ? 'Pending Review' : 'Not Submitted'}
             </div>
           </div>
         </div>
@@ -628,7 +668,7 @@ const VendorKYC = () => {
           <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
             <button
               type="submit"
-              disabled={updateKYCMutation.isLoading || !gstVerified}
+              disabled={updateKYCMutation.isLoading}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm"
             >
               {updateKYCMutation.isLoading ? (
@@ -824,6 +864,60 @@ const VendorKYC = () => {
           </div>
         )}
       </div>
+
+      {/* Submit for Review Section */}
+      {status !== 'approved' && (
+        <div className="bg-white rounded-lg border-2 border-blue-200 shadow-sm overflow-hidden">
+          <div className="p-4 sm:p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-600" />
+              Submit for Review
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Complete all sections above, then submit your KYC for admin verification to start selling.
+            </p>
+
+            {/* Checklist */}
+            <div className="space-y-2 mb-6">
+              {[
+                { label: 'Business information filled', done: completionStatus.businessInfo },
+                { label: 'GST number verified', done: gstVerified },
+                { label: 'ID proof uploaded', done: !!(kycData?.kyc?.documents?.some(d => d.type === 'id_proof')) },
+                { label: 'Address proof uploaded', done: !!(kycData?.kyc?.documents?.some(d => d.type === 'address_proof')) },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  {item.done ? (
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                  )}
+                  <span className={item.done ? 'text-green-700' : 'text-gray-500'}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {status === 'pending' ? (
+              <div className="flex items-center gap-2 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                Your application is under review. We'll notify you via email once it's processed.
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmitForReview}
+                disabled={submitForReviewMutation.isLoading}
+                className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center justify-center gap-2"
+              >
+                {submitForReviewMutation.isLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
+                ) : (
+                  <><Shield className="w-4 h-4" /> Submit for Review</>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tips & Help Section */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg overflow-hidden">

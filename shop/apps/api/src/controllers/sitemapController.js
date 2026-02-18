@@ -70,6 +70,9 @@ exports.generateSitemap = async (req, res, next) => {
       { path: '/page/returns', priority: '0.5', changefreq: 'monthly' },
       { path: '/page/shipping', priority: '0.5', changefreq: 'monthly' },
       { path: '/page/faq', priority: '0.5', changefreq: 'monthly' },
+      { path: '/cookie-policy', priority: '0.5', changefreq: 'monthly' },
+      { path: '/page/affiliate-terms', priority: '0.4', changefreq: 'monthly' },
+      { path: '/page/vendor-terms', priority: '0.4', changefreq: 'monthly' },
     ];
 
     staticPages.forEach(page => {

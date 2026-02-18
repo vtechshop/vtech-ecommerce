@@ -1,4 +1,15 @@
+import { useEffect } from 'react';
+import { updateMetaTags } from '@/utils/seo';
+
 const AffiliateTerms = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Affiliate Program Terms & Conditions - V-Tech Kitchen',
+      description: 'Terms and conditions for V-Tech Kitchen affiliate program. Learn about commission rates, payment terms, promotional guidelines, and partner responsibilities.',
+      canonical: 'https://www.vtechkitchen.com/page/affiliate-terms',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-white px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">

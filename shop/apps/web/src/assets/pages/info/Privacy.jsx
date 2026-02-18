@@ -1,6 +1,16 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { updateMetaTags } from '@/utils/seo';
 
 const Privacy = () => {
+  useEffect(() => {
+    updateMetaTags({
+      title: 'Privacy Policy - V-Tech Kitchen',
+      description: 'V-Tech Kitchen privacy policy explains how we collect, use, and protect your personal information when you shop with us. Your data security is our top priority.',
+      canonical: 'https://www.vtechkitchen.com/page/privacy',
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">

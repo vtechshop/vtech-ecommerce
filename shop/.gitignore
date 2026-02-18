@@ -8,6 +8,10 @@ node_modules/
 .env.local
 .env.production
 
+# Google service account keys
+google-indexing-key.json
+*-service-account*.json
+
 # Build outputs
 dist/
 build/
