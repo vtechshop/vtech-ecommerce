@@ -1,6 +1,8 @@
 // FILE: apps/api/src/controllers/adminAdsController.js
 const AdCampaign = require('../models/AdCampaign');
 const AdPricingSettings = require('../models/AdPricingSettings');
+const AdWallet = require('../models/AdWallet');
+const AdEvent = require('../models/AdEvent');
 const Vendor = require('../models/Vendor');
 const Product = require('../models/Product');
 const { getPaginationMeta } = require('../utils/helpers');
@@ -422,6 +424,270 @@ exports.getCampaignStatsSummary = async (req, res, next) => {
         totalSpend: totalSpend[0]?.total || 0,
         totalRevenue: totalRevenue[0]?.total || 0,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== ANALYTICS DASHBOARD ====================
+
+// Get comprehensive analytics for admin ads dashboard
+exports.getAdAnalytics = async (req, res, next) => {
+  try {
+    const { period = '30days' } = req.query;
+
+    // Calculate date range
+    const now = new Date();
+    let startDate;
+    switch (period) {
+      case '7days': startDate = new Date(now - 7 * 24 * 60 * 60 * 1000); break;
+      case '30days': startDate = new Date(now - 30 * 24 * 60 * 60 * 1000); break;
+      case '90days': startDate = new Date(now - 90 * 24 * 60 * 60 * 1000); break;
+      default: startDate = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    // Previous period for comparison
+    const periodMs = now - startDate;
+    const prevStart = new Date(startDate - periodMs);
+    const prevEnd = startDate;
+
+    const [
+      // Current period aggregate stats from campaigns
+      currentStats,
+      previousStats,
+      // Campaign counts by status
+      statusCounts,
+      // Campaign counts by type
+      typeCounts,
+      // Top campaigns by spend
+      topCampaigns,
+      // Top campaigns by clicks
+      topByClicks,
+      // Placement performance
+      placementStats,
+      // Vendor performance
+      vendorStats,
+      // All wallets summary
+      walletSummary,
+      // Recent events for time-series
+      recentEvents,
+    ] = await Promise.all([
+      // Current period: aggregate from campaigns created/updated in period
+      AdCampaign.aggregate([
+        { $group: {
+          _id: null,
+          totalImpressions: { $sum: '$stats.impressions' },
+          totalClicks: { $sum: '$stats.clicks' },
+          totalConversions: { $sum: '$stats.conversions' },
+          totalSpend: { $sum: '$stats.spend' },
+          totalRevenue: { $sum: '$stats.revenue' },
+          avgBid: { $avg: '$bid' },
+          totalBudget: { $sum: '$dailyBudget' },
+        }},
+      ]),
+      // Previous period (for trend comparison - use campaigns created before current period)
+      AdCampaign.aggregate([
+        { $match: { createdAt: { $lt: startDate } } },
+        { $group: {
+          _id: null,
+          totalSpend: { $sum: '$stats.spend' },
+          totalClicks: { $sum: '$stats.clicks' },
+          totalImpressions: { $sum: '$stats.impressions' },
+        }},
+      ]),
+      // Status distribution
+      AdCampaign.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      // Type distribution
+      AdCampaign.aggregate([
+        { $group: { _id: '$type', count: { $sum: 1 }, spend: { $sum: '$stats.spend' } } },
+      ]),
+      // Top 10 by spend
+      AdCampaign.find()
+        .populate('vendorId', 'storeName')
+        .sort({ 'stats.spend': -1 })
+        .limit(10)
+        .select('name type status stats bid dailyBudget vendorId placement pricing')
+        .lean(),
+      // Top 10 by clicks
+      AdCampaign.find({ 'stats.clicks': { $gt: 0 } })
+        .populate('vendorId', 'storeName')
+        .sort({ 'stats.clicks': -1 })
+        .limit(10)
+        .select('name type status stats bid vendorId')
+        .lean(),
+      // Placement performance
+      AdCampaign.aggregate([
+        { $group: {
+          _id: '$placement',
+          campaigns: { $sum: 1 },
+          impressions: { $sum: '$stats.impressions' },
+          clicks: { $sum: '$stats.clicks' },
+          spend: { $sum: '$stats.spend' },
+          revenue: { $sum: '$stats.revenue' },
+        }},
+        { $sort: { spend: -1 } },
+        { $limit: 15 },
+      ]),
+      // Vendor ad spend leaderboard
+      AdCampaign.aggregate([
+        { $group: {
+          _id: '$vendorId',
+          campaigns: { $sum: 1 },
+          totalSpend: { $sum: '$stats.spend' },
+          totalClicks: { $sum: '$stats.clicks' },
+          totalImpressions: { $sum: '$stats.impressions' },
+        }},
+        { $sort: { totalSpend: -1 } },
+        { $limit: 10 },
+        { $lookup: {
+          from: 'vendors',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'vendor',
+        }},
+        { $unwind: { path: '$vendor', preserveNullAndEmptyArrays: true } },
+        { $project: {
+          campaigns: 1,
+          totalSpend: 1,
+          totalClicks: 1,
+          totalImpressions: 1,
+          storeName: '$vendor.storeName',
+        }},
+      ]),
+      // Wallet totals
+      AdWallet.aggregate([
+        { $group: {
+          _id: null,
+          totalBalance: { $sum: '$balance' },
+          totalRecharged: { $sum: '$totalRecharged' },
+          totalSpent: { $sum: '$totalSpent' },
+          walletCount: { $sum: 1 },
+        }},
+      ]),
+      // Time-series: events per day for chart
+      AdEvent.aggregate([
+        { $match: { timestamp: { $gte: startDate } } },
+        { $group: {
+          _id: {
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } },
+            event: '$event',
+          },
+          count: { $sum: 1 },
+          totalCost: { $sum: '$cost' },
+          totalRevenue: { $sum: '$revenue' },
+        }},
+        { $sort: { '_id.date': 1 } },
+      ]),
+    ]);
+
+    // Process time-series data for charts
+    const timeSeriesMap = {};
+    recentEvents.forEach(e => {
+      const date = e._id.date;
+      if (!timeSeriesMap[date]) {
+        timeSeriesMap[date] = { date, impressions: 0, clicks: 0, conversions: 0, spend: 0, revenue: 0 };
+      }
+      if (e._id.event === 'impression') {
+        timeSeriesMap[date].impressions = e.count;
+      } else if (e._id.event === 'click') {
+        timeSeriesMap[date].clicks = e.count;
+      } else if (e._id.event === 'conversion') {
+        timeSeriesMap[date].conversions = e.count;
+        timeSeriesMap[date].revenue = e.totalRevenue;
+      }
+      timeSeriesMap[date].spend += e.totalCost || 0;
+    });
+    const timeSeries = Object.values(timeSeriesMap).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Process status counts
+    const statusMap = {};
+    statusCounts.forEach(s => { statusMap[s._id] = s.count; });
+
+    // Process type counts
+    const typeMap = {};
+    typeCounts.forEach(t => { typeMap[t._id] = { count: t.count, spend: t.spend }; });
+
+    // Calculate derived metrics
+    const curr = currentStats[0] || {};
+    const prev = previousStats[0] || {};
+    const totalImpressions = curr.totalImpressions || 0;
+    const totalClicks = curr.totalClicks || 0;
+    const ctr = totalImpressions > 0 ? ((totalClicks / totalImpressions) * 100).toFixed(2) : 0;
+    const avgCPC = totalClicks > 0 ? ((curr.totalSpend || 0) / totalClicks).toFixed(2) : 0;
+
+    const wallet = walletSummary[0] || {};
+
+    res.json({
+      success: true,
+      data: {
+        // KPI summary
+        overview: {
+          totalCampaigns: await AdCampaign.countDocuments(),
+          activeCampaigns: statusMap.active || 0,
+          totalImpressions,
+          totalClicks,
+          totalConversions: curr.totalConversions || 0,
+          totalSpend: curr.totalSpend || 0,
+          totalRevenue: curr.totalRevenue || 0,
+          ctr: parseFloat(ctr),
+          avgCPC: parseFloat(avgCPC),
+          avgBid: curr.avgBid ? parseFloat(curr.avgBid.toFixed(2)) : 0,
+          // Trends (previous period)
+          prevSpend: prev.totalSpend || 0,
+          prevClicks: prev.totalClicks || 0,
+          prevImpressions: prev.totalImpressions || 0,
+        },
+        // Status breakdown
+        statusBreakdown: statusMap,
+        // Type breakdown
+        typeBreakdown: typeMap,
+        // Time series chart data
+        timeSeries,
+        // Top campaigns
+        topCampaigns,
+        topByClicks,
+        // Placement performance
+        placementStats,
+        // Vendor leaderboard
+        vendorStats,
+        // Wallet overview
+        walletOverview: {
+          totalBalance: wallet.totalBalance || 0,
+          totalRecharged: wallet.totalRecharged || 0,
+          totalSpent: wallet.totalSpent || 0,
+          walletCount: wallet.walletCount || 0,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error('Ad analytics error:', error);
+    next(error);
+  }
+};
+
+// Get all vendor wallets (admin view)
+exports.getAllWallets = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const [wallets, total] = await Promise.all([
+      AdWallet.find()
+        .populate('vendorId', 'storeName email businessName')
+        .sort({ balance: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      AdWallet.countDocuments(),
+    ]);
+
+    res.json({
+      success: true,
+      data: wallets,
+      meta: getPaginationMeta(total, parseInt(page), parseInt(limit)),
     });
   } catch (error) {
     next(error);

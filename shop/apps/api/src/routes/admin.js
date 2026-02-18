@@ -133,6 +133,8 @@ router.get('/ads/campaigns/stats', adminAds.getCampaignStatsSummary);
 router.put('/ads/campaigns/:id/approve', validateObjectId('id'), adminAds.approveCampaign);
 router.put('/ads/campaigns/:id/reject', validateObjectId('id'), adminAds.rejectCampaign);
 router.put('/ads/campaigns/:id/pause', validateObjectId('id'), adminAds.pauseCampaign);
+router.get('/ads/analytics', adminAds.getAdAnalytics);
+router.get('/ads/wallets', adminAds.getAllWallets);
 
 // Blog / CMS - SECURITY: Added ObjectId validation
 router.get('/posts', admin.getPosts);
