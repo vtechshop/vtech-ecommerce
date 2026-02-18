@@ -30,7 +30,11 @@ const cleanupMemoryCache = () => {
 };
 
 // Run cleanup every 60 seconds
-setInterval(cleanupMemoryCache, 60000);
+const cleanupInterval = setInterval(cleanupMemoryCache, 60000);
+// Allow Node.js to exit even if interval is active (prevents Jest hanging)
+if (cleanupInterval.unref) {
+  cleanupInterval.unref();
+}
 
 /**
  * Get from memory cache

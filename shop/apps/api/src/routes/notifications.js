@@ -4,11 +4,21 @@ const router = express.Router();
 const notificationController = require('../controllers/notificationController');
 const { authenticate, authorize } = require('../middleware/auth');
 
+const allRoles = ['admin', 'vendor', 'affiliate', 'customer'];
+
+// Get paginated notifications for the authenticated user
+router.get(
+  '/',
+  authenticate,
+  authorize(allRoles),
+  notificationController.getNotifications
+);
+
 // Get notification counts (all authenticated users)
 router.get(
   '/counts',
   authenticate,
-  authorize(['admin', 'vendor', 'affiliate', 'customer']),
+  authorize(allRoles),
   notificationController.getNotificationCounts
 );
 
@@ -16,7 +26,7 @@ router.get(
 router.post(
   '/mark-read',
   authenticate,
-  authorize(['admin', 'vendor']),
+  authorize(allRoles),
   notificationController.markNotificationsRead
 );
 

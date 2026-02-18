@@ -12,6 +12,7 @@ import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 import ThreeDCarousel from '@/components/home/ThreeDCarousel';
+import BounceCards from '@/components/home/BounceCards';
 
 const Home = React.memo(() => {
   const { t } = useTranslation();
@@ -335,6 +336,33 @@ const Home = React.memo(() => {
                 </div>
               </section>
             )}
+
+            {/* Bounce Cards */}
+            <section className="mb-8 flex justify-center">
+              <BounceCards
+                className="custom-bounceCards"
+                images={[
+                  "https://picsum.photos/400/400?grayscale",
+                  "https://picsum.photos/500/500?grayscale",
+                  "https://picsum.photos/600/600?grayscale",
+                  "https://picsum.photos/700/700?grayscale",
+                  "https://picsum.photos/300/300?grayscale",
+                ]}
+                containerWidth={500}
+                containerHeight={250}
+                animationDelay={1}
+                animationStagger={0.08}
+                easeType="elastic.out(1, 0.5)"
+                transformStyles={[
+                  "rotate(5deg) translate(-150px)",
+                  "rotate(0deg) translate(-70px)",
+                  "rotate(-5deg)",
+                  "rotate(5deg) translate(70px)",
+                  "rotate(-5deg) translate(150px)",
+                ]}
+                enableHover={false}
+              />
+            </section>
 
             {/* Personalized Recommendations */}
             {user && (

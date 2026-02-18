@@ -13,14 +13,15 @@ jest.mock('../../services/emailService', () => ({
 
 describe('Shipping Integration Tests', () => {
   let vendorToken;
-  let vendorId;
+  let vendorUser;
+  let vendor;
   let orderId;
 
   beforeEach(async () => {
     const { hashPassword } = require('../../utils/hash');
 
     // Create vendor user
-    const vendorUser = await User.create({
+    vendorUser = await User.create({
       name: 'Vendor User',
       email: 'vendor@test.com',
       password: await hashPassword('password123456'),
@@ -28,11 +29,10 @@ describe('Shipping Integration Tests', () => {
       emailVerified: true,
     });
 
-    vendorId = vendorUser._id;
     vendorToken = generateAccessToken(vendorUser._id, 'vendor');
 
     // Create vendor with approved KYC
-    const vendor = await Vendor.create({
+    vendor = await Vendor.create({
       userId: vendorUser._id,
       storeName: 'Test Vendor Store',
       slug: 'test-vendor-store',
@@ -48,10 +48,10 @@ describe('Shipping Integration Tests', () => {
     vendorUser.vendorProfile = vendor._id;
     await vendorUser.save();
 
-    // Create order
+    // Create order using vendor's _id as items.vendorId
     const order = await Order.create({
       orderId: 'TEST-ORDER-123',
-      userId: vendorId,
+      userId: vendorUser._id,
       status: 'paid',
       items: [{
         productId: '507f1f77bcf86cd799439011',
@@ -68,13 +68,12 @@ describe('Shipping Integration Tests', () => {
       },
     });
 
-    // Use MongoDB _id for API calls, not the human-readable orderId
+    // Use MongoDB _id for API calls since routes validate as ObjectId
     orderId = order._id.toString();
   });
 
   describe('POST /api/shipping/orders/:orderId/carrier', () => {
-    // TODO: Fix vendor profile lookup issue - vendorProfile ID comparison failing
-    test.skip('should set carrier and AWB', async () => {
+    test('should set carrier and AWB', async () => {
       const response = await request(app)
         .post(`/api/shipping/orders/${orderId}/carrier`)
         .set('Authorization', `Bearer ${vendorToken}`)
@@ -88,9 +87,33 @@ describe('Shipping Integration Tests', () => {
       expect(response.body.data.shipment.carrier).toBe('FedEx');
       expect(response.body.data.shipment.awb).toBe('123456789');
     });
+
+    test('should return 404 for non-existent order', async () => {
+      const fakeId = '507f1f77bcf86cd799439099';
+      const response = await request(app)
+        .post(`/api/shipping/orders/${fakeId}/carrier`)
+        .set('Authorization', `Bearer ${vendorToken}`)
+        .send({
+          carrier: 'FedEx',
+          awb: '123456789',
+        });
+
+      expect(response.status).toBe(404);
+    });
+
+    test('should require authentication', async () => {
+      const response = await request(app)
+        .post(`/api/shipping/orders/${orderId}/carrier`)
+        .send({
+          carrier: 'FedEx',
+          awb: '123456789',
+        });
+
+      expect(response.status).toBe(401);
+    });
   });
 
-  describe.skip('POST /api/shipping/orders/:orderId/packed', () => {
+  describe('POST /api/shipping/orders/:orderId/packed', () => {
     test('should mark as packed', async () => {
       const response = await request(app)
         .post(`/api/shipping/orders/${orderId}/packed`)
@@ -102,13 +125,23 @@ describe('Shipping Integration Tests', () => {
     });
   });
 
-  describe.skip('POST /api/shipping/orders/:orderId/shipped', () => {
+  describe('POST /api/shipping/orders/:orderId/shipped', () => {
     test('should mark as shipped', async () => {
-      // First mark as packed
+      // First set carrier info
+      await request(app)
+        .post(`/api/shipping/orders/${orderId}/carrier`)
+        .set('Authorization', `Bearer ${vendorToken}`)
+        .send({
+          carrier: 'FedEx',
+          awb: '123456789',
+        });
+
+      // Then mark as packed
       await request(app)
         .post(`/api/shipping/orders/${orderId}/packed`)
         .set('Authorization', `Bearer ${vendorToken}`);
 
+      // Then mark as shipped
       const response = await request(app)
         .post(`/api/shipping/orders/${orderId}/shipped`)
         .set('Authorization', `Bearer ${vendorToken}`);

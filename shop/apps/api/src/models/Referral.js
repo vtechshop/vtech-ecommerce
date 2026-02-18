@@ -17,7 +17,6 @@ const referralSchema = new mongoose.Schema(
       required: true,
       unique: true,
       uppercase: true,
-      index: true,
     },
 
     // Users who signed up using this referral code

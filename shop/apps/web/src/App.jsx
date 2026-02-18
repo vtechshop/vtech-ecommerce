@@ -151,6 +151,11 @@ const VendorCommissions = lazy(() => import('./assets/pages/dashboard/admin/Vend
 const AffiliateCommissions = lazy(() => import('./assets/pages/dashboard/admin/AffiliateCommissions'));
 const ManualOrders = lazy(() => import('./assets/pages/dashboard/admin/ManualOrders'));
 const CarouselManagement = lazy(() => import('./assets/pages/dashboard/admin/CarouselManagement'));
+const BannersManagement = lazy(() => import('./assets/pages/dashboard/admin/BannersManagement'));
+const CouponsManagement = lazy(() => import('./assets/pages/dashboard/admin/CouponsManagement'));
+const GamificationManagement = lazy(() => import('./assets/pages/dashboard/admin/GamificationManagement'));
+const AppConfigManagement = lazy(() => import('./assets/pages/dashboard/admin/AppConfigManagement'));
+const MobileDevModules = lazy(() => import('./assets/pages/dashboard/admin/MobileDevModules'));
 const VendorKYC = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
 const AffiliateKYC = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateKYC'));
 
@@ -384,6 +389,11 @@ function App() {
             <Route path="vendor-commissions" element={<VendorCommissions />} />
             <Route path="crm/customers" element={<CRMCustomers />} />
             <Route path="crm/tickets" element={<CRMTickets />} />
+            <Route path="banners" element={<BannersManagement />} />
+            <Route path="coupons" element={<CouponsManagement />} />
+            <Route path="gamification" element={<GamificationManagement />} />
+            <Route path="app-config" element={<AppConfigManagement />} />
+            <Route path="mobile-modules" element={<MobileDevModules />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 

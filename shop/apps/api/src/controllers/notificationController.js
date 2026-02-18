@@ -292,23 +292,88 @@ exports.getNotificationCounts = async (req, res, next) => {
 };
 
 /**
+ * Get paginated notifications for the authenticated user
+ * GET /api/notifications?page=1&limit=20&type=order&read=false
+ */
+exports.getNotifications = async (req, res, next) => {
+  try {
+    const { user } = req;
+    const { page = 1, limit = 20, type, read } = req.query;
+    const { getPaginationMeta } = require('../utils/helpers');
+
+    const cappedLimit = Math.min(parseInt(limit) || 20, 50);
+    const pageNum = Math.max(parseInt(page) || 1, 1);
+    const skip = (pageNum - 1) * cappedLimit;
+
+    const query = { userId: user._id };
+
+    if (type) {
+      const allowedTypes = [
+        'order', 'payment', 'shipping', 'promotion', 'system',
+        'message', 'ad', 'ticket', 'commission', 'vendor_approval',
+        'affiliate_approval', 'kyc', 'product',
+      ];
+      if (allowedTypes.includes(type)) {
+        query.type = type;
+      }
+    }
+
+    if (read === 'true') query.read = true;
+    else if (read === 'false') query.read = false;
+
+    const [notifications, total] = await Promise.all([
+      Notification.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(cappedLimit)
+        .lean(),
+      Notification.countDocuments(query),
+    ]);
+
+    res.json({
+      success: true,
+      data: notifications,
+      meta: getPaginationMeta(total, pageNum, cappedLimit),
+    });
+  } catch (error) {
+    logger.error('Error fetching notifications:', error);
+    next(error);
+  }
+};
+
+/**
  * Mark notifications as read/seen
  */
 exports.markNotificationsRead = async (req, res, next) => {
   try {
-    const { type } = req.body; // 'orders', 'users', 'messages', 'tickets'
+    const { type, notificationIds } = req.body;
     const { user } = req;
 
-    // Update read status based on notification type
+    // Mark specific notification IDs as read
+    if (notificationIds && Array.isArray(notificationIds) && notificationIds.length > 0) {
+      const cappedIds = notificationIds.slice(0, 100);
+      await Notification.updateMany(
+        { _id: { $in: cappedIds }, userId: user._id },
+        { read: true, readAt: new Date() }
+      );
+    }
+
+    // Mark all as read
+    if (type === 'all') {
+      await Notification.updateMany(
+        { userId: user._id, read: false },
+        { read: true, readAt: new Date() }
+      );
+    }
+
+    // Legacy: mark messages as read (admin/vendor dashboard)
     if (type === 'messages') {
       if (user.role === 'admin') {
-        // Mark all contact submissions as viewed
         await ContactSubmission.updateMany(
           { viewedAt: { $exists: false } },
           { viewedAt: new Date() }
         );
       } else if (user.role === 'vendor') {
-        // Mark vendor communications as read
         const Vendor = require('../models/Vendor');
         const vendor = await Vendor.findOne({ userId: user._id });
 
@@ -327,7 +392,7 @@ exports.markNotificationsRead = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: `${type} notifications marked as read`,
+      message: `${type || 'selected'} notifications marked as read`,
     });
   } catch (error) {
     logger.error('Error marking notifications as read:', error);

@@ -7,53 +7,70 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel in-progress runs for same branch/PR (saves runner minutes)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    
-    services:
-      mongodb:
-        image: mongo:7
-        ports:
-          - 27017:27017
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
+    timeout-minutes: 15
 
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '20'
-    
+        cache: 'npm'
+        cache-dependency-path: shop/apps/api/package-lock.json
+
     - name: Install API dependencies
       run: |
         cd shop/apps/api
         npm ci
-    
+
     - name: Run API tests
       run: |
         cd shop/apps/api
-        npm test
+        npx jest --runInBand --coverage --ci
       env:
         NODE_ENV: test
-        MONGODB_URI: mongodb://localhost:27017/shop-test
-        JWT_SECRET: test-secret-min-32-chars-long
-        JWT_REFRESH_SECRET: test-refresh-secret-min-32-chars
-        REDIS_HOST: localhost
-        REDIS_PORT: 6379
-        CLOUDINARY_CLOUD_NAME: test
-        CLOUDINARY_API_KEY: test
-        CLOUDINARY_API_SECRET: test
-    
+        JWT_SECRET: test-secret-min-32-chars-long-for-ci
+        JWT_REFRESH_SECRET: test-refresh-secret-min-32-chars-ci
+        RAZORPAY_KEY_ID: rzp_test_ci
+        RAZORPAY_KEY_SECRET: test_secret_ci
+        RAZORPAY_WEBHOOK_SECRET: test_webhook_secret_ci
+
+    - name: Upload coverage report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: shop/apps/api/coverage/
+        retention-days: 14
+
+  build-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: shop/apps/web/package-lock.json
+
     - name: Install Web dependencies
       run: |
         cd shop/apps/web
         npm ci
-    
+
     - name: Build Web
       run: |
         cd shop/apps/web
@@ -62,48 +79,55 @@ jobs:
         VITE_API_URL: https://api.vtechkitchen.com/api
 
   build-and-push:
-    needs: test
+    needs: [test, build-web]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 15
 
     permissions:
       contents: read
       packages: write
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Login to GitHub Container Registry
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build and push API
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         context: ./shop
         file: ./shop/configs/Dockerfile.api
         push: true
-        tags: ghcr.io/${{ github.repository_owner }}/shop-api:latest
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/shop-api:latest
+          ghcr.io/${{ github.repository_owner }}/shop-api:${{ github.sha }}
 
     - name: Build and push Web
-      uses: docker/build-push-action@v4
+      uses: docker/build-push-action@v5
       with:
         context: ./shop
         file: ./shop/configs/Dockerfile.web
         push: true
-        tags: ghcr.io/${{ github.repository_owner }}/shop-web:latest
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/shop-web:latest
+          ghcr.io/${{ github.repository_owner }}/shop-web:${{ github.sha }}
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 10
+    environment: production
+
     steps:
     - name: Deploy to production
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1
       with:
         host: ${{ secrets.PRODUCTION_HOST }}
         username: ${{ secrets.PRODUCTION_USER }}

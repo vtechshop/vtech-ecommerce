@@ -306,7 +306,7 @@ exports.setCarrierAndAwb = async (req, res, next) => {
     const { orderId } = req.params;
     const { carrier, awb } = req.body;
 
-    const order = await Order.findOne({ orderId });
+    const order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({
@@ -365,7 +365,7 @@ exports.markAsPacked = async (req, res, next) => {
   try {
     const { orderId } = req.params;
 
-    const order = await Order.findOne({ orderId });
+    const order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({
@@ -409,7 +409,7 @@ exports.markAsShipped = async (req, res, next) => {
   try {
     const { orderId } = req.params;
 
-    const order = await Order.findOne({ orderId });
+    const order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({
@@ -454,7 +454,7 @@ exports.generateLabel = async (req, res, next) => {
   try {
     const { orderId } = req.params;
 
-    const order = await Order.findOne({ orderId });
+    const order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({

@@ -15,6 +15,7 @@ const DashboardLayout = () => {
   const { user, isVendor, isAffiliate, isSupport, isAdmin } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileDevModulesOpen, setMobileDevModulesOpen] = useState(false);
   const { counts } = useNotifications();
   const toast = useToast();
   const hasRefreshedRef = useRef(false);
@@ -26,6 +27,13 @@ const DashboardLayout = () => {
       dispatch(refreshUser());
     }
   }, [dispatch, isVendor, isAffiliate]);
+
+  // Auto-open mobile dev modules submenu when a child route is active
+  useEffect(() => {
+    if (location.pathname === '/admin-dashboard/mobile-modules') {
+      setMobileDevModulesOpen(true);
+    }
+  }, [location.pathname]);
 
   const getNavItems = () => {
     if (isAdmin) {
@@ -52,6 +60,12 @@ const DashboardLayout = () => {
         { path: '/admin-dashboard/contact-submissions', label: 'Contact Form', icon: 'mail' },
         { path: '/admin-dashboard/reviews', label: 'Reviews', icon: 'star' },
         { path: '/admin-dashboard/warranties', label: 'Warranties', icon: 'warranty' },
+        { path: 'mobile-dev-modules-group', label: 'Mobile Dev Modules', icon: 'smartphone', children: [
+          { path: '/admin-dashboard/mobile-modules', tab: 'banners', label: 'Banners', icon: 'image' },
+          { path: '/admin-dashboard/mobile-modules', tab: 'coupons', label: 'Coupons', icon: 'tag' },
+          { path: '/admin-dashboard/mobile-modules', tab: 'gamification', label: 'Gamification', icon: 'gift' },
+          { path: '/admin-dashboard/mobile-modules', tab: 'app-config', label: 'App Config', icon: 'settings' },
+        ]},
         { path: '/admin-dashboard/settings', label: 'Settings', icon: 'settings' },
       ];
     }
@@ -103,6 +117,7 @@ const DashboardLayout = () => {
   };
 
   const navItems = getNavItems();
+  const currentMobileTab = new URLSearchParams(location.search).get('tab') || 'banners';
 
   // Check if vendor's KYC is approved
   const isVendorKYCApproved = () => {
@@ -255,6 +270,15 @@ const DashboardLayout = () => {
       image: (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
       ),
+      tag: (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+      ),
+      gift: (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+      ),
+      smartphone: (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      ),
     };
     return icons[iconName] || icons.chart;
   };
@@ -293,6 +317,66 @@ const DashboardLayout = () => {
 
             <nav className="space-y-2">
               {navItems.map((item) => {
+                if (item.children) {
+                  const isChildActive = item.children.some(child =>
+                    child.tab
+                      ? (location.pathname === child.path && currentMobileTab === child.tab)
+                      : location.pathname === child.path
+                  );
+                  return (
+                    <div key={item.path}>
+                      <button
+                        onClick={() => setMobileDevModulesOpen(!mobileDevModulesOpen)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                          isChildActive
+                            ? 'bg-primary-600/20 text-primary-400'
+                            : 'text-gray-300 hover:bg-dark-400 hover:text-white'
+                        }`}
+                      >
+                        <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          {getIcon(item.icon)}
+                        </svg>
+                        <span className="font-medium flex-1 text-left">{item.label}</span>
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-300 ${mobileDevModulesOpen ? 'rotate-180' : ''}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      <div
+                        className="overflow-hidden transition-all duration-300 ease-in-out"
+                        style={{ maxHeight: mobileDevModulesOpen ? `${item.children.length * 48}px` : '0px' }}
+                      >
+                        <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-700 pl-3">
+                          {item.children.map((child) => {
+                            const childTo = child.tab ? `${child.path}?tab=${child.tab}` : child.path;
+                            const childActive = child.tab
+                              ? (location.pathname === child.path && currentMobileTab === child.tab)
+                              : location.pathname === child.path;
+                            return (
+                              <Link
+                                key={child.tab || child.path}
+                                to={childTo}
+                                onClick={() => setMobileSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                                  childActive
+                                    ? 'bg-primary-600 text-white shadow-lg'
+                                    : 'text-gray-300 hover:bg-dark-400 hover:text-white'
+                                }`}
+                              >
+                                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  {getIcon(child.icon)}
+                                </svg>
+                                <span className="font-medium text-sm">{child.label}</span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
                 const notificationCount = getNotificationCount(item.path);
                 const isLocked = isMenuItemLocked(item.path);
                 return (
@@ -354,6 +438,78 @@ const DashboardLayout = () => {
 
             <nav className="space-y-2">
               {navItems.map((item) => {
+                if (item.children) {
+                  const isChildActive = item.children.some(child =>
+                    child.tab
+                      ? (location.pathname === child.path && currentMobileTab === child.tab)
+                      : location.pathname === child.path
+                  );
+                  return (
+                    <div key={item.path}>
+                      <button
+                        onClick={() => {
+                          if (!sidebarOpen) {
+                            setSidebarOpen(true);
+                            setMobileDevModulesOpen(true);
+                          } else {
+                            setMobileDevModulesOpen(!mobileDevModulesOpen);
+                          }
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                          isChildActive
+                            ? 'bg-primary-600/20 text-primary-400'
+                            : 'text-gray-300 hover:bg-dark-400 hover:text-white'
+                        }`}
+                      >
+                        <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          {getIcon(item.icon)}
+                        </svg>
+                        {sidebarOpen && (
+                          <>
+                            <span className="font-medium flex-1 text-left">{item.label}</span>
+                            <svg
+                              className={`w-4 h-4 transition-transform duration-300 ${mobileDevModulesOpen ? 'rotate-180' : ''}`}
+                              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+                      {sidebarOpen && (
+                        <div
+                          className="overflow-hidden transition-all duration-300 ease-in-out"
+                          style={{ maxHeight: mobileDevModulesOpen ? `${item.children.length * 48}px` : '0px' }}
+                        >
+                          <div className="ml-4 mt-1 space-y-1 border-l-2 border-gray-700 pl-3">
+                            {item.children.map((child) => {
+                              const childTo = child.tab ? `${child.path}?tab=${child.tab}` : child.path;
+                              const childActive = child.tab
+                                ? (location.pathname === child.path && currentMobileTab === child.tab)
+                                : location.pathname === child.path;
+                              return (
+                                <Link
+                                  key={child.tab || child.path}
+                                  to={childTo}
+                                  className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors ${
+                                    childActive
+                                      ? 'bg-primary-600 text-white shadow-lg'
+                                      : 'text-gray-300 hover:bg-dark-400 hover:text-white'
+                                  }`}
+                                >
+                                  <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    {getIcon(child.icon)}
+                                  </svg>
+                                  <span className="font-medium text-sm">{child.label}</span>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
                 const notificationCount = getNotificationCount(item.path);
                 const isLocked = isMenuItemLocked(item.path);
                 return (

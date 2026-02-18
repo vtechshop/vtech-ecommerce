@@ -90,7 +90,7 @@ const activateWarranties = async (order) => {
 // Create order with vendor order splitting
 exports.createOrder = async (req, res, next) => {
   try {
-    const { items, shipTo, shippingMethod, paymentMethod, paymentDetails, guestEmail } = req.body;
+    const { items, shipTo, shippingMethod, paymentMethod, paymentDetails, guestEmail, notes } = req.body;
 
     // Check if this is guest checkout (ensure boolean, not truthy value)
     const isGuest = !req.user && !!guestEmail;
@@ -407,6 +407,7 @@ exports.createOrder = async (req, res, next) => {
             total: vendorTotal,
           },
           shipTo,
+          ...(notes && { customerNotes: notes.trim().slice(0, 500) }),
           status: initialStatus,
           events: [{
             status: initialStatus,
@@ -624,9 +625,6 @@ exports.getOrderById = async (req, res, next) => {
         // Convert user ID to ObjectId for proper comparison
         const userObjectId = new mongoose.Types.ObjectId(req.user._id);
 
-        // Check if user is a vendor
-        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
-
         try {
           const Vendor = require('../models/Vendor');
           const vendor = await Vendor.findOne({ userId: userObjectId });
@@ -641,7 +639,6 @@ exports.getOrderById = async (req, res, next) => {
                 { 'items.vendorId': vendor._id }, // Orders containing vendor's products
                 { userId: userObjectId }, // Orders they placed as a customer
                 { isGuest: true, guestEmail: req.user.email }, // Guest orders with matching email
-                { createdAt: { $gte: twoHoursAgo } }, // Recent orders - fallback for checkout flow
               ],
             };
           }
@@ -650,13 +647,12 @@ exports.getOrderById = async (req, res, next) => {
           // Continue as regular customer if vendor check fails
         }
 
-        // Regular customer - check ownership with fallback for recent orders
+        // Regular customer - check ownership
         return {
           ...idQuery,
           $or: [
             { userId: userObjectId }, // Order belongs to logged-in user
             { isGuest: true, guestEmail: req.user.email }, // Guest order with matching email
-            { createdAt: { $gte: twoHoursAgo } }, // Recent orders - fallback for checkout flow
           ],
         };
       } else {

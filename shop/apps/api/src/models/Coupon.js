@@ -8,7 +8,13 @@ const couponSchema = new mongoose.Schema({
     unique: true,
     uppercase: true,
   },
-  description: String,
+  description: {
+    type: String,
+    required: true,
+  },
+  terms: [{
+    type: String,
+  }],
   type: {
     type: String,
     enum: ['percentage', 'fixed'],
@@ -18,8 +24,17 @@ const couponSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  minOrderAmount: {
+    type: Number,
+    default: 0,
+  },
   minOrderValue: Number,
   maxDiscount: Number,
+  category: {
+    type: String,
+    enum: ['general', 'first_order', 'shipping', 'festival', 'bundle'],
+    default: 'general',
+  },
   // Restrictions
   applicableProducts: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -34,12 +49,18 @@ const couponSchema = new mongoose.Schema({
     ref: 'Vendor',
   }],
   // Usage limits
-  usageLimit: Number,
+  usageLimit: {
+    type: Number,
+    default: 0,
+  },
   usageCount: {
     type: Number,
     default: 0,
   },
-  perUserLimit: Number,
+  perUserLimit: {
+    type: Number,
+    default: 1,
+  },
   // Dates
   startDate: Date,
   endDate: Date,

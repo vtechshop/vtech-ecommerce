@@ -15,7 +15,7 @@ const Terms = () => {
                 By accessing and using Vtech's e-commerce platform, you accept and agree to be bound by these Terms of Service.
                 If you do not agree to these terms, please do not use our services.
               </p>
-              <p>This website is operated by RADHA AND CO</p>
+           
             </section>
 
             <section>

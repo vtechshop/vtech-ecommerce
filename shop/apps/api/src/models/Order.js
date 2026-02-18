@@ -98,7 +98,7 @@ const orderSchema = new mongoose.Schema({
   affiliateCode: String, // Affiliate code used during order placement
   source: { type: String, enum: ['online', 'in-store', 'phone'], default: 'online' },
   customerPhone: String, // For in-store/phone orders - warranty lookup
-  customerNotes: String,
+  customerNotes: { type: String, maxlength: 500 },
   internalNotes: String,
   cancellation: {
     reason: String,

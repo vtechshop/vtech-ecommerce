@@ -7,6 +7,7 @@ const { cacheMiddleware } = require('../middleware/cache');
 const { apiLimiter, publicReadLimiter } = require('../middleware/rateLimiter');
 const AppError = require('../utils/AppError');
 const mongoose = require('mongoose');
+const recommendationService = require('../services/recommendationService');
 
 // LIST (public) - Cache for 5 minutes, rate limited
 router.get('/', publicReadLimiter, cacheMiddleware(300), async (req, res, next) => {
@@ -22,6 +23,16 @@ router.get('/:id', publicReadLimiter, cacheMiddleware(600), async (req, res, nex
     const p = await Product.findById(req.params.id).lean();
     if (!p) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });
     res.json({ success: true, data: p });
+  } catch (e) { next(e); }
+});
+
+// GET similar products - Cache for 10 minutes, rate limited
+router.get('/:id/similar', publicReadLimiter, cacheMiddleware(600), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const limit = Math.min(parseInt(req.query.limit) || 8, 20);
+    const similarProducts = await recommendationService.getSimilarProducts(id, limit);
+    res.json({ success: true, data: similarProducts });
   } catch (e) { next(e); }
 });
 

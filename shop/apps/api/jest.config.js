@@ -9,6 +9,7 @@ module.exports = {
   ],
   testMatch: [
     '**/tests/**/*.test.js',
+    '**/utils/**/*.test.js',
   ],
   setupFilesAfterEnv: ['<rootDir>/src/tests/integration/setup.js'],
   testTimeout: 10000,
