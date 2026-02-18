@@ -5,7 +5,7 @@ import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, Save } from 'lucide-react';
+import { Plus, Trash2, Save, X } from 'lucide-react';
 
 const AppConfigManagement = () => {
   const queryClient = useQueryClient();
