@@ -383,7 +383,7 @@ const Home = React.memo(() => {
             )}
 
             {/* Bounce Cards */}
-            <section className="mb-8 flex justify-center">
+            <section className="mb-8 flex justify-center overflow-hidden">
               <BounceCards
                 className="custom-bounceCards"
                 images={[

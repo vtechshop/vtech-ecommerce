@@ -10,6 +10,9 @@
   * {
     @apply border-gray-200;
   }
+  html, body {
+    overflow-x: hidden;
+  }
   body {
     background-color: #ffffff;
     @apply text-gray-900 antialiased;
