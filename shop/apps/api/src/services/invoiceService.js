@@ -2,6 +2,7 @@
 const PDFDocument = require('pdfkit');
 const path = require('path');
 const fs = require('fs');
+const QRCode = require('qrcode');
 const env = require('../config/env');
 
 const LOGO_PATH = path.resolve(__dirname, '../assets/logo.png');
@@ -141,8 +142,18 @@ function drawLabelValue(doc, label, value, x, y, opts = {}) {
 /**
  * Generate Amazon-style professional tax invoice PDF.
  */
-function generateInvoicePDF(order, outputStream, seller) {
+async function generateInvoicePDF(order, outputStream, seller) {
   const CO = seller || PLATFORM_SELLER;
+
+  // Generate QR code buffer (WhatsApp support link)
+  const whatsappPhone = (CO.phone || '').replace(/[^0-9]/g, '');
+  const qrUrl = `https://wa.me/${whatsappPhone}?text=Hi%2C%20I%20have%20a%20query%20about%20order%20${encodeURIComponent(order.orderId)}`;
+  let qrBuffer = null;
+  try {
+    qrBuffer = await QRCode.toBuffer(qrUrl, { width: 80, margin: 1, color: { dark: '#374151', light: '#ffffff' } });
+  } catch (qrErr) {
+    // QR generation failed, skip it
+  }
 
   return new Promise((resolve, reject) => {
     try {
@@ -229,8 +240,8 @@ function generateInvoicePDF(order, outputStream, seller) {
       if (CO.pan) doc.text(`PAN: ${CO.pan}`);
       const sellerEndY = doc.y;
 
-      // Right column - Invoice details
-      doc.fontSize(7).font('Helvetica-Bold').fillColor('#4f46e5').text('INVOICE DETAILS', metaRightX, metaY);
+      // Right column - Order & Invoice details
+      doc.fontSize(7).font('Helvetica-Bold').fillColor('#4f46e5').text('ORDER & INVOICE DETAILS', metaRightX, metaY);
       let iy = doc.y + 3;
 
       // Payment mode display
@@ -248,11 +259,24 @@ function generateInvoicePDF(order, outputStream, seller) {
         paymentDisplay = 'Bank Transfer (NEFT/IMPS)';
       }
 
+      // Payment status
+      const paymentStatus = order.payment?.status || order.status;
+      const isPaid = paymentStatus === 'paid' || paymentStatus === 'captured' || order.payment?.paidAt;
+      const paymentStatusDisplay = isPaid ? 'Paid' : titleCase(paymentStatus);
+
+      // Delivery method
+      const deliveryMethod = order.shipping?.method || order.deliveryMethod || 'Standard Delivery';
+      const deliveryDisplay = typeof deliveryMethod === 'string'
+        ? titleCase(deliveryMethod)
+        : 'Standard Delivery';
+
       const invoiceRows = [
+        ['Order ID', `#${order.orderId}`],
         ['Invoice No', order.orderId],
-        ['Invoice Date', formatDate(order.createdAt)],
         ['Order Date', formatDate(order.createdAt)],
         ['Payment Mode', paymentDisplay],
+        ['Payment Status', paymentStatusDisplay],
+        ['Delivery', deliveryDisplay],
       ];
       if (order.payment?.paidAt) {
         invoiceRows.push(['Paid On', formatDate(order.payment.paidAt)]);
@@ -292,6 +316,9 @@ function generateInvoicePDF(order, outputStream, seller) {
         if (stateLine) doc.text(stateLine, { width: halfW - 15 });
         doc.text(formatCountry(order.shipTo.country), { width: halfW - 15 });
         if (order.shipTo.phone) doc.text(`Phone: ${order.shipTo.phone}`);
+        // Customer email
+        const customerEmail = order.customerEmail || order.guestEmail || (order.userId?.email);
+        if (customerEmail) doc.text(`Email: ${customerEmail}`);
       }
       const billEndY = doc.y;
 
@@ -310,6 +337,8 @@ function generateInvoicePDF(order, outputStream, seller) {
         if (stateLine) doc.text(stateLine, metaRightX, undefined, { width: halfW - 30 });
         doc.text(formatCountry(order.shipTo.country), metaRightX, undefined, { width: halfW - 30 });
         if (order.shipTo.phone) doc.text(`Phone: ${order.shipTo.phone}`, metaRightX, undefined, { width: halfW - 30 });
+        const customerEmail2 = order.customerEmail || order.guestEmail || (order.userId?.email);
+        if (customerEmail2) doc.text(`Email: ${customerEmail2}`, metaRightX, undefined, { width: halfW - 30 });
       }
 
       y = Math.max(billEndY, doc.y) + 15;
@@ -377,16 +406,18 @@ function generateInvoicePDF(order, outputStream, seller) {
 
         doc.text(String(index + 1), cx, rowY, { width: cols.sno, align: 'center' }); cx += cols.sno;
 
-        // Product description
-        let desc = item.name || 'Product';
-        if (item.variantName) desc += `\n${item.variantName}`;
-        doc.font('Helvetica-Bold').fontSize(6.5).fillColor('#111827')
-          .text(desc, cx, rowY, { width: cols.desc - 5, align: 'left' });
+        // Product description - structured layout
+        doc.font('Helvetica-Bold').fontSize(7).fillColor('#111827')
+          .text(item.name || 'Product', cx, rowY, { width: cols.desc - 5, align: 'left' });
+        if (item.variantName) {
+          doc.font('Helvetica').fontSize(6).fillColor('#6b7280')
+            .text(item.variantName, cx, doc.y, { width: cols.desc - 5 });
+        }
         if (item.sku) {
-          doc.font('Helvetica').fontSize(5.5).fillColor('#9ca3af')
+          doc.font('Helvetica').fontSize(5).fillColor('#b0b0b0')
             .text(`SKU: ${item.sku}`, cx, doc.y, { width: cols.desc - 5 });
         }
-        // Warranty info below product name
+        // Warranty badge
         if (item.warranty?.hasWarranty && item.warranty.duration) {
           const wDur = item.warranty.duration;
           const wType = item.warranty.durationType === 'lifetime' ? 'Lifetime' :
@@ -522,14 +553,25 @@ function generateInvoicePDF(order, outputStream, seller) {
       const afterTotals = Math.max(doc.y, ty) + 20;
       doc.y = afterTotals;
 
-      // ═══════════════ SIGNATURE SECTION ═══════════════
+      // ═══════════════ SIGNATURE + QR SECTION ═══════════════
       drawLine(doc, L, doc.y, R, doc.y, '#e5e7eb', 0.5);
       doc.moveDown(0.8);
+
+      const sigSectionY = doc.y;
+
+      // QR Code (left side) - WhatsApp support
+      if (qrBuffer) {
+        doc.image(qrBuffer, L, sigSectionY, { width: 65, height: 65 });
+        doc.fontSize(5.5).font('Helvetica').fillColor('#6b7280')
+          .text('Scan for', L, sigSectionY + 67, { width: 65, align: 'center' });
+        doc.fontSize(5.5).font('Helvetica-Bold').fillColor('#4f46e5')
+          .text('WhatsApp Support', L, doc.y, { width: 65, align: 'center' });
+      }
 
       // Right-aligned signature block
       const sigX = R - 180;
       doc.fontSize(8).font('Helvetica-Bold').fillColor('#111827')
-        .text(`For ${CO.name}`, sigX, doc.y, { width: 170, align: 'right' });
+        .text(`For ${CO.name}`, sigX, sigSectionY, { width: 170, align: 'right' });
 
       // Space for signature/seal (will be added later)
       doc.moveDown(3);
@@ -586,15 +628,19 @@ function generateInvoicePDF(order, outputStream, seller) {
 /**
  * Generate invoice PDF as a Buffer (for email attachments).
  */
-function generateInvoiceBuffer(order, seller) {
+async function generateInvoiceBuffer(order, seller) {
   const { PassThrough } = require('stream');
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const chunks = [];
     const passthrough = new PassThrough();
     passthrough.on('data', (chunk) => chunks.push(chunk));
     passthrough.on('end', () => resolve(Buffer.concat(chunks)));
     passthrough.on('error', reject);
-    generateInvoicePDF(order, passthrough, seller).catch(reject);
+    try {
+      await generateInvoicePDF(order, passthrough, seller);
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 

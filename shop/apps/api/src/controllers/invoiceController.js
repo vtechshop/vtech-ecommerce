@@ -46,7 +46,7 @@ exports.downloadInvoice = async (req, res, next) => {
       { isGuest: true, guestEmail: req.user.email },
     ];
 
-    const order = await Order.findOne(query).lean();
+    const order = await Order.findOne(query).populate('userId', 'email phone').lean();
 
     if (!order) {
       return res.status(404).json({
@@ -82,7 +82,7 @@ exports.downloadInvoice = async (req, res, next) => {
  */
 exports.downloadInvoiceAdmin = async (req, res, next) => {
   try {
-    const order = await Order.findById(req.params.id).lean();
+    const order = await Order.findById(req.params.id).populate('userId', 'email phone').lean();
 
     if (!order) {
       return res.status(404).json({
