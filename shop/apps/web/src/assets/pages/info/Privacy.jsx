@@ -6,7 +6,7 @@ const Privacy = () => {
   useEffect(() => {
     updateMetaTags({
       title: 'Privacy Policy - V-Tech Kitchen',
-      description: 'V-Tech Kitchen privacy policy explains how we collect, use, and protect your personal information when you shop with us. Your data security is our top priority.',
+      description: 'V-Tech Kitchen privacy policy explains how we collect, use, and protect your personal information when you shop with us. Your data security matters.',
       canonical: 'https://www.vtechkitchen.com/page/privacy',
     });
   }, []);

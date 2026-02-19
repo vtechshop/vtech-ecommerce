@@ -246,7 +246,7 @@ exports.getPagesSitemap = async (req, res, next) => {
     <priority>0.5</priority>
   </url>`;
 
-    const staticPages = ['about', 'contact', 'privacy', 'terms', 'returns', 'shipping', 'faq'];
+    const staticPages = ['about', 'contact', 'privacy', 'terms', 'returns', 'shipping', 'faq', 'vendor-terms', 'vendor-guide', 'affiliate-terms', 'affiliate-guide', 'cookie-policy'];
     staticPages.forEach(page => {
       xml += `
   <url>
@@ -377,8 +377,8 @@ exports.renderPage = async (req, res, next) => {
           .lean()
           .catch(() => []);
 
-        pageData.title = `${product.title} - V-Tech Kitchen`;
-        pageData.description = (product.description?.substring(0, 155) || `Buy ${product.title} at best price. ${product.shortDescription || ''}`).substring(0, 155);
+        pageData.title = `${product.title} - V-Tech Kitchen`.substring(0, 70);
+        pageData.description = (product.description?.substring(0, 155) || `Buy ${product.title} at best price. ${product.shortDescription || ''}`).substring(0, 160);
         pageData.image = product.images?.[0] || pageData.image;
         pageData.type = 'product';
         pageData.content = `

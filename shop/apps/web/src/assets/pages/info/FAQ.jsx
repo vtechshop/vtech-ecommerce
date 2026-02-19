@@ -6,7 +6,7 @@ const FAQ = () => {
   useEffect(() => {
     updateMetaTags({
       title: 'Frequently Asked Questions - V-Tech Kitchen',
-      description: 'Find answers to common questions about orders, payments, shipping, returns, vendor program, and affiliate commissions at V-Tech Kitchen. Quick help for all queries.',
+      description: 'Find answers about orders, payments, shipping, returns, vendor program & affiliate commissions at V-Tech Kitchen. Quick help for all queries.',
       canonical: 'https://www.vtechkitchen.com/page/faq',
     });
   }, []);

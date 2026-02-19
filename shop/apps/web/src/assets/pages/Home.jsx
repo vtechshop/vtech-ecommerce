@@ -39,7 +39,7 @@ const Home = React.memo(() => {
   useEffect(() => {
     updateMetaTags({
       title: 'V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment',
-      description: 'Shop premium kitchen appliances, commercial equipment, and cookware at V-Tech Kitchen. Cast iron tawa, cutting machines, and more from trusted vendors. Free shipping on orders over ₹500.',
+      description: 'Shop premium kitchen appliances, commercial equipment & cookware at V-Tech Kitchen. Cast iron tawa, cutting machines & more. Free shipping over ₹500.',
       canonical: 'https://www.vtechkitchen.com',
       ogTitle: 'V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment',
       ogDescription: 'Shop premium kitchen appliances, commercial equipment, and cookware at V-Tech Kitchen. Free shipping on orders over ₹500.',
