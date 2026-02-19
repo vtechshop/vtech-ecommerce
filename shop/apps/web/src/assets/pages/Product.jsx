@@ -24,6 +24,7 @@ import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
 import SEO from '@/components/common/SEO';
 import { playWishlistAdd, playAddToCart, playError } from '@/utils/sounds';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 // Customer Reviews Carousel Component
 const CustomerReviewsCarousel = ({ reviews, renderStars, onEdit, onDelete, currentUser }) => {
@@ -514,10 +515,10 @@ const Product = () => {
       />
       <div className="min-h-screen bg-blue-50 pt-12">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6 lg:gap-6">
-          {/* Product Images */}
-          <div className="lg:col-span-2 fade-in-left">
-            <div className="sticky top-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-6">
+          {/* Product Images - wider for magnifier panel */}
+          <div className="lg:col-span-5 fade-in-left">
+            <div className="sticky top-20">
               <ProductImageCarousel
                 images={normalizedImages}
                 productName={product.title}
@@ -526,7 +527,7 @@ const Product = () => {
           </div>
 
         {/* Product Details */}
-        <div className="lg:col-span-3 space-y-4 fade-in-right">
+        <div className="lg:col-span-5 space-y-4 fade-in-right">
           <div className="space-y-2">
             {product.brand && (
               <div className="inline-block fade-in stagger-1">
@@ -726,14 +727,13 @@ const Product = () => {
                 disabled={product.stock === 0 || cartLoading}
                 data-testid="add-to-cart-btn"
                 data-cy="add-to-cart-btn"
-                className={`btn-add-to-cart btn-scale hover-lift flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 rounded-2xl font-bold text-base sm:text-lg transition-all shadow-lg hover:shadow-2xl transform hover:scale-105 active:scale-95 ${
+                className={`btn-add-to-cart flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 rounded-2xl font-bold text-base sm:text-lg transition-all shadow-lg hover:shadow-2xl active:scale-95 ${
                   product.stock === 0
                   ? 'bg-gray-300 text-gray-500 cursor-not-allowed border-2 border-gray-400'
-                  : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 border-2 border-primary-400'
+                  : 'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700 border-2 border-primary-400 hover:scale-105'
                 }`}
               >
-                <ShoppingCart className="w-6 h-6" />
-                {cartLoading ? 'Adding...' : 'Add to Cart'}
+                <ShoppingCart className="w-6 h-6" /> {cartLoading ? 'Adding...' : 'Add to Cart'}
               </button>
             <button
               onClick={handleBuyNow}
@@ -769,7 +769,7 @@ const Product = () => {
           </div>
 
           {/* Sidebar - Ad Banner */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <div className="sticky top-4">
               <AdBanner placement="product_sidebar" position="right" className="mb-6" />
             </div>
@@ -782,6 +782,7 @@ const Product = () => {
         <div className="container mx-auto px-3 sm:px-4 md:px-6">
           {/* Video and Description Side by Side */}
           {(product.videoUrl || product.description) && (
+            <ScrollReveal animation="fadeUp">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Product Video - Left Side */}
               {product.videoUrl && (
@@ -832,10 +833,12 @@ const Product = () => {
                 </div>
               )}
             </div>
+            </ScrollReveal>
           )}
 
           {/* Warranty & Specifications - Side by Side Container */}
           {((product.hasWarranty && product.warranty) || (product.specifications && product.specifications.length > 0)) && (
+            <ScrollReveal animation="fadeUp" delay={0.1}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               {/* Warranty Information */}
               {product.hasWarranty && product.warranty && (
@@ -935,9 +938,11 @@ const Product = () => {
                 </div>
               )}
             </div>
+            </ScrollReveal>
           )}
 
           {product.keyFeatures && product.keyFeatures.length > 0 && (
+            <ScrollReveal animation="fadeUp" delay={0.15}>
             <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-5">
                 <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-3">
@@ -958,6 +963,7 @@ const Product = () => {
                 </div>
               </div>
             </div>
+            </ScrollReveal>
           )}
 
           {/* Ad Banner - Bottom of Product Details */}
@@ -970,6 +976,7 @@ const Product = () => {
       <div className="bg-gradient-to-b from-gray-50 to-white py-8 mt-8">
         <div className="container mx-auto px-3 sm:px-4 md:px-6">
           {/* Review Section - Side by Side Layout */}
+          <ScrollReveal animation="fadeUp">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Left Side - Review Form */}
             <div>
@@ -997,9 +1004,11 @@ const Product = () => {
               )}
             </div>
           </div>
+          </ScrollReveal>
 
           {/* FAQ Section - Collapsible Accordion */}
           {product.faqs && product.faqs.length > 0 && (
+            <ScrollReveal animation="fadeUp" delay={0.1}>
             <div className="bg-white rounded-xl border-2 border-gray-200 shadow-lg overflow-hidden mb-8">
               <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -1052,8 +1061,10 @@ const Product = () => {
                 </div>
               </div>
             </div>
+            </ScrollReveal>
           )}
 
+          <ScrollReveal animation="fadeUp">
           <ProductRecommendations
             type="frequently-bought-together"
             productId={product._id}
@@ -1069,6 +1080,7 @@ const Product = () => {
           />
 
           <RecentlyViewed currentProductId={product._id} limit={6} />
+          </ScrollReveal>
         </div>
       </div>
 

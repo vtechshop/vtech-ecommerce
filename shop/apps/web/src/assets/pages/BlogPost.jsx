@@ -15,6 +15,7 @@ import { formatDate } from '@/utils/format';
 import useAuth from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
 import { PLACEHOLDER_IMAGE_MD, handleImageError } from '@/utils/placeholders';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const BlogPost = () => {
   const { slug } = useParams();
@@ -348,6 +349,7 @@ const BlogPost = () => {
       </div>
 
       {/* Main Content */}
+      <ScrollReveal animation="fadeUp">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row" style={{ gap: '150px' }}>
           {/* Main Column */}
@@ -807,6 +809,7 @@ const BlogPost = () => {
           </aside>
         </div>
       </div>
+      </ScrollReveal>
     </div>
   );
 };

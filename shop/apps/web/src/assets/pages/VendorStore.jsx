@@ -7,6 +7,7 @@ import ProductCard from '@/components/product/ProductCard';
 import CustomSelect from '@/components/common/CustomSelect';
 import Spinner from '@/components/common/Spinner';
 import { updateMetaTags, injectJSONLD } from '@/utils/seo';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const VendorStore = () => {
   const { slug } = useParams();
@@ -198,6 +199,7 @@ const VendorStore = () => {
   return (
     <div className="container mx-auto px-3 sm:px-4 md:px-6 py-8 min-h-screen">
       {/* Vendor Header */}
+      <ScrollReveal animation="fadeUp">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8 mb-4 sm:mb-6 md:mb-8">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
           {vendor.logo ? (
@@ -233,6 +235,7 @@ const VendorStore = () => {
           </div>
         </div>
       </div>
+      </ScrollReveal>
 
       {/* Navigation Links */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-4 sm:mb-6 sticky top-0 z-10 overflow-hidden">
@@ -272,6 +275,7 @@ const VendorStore = () => {
       {/* Items Section */}
       <div id="items" className="scroll-mt-24">
       {/* Search and Filters */}
+      <ScrollReveal animation="fadeUp" delay={0.1}>
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6 mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           {/* Search */}
@@ -308,6 +312,7 @@ const VendorStore = () => {
           </div>
         </div>
       </div>
+      </ScrollReveal>
 
       {/* Category Tabs */}
       {categories.length > 0 && (
@@ -358,6 +363,7 @@ const VendorStore = () => {
           </div>
         ) : filteredProducts.length > 0 ? (
           <>
+            <ScrollReveal animation="fadeUp">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">
                 {selectedCategory === 'all' ? 'All Products' : categories.find(c => c.slug === selectedCategory)?.name}
@@ -366,9 +372,12 @@ const VendorStore = () => {
                 {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
               </span>
             </div>
+            </ScrollReveal>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product._id} product={product} />
+              {filteredProducts.map((product, index) => (
+                <ScrollReveal key={product._id} animation="fadeUp" delay={(index % 5) * 0.08} duration={0.5}>
+                  <ProductCard product={product} />
+                </ScrollReveal>
               ))}
             </div>
           </>
@@ -387,6 +396,7 @@ const VendorStore = () => {
       </div>
 
       {/* Reviews Section */}
+      <ScrollReveal animation="fadeUp">
       <div id="reviews" className="scroll-mt-24 mt-8 sm:mt-10 md:mt-12">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8">
           <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Customer Reviews</h2>
@@ -558,8 +568,10 @@ const VendorStore = () => {
           )}
         </div>
       </div>
+      </ScrollReveal>
 
       {/* About Section */}
+      <ScrollReveal animation="fadeUp" delay={0.1}>
       <div id="about" className="scroll-mt-24 mt-8 sm:mt-10 md:mt-12">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8">
           <div className="flex flex-col md:flex-row gap-6 sm:gap-8 md:gap-12">
@@ -603,8 +615,10 @@ const VendorStore = () => {
           </div>
         </div>
       </div>
+      </ScrollReveal>
 
       {/* Shop Policies Section */}
+      <ScrollReveal animation="fadeUp" delay={0.1}>
       <div id="policies" className="scroll-mt-24 mt-8 sm:mt-10 md:mt-12">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 md:p-8">
           <div className="max-w-3xl">
@@ -640,6 +654,7 @@ const VendorStore = () => {
           </div>
         </div>
       </div>
+      </ScrollReveal>
     </div>
   );
 };

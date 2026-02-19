@@ -18,6 +18,7 @@ import { useToast } from '@/components/common/ToastContainer';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { getAffiliateCode, clearAffiliateCode } from '@/utils/affiliateTracking';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -320,6 +321,7 @@ const Checkout = () => {
 
   return (
     <div className="bg-white min-h-screen">
+      <ScrollReveal animation="fadeUp">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 max-w-screen-2xl">
         {/* Header */}
         <div className="mb-6 md:mb-8 fade-in-down">
@@ -589,7 +591,8 @@ const Checkout = () => {
           </div>
           </div>
         </div>
-      </div>
+      </ScrollReveal>
+    </div>
   );
 };
 

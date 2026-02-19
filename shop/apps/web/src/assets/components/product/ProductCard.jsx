@@ -1,5 +1,5 @@
 // FILE: apps/web/src/components/product/ProductCard.jsx
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, ShoppingCart } from 'lucide-react';
 import { useDispatch } from 'react-redux';
@@ -23,8 +23,8 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
     const rect = card.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    const rotateX = (0.5 - y) * 10; // max ±5deg
-    const rotateY = (x - 0.5) * 10;
+    const rotateX = (0.5 - y) * 8;
+    const rotateY = (x - 0.5) * 8;
     card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
   }, []);
 
@@ -39,9 +39,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
   const discountPercent = React.useMemo(() => hasDiscount ? Math.round(((product.compareAt - product.price) / product.compareAt) * 100) : 0, [hasDiscount, product.compareAt, product.price]);
 
   const handleClick = useCallback((e) => {
-    if (onClick) {
-      onClick(e);
-    }
+    if (onClick) onClick(e);
   }, [onClick]);
 
   const handleAddToCart = useCallback(async (e) => {
@@ -59,10 +57,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         triggerAnimation(product, addToCartButtonRef.current);
       }
 
-      // Play add to cart sound
       playAddToCart();
-
-      // Cart drawer auto-opens via Redux (addToCart.fulfilled)
     } catch (error) {
       playError();
     }
@@ -85,6 +80,9 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
     ));
   }, [product.rating]);
 
+  // Second image for hover (if available)
+  const hasSecondImage = product.images && product.images.length > 1;
+
   return (
     <>
     <Link
@@ -93,8 +91,8 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
       onClick={handleClick}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="etsy-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden block h-full group"
-      style={{ transition: 'transform 0.15s ease-out, box-shadow 0.15s ease-out', willChange: 'transform' }}
+      className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden block h-full group hover:shadow-xl"
+      style={{ transition: 'transform 0.15s ease-out, box-shadow 0.3s ease', willChange: 'transform' }}
       data-testid="product-card"
       data-cy="product-card"
     >
@@ -104,17 +102,34 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
           (() => {
             const { src, srcSet, sizes } = getResponsiveImageUrls(product.images[0]);
             return (
-              <img
-                src={src}
-                srcSet={srcSet}
-                sizes={sizes || '(max-width: 480px) 160px, (max-width: 768px) 200px, 300px'}
-                alt={product.seo?.title || product.title}
-                width={150}
-                height={150}
-                loading="lazy"
-                decoding="async"
-                className="etsy-image w-full h-full object-contain p-3"
-              />
+              <>
+                <img
+                  src={src}
+                  srcSet={srcSet}
+                  sizes={sizes || '(max-width: 480px) 160px, (max-width: 768px) 200px, 300px'}
+                  alt={product.seo?.title || product.title}
+                  width={150}
+                  height={150}
+                  loading="lazy"
+                  decoding="async"
+                  className={`w-full h-full object-contain p-3 transition-all duration-500 ${hasSecondImage ? 'group-hover:opacity-0' : 'group-hover:scale-105'}`}
+                />
+                {/* Second image on hover */}
+                {hasSecondImage && (() => {
+                  const img2 = getResponsiveImageUrls(product.images[1]);
+                  return (
+                    <img
+                      src={img2.src}
+                      srcSet={img2.srcSet}
+                      sizes={img2.sizes || '(max-width: 480px) 160px, (max-width: 768px) 200px, 300px'}
+                      alt={product.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 w-full h-full object-contain p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    />
+                  );
+                })()}
+              </>
             );
           })()
         ) : (
@@ -125,7 +140,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
         {/* Discount Badge */}
         {hasDiscount && (
-          <div className="etsy-badge absolute top-2 right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+          <div className="absolute top-2 right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
             -{discountPercent}%
           </div>
         )}
@@ -141,14 +156,14 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
         {/* Quick View - Desktop only */}
         {onQuickView && (
-          <div className="etsy-actions absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent py-3 px-3">
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent py-3 px-3 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onQuickView(product);
               }}
-              className="etsy-btn w-full bg-white text-gray-900 font-semibold py-2 px-4 rounded-lg hidden sm:flex items-center justify-center gap-2 text-sm shadow-lg"
+              className="w-full bg-white text-gray-900 font-semibold py-2 px-4 rounded-lg hidden sm:flex items-center justify-center gap-2 text-sm shadow-lg hover:bg-gray-50 transition-colors"
             >
               <Eye className="w-4 h-4" />
               Quick View
@@ -190,25 +205,24 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
         {/* Price */}
         <div className="flex items-baseline gap-2 mb-3">
-          <span className={`text-lg sm:text-xl font-bold text-gray-900 ${hasDiscount ? 'etsy-price-highlight' : ''}`}>
+          <span className={`text-lg sm:text-xl font-bold text-gray-900 ${hasDiscount ? 'text-red-600' : ''}`}>
             {formatCurrency(product.price)}
           </span>
           {hasDiscount && (
-            <span className="text-sm text-gray-600 line-through">
+            <span className="text-sm text-gray-400 line-through">
               {formatCurrency(product.compareAt)}
             </span>
           )}
         </div>
-
       </div>
 
-      {/* Add to Cart - Desktop only */}
+      {/* Add to Cart - Desktop only with loading state */}
       <div className="px-3 sm:px-4 pb-3 sm:pb-4 hidden sm:block">
         <button
           ref={addToCartButtonRef}
           onClick={handleAddToCart}
           disabled={product.stock <= 0}
-          className="etsy-add-to-cart etsy-btn w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white font-bold py-2.5 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-md"
+          className="w-full font-bold py-2.5 px-4 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 text-sm shadow-md bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed text-white active:scale-95"
           data-testid="add-to-cart-btn"
         >
           <ShoppingCart className="w-4 h-4" />

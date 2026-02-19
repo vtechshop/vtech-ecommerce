@@ -19,20 +19,12 @@ export const ToastProvider = ({ children, maxToasts = 3 }) => {
     const id = Date.now() + Math.random();
 
     setToasts((prev) => {
-      // Check if same message already exists
       const existingToast = prev.find(
         (t) => t.message === message && t.type === type
       );
+      if (existingToast) return prev;
 
-      // Don't add duplicate toast if it exists within last 2 seconds
-      if (existingToast) {
-        return prev;
-      }
-
-      // Add new toast and limit to maxToasts
       const newToasts = [...prev, { id, message, type, duration }];
-
-      // Keep only the last maxToasts toasts
       return newToasts.slice(-maxToasts);
     });
 
@@ -55,9 +47,9 @@ export const ToastProvider = ({ children, maxToasts = 3 }) => {
       {children}
       {/* Toast Container - Fixed position top-right below header */}
       <div className="fixed top-24 right-4 z-[9999] flex flex-col gap-3 pointer-events-none">
-        {toasts.map((toast) => (
-          <div key={toast.id} className="pointer-events-auto">
-            <Toast {...toast} onClose={removeToast} />
+        {toasts.map((t) => (
+          <div key={t.id} className="pointer-events-auto">
+            <Toast {...t} onClose={removeToast} />
           </div>
         ))}
       </div>

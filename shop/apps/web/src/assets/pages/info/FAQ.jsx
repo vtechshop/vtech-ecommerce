@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { updateMetaTags } from '@/utils/seo';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const FAQ = () => {
   useEffect(() => {
@@ -197,14 +198,17 @@ const FAQ = () => {
   return (
     <div className="min-h-screen px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
+        <ScrollReveal animation="fadeUp">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h1>
           <p className="text-gray-700 text-lg">
             Find answers to common questions about our services
           </p>
         </div>
+        </ScrollReveal>
 
         {/* Search */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -217,8 +221,10 @@ const FAQ = () => {
             />
           </div>
         </div>
+        </ScrollReveal>
 
         {/* FAQ Categories */}
+        <ScrollReveal animation="fadeUp" delay={0.15}>
         <div className="space-y-8">
           {filteredFaqs.map((category, catIndex) => (
             <div key={catIndex} className="bg-white rounded-lg shadow-md p-6">
@@ -253,6 +259,7 @@ const FAQ = () => {
             </div>
           ))}
         </div>
+        </ScrollReveal>
 
         {filteredFaqs.length === 0 && (
           <div className="text-center py-12 bg-white rounded-lg shadow-md">
@@ -267,6 +274,7 @@ const FAQ = () => {
         )}
 
         {/* Still have questions */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="mt-12 bg-gradient-to-r from-primary-50 to-primary-50 rounded-lg p-8 text-center">
           <h3 className="text-xl font-bold text-gray-900 mb-2">Still have questions?</h3>
           <p className="text-gray-700 mb-6">
@@ -287,6 +295,7 @@ const FAQ = () => {
             </a>
           </div>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

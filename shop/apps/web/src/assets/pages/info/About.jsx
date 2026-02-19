@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Users, Target, Eye, Shield, Heart, Lightbulb, MapPin, Mail, Phone, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const About = () => {
   useEffect(() => {
@@ -16,6 +17,7 @@ const About = () => {
     <div className="min-h-screen bg-blue-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl py-8">
         {/* Hero Section */}
+        <ScrollReveal animation="fadeUp">
         <div className="text-center mb-16">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full mb-6">
             <Users className="w-10 h-10 text-white" />
@@ -27,8 +29,10 @@ const About = () => {
             Leading Manufacturer of Commercial Kitchen Equipment - Empowering Professional Kitchens Across India
           </p>
         </div>
+        </ScrollReveal>
 
         {/* Main Content Cards */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
           {/* Who We Are */}
           <div className="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
@@ -83,8 +87,10 @@ const About = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* What We Offer */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="mb-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">What We Offer</h2>
@@ -194,8 +200,10 @@ const About = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Why Choose Vtech */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="mb-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Why Choose Vtech?</h2>
@@ -262,8 +270,10 @@ const About = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Our Product Lineup */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="mb-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Commercial Kitchen Equipment</h2>
@@ -390,8 +400,10 @@ const About = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Company Information */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="mb-16">
           <div className="bg-gradient-to-br from-blue-50 to-primary-50 rounded-2xl p-8 md:p-12">
             <div className="text-center mb-8">
@@ -482,8 +494,10 @@ const About = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Our Values */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="mb-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Values</h2>
@@ -524,8 +538,10 @@ const About = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Contact Information */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="mb-16">
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <div className="text-center mb-8">
@@ -581,8 +597,10 @@ const About = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* CTA Section */}
+        <ScrollReveal animation="scaleUp" delay={0.1}>
         <div className="bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 rounded-2xl p-8 text-center text-white shadow-2xl">
           <div className="max-w-4xl mx-auto">
             <h3 className="text-3xl font-bold mb-4">Join the Vtech Community</h3>
@@ -614,6 +632,7 @@ const About = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

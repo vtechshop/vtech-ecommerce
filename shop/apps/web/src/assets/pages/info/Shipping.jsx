@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Truck, Package, Clock, MapPin, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const Shipping = () => {
   useEffect(() => {
@@ -15,13 +16,16 @@ const Shipping = () => {
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
+        <ScrollReveal animation="fadeUp">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Shipping Information</h1>
           <p className="text-gray-700 text-lg">
             Everything you need to know about our shipping policies and delivery options
           </p>
         </div>
+        </ScrollReveal>
 
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Shipping Methods & Rates</h2>
 
@@ -90,8 +94,10 @@ const Shipping = () => {
             </p>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Processing Time */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Processing Time</h2>
           <div className="space-y-4">
@@ -136,8 +142,10 @@ const Shipping = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Coverage Areas */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Delivery Coverage</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -178,8 +186,10 @@ const Shipping = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Tracking */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-lg shadow-md p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Track Your Order</h2>
           <p className="text-gray-700 mb-4">
@@ -198,8 +208,10 @@ const Shipping = () => {
             </ul>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Contact */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="mt-8 text-center bg-gradient-to-r from-primary-50 to-primary-50 rounded-lg p-8">
           <h3 className="text-xl font-bold text-gray-900 mb-2">Need Help?</h3>
           <p className="text-gray-700 mb-4">
@@ -212,6 +224,7 @@ const Shipping = () => {
             Contact Support
           </a>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

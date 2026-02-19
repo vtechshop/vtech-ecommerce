@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { updateMetaTags } from '@/utils/seo';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const AffiliateTerms = () => {
   useEffect(() => {
@@ -13,6 +14,7 @@ const AffiliateTerms = () => {
   return (
     <div className="min-h-screen bg-white px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
+        <ScrollReveal animation="fadeUp">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Affiliate Program Terms & Conditions</h1>
           <p className="text-gray-700 mb-8">Last updated: January 2026</p>
@@ -253,6 +255,7 @@ const AffiliateTerms = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

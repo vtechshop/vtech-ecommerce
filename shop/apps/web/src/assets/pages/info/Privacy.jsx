@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const Privacy = () => {
   useEffect(() => {
@@ -14,6 +15,7 @@ const Privacy = () => {
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
+        <ScrollReveal animation="fadeUp">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
           <p className="text-gray-700 mb-8">Last updated: December 2025</p>
@@ -142,6 +144,7 @@ const Privacy = () => {
             </section>
           </div>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

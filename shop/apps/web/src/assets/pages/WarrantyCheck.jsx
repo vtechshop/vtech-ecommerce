@@ -9,6 +9,7 @@ import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
 import { ShieldCheck, Search, ChevronDown, ChevronUp, Package, User, LogIn, Clock, AlertTriangle, CheckCircle, XCircle, MessageCircle, Phone, HelpCircle, Truck } from 'lucide-react';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const WarrantyCheck = () => {
   const { user, isAuthenticated } = useAuth();
@@ -80,6 +81,7 @@ const WarrantyCheck = () => {
         </div>
       </div>
 
+      <ScrollReveal animation="fadeUp">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Logged In - Show My Warranties */}
         {isAuthenticated ? (
@@ -172,6 +174,7 @@ const WarrantyCheck = () => {
           </div>
         )}
       </div>
+      </ScrollReveal>
     </div>
   );
 };

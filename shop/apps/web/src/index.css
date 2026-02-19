@@ -501,6 +501,28 @@
   animation: fadeInUp 0.5s ease-out;
 }
 
+/* ============================================
+   GLOBAL MICRO-INTERACTIONS
+   ============================================ */
+
+/* All clickable elements: subtle press effect */
+button:not(:disabled):active,
+a:active,
+[role="button"]:active {
+  transform: scale(0.97);
+}
+
+/* Smooth image hover zoom for product grids */
+.img-hover-zoom {
+  overflow: hidden;
+}
+.img-hover-zoom img {
+  transition: transform 0.5s ease;
+}
+.img-hover-zoom:hover img {
+  transform: scale(1.08);
+}
+
 /* Success animation */
 @keyframes successBounce {
   0%, 100% { transform: scale(1); }

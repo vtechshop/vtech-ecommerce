@@ -13,6 +13,7 @@ import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const Search = () => {
   const { t } = useTranslation();
@@ -202,10 +203,12 @@ const Search = () => {
     return (
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-8">
         {/* Header */}
+        <ScrollReveal animation="fadeUp">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Shop by Category</h1>
           <p className="text-gray-700">Browse all product categories</p>
         </div>
+        </ScrollReveal>
 
         {categoriesLoading ? (
           <div className="flex justify-center py-12">
@@ -253,6 +256,7 @@ const Search = () => {
       <AdBanner placement="search_top" position="top" className="mb-6 fade-in" />
 
       {/* Header with Sort */}
+      <ScrollReveal animation="fadeUp">
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -284,6 +288,7 @@ const Search = () => {
           </div>
         </div>
       </div>
+      </ScrollReveal>
 
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Results */}
@@ -338,23 +343,26 @@ const Search = () => {
                   <>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
                       {combinedProducts.map((product, index) => (
-                        <div key={product._isSponsored ? product._adData.creativeId : (product.id ?? product._id)} className="relative stagger-grid-item" style={{ animationDelay: `${index * 0.07}s` }}>
-                          <ProductCard
-                            product={{ _id: product._id ?? product.id, ...product }}
-                            onClick={product._isSponsored ? () => handleAdClick(product._adData) : undefined}
-                            onQuickView={handleQuickView}
-                          />
-                          {product._isSponsored && (
-                            <div className="absolute top-2 left-2 z-10">
-                              <SponsoredLabel />
-                            </div>
-                          )}
-                        </div>
+                        <ScrollReveal key={product._isSponsored ? product._adData.creativeId : (product.id ?? product._id)} animation="fadeUp" delay={(index % 4) * 0.08} duration={0.5}>
+                          <div className="relative">
+                            <ProductCard
+                              product={{ _id: product._id ?? product.id, ...product }}
+                              onClick={product._isSponsored ? () => handleAdClick(product._adData) : undefined}
+                              onQuickView={handleQuickView}
+                            />
+                            {product._isSponsored && (
+                              <div className="absolute top-2 left-2 z-10">
+                                <SponsoredLabel />
+                              </div>
+                            )}
+                          </div>
+                        </ScrollReveal>
                       ))}
                     </div>
 
                     {/* Pagination */}
                     {totalPages > 1 && (
+                      <ScrollReveal animation="fadeUp" delay={0.2}>
                       <div className="mt-8">
                         <Pagination
                           currentPage={page}
@@ -362,6 +370,7 @@ const Search = () => {
                           onPageChange={handlePageChange}
                         />
                       </div>
+                      </ScrollReveal>
                     )}
                   </>
                 );
@@ -373,6 +382,7 @@ const Search = () => {
 
       {/* Related Products — Amazon-style "Related to your search" */}
       {query && relatedProducts?.length > 0 && (
+        <ScrollReveal animation="fadeUp">
         <div className="mt-10 border-t border-gray-200 pt-8">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Related to your search</h2>
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
@@ -386,6 +396,7 @@ const Search = () => {
             ))}
           </div>
         </div>
+        </ScrollReveal>
       )}
 
       {/* Quick View Modal */}

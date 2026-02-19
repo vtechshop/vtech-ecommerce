@@ -16,7 +16,6 @@ const Header = ({ onMobileMenuToggle }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [cartBounce, setCartBounce] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   // Check if we're on a dashboard page
@@ -38,15 +37,6 @@ const Header = ({ onMobileMenuToggle }) => {
   };
 
   const cartItemCount = items.reduce((sum, item) => sum + item.qty, 0);
-
-  // Trigger cart bounce animation when items are added
-  useEffect(() => {
-    if (cartItemCount > 0) {
-      setCartBounce(true);
-      const timer = setTimeout(() => setCartBounce(false), 600);
-      return () => clearTimeout(timer);
-    }
-  }, [cartItemCount]);
 
   // Handle scroll effect with passive listener and RAF throttle
   const rafRef = useRef(null);
@@ -200,7 +190,7 @@ const Header = ({ onMobileMenuToggle }) => {
               data-cy="cart-button"
               aria-label={`Shopping cart${cartItemCount > 0 ? ` with ${cartItemCount} items` : ''}`}
             >
-              <svg className={`w-6 h-6 ${cartBounce ? 'cart-bounce' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -210,8 +200,7 @@ const Header = ({ onMobileMenuToggle }) => {
               </svg>
               {cartItemCount > 0 && (
                 <span
-                  key={`cart-badge-${cartItemCount}`}
-                  className={`cart-count absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center ${cartBounce ? 'cart-badge-pulse' : ''}`}
+                  className="cart-count absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
                   data-testid="cart-count"
                   data-cy="cart-count"
                   data-cart-count={cartItemCount}

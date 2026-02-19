@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { RotateCcw, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { updateMetaTags } from '@/utils/seo';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const Returns = () => {
   useEffect(() => {
@@ -14,14 +15,17 @@ const Returns = () => {
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
+        <ScrollReveal animation="fadeUp">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Returns & Refunds Policy</h1>
           <p className="text-gray-700 text-lg">
             We want you to be completely satisfied with your purchase
           </p>
         </div>
+        </ScrollReveal>
 
         {/* Return Policy Overview */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">7-Day Return Policy</h2>
           <p className="text-gray-700 mb-6 leading-relaxed">
@@ -55,8 +59,10 @@ const Returns = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Return Eligibility */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Return Eligibility</h2>
 
@@ -82,16 +88,18 @@ const Returns = () => {
               </h3>
               <ul className="space-y-2 text-gray-700 ml-7">
                 <li>• Products marked as non-returnable</li>
-               
+
                 <li>• Products with tampered serial numbers</li>
                 <li>• Damaged due to misuse or mishandling</li>
-               
+
               </ul>
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Return Process */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">How to Return</h2>
 
@@ -148,8 +156,10 @@ const Returns = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Refund Information */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Refund Information</h2>
 
@@ -186,8 +196,10 @@ const Returns = () => {
             </div>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Cancellation Policy */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-lg shadow-md p-8 mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Cancellation</h2>
           <p className="text-gray-700 mb-4">
@@ -207,8 +219,10 @@ const Returns = () => {
             </p>
           </div>
         </div>
+        </ScrollReveal>
 
         {/* Contact Section */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-gradient-to-r from-primary-50 to-primary-50 rounded-lg p-8 text-center">
           <h3 className="text-xl font-bold text-gray-900 mb-2">Need Assistance?</h3>
           <p className="text-gray-700 mb-4">
@@ -229,6 +243,7 @@ const Returns = () => {
             </a>
           </div>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

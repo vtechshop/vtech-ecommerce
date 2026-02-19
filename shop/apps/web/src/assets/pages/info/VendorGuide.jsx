@@ -6,6 +6,7 @@ import {
   AlertCircle, Info, PlayCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { updateMetaTags } from '@/utils/seo';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const VendorGuide = () => {
   useEffect(() => {
@@ -67,6 +68,7 @@ const VendorGuide = () => {
         </div>
 
         {/* Main Content */}
+        <ScrollReveal animation="fadeUp">
         <div className="space-y-6">
           {/* Commission System */}
           <section id="commission" className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -686,6 +688,7 @@ const VendorGuide = () => {
             </div>
           </section>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

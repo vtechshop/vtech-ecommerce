@@ -12,6 +12,7 @@ import { useToast } from '@/components/common/ToastContainer';
 import FloatingParticles from '@/components/animations/FloatingParticles';
 import Confetti from '@/components/common/Confetti';
 import { playCheckoutSuccess } from '@/utils/sounds';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
@@ -87,6 +88,7 @@ const OrderConfirmation = () => {
         </>
       )}
 
+      <ScrollReveal animation="fadeUp">
       <div className="container mx-auto px-4 sm:px-6 md:px-8 max-w-4xl relative z-10">
       <div className="py-4">
         {/* Success or Pending Message */}
@@ -265,6 +267,7 @@ const OrderConfirmation = () => {
         </div>
       </div>
       </div>
+      </ScrollReveal>
     </div>
   );
 };

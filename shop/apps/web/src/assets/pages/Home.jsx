@@ -7,7 +7,7 @@ import ProductCard from '@/components/product/ProductCard';
 import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
-
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 // Lazy load below-fold components for better initial load
 const FlashSaleBanner = lazy(() => import('@/components/flash-sale/FlashSaleBanner'));
@@ -145,11 +145,11 @@ const Home = React.memo(() => {
             {/* Flash Sales */}
             {flashSales && flashSales.length > 0 && (
               <Suspense fallback={<div className="mb-8 h-24 bg-gray-100 rounded-lg animate-pulse"></div>}>
-                <section className="mb-8">
+                <ScrollReveal animation="fadeUp" className="mb-8">
                   {flashSales.map((sale) => (
                     <FlashSaleBanner key={sale._id} sale={sale} />
                   ))}
-                </section>
+                </ScrollReveal>
               </Suspense>
             )}
 
@@ -164,37 +164,37 @@ const Home = React.memo(() => {
 
             {/* Categories */}
             {categories?.length > 0 && (
-              <section className="mb-8">
+              <ScrollReveal animation="fadeUp" className="mb-8">
                 <h2 className="text-xl md:text-2xl font-bold mb-6">{t('home.shopByCategory')}</h2>
                 <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 ${
                   leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
                 }`}>
                   {categories.map((category, index) => (
                     <Link key={category.slug} to={`/category/${category.slug}`} className="group stagger-grid-item" style={{ animationDelay: `${index * 0.06}s` }}>
-                      <div className="bg-white rounded-lg overflow-hidden hover:shadow-md transition-all duration-300 border border-gray-200">
-                        <div className="flex items-center justify-center py-4 px-4">
-                          <div className="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                      <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 hover:-translate-y-1">
+                        <div className="flex items-center justify-center py-5 px-4">
+                          <div className="w-24 h-24 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
                             {category.image ? (
-                              <img src={category.image} alt={category.name} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                              <img src={category.image} alt={category.name} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                             ) : (
-                              <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                               </svg>
                             )}
                           </div>
                         </div>
-                        <div className="py-2 px-3 text-center">
-                          <h3 className="font-medium text-sm text-gray-900 group-hover:text-primary-600 transition-colors">{category.name}</h3>
+                        <div className="py-3 px-3 text-center bg-gray-50">
+                          <h3 className="font-semibold text-sm text-gray-900 group-hover:text-primary-600 transition-colors">{category.name}</h3>
                         </div>
                       </div>
                     </Link>
                   ))}
                 </div>
-              </section>
+              </ScrollReveal>
             )}
 
             {/* Featured Products - contain layout to prevent CLS */}
-            <section className="mb-8" style={{ contain: 'layout' }}>
+            <ScrollReveal animation="fadeUp" delay={0.1} className="mb-8" as="section" style={{ contain: 'layout' }}>
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl md:text-2xl font-bold">{t('home.featuredProducts')}</h2>
                 <Link to="/products?featured=true" className="text-blue-600 hover:text-blue-700 font-semibold">
@@ -205,36 +205,28 @@ const Home = React.memo(() => {
               {/* Grid with stable layout - contain to prevent CLS propagation */}
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6" style={{ contain: 'layout style' }}>
                 {isLoading ? (
-                  // Skeleton placeholders - EXACTLY match ProductCard height
                   [...Array(8)].map((_, i) => (
                     <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-pulse h-full">
                       <div className="aspect-square bg-gray-200"></div>
                       <div className="p-3 sm:p-4">
-                        {/* Vendor name - mb-2 like ProductCard */}
                         <div className="h-3 bg-gray-200 rounded w-20 mb-2"></div>
-                        {/* Title - mb-2 leading-snug like ProductCard */}
                         <div className="mb-2">
                           <div className="h-4 bg-gray-200 rounded w-full mb-1"></div>
                           <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                         </div>
-                        {/* Rating - mb-3 like ProductCard */}
                         <div className="flex items-center gap-1 mb-3">
                           <div className="flex gap-0.5">
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            {[...Array(5)].map((_, j) => (
+                              <div key={j} className="w-3 h-3 sm:w-4 sm:h-4 bg-gray-200 rounded"></div>
+                            ))}
                           </div>
                           <div className="h-3 bg-gray-200 rounded w-8 ml-1"></div>
                         </div>
-                        {/* Price - mb-3 like ProductCard */}
                         <div className="flex items-baseline gap-2 mb-3">
                           <div className="h-6 sm:h-7 bg-gray-200 rounded w-20"></div>
                           <div className="h-4 bg-gray-200 rounded w-14"></div>
                         </div>
                       </div>
-                      {/* Button - desktop only, exact padding match */}
                       <div className="px-3 sm:px-4 pb-3 sm:pb-4 hidden sm:block">
                         <div className="h-10 bg-gray-200 rounded-lg w-full"></div>
                       </div>
@@ -252,7 +244,7 @@ const Home = React.memo(() => {
                   </div>
                 )}
               </div>
-            </section>
+            </ScrollReveal>
 
             {/* Sponsored Ad - Middle */}
             {!middleLoading && middleAd && (
@@ -266,7 +258,7 @@ const Home = React.memo(() => {
             {/* 3D Carousel - Featured Brands/Categories */}
             {carouselItems && carouselItems.length > 0 && (
               <Suspense fallback={<div className="mb-8 h-96 bg-gray-100 rounded-lg animate-pulse"></div>}>
-                <section className="mb-8">
+                <ScrollReveal animation="scaleUp" className="mb-8">
                   <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
                   <ThreeDCarousel
                     items={carouselItems.map(item => ({ ...item, id: item._id }))}
@@ -274,13 +266,13 @@ const Home = React.memo(() => {
                     rotateInterval={5000}
                     cardHeight={560}
                   />
-                </section>
+                </ScrollReveal>
               </Suspense>
             )}
 
             {/* Join as Vendor or Affiliate */}
             {(user?.role !== 'vendor' || user?.role !== 'affiliate') && (
-              <section className="mb-8">
+              <ScrollReveal animation="fadeUp" className="mb-8" as="section">
                 <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
                 <div className={`grid gap-6 ${
                   user?.role === 'vendor' || user?.role === 'affiliate'
@@ -288,7 +280,7 @@ const Home = React.memo(() => {
                     : 'md:grid-cols-2'
                 }`}>
                   {user?.role !== 'vendor' && (
-                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-primary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.1s' }}>
+                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                       <div className="flex items-center mb-4">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-3 sm:mr-4">
                           <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -299,30 +291,14 @@ const Home = React.memo(() => {
                       </div>
                       <p className="text-gray-700 mb-6 leading-relaxed">{t('home.vendorDesc')}</p>
                       <ul className="space-y-2 mb-6">
-                        <li className="flex items-center text-gray-700">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          {t('home.easyProductMgmt')}
-                        </li>
-                        <li className="flex items-center text-gray-700">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          {t('home.powerfulAnalytics')}
-                        </li>
-                        <li className="flex items-center text-gray-700">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          {t('home.advertisingTools')}
-                        </li>
-                        <li className="flex items-center text-gray-700">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          {t('home.securePayment')}
-                        </li>
+                        {[t('home.easyProductMgmt'), t('home.powerfulAnalytics'), t('home.advertisingTools'), t('home.securePayment')].map((text, i) => (
+                          <li key={i} className="flex items-center text-gray-700">
+                            <svg className="w-5 h-5 text-green-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            {text}
+                          </li>
+                        ))}
                       </ul>
                       <Link
                         to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
@@ -334,7 +310,7 @@ const Home = React.memo(() => {
                   )}
 
                   {user?.role !== 'affiliate' && (
-                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-secondary-200 hover:shadow-xl transition-shadow stagger-grid-item" style={{ animationDelay: '0.2s' }}>
+                    <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-secondary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                       <div className="flex items-center mb-4">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 bg-secondary-600 rounded-lg flex items-center justify-center mr-3 sm:mr-4">
                           <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -345,30 +321,14 @@ const Home = React.memo(() => {
                       </div>
                       <p className="text-gray-700 mb-6 leading-relaxed">{t('home.affiliateDesc')}</p>
                       <ul className="space-y-2 mb-6">
-                        <li className="flex items-center text-gray-700">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          {t('home.competitiveRates')}
-                        </li>
-                        <li className="flex items-center text-gray-700">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          {t('home.realtimeTracking')}
-                        </li>
-                        <li className="flex items-center text-gray-700">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          {t('home.marketingTools')}
-                        </li>
-                        <li className="flex items-center text-gray-700">
-                          <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          {t('home.monthlyPayout')}
-                        </li>
+                        {[t('home.competitiveRates'), t('home.realtimeTracking'), t('home.marketingTools'), t('home.monthlyPayout')].map((text, i) => (
+                          <li key={i} className="flex items-center text-gray-700">
+                            <svg className="w-5 h-5 text-green-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            {text}
+                          </li>
+                        ))}
                       </ul>
                       <Link
                         to={user && user.role !== 'affiliate' ? '/dashboard/become-affiliate' : '/register?role=affiliate'}
@@ -379,34 +339,33 @@ const Home = React.memo(() => {
                     </div>
                   )}
                 </div>
-              </section>
+              </ScrollReveal>
             )}
-
 
             {/* Personalized Recommendations */}
             {user && (
               <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
-                <section className="mb-8">
+                <ScrollReveal animation="fadeUp" className="mb-8">
                   <ProductRecommendations
                     type="personalized"
                     limit={8}
                     showViewAll={true}
                     viewAllLink="/products"
                   />
-                </section>
+                </ScrollReveal>
               </Suspense>
             )}
 
             {/* Trending Products */}
             <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
-              <section className="mb-8">
+              <ScrollReveal animation="fadeUp" className="mb-8">
                 <ProductRecommendations
                   type="trending"
                   limit={8}
                   showViewAll={true}
                   viewAllLink="/products?sort=-sold"
                 />
-              </section>
+              </ScrollReveal>
             </Suspense>
 
             {/* Sponsored Ad - Bottom */}
@@ -428,8 +387,7 @@ const Home = React.memo(() => {
             </Suspense>
           )}
         </div>
-
-              </div>
+      </div>
     </div>
   );
 });

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { DollarSign, TrendingUp, Link2, Share2, BarChart3, CheckCircle, AlertCircle, Award, Users, Clock, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const AffiliateGuide = () => {
   useEffect(() => {
@@ -47,6 +48,7 @@ const AffiliateGuide = () => {
           </div>
         </div>
 
+        <ScrollReveal animation="fadeUp">
         <div className="space-y-12">
           {/* Section 1: Getting Started */}
           <section className="bg-white rounded-lg shadow-md p-8">
@@ -588,6 +590,7 @@ const AffiliateGuide = () => {
             </div>
           </section>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

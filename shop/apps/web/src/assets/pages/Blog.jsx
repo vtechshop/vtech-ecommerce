@@ -10,6 +10,7 @@ import AdBanner from '@/components/common/AdBanner';
 import { Clock, Eye, Heart, Calendar, Video, FileText, Search } from 'lucide-react';
 import { formatDate } from '@/utils/format';
 import { PLACEHOLDER_BLOG, handleImageError } from '@/utils/placeholders';
+import ScrollReveal from '@/components/common/ScrollReveal';
 
 const Blog = () => {
   const [page, setPage] = useState(1);
@@ -56,16 +57,18 @@ const Blog = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16 mb-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">Our Blog</h1>
-            <p className="text-xl text-primary-100">
-              Discover the latest tech news, product reviews, guides, and industry insights
-            </p>
+      <ScrollReveal animation="fadeIn">
+        <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16 mb-8">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">Our Blog</h1>
+              <p className="text-xl text-primary-100">
+                Discover the latest tech news, product reviews, guides, and industry insights
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </ScrollReveal>
 
       <div className="container mx-auto px-4 -mt-8">
         {/* Ad Banner - Top of Blog */}
@@ -74,6 +77,7 @@ const Blog = () => {
         </div>
 
         {/* Filters - Elevated Card */}
+        <ScrollReveal animation="fadeUp" delay={0.1}>
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 mb-10 backdrop-blur-sm">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Search */}
@@ -172,6 +176,7 @@ const Blog = () => {
             </div>
           )}
         </div>
+        </ScrollReveal>
 
         {/* Loading State */}
         {isLoading && (
@@ -193,6 +198,7 @@ const Blog = () => {
 
         {/* Main Content with Sidebar */}
         {!isLoading && blogs.length > 0 && (
+          <ScrollReveal animation="fadeUp" delay={0.15}>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
             {/* Blog Grid - Main Area */}
             <div className="lg:col-span-3">
@@ -210,6 +216,7 @@ const Blog = () => {
               </div>
             </div>
           </div>
+          </ScrollReveal>
         )}
 
         {/* Blog Grid (keeping original for when loading/empty) */}
