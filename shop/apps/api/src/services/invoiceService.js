@@ -111,9 +111,9 @@ function numberToWords(num) {
     result += convertChunk(rupees);
   }
 
-  result = result.trim() + ' Rupees';
+  result = result.trim() + (rupees === 1 ? ' Rupee' : ' Rupees');
   if (paise > 0) {
-    result += ' and ' + convertChunk(paise) + ' Paise';
+    result += ' and ' + convertChunk(paise) + (paise === 1 ? ' Paisa' : ' Paise');
   }
   result += ' Only';
   return result;
@@ -270,10 +270,28 @@ async function generateInvoicePDF(order, outputStream, seller) {
         ? titleCase(deliveryMethod)
         : 'Standard Delivery';
 
+      // Place of Supply for GST
+      const customerStateName = order.shipTo?.state || 'Tamil Nadu';
+      const stateCodeMap = {
+        'andhra pradesh': '37', 'arunachal pradesh': '12', 'assam': '18', 'bihar': '10',
+        'chhattisgarh': '22', 'goa': '30', 'gujarat': '24', 'haryana': '06', 'himachal pradesh': '02',
+        'jharkhand': '20', 'karnataka': '29', 'kerala': '32', 'madhya pradesh': '23', 'maharashtra': '27',
+        'manipur': '14', 'meghalaya': '17', 'mizoram': '15', 'nagaland': '13', 'odisha': '21',
+        'punjab': '03', 'rajasthan': '08', 'sikkim': '11', 'tamil nadu': '33', 'telangana': '36',
+        'tripura': '16', 'uttar pradesh': '09', 'uttarakhand': '05', 'west bengal': '19',
+        'delhi': '07', 'jammu and kashmir': '01', 'ladakh': '38', 'chandigarh': '04',
+        'puducherry': '34', 'andaman and nicobar': '35', 'dadra and nagar haveli': '26',
+        'daman and diu': '25', 'lakshadweep': '31',
+      };
+      const custStateKey = customerStateName.toLowerCase().trim();
+      const custStateCode = stateCodeMap[custStateKey] || '';
+      const placeOfSupply = custStateCode ? `${customerStateName} (${custStateCode})` : customerStateName;
+
       const invoiceRows = [
         ['Order ID', `#${order.orderId}`],
         ['Invoice No', order.orderId],
         ['Order Date', formatDate(order.createdAt)],
+        ['Place of Supply', placeOfSupply],
         ['Payment Mode', paymentDisplay],
         ['Payment Status', paymentStatusDisplay],
         ['Delivery', deliveryDisplay],

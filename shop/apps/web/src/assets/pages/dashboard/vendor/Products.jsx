@@ -774,6 +774,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
     tags: product?.tags ? product.tags.join(', ') : '',
     published: product?.published || false,
     featured: product?.featured || false,
+    hsnCode: product?.hsnCode || '',
     taxable: product?.taxable !== undefined ? product.taxable : true,
     taxRate: product?.taxRate || '',
     taxIncluded: product?.taxIncluded || false,
@@ -902,6 +903,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       published: formData.published,
       featured: formData.featured,
+      hsnCode: formData.hsnCode || undefined,
       taxable: formData.taxable,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
       taxIncluded: formData.taxIncluded,
@@ -1213,6 +1215,26 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Common GST rates: 5%, 12%, 18%, 28%
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        HSN/SAC Code
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.hsnCode}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          setFormData({ ...formData, hsnCode: val });
+                        }}
+                        className="input w-full"
+                        placeholder="e.g., 8509"
+                        maxLength={8}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Required for GST invoices (4-8 digits)
                       </p>
                     </div>
 

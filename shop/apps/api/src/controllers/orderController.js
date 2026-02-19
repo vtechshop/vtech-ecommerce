@@ -261,6 +261,7 @@ exports.createOrder = async (req, res, next) => {
         productSlug: product.slug,
         variantName: variant?.name,
         sku: variant?.sku || product.sku,
+        hsnCode: product.hsnCode || '',
         warranty: warrantyInfo,
         // Include tax info for reference
         taxIncluded: product.taxIncluded || false,

@@ -45,6 +45,7 @@ const productSchema = new mongoose.Schema({
       message: 'Cost must be a valid number'
     }
   },
+  hsnCode: { type: String, trim: true }, // HSN/SAC code for GST invoices
   taxable: { type: Boolean, default: true },
   taxRate: { type: Number, default: 0 },
   taxIncluded: { type: Boolean, default: false }, // If true, tax is already included in the price

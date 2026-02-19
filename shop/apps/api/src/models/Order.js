@@ -14,7 +14,7 @@ const orderSchema = new mongoose.Schema({
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
     variantId: String, qty: Number, priceSnapshot: Number, name: String, image: String,
-    productSlug: String, variantName: String, sku: String,
+    productSlug: String, variantName: String, sku: String, hsnCode: String,
     adCampaignId: { type: mongoose.Schema.Types.ObjectId, ref: 'AdCampaign' },
     adCreativeId: { type: mongoose.Schema.Types.ObjectId, ref: 'AdCreative' },
     affiliateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Affiliate' },

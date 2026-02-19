@@ -433,7 +433,7 @@ async function updateProduct(req, res, next) {
       'title', 'description', 'price', 'compareAt', 'cost', 'stock',
       'sku', 'barcode', 'brand', 'images', 'imageAlts', 'categoryIds', 'tags',
       'variants', 'specifications', 'shippingInfo', 'published',
-      'featured', 'taxable', 'taxRate', 'taxIncluded', 'seo', 'hasWarranty', 'warranty', 'faqs', 'structuredData', 'youtubeLink'
+      'featured', 'taxable', 'taxRate', 'taxIncluded', 'hsnCode', 'seo', 'hasWarranty', 'warranty', 'faqs', 'structuredData', 'youtubeLink'
     ];
 
     // Fields that are nested objects and need markModified

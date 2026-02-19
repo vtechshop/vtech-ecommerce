@@ -416,6 +416,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     featured: product?.featured || false,
     vendorCommissionPercentage: product?.vendorCommissionPercentage || '',
     affiliateCommissionPercentage: product?.affiliateCommissionPercentage || '',
+    hsnCode: product?.hsnCode || '',
     taxable: product?.taxable !== undefined ? product.taxable : true,
     taxRate: product?.taxRate || 0,
     taxIncluded: product?.taxIncluded || false,
@@ -804,6 +805,27 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Common GST rates: 5%, 12%, 18%, 28%
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      HSN/SAC Code
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.hsnCode}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        setFormData({ ...formData, hsnCode: val });
+                      }}
+                      disabled={isViewing}
+                      className="input w-full"
+                      placeholder="e.g., 8509"
+                      maxLength={8}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Required for GST invoices (4-8 digits)
                     </p>
                   </div>
 
