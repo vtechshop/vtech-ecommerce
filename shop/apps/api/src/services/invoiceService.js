@@ -25,25 +25,33 @@ const PLATFORM_SELLER = {
 
 /**
  * Build seller details from a vendor profile (for vendor orders).
+ * Falls back to PLATFORM_SELLER for any missing critical fields.
  */
 function buildSellerFromVendor(vendor) {
   if (!vendor) return PLATFORM_SELLER;
+
   const gstin = vendor.kyc?.taxId || '';
   const gstStateCode = gstin.length >= 2 ? gstin.substring(0, 2) : '';
+  const hasValidGstin = gstin.length === 15;
+  const hasAddress = !!(vendor.kyc?.businessAddress);
+
+  // If vendor has no proper GSTIN and no address, use platform seller entirely
+  if (!hasValidGstin && !hasAddress) return PLATFORM_SELLER;
+
   return {
-    name: vendor.kyc?.businessName || vendor.storeName || 'Vendor',
-    tradeName: vendor.storeName || vendor.kyc?.businessName || 'Vendor',
-    addressLine1: vendor.kyc?.businessAddress || 'Address not provided',
-    addressLine2: '',
-    city: vendor.kyc?.city || '',
-    state: vendor.kyc?.state || '',
-    pincode: vendor.kyc?.pincode || '',
-    stateCode: gstStateCode || '',
-    phone: vendor.kyc?.phoneNumber || '',
-    email: vendor.userId?.email || '',
-    website: '',
-    gstin: gstin,
-    pan: vendor.panNumber || (gstin.length === 15 ? gstin.substring(2, 12) : ''),
+    name: vendor.kyc?.businessName || vendor.storeName || PLATFORM_SELLER.name,
+    tradeName: vendor.storeName || vendor.kyc?.businessName || PLATFORM_SELLER.tradeName,
+    addressLine1: vendor.kyc?.businessAddress || PLATFORM_SELLER.addressLine1,
+    addressLine2: hasAddress ? '' : PLATFORM_SELLER.addressLine2,
+    city: vendor.kyc?.city || (hasAddress ? '' : PLATFORM_SELLER.city),
+    state: vendor.kyc?.state || (hasAddress ? '' : PLATFORM_SELLER.state),
+    pincode: vendor.kyc?.pincode || (hasAddress ? '' : PLATFORM_SELLER.pincode),
+    stateCode: gstStateCode || PLATFORM_SELLER.stateCode,
+    phone: vendor.kyc?.phoneNumber || PLATFORM_SELLER.phone,
+    email: vendor.userId?.email || PLATFORM_SELLER.email,
+    website: PLATFORM_SELLER.website,
+    gstin: hasValidGstin ? gstin : PLATFORM_SELLER.gstin,
+    pan: vendor.panNumber || (hasValidGstin ? gstin.substring(2, 12) : PLATFORM_SELLER.pan),
   };
 }
 
@@ -110,6 +118,14 @@ function numberToWords(num) {
   return result;
 }
 
+// Country code to name mapping
+function formatCountry(code) {
+  if (!code) return 'India';
+  const c = code.trim().toUpperCase();
+  if (c === 'IN' || c === 'IND') return 'India';
+  return code;
+}
+
 // ─────────── Drawing Helpers ───────────
 
 function drawLine(doc, x1, y1, x2, y2, color = '#e5e7eb', width = 0.5) {
@@ -166,30 +182,30 @@ function generateInvoicePDF(order, outputStream, seller) {
       // ═══════════════ HEADER ═══════════════
       let y = doc.page.margins.top;
 
-      // Logo + Company name (left)
-      const logoSize = 45;
+      // Logo + Company name (left) - premium sizing
+      const logoSize = 50;
       let logoOffset = 0;
       if (fs.existsSync(LOGO_PATH)) {
         doc.image(LOGO_PATH, L, y, { width: logoSize, height: logoSize });
-        logoOffset = logoSize + 10;
+        logoOffset = logoSize + 12;
       }
 
-      doc.fontSize(22).font('Helvetica-Bold').fillColor('#111827')
-        .text(CO.name, L + logoOffset, y + 6);
-      doc.fontSize(7.5).font('Helvetica').fillColor('#6b7280')
-        .text(CO.website || '', L + logoOffset, doc.y + 1);
+      doc.fontSize(24).font('Helvetica-Bold').fillColor('#111827')
+        .text(CO.name, L + logoOffset, y + 4);
+      doc.fontSize(8).font('Helvetica').fillColor('#6b7280')
+        .text(CO.website || '', L + logoOffset, doc.y + 2);
 
       // "Tax Invoice" label (right-aligned)
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#4f46e5')
-        .text('TAX INVOICE', L, y + 4, { align: 'right', width: W });
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#4f46e5')
+        .text('TAX INVOICE', L, y + 2, { align: 'right', width: W });
       doc.fontSize(7.5).font('Helvetica').fillColor('#6b7280')
         .text('Original for Recipient', L, y + 18, { align: 'right', width: W });
 
-      y = Math.max(y + logoSize + 8, doc.y + 12);
+      y = Math.max(y + logoSize + 10, doc.y + 14);
 
       // Bold brand accent line
       doc.rect(L, y, W, 4).fillColor('#4f46e5').fill();
-      y += 12;
+      y += 14;
 
       // ═══════════════ INVOICE META (2 columns) ═══════════════
       const metaLeftX = L;
@@ -274,7 +290,7 @@ function generateInvoicePDF(order, outputStream, seller) {
         if (cityLine) doc.text(cityLine, { width: halfW - 15 });
         const stateLine = [order.shipTo.state, order.shipTo.zipCode].filter(Boolean).join(' - ');
         if (stateLine) doc.text(stateLine, { width: halfW - 15 });
-        doc.text(order.shipTo.country || 'India', { width: halfW - 15 });
+        doc.text(formatCountry(order.shipTo.country), { width: halfW - 15 });
         if (order.shipTo.phone) doc.text(`Phone: ${order.shipTo.phone}`);
       }
       const billEndY = doc.y;
@@ -292,7 +308,7 @@ function generateInvoicePDF(order, outputStream, seller) {
         if (cityLine) doc.text(cityLine, metaRightX, undefined, { width: halfW - 30 });
         const stateLine = [order.shipTo.state, order.shipTo.zipCode].filter(Boolean).join(' - ');
         if (stateLine) doc.text(stateLine, metaRightX, undefined, { width: halfW - 30 });
-        doc.text(order.shipTo.country || 'India', metaRightX, undefined, { width: halfW - 30 });
+        doc.text(formatCountry(order.shipTo.country), metaRightX, undefined, { width: halfW - 30 });
         if (order.shipTo.phone) doc.text(`Phone: ${order.shipTo.phone}`, metaRightX, undefined, { width: halfW - 30 });
       }
 
@@ -482,9 +498,12 @@ function generateInvoicePDF(order, outputStream, seller) {
       doc.fontSize(7.5).font('Helvetica-Bold').fillColor('#374151')
         .text(numberToWords(order.totals?.total || 0), L, doc.y + 1, { width: totalsX - L - 20 });
 
-      // GST note
+      // GST note - always show
       doc.moveDown(0.5);
-      if (taxTotal <= 0) {
+      if (taxTotal > 0) {
+        doc.fontSize(6.5).font('Helvetica-Oblique').fillColor('#6b7280')
+          .text('* GST has been charged separately as shown above.', L);
+      } else {
         doc.fontSize(6.5).font('Helvetica-Oblique').fillColor('#6b7280')
           .text('* All prices are inclusive of applicable GST.', L);
       }
