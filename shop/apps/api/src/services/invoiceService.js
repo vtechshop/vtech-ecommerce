@@ -386,6 +386,14 @@ function generateInvoicePDF(order, outputStream, seller) {
           doc.font('Helvetica').fontSize(5.5).fillColor('#9ca3af')
             .text(`SKU: ${item.sku}`, cx, doc.y, { width: cols.desc - 5 });
         }
+        // Warranty info below product name
+        if (item.warranty?.hasWarranty && item.warranty.duration) {
+          const wDur = item.warranty.duration;
+          const wType = item.warranty.durationType === 'lifetime' ? 'Lifetime' :
+            `${wDur} ${item.warranty.durationType === 'years' ? (wDur === 1 ? 'Year' : 'Years') : (wDur === 1 ? 'Month' : 'Months')}`;
+          doc.font('Helvetica-Bold').fontSize(5.5).fillColor('#4f46e5')
+            .text(`Warranty: ${wType}`, cx, doc.y, { width: cols.desc - 5 });
+        }
         cx += cols.desc;
 
         // HSN code
@@ -533,6 +541,19 @@ function generateInvoicePDF(order, outputStream, seller) {
       doc.moveDown(1.5);
       drawLine(doc, L, doc.y, R, doc.y, '#e5e7eb', 0.5);
       doc.moveDown(0.5);
+
+      // Warranty claim instructions (only if any item has warranty)
+      const hasAnyWarranty = items.some(i => i.warranty?.hasWarranty && i.warranty.duration);
+      if (hasAnyWarranty) {
+        doc.fontSize(6.5).font('Helvetica-Bold').fillColor('#4f46e5')
+          .text('Warranty Information', L, doc.y, { align: 'center', width: W });
+        doc.moveDown(0.2);
+        doc.fontSize(6).font('Helvetica').fillColor('#6b7280')
+          .text('For warranty claims, contact us with your invoice number and product details. Warranty covers manufacturing defects only and does not cover damage caused by misuse, accidents, or unauthorized modifications. Keep this invoice as proof of purchase for all warranty claims.', L, doc.y, {
+            align: 'center', width: W,
+          });
+        doc.moveDown(0.4);
+      }
 
       // Return policy note
       doc.fontSize(6.5).font('Helvetica').fillColor('#6b7280');

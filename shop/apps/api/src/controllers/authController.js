@@ -34,7 +34,7 @@ const LOCKOUT_DURATION = parseInt(env.LOCKOUT_DURATION_MINUTES) || 15;
 
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, phone } = req.body;
 
     const existing = await User.findOne({ email });
     if (existing) {
@@ -69,6 +69,7 @@ exports.register = async (req, res, next) => {
     const user = await User.create({
       name,
       email,
+      phone,
       password: hashed,
       role: userRole,
       verificationToken: hashedToken,
@@ -174,6 +175,7 @@ exports.register = async (req, res, next) => {
           _id: user._id,
           name: user.name,
           email: user.email,
+          phone: user.phone,
           role: user.role,
           emailVerified: user.emailVerified
         },

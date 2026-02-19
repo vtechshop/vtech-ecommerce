@@ -15,6 +15,7 @@ const Register = () => {
   const { user, loading, error } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
     name: '',
+    phone: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -69,9 +70,17 @@ const Register = () => {
       return;
     }
 
+    // Validate phone number
+    const phoneDigits = formData.phone.replace(/[\s()-]/g, '');
+    if (!/^[+]?\d{10,15}$/.test(phoneDigits)) {
+      alert('Please enter a valid phone number (10-15 digits)');
+      return;
+    }
+
     try {
       await dispatch(register({
         name: formData.name.trim(),
+        phone: formData.phone.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         role: formData.role,
@@ -124,9 +133,28 @@ const Register = () => {
               autoComplete="name"
               minLength={2}
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^a-zA-Z\s.]/g, '');
+                setFormData({ ...formData, name: val });
+              }}
               helperText="Enter your full name"
               data-testid="register-name"
+            />
+
+            <Input
+              label="Phone Number"
+              type="tel"
+              name="phone"
+              required
+              autoComplete="tel"
+              placeholder="+91 9876543210"
+              value={formData.phone}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9+]/g, '');
+                setFormData({ ...formData, phone: val });
+              }}
+              helperText="Required for order updates & invoice delivery"
+              data-testid="register-phone"
             />
 
             <div>
@@ -157,7 +185,10 @@ const Register = () => {
               autoComplete="email"
               pattern="[^\s@]+@[^\s@]+\.[^\s@]+"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\s/g, '');
+                setFormData({ ...formData, email: val });
+              }}
               helperText="Enter a valid email address (e.g., user@example.com)"
               data-testid="register-email"
             />

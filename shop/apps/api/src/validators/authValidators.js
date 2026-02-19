@@ -11,6 +11,11 @@ const registerSchema = Joi.object({
     'string.min': 'Name must be at least 2 characters',
     'string.max': 'Name cannot exceed 100 characters',
   }),
+  phone: Joi.string().pattern(/^[+]?[\d\s()-]{10,15}$/).required().messages({
+    'string.empty': 'Phone number is required',
+    'string.pattern.base': 'Please provide a valid phone number (10-15 digits)',
+    'any.required': 'Phone number is required',
+  }),
   email: Joi.string().email({ tlds: { allow: false } }).required().messages({
     'string.empty': 'Email is required',
     'string.email': 'Please provide a valid email address',
