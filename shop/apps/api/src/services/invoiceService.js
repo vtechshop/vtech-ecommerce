@@ -558,14 +558,17 @@ async function generateInvoicePDF(order, outputStream, seller) {
       doc.moveDown(0.8);
 
       const sigSectionY = doc.y;
+      let qrEndY = sigSectionY;
 
       // QR Code (left side) - WhatsApp support
+      const qrSize = 55;
       if (qrBuffer) {
-        doc.image(qrBuffer, L, sigSectionY, { width: 65, height: 65 });
-        doc.fontSize(5.5).font('Helvetica').fillColor('#6b7280')
-          .text('Scan for', L, sigSectionY + 67, { width: 65, align: 'center' });
-        doc.fontSize(5.5).font('Helvetica-Bold').fillColor('#4f46e5')
-          .text('WhatsApp Support', L, doc.y, { width: 65, align: 'center' });
+        doc.image(qrBuffer, L, sigSectionY, { width: qrSize, height: qrSize });
+        doc.fontSize(5).font('Helvetica').fillColor('#6b7280')
+          .text('Scan for', L, sigSectionY + qrSize + 2, { width: qrSize, align: 'center' });
+        doc.fontSize(5).font('Helvetica-Bold').fillColor('#4f46e5')
+          .text('WhatsApp Support', L, doc.y, { width: qrSize, align: 'center' });
+        qrEndY = doc.y;
       }
 
       // Right-aligned signature block
@@ -573,14 +576,16 @@ async function generateInvoicePDF(order, outputStream, seller) {
       doc.fontSize(8).font('Helvetica-Bold').fillColor('#111827')
         .text(`For ${CO.name}`, sigX, sigSectionY, { width: 170, align: 'right' });
 
-      // Space for signature/seal (will be added later)
-      doc.moveDown(3);
-
+      // Space for signature/seal
+      const sigLineY = sigSectionY + 45;
       doc.fontSize(7).font('Helvetica').fillColor('#6b7280')
-        .text('Authorized Signatory', sigX, doc.y, { width: 170, align: 'right' });
+        .text('Authorized Signatory', sigX, sigLineY, { width: 170, align: 'right' });
+
+      // Move past both QR and signature sections
+      const sectionEndY = Math.max(qrEndY, sigLineY + 12) + 15;
+      doc.y = sectionEndY;
 
       // ═══════════════ FOOTER ═══════════════
-      doc.moveDown(1.5);
       drawLine(doc, L, doc.y, R, doc.y, '#e5e7eb', 0.5);
       doc.moveDown(0.5);
 
