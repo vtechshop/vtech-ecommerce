@@ -28,21 +28,38 @@ export const handleImageError = (e, placeholder = PLACEHOLDER_IMAGE) => {
  * @returns {string} - Optimized Cloudinary URL
  */
 const optimizeCloudinaryUrl = (url, options = {}) => {
-  const { width = 200, quality = 'auto', format = 'auto' } = options;
+  const { width, quality = 'auto', format = 'auto' } = options;
 
   // Check if it's a Cloudinary URL
   if (!url.includes('res.cloudinary.com')) {
     return url;
   }
 
-  // Check if transformations already exist
-  if (url.includes('/q_auto') || url.includes('/f_auto') || url.includes('/w_')) {
+  // If width requested and already has w_ transform at the right size, skip
+  if (width && url.includes(`/w_${width}`)) {
     return url;
   }
 
-  // Add transformations to Cloudinary URL with c_fill for proper cropping
-  const transformations = `q_${quality},f_${format},w_${width},c_fill`;
-  return url.replace('/upload/', `/upload/${transformations}/`);
+  // Strip existing transform segments between /upload/ and /v1/ (or version folder)
+  // Handles both comma-separated (q_auto,f_auto) and slash-separated (q_auto:good/f_auto)
+  let cleanUrl = url;
+  const uploadIdx = cleanUrl.indexOf('/upload/');
+  if (uploadIdx !== -1) {
+    const afterUpload = cleanUrl.substring(uploadIdx + 8); // after "/upload/"
+    // Find the version folder (v1/, v2/, etc.) or the asset path
+    const versionMatch = afterUpload.match(/^(.*?)(v\d+\/)/);
+    if (versionMatch && versionMatch[1]) {
+      // Remove existing transforms before version folder
+      cleanUrl = cleanUrl.substring(0, uploadIdx + 8) + versionMatch[2] + afterUpload.substring(versionMatch[0].length);
+    }
+  }
+
+  // Build new transforms
+  const transforms = [`q_${quality}`, `f_${format}`];
+  if (width) transforms.push(`w_${width}`, 'c_fill');
+  const transformations = transforms.join(',');
+
+  return cleanUrl.replace('/upload/', `/upload/${transformations}/`);
 };
 
 /**
@@ -55,25 +72,28 @@ export const getResponsiveImageUrls = (url) => {
     return { src: url, srcSet: null, sizes: null };
   }
 
-  // Remove existing transformations if any
+  // Strip ALL existing transforms between /upload/ and version folder
   let baseUrl = url;
-  const uploadMatch = url.match(/\/upload\/([^/]+)\//);
-  if (uploadMatch && uploadMatch[1].includes(',')) {
-    // Has transformations (comma-separated), remove them
-    baseUrl = url.replace(`/upload/${uploadMatch[1]}/`, '/upload/');
+  const uploadIdx = baseUrl.indexOf('/upload/');
+  if (uploadIdx !== -1) {
+    const afterUpload = baseUrl.substring(uploadIdx + 8);
+    const versionMatch = afterUpload.match(/^(.*?)(v\d+\/)/);
+    if (versionMatch && versionMatch[1]) {
+      baseUrl = baseUrl.substring(0, uploadIdx + 8) + versionMatch[2] + afterUpload.substring(versionMatch[0].length);
+    }
   }
 
-  // Responsive widths matching actual card display sizes
-  const widths = [200, 300, 400];
+  // Responsive widths - smaller for mobile, matches actual card display sizes
+  const widths = [160, 200, 300];
   const srcSet = widths.map(w => {
     const optimized = baseUrl.replace('/upload/', `/upload/q_auto,f_auto,w_${w},c_fill/`);
     return `${optimized} ${w}w`;
   }).join(', ');
 
-  // Default src - good quality for most screens
-  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_300,c_fill/');
+  // Default src - mobile-first size
+  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_200,c_fill/');
 
-  // Sizes attribute - match actual card display sizes
+  // Sizes attribute - match actual card display sizes on different screens
   const sizes = '(max-width: 480px) 160px, (max-width: 768px) 200px, 300px';
 
   return { src, srcSet, sizes };

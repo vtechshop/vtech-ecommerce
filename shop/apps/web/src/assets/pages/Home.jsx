@@ -163,14 +163,14 @@ const Home = React.memo(() => {
               </Suspense>
             )}
 
-            {/* Categories */}
-            {categories?.length > 0 && (
-              <ScrollReveal animation="fadeUp" className="mb-8">
-                <h2 className="text-xl md:text-2xl font-bold mb-6">{t('home.shopByCategory')}</h2>
-                <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 ${
-                  leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
-                }`}>
-                  {categories.map((category, index) => (
+            {/* Categories - always render with skeleton to prevent CLS */}
+            <div className="mb-8">
+              <h2 className="text-xl md:text-2xl font-bold mb-6">{t('home.shopByCategory')}</h2>
+              <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 ${
+                leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
+              }`}>
+                {categories?.length > 0 ? (
+                  categories.map((category, index) => (
                     <Link key={category.slug} to={`/category/${category.slug}`} className="group stagger-grid-item" style={{ animationDelay: `${index * 0.06}s` }}>
                       <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 hover:-translate-y-1">
                         <div className="flex items-center justify-center py-5 px-4">
@@ -189,10 +189,21 @@ const Home = React.memo(() => {
                         </div>
                       </div>
                     </Link>
-                  ))}
-                </div>
-              </ScrollReveal>
-            )}
+                  ))
+                ) : (
+                  [...Array(6)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-100 animate-pulse">
+                      <div className="flex items-center justify-center py-5 px-4">
+                        <div className="w-24 h-24 rounded-xl bg-gray-200"></div>
+                      </div>
+                      <div className="py-3 px-3 text-center bg-gray-50">
+                        <div className="h-4 bg-gray-200 rounded w-20 mx-auto"></div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
 
             {/* Featured Products - contain layout to prevent CLS */}
             <ScrollReveal animation="fadeUp" delay={0.1} className="mb-8" as="section" style={{ contain: 'layout' }}>
