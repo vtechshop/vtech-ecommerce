@@ -18,7 +18,7 @@ const Privacy = () => {
         <ScrollReveal animation="fadeUp">
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-          <p className="text-gray-700 mb-8">Last updated: December 2025</p>
+          <p className="text-gray-700 mb-8">Last updated: February 2026</p>
 
           <div className="prose prose-lg max-w-none space-y-8">
             <section>
@@ -105,6 +105,24 @@ const Privacy = () => {
               <p className="text-gray-700 leading-relaxed mb-4">
                 We use cookies and similar technologies to enhance your experience. You can control cookies through your browser settings.
                 See our <Link to="/cookie-policy" className="text-blue-600 hover:underline">Cookie Policy</Link> for more details.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3 mt-4">6.1 Analytics Services</h3>
+              <p className="text-gray-700 leading-relaxed mb-3">
+                We use the following third-party analytics services to understand how visitors use our website:
+              </p>
+              <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
+                <li>
+                  <strong>Google Analytics:</strong> Collects anonymous usage data such as pages visited, session duration, and traffic sources.
+                  Learn more at <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Privacy Policy</a>.
+                </li>
+                <li>
+                  <strong>Microsoft Clarity:</strong> Records anonymous user interactions such as mouse movements, clicks, and scrolls to help us improve user experience.
+                  Clarity does not collect sensitive personal data. Learn more at <a href="https://privacy.microsoft.com/en-us/privacystatement" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Microsoft Privacy Statement</a>.
+                </li>
+              </ul>
+              <p className="text-gray-700 leading-relaxed">
+                Both services use cookies to collect information. You can opt out by adjusting your browser's cookie settings or using browser extensions that block tracking scripts.
               </p>
             </section>
 
