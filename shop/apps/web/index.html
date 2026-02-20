@@ -42,55 +42,49 @@
     <!-- Additional SEO -->
     <meta name="author" content="V-Tech Kitchen" />
 
-    <!-- Preconnect for Performance -->
+    <!-- Preconnect - only critical origins (max 4) -->
     <link rel="preconnect" href="https://api.vtechkitchen.com" crossorigin>
-    <link rel="dns-prefetch" href="https://api.vtechkitchen.com">
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
-    <link rel="dns-prefetch" href="https://res.cloudinary.com">
-    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
-    <link rel="preconnect" href="https://www.google-analytics.com" crossorigin>
-
-    <!-- Google Fonts - Only essential weights for performance -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
+    <link rel="dns-prefetch" href="https://api.vtechkitchen.com">
+    <link rel="dns-prefetch" href="https://res.cloudinary.com">
+    <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+    <link rel="dns-prefetch" href="https://www.clarity.ms">
+
+    <!-- Google Fonts - deferred with reduced weights -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"></noscript>
 
     <title>V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment</title>
 
-    <!-- Google Analytics - Deferred load for better LCP -->
+    <!-- Analytics - Deferred until after page is interactive to reduce TBT/LCP -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      // Defer GTM loading until after page is interactive
-      if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(function() {
-          var s = document.createElement('script');
-          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-MGV9FDZXSL';
-          s.async = true;
-          document.head.appendChild(s);
-          gtag('js', new Date());
-          gtag('config', 'G-MGV9FDZXSL');
-        });
-      } else {
-        setTimeout(function() {
-          var s = document.createElement('script');
-          s.src = 'https://www.googletagmanager.com/gtag/js?id=G-MGV9FDZXSL';
-          s.async = true;
-          document.head.appendChild(s);
-          gtag('js', new Date());
-          gtag('config', 'G-MGV9FDZXSL');
-        }, 3000);
-      }
-    </script>
+      // Load all analytics after page is fully interactive
+      function loadAnalytics() {
+        // Google Analytics
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        window.gtag = gtag;
+        var ga = document.createElement('script');
+        ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-MGV9FDZXSL';
+        ga.async = true;
+        document.head.appendChild(ga);
+        gtag('js', new Date());
+        gtag('config', 'G-MGV9FDZXSL');
 
-    <!-- Microsoft Clarity - Deferred load for better performance -->
-    <script>
-      (function(c,l,a,r,i,t,y){
-        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i+"?ref=bwt";
-        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-      })(window, document, "clarity", "script", "vk9crjp0w8");
+        // Microsoft Clarity
+        (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i+"?ref=bwt";
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "vk9crjp0w8");
+      }
+      // Defer: use requestIdleCallback or fallback to 4s timeout
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(loadAnalytics, { timeout: 5000 });
+      } else {
+        setTimeout(loadAnalytics, 4000);
+      }
     </script>
 
     <!-- Structured Data (Schema.org) -->

@@ -146,8 +146,12 @@ const FlashSaleBanner = ({ sale }) => {
               <div className="aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden mb-2">
                 {item.productId.images && item.productId.images[0] ? (
                   <img
-                    src={normalizeImageUrl(item.productId.images[0])}
+                    src={normalizeImageUrl(item.productId.images[0], { width: 200 })}
                     alt={item.productId.title}
+                    width={200}
+                    height={200}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover"
                   />
                 ) : (

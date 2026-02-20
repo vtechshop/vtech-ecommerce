@@ -8,6 +8,7 @@ import useSponsorAds from '@/hooks/useSponsorAds';
 import { updateMetaTags } from '@/utils/seo';
 import useTranslation from '@/hooks/useTranslation';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import { normalizeImageUrl } from '@/utils/placeholders';
 
 // Lazy load below-fold components for better initial load
 const FlashSaleBanner = lazy(() => import('@/components/flash-sale/FlashSaleBanner'));
@@ -175,7 +176,7 @@ const Home = React.memo(() => {
                         <div className="flex items-center justify-center py-5 px-4">
                           <div className="w-24 h-24 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
                             {category.image ? (
-                              <img src={category.image} alt={category.name} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                              <img src={normalizeImageUrl(category.image, { width: 96 })} alt={category.name} width={96} height={96} loading="lazy" decoding="async" className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" />
                             ) : (
                               <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />

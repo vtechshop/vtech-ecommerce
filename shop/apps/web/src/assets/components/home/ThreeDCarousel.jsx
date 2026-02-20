@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import useMobile from '@/hooks/useMobile';
+import { normalizeImageUrl } from '@/utils/placeholders';
 
 const ThreeDCarousel = ({
   items = [],
@@ -103,7 +104,7 @@ const ThreeDCarousel = ({
                   <div
                     className="relative p-6 flex items-center justify-center h-72 overflow-hidden"
                     style={{
-                      backgroundImage: `url(${item.imageUrl})`,
+                      backgroundImage: `url(${normalizeImageUrl(item.imageUrl, { width: 400 })})`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
                     }}
