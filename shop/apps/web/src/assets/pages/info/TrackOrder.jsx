@@ -245,7 +245,7 @@ const TrackOrder = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
+    <div className="min-h-screen bg-blue-50 py-8">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-3xl">
 
         {/* Search Form */}
@@ -256,7 +256,7 @@ const TrackOrder = () => {
               onClick={() => switchMode('order')}
               className={`flex-1 py-3 px-4 text-sm font-medium text-center transition-colors ${
                 trackMode === 'order'
-                  ? 'text-amber-700 border-b-2 border-amber-500 bg-amber-50'
+                  ? 'text-primary-700 border-b-2 border-primary-500 bg-primary-50'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
@@ -266,7 +266,7 @@ const TrackOrder = () => {
               onClick={() => switchMode('awb')}
               className={`flex-1 py-3 px-4 text-sm font-medium text-center transition-colors ${
                 trackMode === 'awb'
-                  ? 'text-amber-700 border-b-2 border-amber-500 bg-amber-50'
+                  ? 'text-primary-700 border-b-2 border-primary-500 bg-primary-50'
                   : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
               }`}
             >
@@ -295,7 +295,7 @@ const TrackOrder = () => {
                       value={orderNumber}
                       onChange={(e) => setOrderNumber(e.target.value)}
                       placeholder="e.g., ORD-12345"
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -308,7 +308,7 @@ const TrackOrder = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="your.email@example.com"
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -323,7 +323,7 @@ const TrackOrder = () => {
                     value={awbNumber}
                     onChange={(e) => setAwbNumber(e.target.value)}
                     placeholder="e.g., 19598910000066"
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm font-mono focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm font-mono focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                   />
                 </div>
               )}
@@ -337,7 +337,7 @@ const TrackOrder = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full sm:w-auto bg-amber-400 hover:bg-amber-500 text-gray-900 py-2.5 px-8 rounded-md font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto bg-primary-600 hover:bg-primary-700 text-white py-2.5 px-8 rounded-md font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Search className="w-4 h-4" />
                 {loading ? 'Tracking...' : 'Track Order'}
@@ -470,7 +470,7 @@ const TrackOrder = () => {
 
         {/* Help Text */}
         {!tracking && !error && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 mt-2">
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-5 mt-2">
             <h3 className="font-semibold text-gray-900 mb-2">Can't find your order number?</h3>
             <ul className="text-sm text-gray-700 space-y-1.5">
               <li>- Check your email confirmation for the order number</li>
