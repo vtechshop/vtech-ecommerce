@@ -9,7 +9,7 @@ const Contact = () => {
   useEffect(() => {
     updateMetaTags({
       title: 'Contact Us - V-Tech Kitchen',
-      description: 'Get in touch with V-Tech Kitchen for product inquiries, orders, or support. Call +91 99445 56683, email us, or use our contact form. Mon-Sat 9AM-7PM IST.',
+      description: 'Get in touch with V-Tech Kitchen for product inquiries, orders, or support. Call +91 99438 82409, email us, or use our contact form. Mon-Sat 9AM-7PM IST.',
       canonical: 'https://www.vtechkitchen.com/page/contact',
     });
   }, []);
@@ -81,8 +81,8 @@ const Contact = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Call Us</h3>
               <p className="text-gray-700 mb-4">Mon-Sat from 9am to 7pm</p>
-              <a href="tel:+919944556683" className="text-blue-600 hover:text-blue-700 font-medium">
-                +91 99445 56683
+              <a href="tel:+919943882409" className="text-blue-600 hover:text-blue-700 font-medium">
+                +91 99438 82409
               </a>
             </div>
 
@@ -211,7 +211,7 @@ const Contact = () => {
                       9/83, E, 4th Street, T.Balan Nagar<br />
                       Ganapathipudur, Coimbatore - 641006, Tamil Nadu<br />
                       India<br />
-                      Phone: +91 99445 56683
+                      Phone: +91 99438 82409
                     </p>
                   </div>
                 </div>
