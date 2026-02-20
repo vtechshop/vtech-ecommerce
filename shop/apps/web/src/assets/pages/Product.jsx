@@ -11,6 +11,7 @@ import ShareProduct from '@/components/common/ShareProduct';
 import { formatCurrency } from '@/utils/format';
 import { normalizeImageUrl } from '@/utils/placeholders';
 import { addToRecentlyViewed } from '@/utils/recentlyViewed';
+import { trackViewItem, trackAddToCart } from '@/utils/analytics';
 import { captureAffiliateFromURL } from '@/utils/affiliateTracking';
 import RecentlyViewed from '@/components/product/RecentlyViewed';
 import SocialProof from '@/components/product/SocialProof';
@@ -273,6 +274,7 @@ const Product = () => {
   useEffect(() => {
     if (product) {
       addToRecentlyViewed(product);
+      trackViewItem(product);
     }
   }, [product]);
 
@@ -322,6 +324,8 @@ const Product = () => {
         quantity,
         variantId,
       })).unwrap();
+
+      trackAddToCart(product, quantity);
 
       // Play add to cart sound
       playAddToCart();

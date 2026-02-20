@@ -10,6 +10,7 @@ import ShinyButton from '@/components/animations/ShinyButton';
 import { formatCurrency } from '@/utils/format';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import { NoIndex } from '@/components/common/SEO';
+import { trackRemoveFromCart } from '@/utils/analytics';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -26,6 +27,8 @@ const Cart = () => {
   };
 
   const handleRemoveItem = (itemId) => {
+    const item = items.find(i => i._id === itemId);
+    if (item) trackRemoveFromCart(item);
     dispatch(removeCartItem(itemId));
   };
 

@@ -6,6 +6,7 @@ import Button from '@/components/common/Button';
 import { formatCurrency } from '@/utils/format';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import { X, ShoppingCart, Trash2, CheckCircle, Minus, Plus } from 'lucide-react';
+import { trackRemoveFromCart } from '@/utils/analytics';
 
 const CartDrawer = ({ isOpen, onClose, justAdded }) => {
   const dispatch = useDispatch();
@@ -27,6 +28,8 @@ const CartDrawer = ({ isOpen, onClose, justAdded }) => {
   };
 
   const handleRemove = (itemId) => {
+    const item = items.find(i => i._id === itemId);
+    if (item) trackRemoveFromCart(item);
     dispatch(removeCartItem(itemId));
   };
 

@@ -58,7 +58,7 @@ export const trackPurchase = (orderData) => {
   const eventData = {
     transaction_id: orderData.orderId,
     value: orderData.total,
-    currency: 'USD',
+    currency: 'INR',
     items: orderData.items.map(item => ({
       // Handle both populated (object) and non-populated (string) productId
       item_id: typeof item.productId === 'object' ? item.productId._id : item.productId,
@@ -73,7 +73,7 @@ export const trackPurchase = (orderData) => {
 
 export const trackAddToCart = (product, quantity = 1) => {
   trackEvent('add_to_cart', {
-    currency: 'USD',
+    currency: 'INR',
     value: product.price * quantity,
     items: [{
       item_id: product._id,
@@ -86,7 +86,7 @@ export const trackAddToCart = (product, quantity = 1) => {
 
 export const trackBeginCheckout = (cartData) => {
   trackEvent('begin_checkout', {
-    currency: 'USD',
+    currency: 'INR',
     value: cartData.totals.total,
     items: cartData.items.map(item => ({
       // Handle both populated (object) and non-populated (string) productId
@@ -98,9 +98,22 @@ export const trackBeginCheckout = (cartData) => {
   });
 };
 
+export const trackRemoveFromCart = (item) => {
+  trackEvent('remove_from_cart', {
+    currency: 'INR',
+    value: (item.priceSnapshot || item.price || 0) * (item.qty || item.quantity || 1),
+    items: [{
+      item_id: typeof item.productId === 'object' ? item.productId._id : item.productId,
+      item_name: item.name || item.title,
+      price: item.priceSnapshot || item.price || 0,
+      quantity: item.qty || item.quantity || 1,
+    }],
+  });
+};
+
 export const trackViewItem = (product) => {
   trackEvent('view_item', {
-    currency: 'USD',
+    currency: 'INR',
     value: product.price,
     items: [{
       item_id: product._id,
