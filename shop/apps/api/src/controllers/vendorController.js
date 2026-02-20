@@ -2051,7 +2051,7 @@ async function createVendorManualOrder(req, res, next) {
     }
 
     const order = await Order.create({
-      orderId: generateOrderId(), items: orderItems, source, customerPhone, isVendorOrder: true,
+      orderId: await generateOrderId(), items: orderItems, source, customerPhone, isVendorOrder: true,
       shipTo: { fullName: customerName, phone: customerPhone },
       totals: { subtotal, tax: 0, shipping: 0, discount: parseFloat(discount) || 0, total: amountPaid || (subtotal - (parseFloat(discount) || 0)) },
       status: 'delivered',

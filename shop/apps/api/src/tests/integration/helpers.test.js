@@ -35,11 +35,16 @@ describe('Helper Functions', () => {
   });
 
   describe('generateOrderId', () => {
-    test('should generate valid order ID', () => {
-      const orderId = generateOrderId();
-      // Format: ORD-{base36timestamp}{base36random} (variable length)
-      expect(orderId).toMatch(/^ORD-[A-Z0-9]+$/);
-      expect(orderId.length).toBeGreaterThan(8);
+    beforeEach(() => {
+      let seq = 0;
+      jest.spyOn(require('../../models/Counter'), 'getNextSequence').mockImplementation(async () => ++seq);
+    });
+    afterEach(() => { jest.restoreAllMocks(); });
+
+    test('should generate valid order ID with VT prefix', async () => {
+      const orderId = await generateOrderId();
+      // Format: VT-YYMM-NNNNNNN
+      expect(orderId).toMatch(/^VT-\d{4}-\d{7}$/);
     });
   });
 

@@ -230,7 +230,7 @@ const seed = async () => {
 
     // Create sample order with tracking
     const order = await Order.create({
-      orderId: generateOrderId(),
+      orderId: await generateOrderId(),
       userId: customer._id,
       items: [{
         productId: products[0]._id,

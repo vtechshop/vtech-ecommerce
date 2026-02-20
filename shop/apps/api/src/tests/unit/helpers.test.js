@@ -9,23 +9,34 @@ const {
 
 describe('Helpers', () => {
   describe('generateOrderId', () => {
-    it('should generate order ID starting with ORD-', () => {
-      const orderId = generateOrderId();
-      expect(orderId).toMatch(/^ORD-/);
+    // generateOrderId is now async and requires MongoDB Counter model
+    // Mock the Counter model for unit testing
+    beforeEach(() => {
+      let seq = 0;
+      jest.spyOn(require('../../models/Counter'), 'getNextSequence').mockImplementation(async () => ++seq);
     });
 
-    it('should generate unique order IDs', () => {
-      const ids = new Set();
-      for (let i = 0; i < 100; i++) {
-        ids.add(generateOrderId());
-      }
-      expect(ids.size).toBe(100);
+    afterEach(() => {
+      jest.restoreAllMocks();
     });
 
-    it('should only contain uppercase alphanumeric characters after prefix', () => {
-      const orderId = generateOrderId();
-      const suffix = orderId.replace('ORD-', '');
-      expect(suffix).toMatch(/^[A-Z0-9]+$/);
+    it('should generate order ID starting with VT-', async () => {
+      const orderId = await generateOrderId();
+      expect(orderId).toMatch(/^VT-/);
+    });
+
+    it('should generate order IDs in VT-YYMM-NNNNNNN format', async () => {
+      const orderId = await generateOrderId();
+      expect(orderId).toMatch(/^VT-\d{4}-\d{7}$/);
+    });
+
+    it('should generate sequential order IDs', async () => {
+      const id1 = await generateOrderId();
+      const id2 = await generateOrderId();
+      // Extract sequential part
+      const seq1 = parseInt(id1.split('-')[2]);
+      const seq2 = parseInt(id2.split('-')[2]);
+      expect(seq2).toBe(seq1 + 1);
     });
   });
 

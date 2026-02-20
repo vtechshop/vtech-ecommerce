@@ -395,7 +395,7 @@ exports.createOrder = async (req, res, next) => {
 
         // Create vendor-specific order with transaction
         const vendorOrder = (await Order.create([{
-          orderId: generateOrderId(), // SEQUENTIAL ORDER ID
+          orderId: await generateOrderId(), // SEQUENTIAL ORDER ID
           userId: req.user?._id,
           guestEmail: isGuest ? guestEmail : undefined,
           isGuest: isGuest,

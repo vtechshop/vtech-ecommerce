@@ -1,9 +1,13 @@
 // FILE: apps/api/src/utils/helpers.js
-// Generate unique order ID
-const generateOrderId = () => {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 7).toUpperCase();
-  return `ORD-${timestamp}${random}`;
+const Counter = require('../models/Counter');
+
+// Generate clean sequential order ID (e.g., VT-2502-0000001)
+// Format: VT-YYMM-7digit sequential number
+const generateOrderId = async () => {
+  const seq = await Counter.getNextSequence('order');
+  const now = new Date();
+  const yymm = String(now.getFullYear()).slice(2) + String(now.getMonth() + 1).padStart(2, '0');
+  return `VT-${yymm}-${String(seq).padStart(7, '0')}`;
 };
 
 // Generate unique affiliate code

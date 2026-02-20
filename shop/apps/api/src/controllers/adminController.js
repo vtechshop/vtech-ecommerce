@@ -3946,7 +3946,7 @@ exports.createManualOrder = async (req, res, next) => {
     }
 
     const order = await Order.create({
-      orderId: generateOrderId(),
+      orderId: await generateOrderId(),
       items: orderItems,
       source,
       customerPhone,
