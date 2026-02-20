@@ -1,9 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, TextInput, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withTiming,
+  withDelay,
+  withRepeat,
+  Easing,
+} from 'react-native-reanimated';
 import { userApi } from '../../src/api/user';
 import { useAppDispatch, useAppSelector } from '../../src/store';
 import { addToCart } from '../../src/store/slices/cartSlice';
@@ -12,6 +22,8 @@ import LoadingScreen from '../../src/components/ui/LoadingScreen';
 import { useToast } from '../../src/components/ui/Toast';
 import { haptic } from '../../src/utils/haptics';
 import { colors, spacing, fontSize, fontWeight, borderRadius, shadows } from '../../src/theme';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type SortOption = 'default' | 'price-low' | 'price-high' | 'name';
 
@@ -23,6 +35,151 @@ interface WishlistFolder {
 
 const LISTS_KEY = '@vtech_wishlists';
 const PRICES_KEY = '@vtech_price_tracker';
+
+function AnimatedEmptyWishlist({ isAuthenticated }: { isAuthenticated: boolean }) {
+  const iconScale = useSharedValue(0);
+  const heartBeat = useSharedValue(1);
+  const titleOpacity = useSharedValue(0);
+  const subtitleOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    iconScale.value = withDelay(100, withSpring(1, { damping: 8, stiffness: 150 }));
+    heartBeat.value = withDelay(600, withRepeat(
+      withSequence(
+        withTiming(1.15, { duration: 400, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 400, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1.1, { duration: 350, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+      ), -1, false
+    ));
+    titleOpacity.value = withDelay(300, withTiming(1, { duration: 400 }));
+    subtitleOpacity.value = withDelay(500, withTiming(1, { duration: 400 }));
+  }, []);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value * heartBeat.value }],
+  }));
+  const titleStyle = useAnimatedStyle(() => ({ opacity: titleOpacity.value }));
+  const subtitleStyle = useAnimatedStyle(() => ({ opacity: subtitleOpacity.value }));
+
+  return (
+    <View style={styles.empty}>
+      <Animated.View style={[styles.emptyIconCircle, iconStyle]}>
+        <Ionicons name="heart-outline" size={40} color={colors.primaryLight} />
+      </Animated.View>
+      <Animated.Text style={[styles.emptyTitle, titleStyle]}>
+        {isAuthenticated ? 'Your wishlist is empty' : 'Login to view wishlist'}
+      </Animated.Text>
+      {isAuthenticated && (
+        <Animated.Text style={[styles.emptySubtext, subtitleStyle]}>
+          Save items you love here
+        </Animated.Text>
+      )}
+    </View>
+  );
+}
+
+function AnimatedHeartBtn({ onPress }: { onPress: () => void }) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  const handlePress = () => {
+    haptic.light();
+    scale.value = withSequence(
+      withSpring(1.4, { damping: 6, stiffness: 400 }),
+      withSpring(0.8, { damping: 6, stiffness: 400 }),
+      withSpring(1, { damping: 10, stiffness: 200 }),
+    );
+    onPress();
+  };
+
+  return (
+    <AnimatedPressable style={[styles.removeWishlistBtn, animStyle]} onPress={handlePress}>
+      <Ionicons name="heart-dislike-outline" size={16} color={colors.error} />
+    </AnimatedPressable>
+  );
+}
+
+function AnimatedMoveToCartBtn({ onPress }: { onPress: () => void }) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <AnimatedPressable
+      style={[styles.moveToCartBtn, animStyle]}
+      onPress={onPress}
+      onPressIn={() => { scale.value = withSpring(0.95, { damping: 15, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 12, stiffness: 200 }); }}
+    >
+      <Ionicons name="cart-outline" size={16} color={colors.white} />
+      <Text style={styles.moveToCartText}>Move to Cart</Text>
+    </AnimatedPressable>
+  );
+}
+
+function AnimatedWishlistCard({ item, onRemove, onMoveToCart, onAddToList, priceDrop, lists }: {
+  item: Product;
+  onRemove: () => void;
+  onMoveToCart: () => void;
+  onAddToList?: (listId: string) => void;
+  priceDrop?: number;
+  lists: WishlistFolder[];
+}) {
+  const cardScale = useSharedValue(1);
+  const cardStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }] }));
+
+  return (
+    <AnimatedPressable
+      style={[styles.wishlistCard, cardStyle]}
+      onPressIn={() => { cardScale.value = withSpring(0.97, { damping: 15, stiffness: 300 }); }}
+      onPressOut={() => { cardScale.value = withSpring(1, { damping: 12, stiffness: 200 }); }}
+      onPress={() => router.push(`/product/${item._id}`)}
+    >
+      <View style={styles.cardContent}>
+        {item.images?.[0] ? (
+          <Image source={{ uri: item.images[0] }} style={styles.cardImage} contentFit="cover" />
+        ) : (
+          <View style={[styles.cardImage, { backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }]}>
+            <Ionicons name="image-outline" size={24} color={colors.border} />
+          </View>
+        )}
+        <View style={styles.cardInfo}>
+          <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
+          <View style={styles.cardRating}>
+            <Ionicons name="star" size={12} color={colors.secondary} />
+            <Text style={styles.ratingText}>{(item.rating ?? 0).toFixed(1)}</Text>
+          </View>
+          <View style={styles.cardPriceRow}>
+            <Text style={styles.cardPrice}>₹{(item.price ?? 0).toLocaleString()}</Text>
+            {item.compareAt && <Text style={styles.cardCompare}>₹{item.compareAt.toLocaleString()}</Text>}
+          </View>
+          {priceDrop != null && priceDrop > 0 && (
+            <View style={styles.priceDropBadge}>
+              <Ionicons name="trending-down" size={12} color={colors.success} />
+              <Text style={styles.priceDropText}>Price dropped ₹{priceDrop.toLocaleString()}!</Text>
+            </View>
+          )}
+        </View>
+      </View>
+      <View style={styles.cardActions}>
+        <AnimatedMoveToCartBtn onPress={onMoveToCart} />
+        {lists.length > 0 && onAddToList && (
+          <TouchableOpacity
+            style={styles.addToListBtn}
+            onPress={() => {
+              Alert.alert('Add to List', 'Choose a list:', lists.map((l) => ({
+                text: l.name, onPress: () => onAddToList(l.id),
+              })).concat({ text: 'Cancel', onPress: () => {} }));
+            }}
+          >
+            <Ionicons name="folder-outline" size={16} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+        <AnimatedHeartBtn onPress={onRemove} />
+      </View>
+    </AnimatedPressable>
+  );
+}
 
 export default function WishlistScreen() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -123,8 +280,12 @@ export default function WishlistScreen() {
   }, [isAuthenticated]);
 
   const removeItem = async (productId: string) => {
-    await userApi.removeFromWishlist(productId);
-    setProducts((prev) => prev.filter((p) => p._id !== productId));
+    try {
+      await userApi.removeFromWishlist(productId);
+      setProducts((prev) => prev.filter((p) => p._id !== productId));
+    } catch {
+      showToast('error', 'Error', 'Failed to remove item from wishlist');
+    }
   };
 
   const moveToCart = async (product: Product) => {
@@ -162,15 +323,7 @@ export default function WishlistScreen() {
   }
 
   if (!isAuthenticated || products.length === 0) {
-    return (
-      <View style={styles.empty}>
-        <View style={styles.emptyIconCircle}>
-          <Ionicons name="heart-outline" size={40} color={colors.primaryLight} />
-        </View>
-        <Text style={styles.emptyTitle}>{isAuthenticated ? 'Your wishlist is empty' : 'Login to view wishlist'}</Text>
-        {isAuthenticated && <Text style={styles.emptySubtext}>Save items you love here</Text>}
-      </View>
-    );
+    return <AnimatedEmptyWishlist isAuthenticated={isAuthenticated} />;
   }
 
   const filteredProducts = activeList === 'all'
@@ -256,55 +409,14 @@ export default function WishlistScreen() {
         keyExtractor={(item) => item._id}
         contentContainerStyle={{ padding: spacing.md }}
         renderItem={({ item }) => (
-          <View style={styles.wishlistCard}>
-            <TouchableOpacity style={styles.cardContent} onPress={() => router.push(`/product/${item._id}`)}>
-              {item.images?.[0] ? (
-                <Image source={{ uri: item.images[0] }} style={styles.cardImage} contentFit="cover" />
-              ) : (
-                <View style={[styles.cardImage, { backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' }]}>
-                  <Ionicons name="image-outline" size={24} color={colors.border} />
-                </View>
-              )}
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-                <View style={styles.cardRating}>
-                  <Ionicons name="star" size={12} color={colors.secondary} />
-                  <Text style={styles.ratingText}>{(item.rating ?? 0).toFixed(1)}</Text>
-                </View>
-                <View style={styles.cardPriceRow}>
-                  <Text style={styles.cardPrice}>₹{(item.price ?? 0).toLocaleString()}</Text>
-                  {item.compareAt && <Text style={styles.cardCompare}>₹{item.compareAt.toLocaleString()}</Text>}
-                </View>
-                {priceDrops[item._id] && (
-                  <View style={styles.priceDropBadge}>
-                    <Ionicons name="trending-down" size={12} color={colors.success} />
-                    <Text style={styles.priceDropText}>Price dropped ₹{priceDrops[item._id].toLocaleString()}!</Text>
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-            <View style={styles.cardActions}>
-              <TouchableOpacity style={styles.moveToCartBtn} onPress={() => moveToCart(item)}>
-                <Ionicons name="cart-outline" size={16} color={colors.white} />
-                <Text style={styles.moveToCartText}>Move to Cart</Text>
-              </TouchableOpacity>
-              {lists.length > 0 && (
-                <TouchableOpacity
-                  style={styles.addToListBtn}
-                  onPress={() => {
-                    Alert.alert('Add to List', 'Choose a list:', lists.map((l) => ({
-                      text: l.name, onPress: () => addToList(l.id, item._id),
-                    })).concat({ text: 'Cancel', onPress: () => {} }));
-                  }}
-                >
-                  <Ionicons name="folder-outline" size={16} color={colors.primary} />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity style={styles.removeWishlistBtn} onPress={() => removeItem(item._id)}>
-                <Ionicons name="heart-dislike-outline" size={16} color={colors.error} />
-              </TouchableOpacity>
-            </View>
-          </View>
+          <AnimatedWishlistCard
+            item={item}
+            onRemove={() => removeItem(item._id)}
+            onMoveToCart={() => moveToCart(item)}
+            onAddToList={(listId) => addToList(listId, item._id)}
+            priceDrop={priceDrops[item._id]}
+            lists={lists}
+          />
         )}
       />
     </View>

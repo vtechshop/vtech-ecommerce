@@ -9,6 +9,7 @@ export interface User {
   avatar?: string;
   emailVerified: boolean;
   addresses: Address[];
+  referralCode?: string;
   createdAt: string;
 }
 
@@ -202,4 +203,5 @@ export interface AuthTokens {
 export interface LoginResponse {
   user: User;
   accessToken: string;
+  refreshToken?: string;
 }

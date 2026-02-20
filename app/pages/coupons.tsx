@@ -1,103 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Animated,
+  ActivityIndicator,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
+import { couponsApi, Coupon as ApiCoupon } from '../../src/api/content';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 import { useToast } from '../../src/components/ui/Toast';
 
-type CouponCategory = 'New User' | 'All Users' | 'Special';
-
-interface Coupon {
+interface CouponDisplay {
   code: string;
   title: string;
   description: string;
   terms: string;
-  category: CouponCategory;
+  category: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   bgColor: string;
 }
 
-const COUPONS: Coupon[] = [
-  {
-    code: 'SAVE10',
-    title: '10% Off',
-    description: 'Get 10% off on your next purchase. Valid on all products above ₹500.',
-    terms: 'Min. order ₹500. Max discount ₹200. Valid once per user.',
-    category: 'All Users',
-    icon: 'pricetag',
-    color: colors.primary,
-    bgColor: colors.primaryLightest,
-  },
-  {
-    code: 'FIRST50',
-    title: '₹50 Off First Order',
-    description: 'Flat ₹50 off on your very first order. Welcome to V-Tech!',
-    terms: 'Valid for new users only. No minimum order value.',
-    category: 'New User',
-    icon: 'gift',
-    color: colors.success,
-    bgColor: colors.successLight,
-  },
-  {
-    code: 'BUNDLE20',
-    title: '20% Off on 3+ Items',
-    description: 'Buy 3 or more items and get 20% off the entire order.',
-    terms: 'Add 3+ items to cart. Max discount ₹500. Cannot be combined.',
-    category: 'All Users',
-    icon: 'layers',
-    color: colors.info,
-    bgColor: colors.infoLight,
-  },
-  {
-    code: 'FREESHIP',
-    title: 'Free Shipping',
-    description: 'Enjoy free shipping on any order. No minimum purchase required.',
-    terms: 'Valid on standard delivery. Not valid for express shipping.',
-    category: 'All Users',
-    icon: 'car',
-    color: colors.secondary,
-    bgColor: colors.secondaryLighter,
-  },
-  {
-    code: 'FESTIVE15',
-    title: '15% Off Festival Sale',
-    description: 'Celebrate with 15% off during our special festival sale event.',
-    terms: 'Valid during festival period only. Max discount ₹300.',
-    category: 'Special',
-    icon: 'sparkles',
-    color: colors.accent,
-    bgColor: '#FDF2F8',
-  },
-];
+const CATEGORY_ICON_MAP: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bgColor: string }> = {
+  general: { icon: 'pricetag', color: colors.primary, bgColor: colors.primaryLightest },
+  first_order: { icon: 'gift', color: colors.success, bgColor: colors.successLight },
+  shipping: { icon: 'car', color: colors.secondary, bgColor: colors.secondaryLighter },
+  festival: { icon: 'sparkles', color: colors.accent, bgColor: '#FDF2F8' },
+  bundle: { icon: 'layers', color: colors.info, bgColor: colors.infoLight },
+};
 
-const CATEGORY_COLORS: Record<CouponCategory, { bg: string; text: string }> = {
+const CATEGORY_LABEL_MAP: Record<string, string> = {
+  general: 'All Users',
+  first_order: 'New User',
+  shipping: 'All Users',
+  festival: 'Special',
+  bundle: 'All Users',
+};
+
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   'New User': { bg: colors.successLight, text: colors.success },
   'All Users': { bg: colors.infoLight, text: colors.info },
   'Special': { bg: '#FDF2F8', text: colors.accent },
 };
 
+function mapApiCoupon(c: ApiCoupon): CouponDisplay {
+  const mapping = CATEGORY_ICON_MAP[c.category] || CATEGORY_ICON_MAP.general;
+  const title = c.type === 'percentage' ? `${c.value}% Off` : `₹${c.value} Off`;
+  return {
+    code: c.code,
+    title,
+    description: c.description,
+    terms: c.terms.join('. '),
+    category: CATEGORY_LABEL_MAP[c.category] || 'All Users',
+    icon: mapping.icon,
+    color: mapping.color,
+    bgColor: mapping.bgColor,
+  };
+}
+
+// Fallback coupons shown when API is empty/fails
+const FALLBACK_COUPONS: CouponDisplay[] = [
+  { code: 'SAVE10', title: '10% Off', description: 'Get 10% off on your next purchase. Valid on all products above ₹500.', terms: 'Min. order ₹500. Max discount ₹200. Valid once per user.', category: 'All Users', icon: 'pricetag', color: colors.primary, bgColor: colors.primaryLightest },
+  { code: 'FIRST50', title: '₹50 Off First Order', description: 'Flat ₹50 off on your very first order. Welcome to V-Tech!', terms: 'Valid for new users only. No minimum order value.', category: 'New User', icon: 'gift', color: colors.success, bgColor: colors.successLight },
+  { code: 'FREESHIP', title: 'Free Shipping', description: 'Enjoy free shipping on any order.', terms: 'Valid on standard delivery.', category: 'All Users', icon: 'car', color: colors.secondary, bgColor: colors.secondaryLighter },
+];
+
 export default function CouponsScreen() {
   const { showToast } = useToast();
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [coupons, setCoupons] = useState<CouponDisplay[]>(FALLBACK_COUPONS);
+  const [loading, setLoading] = useState(true);
 
-  const handleCopy = (code: string) => {
+  useEffect(() => {
+    couponsApi.getAll()
+      .then((res) => {
+        if (res.data.data && res.data.data.length > 0) {
+          setCoupons(res.data.data.map(mapApiCoupon));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleCopy = async (code: string) => {
+    await Clipboard.setStringAsync(code);
     setCopiedCode(code);
     showToast('success', 'Code Copied!', `${code} has been copied to clipboard.`);
 
-    // Reset the copied state after 2 seconds
     setTimeout(() => {
       setCopiedCode(null);
     }, 2000);
   };
 
-  const categories = ['All Users', 'New User', 'Special'] as CouponCategory[];
+  const categories = [...new Set(coupons.map((c) => c.category))];
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -112,9 +110,13 @@ export default function CouponsScreen() {
         </Text>
       </View>
 
+      {loading && (
+        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.xl }} />
+      )}
+
       {/* Coupons by Category */}
       {categories.map((category) => {
-        const categoryCoupons = COUPONS.filter((c) => c.category === category);
+        const categoryCoupons = coupons.filter((c) => c.category === category);
         if (categoryCoupons.length === 0) return null;
 
         return (
@@ -228,6 +230,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.primary,
     padding: spacing.xl,
+    paddingTop: spacing.xl + 60,
     alignItems: 'center',
     paddingBottom: spacing.xl + spacing.sm,
   },

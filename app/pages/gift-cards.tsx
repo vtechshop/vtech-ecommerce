@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,18 +12,31 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
+import { appConfigApi } from '../../src/api/content';
 
-const PREDEFINED_AMOUNTS = [250, 500, 1000, 2000, 5000];
+const FALLBACK_AMOUNTS = [250, 500, 1000, 2000, 5000];
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - spacing.lg * 2 - spacing.sm * 2) / 3;
 
 export default function GiftCardsScreen() {
+  const [amounts, setAmounts] = useState(FALLBACK_AMOUNTS);
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [recipientName, setRecipientName] = useState('');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [message, setMessage] = useState('');
   const [balanceCode, setBalanceCode] = useState('');
+
+  useEffect(() => {
+    appConfigApi.get()
+      .then((res) => {
+        const giftAmounts = res.data.data?.giftCardAmounts;
+        if (giftAmounts && giftAmounts.length > 0) {
+          setAmounts(giftAmounts);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const activeAmount = customAmount ? parseInt(customAmount, 10) : selectedAmount;
 
@@ -63,6 +76,9 @@ export default function GiftCardsScreen() {
         <Text style={styles.headerSubtitle}>
           The perfect gift for your loved ones
         </Text>
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, borderRadius: borderRadius.full, marginTop: spacing.sm }}>
+          <Text style={{ color: colors.white, fontSize: fontSize.xs, fontWeight: fontWeight.bold }}>COMING SOON</Text>
+        </View>
       </View>
 
       {/* Gift Card Preview */}
@@ -99,7 +115,7 @@ export default function GiftCardsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Select Amount</Text>
         <View style={styles.amountsGrid}>
-          {PREDEFINED_AMOUNTS.map((amount) => {
+          {amounts.map((amount) => {
             const isSelected = selectedAmount === amount && !customAmount;
             return (
               <TouchableOpacity
@@ -247,7 +263,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: colors.primary,
-    paddingVertical: spacing.xl,
+    paddingTop: spacing.xl + 60,
+    paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
   },

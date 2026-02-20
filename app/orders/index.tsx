@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator, ScrollView, TextInput } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ordersApi } from '../../src/api/orders';
@@ -178,17 +179,42 @@ export default function OrdersScreen() {
           }
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.card} onPress={() => router.push(`/orders/${item._id}` as any)}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.orderId}>#{item.orderId}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: statusColors[item.status] || colors.textSecondary }]}>
-                  <Text style={styles.statusText}>{item.status}</Text>
+              <View style={[styles.statusStripe, { backgroundColor: statusColors[item.status] || colors.textSecondary }]} />
+              <View style={styles.cardBody}>
+                <View style={styles.cardHeader}>
+                  <View>
+                    <Text style={styles.orderId}>#{item.orderId}</Text>
+                    <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+                  </View>
+                  <View style={[styles.statusBadge, { backgroundColor: statusColors[item.status] || colors.textSecondary }]}>
+                    <Text style={styles.statusText}>{item.status}</Text>
+                  </View>
                 </View>
-              </View>
-              <Text style={styles.date}>{new Date(item.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
-              <Text style={styles.items}>{item.items?.length ?? 0} item(s)</Text>
-              <View style={styles.cardFooter}>
-                <Text style={styles.total}>₹{(item.totals?.total ?? 0).toLocaleString()}</Text>
-                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                {/* Product thumbnails */}
+                <View style={styles.thumbRow}>
+                  {(item.items || []).slice(0, 3).map((oi, idx) => (
+                    oi.product?.images?.[0] ? (
+                      <Image key={idx} source={{ uri: oi.product.images[0] }} style={styles.thumb} />
+                    ) : (
+                      <View key={idx} style={[styles.thumb, styles.thumbPlaceholder]}>
+                        <Ionicons name="cube-outline" size={14} color={colors.border} />
+                      </View>
+                    )
+                  ))}
+                  {(item.items?.length ?? 0) > 3 && (
+                    <View style={[styles.thumb, styles.thumbMore]}>
+                      <Text style={styles.thumbMoreText}>+{(item.items?.length ?? 0) - 3}</Text>
+                    </View>
+                  )}
+                  <Text style={styles.items}>{item.items?.length ?? 0} item{(item.items?.length ?? 0) !== 1 ? 's' : ''}</Text>
+                </View>
+                <View style={styles.cardFooter}>
+                  <Text style={styles.total}>₹{(item.totals?.total ?? 0).toLocaleString()}</Text>
+                  <View style={styles.viewBtn}>
+                    <Text style={styles.viewBtnText}>View Details</Text>
+                    <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+                  </View>
+                </View>
               </View>
             </TouchableOpacity>
           )}
@@ -214,15 +240,24 @@ const styles = StyleSheet.create({
   emptyIconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primaryLightest, justifyContent: 'center', alignItems: 'center' },
   emptyTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, marginTop: spacing.lg },
   emptyText: { fontSize: fontSize.md, color: colors.textSecondary, marginTop: spacing.sm },
-  card: { backgroundColor: colors.white, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.md, ...shadows.md },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  card: { flexDirection: 'row', backgroundColor: colors.white, borderRadius: borderRadius.xl, marginBottom: spacing.md, overflow: 'hidden', ...shadows.md },
+  statusStripe: { width: 4, borderTopLeftRadius: borderRadius.xl, borderBottomLeftRadius: borderRadius.xl },
+  cardBody: { flex: 1, padding: spacing.md },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   orderId: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.text },
-  statusBadge: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: borderRadius.full },
-  statusText: { color: colors.white, fontSize: fontSize.xs, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
-  date: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.xs },
-  items: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
+  statusBadge: { paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs, borderRadius: borderRadius.full },
+  statusText: { color: colors.white, fontSize: 10, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
+  date: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
+  thumbRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: spacing.xs },
+  thumb: { width: 36, height: 36, borderRadius: borderRadius.md, backgroundColor: colors.surface },
+  thumbPlaceholder: { justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  thumbMore: { justifyContent: 'center', alignItems: 'center', backgroundColor: colors.primaryLightest },
+  thumbMoreText: { fontSize: 10, fontWeight: fontWeight.bold, color: colors.primary },
+  items: { fontSize: fontSize.xs, color: colors.textSecondary, marginLeft: spacing.xs },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm, paddingTop: spacing.sm, borderTopWidth: 1, borderTopColor: colors.surfaceDark },
   total: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.primary },
+  viewBtn: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  viewBtnText: { fontSize: fontSize.xs, color: colors.primary, fontWeight: fontWeight.semibold },
   retryBtn: { marginTop: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.primary, borderRadius: borderRadius.lg },
   retryText: { color: colors.white, fontWeight: fontWeight.semibold, fontSize: fontSize.md },
   footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },

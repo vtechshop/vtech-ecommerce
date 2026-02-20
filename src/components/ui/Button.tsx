@@ -1,7 +1,10 @@
 import React from 'react';
-import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { Pressable, Text, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, gradients, borderRadius, spacing, fontSize, fontWeight, letterSpacing, shadows } from '../../theme';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface ButtonProps {
   title: string;
@@ -15,7 +18,7 @@ interface ButtonProps {
   icon?: React.ReactNode;
 }
 
-const gradientMap: Record<string, readonly string[]> = {
+const gradientMap: Record<string, readonly [string, string, ...string[]]> = {
   primary: gradients.primary,
   secondary: gradients.secondary,
 };
@@ -31,6 +34,18 @@ export default function Button({
   textStyle,
   icon,
 }: ButtonProps) {
+  const scale = useSharedValue(1);
+  const scaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const onPressIn = () => {
+    scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+  };
+  const onPressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+  };
+
   const isGradient = variant in gradientMap;
   const sizeKey = `size_${size}` as keyof typeof styles;
   const textVariantKey = `text_${variant}` as keyof typeof styles;
@@ -47,44 +62,48 @@ export default function Button({
 
   if (isGradient) {
     return (
-      <TouchableOpacity
+      <AnimatedPressable
         onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
         disabled={disabled || loading}
-        activeOpacity={0.7}
         style={[
           styles.outerGradient,
+          scaleStyle,
           variant === 'primary' && shadows.colored(colors.primary),
           (disabled || loading) && styles.disabled,
           style,
         ]}
       >
         <LinearGradient
-          colors={gradientMap[variant] as string[]}
+          colors={gradientMap[variant]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={[styles.base, styles[sizeKey]]}
+          style={[styles.base, styles[sizeKey] as ViewStyle]}
         >
           {content}
         </LinearGradient>
-      </TouchableOpacity>
+      </AnimatedPressable>
     );
   }
 
   return (
-    <TouchableOpacity
+    <AnimatedPressable
       style={[
         styles.base,
-        styles[variant as keyof typeof styles],
-        styles[sizeKey],
+        styles[variant as keyof typeof styles] as ViewStyle,
+        styles[sizeKey] as ViewStyle,
+        scaleStyle,
         (disabled || loading) && styles.disabled,
         style,
       ]}
       onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
       disabled={disabled || loading}
-      activeOpacity={0.7}
     >
       {content}
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 

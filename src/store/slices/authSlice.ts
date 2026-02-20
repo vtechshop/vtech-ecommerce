@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as SecureStore from 'expo-secure-store';
 import { authApi } from '../../api/auth';
 import { User } from '../../types';
-import { TOKEN_KEYS } from '../../utils/constants';
+import { TOKEN_KEYS, SECURE_STORE_OPTIONS } from '../../utils/constants';
 
 interface AuthState {
   user: User | null;
@@ -14,7 +14,7 @@ interface AuthState {
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Start true so useAuthGuard waits for loadUser to complete
   error: null,
 };
 
@@ -23,14 +23,18 @@ export const login = createAsyncThunk(
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const response = await authApi.login(email, password);
-      const { user, accessToken } = response.data.data;
-      await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, accessToken);
-      // Refresh token is sent as httpOnly cookie — extract from Set-Cookie header
-      const setCookie = response.headers?.['set-cookie'];
-      if (setCookie) {
-        const match = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
-        const rtMatch = match.match(/refreshToken=([^;]+)/);
-        if (rtMatch) await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, rtMatch[1]);
+      const { user, accessToken, refreshToken } = response.data.data;
+      await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, accessToken, SECURE_STORE_OPTIONS);
+      // Save refresh token from response body (preferred) or Set-Cookie header (fallback)
+      if (refreshToken) {
+        await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, refreshToken, SECURE_STORE_OPTIONS);
+      } else {
+        const setCookie = response.headers?.['set-cookie'];
+        if (setCookie) {
+          const match = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
+          const rtMatch = match.match(/refreshToken=([^;]+)/);
+          if (rtMatch) await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, rtMatch[1], SECURE_STORE_OPTIONS);
+        }
       }
       return user;
     } catch (error: any) {
@@ -48,13 +52,17 @@ export const register = createAsyncThunk(
   async (userData: { name: string; email: string; password: string; phone?: string }, { rejectWithValue }) => {
     try {
       const response = await authApi.register(userData);
-      const { user, accessToken } = response.data.data;
-      await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, accessToken);
-      const setCookie = response.headers?.['set-cookie'];
-      if (setCookie) {
-        const match = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
-        const rtMatch = match.match(/refreshToken=([^;]+)/);
-        if (rtMatch) await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, rtMatch[1]);
+      const { user, accessToken, refreshToken } = response.data.data;
+      await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, accessToken, SECURE_STORE_OPTIONS);
+      if (refreshToken) {
+        await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, refreshToken, SECURE_STORE_OPTIONS);
+      } else {
+        const setCookie = response.headers?.['set-cookie'];
+        if (setCookie) {
+          const match = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
+          const rtMatch = match.match(/refreshToken=([^;]+)/);
+          if (rtMatch) await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, rtMatch[1], SECURE_STORE_OPTIONS);
+        }
       }
       return user;
     } catch (error: any) {

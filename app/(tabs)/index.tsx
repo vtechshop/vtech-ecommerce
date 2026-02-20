@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, FlatList, TouchableOpacity, RefreshControl, Dimensions, Pressable } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Dimensions, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -51,6 +51,25 @@ const quickActions = [
   { icon: 'star' as const, label: 'Top Rated', gradient: gradients.secondary, params: { sort: '-rating', title: 'Top Rated' } },
   { icon: 'cube' as const, label: 'New In', gradient: gradients.success, params: { sort: '-createdAt', title: 'New Arrivals' } },
 ];
+
+function QuickActionBtn({ action }: { action: typeof quickActions[number] }) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <AnimatedPressable
+      style={[styles.quickAction, animStyle]}
+      onPress={() => router.push({ pathname: '/product/list' as any, params: action.params })}
+      onPressIn={() => { scale.value = withSpring(0.9, { damping: 15, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 12, stiffness: 200 }); }}
+    >
+      <LinearGradient colors={action.gradient as any} style={styles.quickIconBg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+        <Ionicons name={action.icon} size={22} color={colors.white} />
+      </LinearGradient>
+      <Text style={styles.quickLabel}>{action.label}</Text>
+    </AnimatedPressable>
+  );
+}
 
 export default function HomeScreen() {
   const [featured, setFeatured] = useState<Product[]>([]);
@@ -148,6 +167,25 @@ export default function HomeScreen() {
         <HomeBanner />
       </AnimatedSection>
 
+      {/* Trust Badges */}
+      <AnimatedSection delay={50} style={{ paddingHorizontal: spacing.sm, marginBottom: spacing.md }}>
+        <View style={styles.trustStrip}>
+          {([
+            { icon: 'car-outline' as const, label: 'Free\nDelivery', clr: '#10B981' },
+            { icon: 'shield-checkmark-outline' as const, label: 'Genuine\nProducts', clr: '#6366F1' },
+            { icon: 'arrow-undo-outline' as const, label: 'Easy\nReturns', clr: '#F59E0B' },
+            { icon: 'lock-closed-outline' as const, label: 'Secure\nPayment', clr: '#3B82F6' },
+          ]).map((b) => (
+            <View key={b.label} style={styles.trustBadge}>
+              <View style={[styles.trustIconCircle, { backgroundColor: b.clr + '15' }]}>
+                <Ionicons name={b.icon} size={18} color={b.clr} />
+              </View>
+              <Text style={styles.trustLabel}>{b.label}</Text>
+            </View>
+          ))}
+        </View>
+      </AnimatedSection>
+
       {error && (
         <TouchableOpacity style={styles.errorBanner} onPress={() => { setLoading(true); loadData(); }}>
           <Ionicons name="cloud-offline-outline" size={20} color={colors.white} />
@@ -160,16 +198,7 @@ export default function HomeScreen() {
       <AnimatedSection delay={100} style={{ paddingHorizontal: spacing.md, marginBottom: spacing.lg }}>
         <View style={styles.quickGrid}>
           {quickActions.map((action) => (
-            <TouchableOpacity
-              key={action.label}
-              style={styles.quickAction}
-              onPress={() => router.push({ pathname: '/product/list' as any, params: action.params })}
-            >
-              <LinearGradient colors={action.gradient as any} style={styles.quickIconBg} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                <Ionicons name={action.icon} size={22} color={colors.white} />
-              </LinearGradient>
-              <Text style={styles.quickLabel}>{action.label}</Text>
-            </TouchableOpacity>
+            <QuickActionBtn key={action.label} action={action} />
           ))}
         </View>
       </AnimatedSection>
@@ -178,13 +207,10 @@ export default function HomeScreen() {
       {categories.length > 0 && (
         <AnimatedSection delay={200} style={styles.section}>
           <SectionHeader title="Categories" />
-          <FlatList
-            data={categories}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item._id}
-            renderItem={({ item, index }) => (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+            {categories.map((item, index) => (
               <TouchableOpacity
+                key={item._id}
                 style={[styles.categoryCard, { backgroundColor: categoryColors[index % categoryColors.length] }]}
                 onPress={() => router.push({ pathname: '/product/list' as any, params: { category: item._id, title: item.name } })}
               >
@@ -197,8 +223,8 @@ export default function HomeScreen() {
                 )}
                 <Text style={styles.categoryName} numberOfLines={1}>{item.name}</Text>
               </TouchableOpacity>
-            )}
-          />
+            ))}
+          </ScrollView>
         </AnimatedSection>
       )}
 
@@ -215,17 +241,13 @@ export default function HomeScreen() {
             </View>
             <CountdownTimer endTime={getFlashSaleEndTime()} />
           </View>
-          <FlatList
-            data={deals}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => `deal-${item._id}`}
-            renderItem={({ item, index }) => (
-              <View style={{ marginRight: spacing.md }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+            {deals.map((item, index) => (
+              <View key={`deal-${item._id}`} style={{ marginRight: spacing.md }}>
                 <AnimatedProductCard product={item} index={index} />
               </View>
-            )}
-          />
+            ))}
+          </ScrollView>
         </AnimatedSection>
       )}
 
@@ -237,17 +259,13 @@ export default function HomeScreen() {
           onAction={() => router.push({ pathname: '/product/list' as any, params: { featured: 'true' } })}
         />
         {featured.length > 0 ? (
-          <FlatList
-            data={featured.slice(0, 6)}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item._id}
-            renderItem={({ item, index }) => (
-              <View style={{ marginRight: spacing.md }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+            {featured.slice(0, 6).map((item, index) => (
+              <View key={item._id} style={{ marginRight: spacing.md }}>
                 <AnimatedProductCard product={item} index={index} />
               </View>
-            )}
-          />
+            ))}
+          </ScrollView>
         ) : !loading && !error ? (
           <View style={styles.emptySection}>
             <View style={styles.emptyIconCircle}>
@@ -266,17 +284,13 @@ export default function HomeScreen() {
             actionText="View All"
             onAction={() => router.push({ pathname: '/product/list' as any, params: { sort: '-reviewCount', title: 'Trending' } })}
           />
-          <FlatList
-            data={trending.slice(0, 6)}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => `trend-${item._id}`}
-            renderItem={({ item, index }) => (
-              <View style={{ marginRight: spacing.md }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+            {trending.slice(0, 6).map((item, index) => (
+              <View key={`trend-${item._id}`} style={{ marginRight: spacing.md }}>
                 <AnimatedProductCard product={item} index={index} />
               </View>
-            )}
-          />
+            ))}
+          </ScrollView>
         </AnimatedSection>
       )}
 
@@ -284,13 +298,10 @@ export default function HomeScreen() {
       {recentlyViewed.length > 0 && (
         <AnimatedSection delay={600} style={styles.section}>
           <SectionHeader title="Recently Viewed" />
-          <FlatList
-            data={recentlyViewed.slice(0, 8)}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => `rv-${item._id}`}
-            renderItem={({ item }) => (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+            {recentlyViewed.slice(0, 8).map((item) => (
               <TouchableOpacity
+                key={`rv-${item._id}`}
                 style={styles.recentCard}
                 onPress={() => router.push(`/product/${item._id}`)}
               >
@@ -304,8 +315,8 @@ export default function HomeScreen() {
                 <Text style={styles.recentTitle} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.recentPrice}>₹{(item.price ?? 0).toLocaleString()}</Text>
               </TouchableOpacity>
-            )}
-          />
+            ))}
+          </ScrollView>
         </AnimatedSection>
       )}
 
@@ -385,4 +396,9 @@ const styles = StyleSheet.create({
   emptySection: { alignItems: 'center', paddingVertical: spacing.xl },
   emptyIconCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primaryLightest, justifyContent: 'center', alignItems: 'center' },
   emptySectionText: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.sm },
+  // Trust badges
+  trustStrip: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: colors.white, borderRadius: borderRadius.xl, paddingVertical: spacing.sm + 2, marginHorizontal: spacing.xs, ...shadows.sm },
+  trustBadge: { alignItems: 'center', flex: 1 },
+  trustIconCircle: { width: 34, height: 34, borderRadius: 17, justifyContent: 'center', alignItems: 'center' },
+  trustLabel: { fontSize: 9, color: colors.textSecondary, fontWeight: fontWeight.semibold, textAlign: 'center', marginTop: 3, lineHeight: 12 },
 });

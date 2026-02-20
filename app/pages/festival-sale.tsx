@@ -19,12 +19,13 @@ import { productsApi } from '../../src/api/products';
 import { Product } from '../../src/types';
 import { useAppDispatch } from '../../src/store';
 import { addToCart } from '../../src/store/slices/cartSlice';
+import { appConfigApi } from '../../src/api/content';
 
 const { width } = Dimensions.get('window');
 const STRIP_CARD_WIDTH = width * 0.42;
 
-// Sale ends 7 days from now
-const SALE_END_DATE = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+// Fallback: Sale ends 7 days from now
+const DEFAULT_SALE_END = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
 interface CategoryStrip {
   key: string;
@@ -34,7 +35,7 @@ interface CategoryStrip {
   gradientColors: readonly [string, string, ...string[]];
 }
 
-const CATEGORY_STRIPS: CategoryStrip[] = [
+const FALLBACK_STRIPS: CategoryStrip[] = [
   {
     key: 'electronics',
     title: 'Electronics',
@@ -58,6 +59,13 @@ const CATEGORY_STRIPS: CategoryStrip[] = [
   },
 ];
 
+const GRADIENT_MAP: Record<string, readonly [string, string, ...string[]]> = {
+  info: gradients.info,
+  purple: gradients.purple,
+  sunset: gradients.sunset,
+  primary: gradients.primary,
+};
+
 function formatCountdownUnit(value: number): string {
   return String(value).padStart(2, '0');
 }
@@ -73,6 +81,31 @@ export default function FestivalSaleScreen() {
   const [loadingCategories, setLoadingCategories] = useState<Record<string, boolean>>({});
   const [now, setNow] = useState(Date.now());
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [saleTitle, setSaleTitle] = useState('Festival Sale');
+  const [saleEndDate, setSaleEndDate] = useState(DEFAULT_SALE_END);
+  const [categoryStrips, setCategoryStrips] = useState<CategoryStrip[]>(FALLBACK_STRIPS);
+
+  // Fetch festival sale config from admin
+  useEffect(() => {
+    appConfigApi.get()
+      .then((res) => {
+        const config = res.data.data?.festivalSale;
+        if (config?.isActive) {
+          if (config.title) setSaleTitle(config.title);
+          if (config.endDate) setSaleEndDate(new Date(config.endDate));
+          if (config.categories && config.categories.length > 0) {
+            setCategoryStrips(config.categories.map((c) => ({
+              key: c.name.toLowerCase().replace(/\s/g, '-'),
+              title: c.name,
+              icon: (c.icon || 'pricetag-outline') as keyof typeof Ionicons.glyphMap,
+              searchQuery: c.searchQuery,
+              gradientColors: GRADIENT_MAP[c.gradient?.[0] || 'info'] || gradients.info,
+            })));
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Countdown timer
   useEffect(() => {
@@ -86,7 +119,7 @@ export default function FestivalSaleScreen() {
 
   // Fetch products for each category strip
   useEffect(() => {
-    CATEGORY_STRIPS.forEach(async (strip) => {
+    categoryStrips.forEach(async (strip) => {
       setLoadingCategories((prev) => ({ ...prev, [strip.key]: true }));
       try {
         const response = await productsApi.search(strip.searchQuery);
@@ -96,13 +129,12 @@ export default function FestivalSaleScreen() {
           [strip.key]: Array.isArray(data) ? data : [],
         }));
       } catch (error) {
-        console.error(`Failed to fetch ${strip.title} products:`, error);
         setCategoryProducts((prev) => ({ ...prev, [strip.key]: [] }));
       } finally {
         setLoadingCategories((prev) => ({ ...prev, [strip.key]: false }));
       }
     });
-  }, []);
+  }, [categoryStrips]);
 
   const handleAddToCart = useCallback(
     (product: Product) => {
@@ -112,7 +144,7 @@ export default function FestivalSaleScreen() {
   );
 
   // Calculate countdown
-  const remaining = SALE_END_DATE.getTime() - now;
+  const remaining = saleEndDate.getTime() - now;
   const days = Math.max(0, Math.floor(remaining / (24 * 60 * 60 * 1000)));
   const hours = Math.max(0, Math.floor((remaining % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)));
   const minutes = Math.max(0, Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000)));
@@ -193,7 +225,7 @@ export default function FestivalSaleScreen() {
             <Ionicons name="star" size={20} color="#FCD34D" style={{ marginLeft: 6 }} />
           </View>
           <Text style={styles.heroTitle}>V-Tech</Text>
-          <Text style={styles.heroTitleAccent}>Festival Sale</Text>
+          <Text style={styles.heroTitleAccent}>{saleTitle}</Text>
           <Text style={styles.heroSubtitle}>
             Massive discounts across all categories
           </Text>
@@ -253,7 +285,7 @@ export default function FestivalSaleScreen() {
       </View>
 
       {/* Category-wise Deal Strips */}
-      {CATEGORY_STRIPS.map((strip) => {
+      {categoryStrips.map((strip) => {
         const items = categoryProducts[strip.key] || [];
         const isLoading = loadingCategories[strip.key];
 
@@ -355,7 +387,7 @@ const styles = StyleSheet.create({
   // Hero Banner
   heroBanner: {
     padding: spacing.xl,
-    paddingTop: spacing.xl + spacing.md,
+    paddingTop: spacing.xl + spacing.md + 56,
     paddingBottom: spacing.xl + spacing.sm,
     position: 'relative',
     overflow: 'hidden',

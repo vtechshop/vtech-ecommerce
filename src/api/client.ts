@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL, TOKEN_KEYS } from '../utils/constants';
+import { API_BASE_URL, TOKEN_KEYS, SECURE_STORE_OPTIONS } from '../utils/constants';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -76,14 +76,14 @@ apiClient.interceptors.response.use(
         );
 
         const accessToken = refreshResponse.data.data.accessToken;
-        await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, accessToken);
+        await SecureStore.setItemAsync(TOKEN_KEYS.ACCESS, accessToken, SECURE_STORE_OPTIONS);
 
         // Extract new refresh token from Set-Cookie if present
         const setCookie = refreshResponse.headers?.['set-cookie'];
         if (setCookie) {
           const cookieStr = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
           const rtMatch = cookieStr.match(/refreshToken=([^;]+)/);
-          if (rtMatch) await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, rtMatch[1]);
+          if (rtMatch) await SecureStore.setItemAsync(TOKEN_KEYS.REFRESH, rtMatch[1], SECURE_STORE_OPTIONS);
         }
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;

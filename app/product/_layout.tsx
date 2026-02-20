@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { colors, fontWeight, letterSpacing } from '../../src/theme';
+import { colors, fontWeight } from '../../src/theme';
 
 export default function ProductLayout() {
   return (
@@ -8,7 +8,7 @@ export default function ProductLayout() {
         headerStyle: { backgroundColor: colors.white },
         headerShadowVisible: false,
         headerTintColor: colors.text,
-        headerTitleStyle: { fontWeight: fontWeight.bold, letterSpacing: letterSpacing.tight },
+        headerTitleStyle: { fontWeight: fontWeight.bold },
         contentStyle: { backgroundColor: colors.background },
       }}
     >

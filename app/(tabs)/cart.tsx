@@ -1,8 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withDelay,
+  withTiming,
+  withRepeat,
+  Easing,
+} from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppDispatch, useAppSelector } from '../../src/store';
 import { fetchCart, updateCartItem, removeCartItem, applyCoupon, addToCart } from '../../src/store/slices/cartSlice';
@@ -18,6 +28,91 @@ import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpa
 
 const FREE_SHIPPING_THRESHOLD = 999;
 const SAVED_KEY = '@vtech_saved_for_later';
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+function AnimatedEmptyCart() {
+  const iconScale = useSharedValue(0);
+  const iconFloat = useSharedValue(0);
+  const titleOpacity = useSharedValue(0);
+  const subtitleOpacity = useSharedValue(0);
+  const btnOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    iconScale.value = withDelay(100, withSpring(1, { damping: 8, stiffness: 150 }));
+    iconFloat.value = withDelay(600, withRepeat(
+      withSequence(
+        withTiming(-8, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+      ), -1, true
+    ));
+    titleOpacity.value = withDelay(300, withTiming(1, { duration: 400 }));
+    subtitleOpacity.value = withDelay(500, withTiming(1, { duration: 400 }));
+    btnOpacity.value = withDelay(700, withTiming(1, { duration: 400 }));
+  }, []);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value }, { translateY: iconFloat.value }],
+  }));
+  const titleStyle = useAnimatedStyle(() => ({ opacity: titleOpacity.value }));
+  const subtitleStyle = useAnimatedStyle(() => ({ opacity: subtitleOpacity.value }));
+  const btnStyle = useAnimatedStyle(() => ({ opacity: btnOpacity.value }));
+
+  return (
+    <View style={styles.empty}>
+      <Animated.View style={[styles.emptyIconCircle, iconStyle]}>
+        <Ionicons name="cart-outline" size={40} color={colors.primaryLight} />
+      </Animated.View>
+      <Animated.Text style={[styles.emptyTitle, titleStyle]}>Your cart is empty</Animated.Text>
+      <Animated.Text style={[styles.emptyText, subtitleStyle]}>Browse products and add items to your cart</Animated.Text>
+      <Animated.View style={btnStyle}>
+        <Button title="Shop Now" onPress={() => router.push('/(tabs)')} style={{ marginTop: spacing.lg }} />
+      </Animated.View>
+    </View>
+  );
+}
+
+function AnimatedQtyRow({ quantity, onDecrease, onIncrease }: { quantity: number; onDecrease: () => void; onIncrease: () => void }) {
+  const qtyScale = useSharedValue(1);
+  const prevQty = useRef(quantity);
+  const minusScale = useSharedValue(1);
+  const plusScale = useSharedValue(1);
+
+  useEffect(() => {
+    if (prevQty.current !== quantity) {
+      qtyScale.value = withSequence(
+        withSpring(1.3, { damping: 8, stiffness: 400 }),
+        withSpring(1, { damping: 12, stiffness: 200 })
+      );
+      prevQty.current = quantity;
+    }
+  }, [quantity]);
+
+  const qtyStyle = useAnimatedStyle(() => ({ transform: [{ scale: qtyScale.value }] }));
+  const minusStyle = useAnimatedStyle(() => ({ transform: [{ scale: minusScale.value }] }));
+  const plusStyle = useAnimatedStyle(() => ({ transform: [{ scale: plusScale.value }] }));
+
+  return (
+    <View style={styles.qtyRow}>
+      <AnimatedPressable
+        style={[styles.qtyBtn, minusStyle]}
+        onPressIn={() => { minusScale.value = withSpring(0.85, { damping: 15, stiffness: 300 }); }}
+        onPressOut={() => { minusScale.value = withSpring(1, { damping: 15, stiffness: 300 }); }}
+        onPress={() => { haptic.light(); onDecrease(); }}
+      >
+        <Ionicons name="remove" size={18} color={colors.primary} />
+      </AnimatedPressable>
+      <Animated.Text style={[styles.qtyText, qtyStyle]}>{quantity}</Animated.Text>
+      <AnimatedPressable
+        style={[styles.qtyBtn, plusStyle]}
+        onPressIn={() => { plusScale.value = withSpring(0.85, { damping: 15, stiffness: 300 }); }}
+        onPressOut={() => { plusScale.value = withSpring(1, { damping: 15, stiffness: 300 }); }}
+        onPress={() => { haptic.light(); onIncrease(); }}
+      >
+        <Ionicons name="add" size={18} color={colors.primary} />
+      </AnimatedPressable>
+    </View>
+  );
+}
 
 export default function CartScreen() {
   const dispatch = useAppDispatch();
@@ -79,14 +174,7 @@ export default function CartScreen() {
   if (!cart || cart.items.length === 0) {
     return (
       <View style={styles.container}>
-        <View style={styles.empty}>
-          <View style={styles.emptyIconCircle}>
-            <Ionicons name="cart-outline" size={40} color={colors.primaryLight} />
-          </View>
-          <Text style={styles.emptyTitle}>Your cart is empty</Text>
-          <Text style={styles.emptyText}>Browse products and add items to your cart</Text>
-          <Button title="Shop Now" onPress={() => router.push('/(tabs)')} style={{ marginTop: spacing.lg }} />
-        </View>
+        <AnimatedEmptyCart />
         {/* Recommended even when cart is empty */}
         {recommended.length > 0 && (
           <View style={styles.recommendSection}>
@@ -125,21 +213,11 @@ export default function CartScreen() {
       <View style={styles.itemInfo}>
         <Text style={styles.itemTitle} numberOfLines={2}>{item.product?.title || 'Product'}</Text>
         <Text style={styles.itemPrice}>₹{(item.price ?? 0).toLocaleString()}</Text>
-        <View style={styles.qtyRow}>
-          <TouchableOpacity
-            style={styles.qtyBtn}
-            onPress={() => item.quantity > 1 && dispatch(updateCartItem({ itemId: item._id, quantity: item.quantity - 1 }))}
-          >
-            <Ionicons name="remove" size={18} color={colors.primary} />
-          </TouchableOpacity>
-          <Text style={styles.qtyText}>{item.quantity}</Text>
-          <TouchableOpacity
-            style={styles.qtyBtn}
-            onPress={() => dispatch(updateCartItem({ itemId: item._id, quantity: item.quantity + 1 }))}
-          >
-            <Ionicons name="add" size={18} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
+        <AnimatedQtyRow
+          quantity={item.quantity}
+          onDecrease={() => item.quantity > 1 && dispatch(updateCartItem({ itemId: item._id, quantity: item.quantity - 1 }))}
+          onIncrease={() => dispatch(updateCartItem({ itemId: item._id, quantity: item.quantity + 1 }))}
+        />
         {/* Save for Later + Remove */}
         <View style={styles.itemActions}>
           <TouchableOpacity style={styles.saveBtn} onPress={() => saveLater(item)}>

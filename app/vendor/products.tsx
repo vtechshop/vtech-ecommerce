@@ -67,7 +67,7 @@ export default function VendorProducts() {
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl }}>
       <Ionicons name="alert-circle-outline" size={60} color={colors.error} />
       <Text style={{ fontSize: fontSize.md, color: colors.error, marginTop: spacing.md, textAlign: 'center' }}>{error}</Text>
-      <TouchableOpacity onPress={loadData} style={{ marginTop: spacing.md, padding: spacing.sm }}>
+      <TouchableOpacity onPress={() => loadData()} style={{ marginTop: spacing.md, padding: spacing.sm }}>
         <Text style={{ color: colors.primary, fontSize: fontSize.md, fontWeight: '600' }}>Retry</Text>
       </TouchableOpacity>
     </View>

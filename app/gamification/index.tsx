@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 import { haptic } from '../../src/utils/haptics';
+import { userApi } from '../../src/api/user';
 
 interface GameCard {
   id: string;
@@ -55,6 +56,18 @@ const GAME_CARDS: GameCard[] = [
 
 export default function GamificationScreen() {
   const router = useRouter();
+  const [coins, setCoins] = useState<number | null>(null);
+  const [streakDays, setStreakDays] = useState(0);
+
+  useEffect(() => {
+    userApi.getLoyaltyAccount()
+      .then((res) => {
+        const data = res.data.data as any;
+        if (data?.balance != null) setCoins(data.balance);
+        if (data?.streakDays != null) setStreakDays(data.streakDays);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleCardPress = (card: GameCard) => {
     if (card.comingSoon) return;
@@ -84,7 +97,7 @@ export default function GamificationScreen() {
         </View>
         <View style={styles.coinBadge}>
           <Ionicons name="diamond" size={16} color={colors.secondary} />
-          <Text style={styles.coinText}>150 coins</Text>
+          <Text style={styles.coinText}>{coins != null ? `${coins} coins` : '-- coins'}</Text>
         </View>
       </LinearGradient>
 
@@ -141,19 +154,21 @@ export default function GamificationScreen() {
               <View
                 style={[
                   styles.streakDot,
-                  index < 3 && styles.streakDotCompleted,
-                  index === 3 && styles.streakDotCurrent,
+                  index < streakDays && styles.streakDotCompleted,
+                  index === streakDays && styles.streakDotCurrent,
                 ]}
               >
-                {index < 3 && <Ionicons name="checkmark" size={12} color={colors.white} />}
+                {index < streakDays && <Ionicons name="checkmark" size={12} color={colors.white} />}
               </View>
-              <Text style={[styles.streakDayText, index === 3 && styles.streakDayTextCurrent]}>
+              <Text style={[styles.streakDayText, index === streakDays && styles.streakDayTextCurrent]}>
                 {day}
               </Text>
             </View>
           ))}
         </View>
-        <Text style={styles.streakInfo}>3-day streak! Keep going for bonus rewards.</Text>
+        <Text style={styles.streakInfo}>
+          {streakDays > 0 ? `${streakDays}-day streak! Keep going for bonus rewards.` : 'Start your streak today!'}
+        </Text>
       </View>
 
       <View style={{ height: spacing.xxl }} />

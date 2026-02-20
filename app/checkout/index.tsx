@@ -1,9 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput, ActivityIndicator, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import * as Location from 'expo-location';
 let RazorpayCheckout: any = null;
 try {
@@ -30,6 +38,58 @@ const DELIVERY_OPTIONS: { key: DeliveryMethod; label: string; desc: string; pric
   { key: 'standard', label: 'Standard Delivery', desc: 'Free shipping on all orders', price: 0, days: '5-7 business days', icon: 'bicycle-outline' },
   { key: 'express', label: 'Express Delivery', desc: 'Priority handling & faster shipping', price: 99, days: '2-3 business days', icon: 'rocket-outline' },
 ];
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+function AnimatedProgressDot({ step, index }: { step: string; index: number }) {
+  const dotScale = useSharedValue(0);
+  const lineWidth = useSharedValue(0);
+
+  useEffect(() => {
+    dotScale.value = withDelay(index * 200, withSpring(1, { damping: 10, stiffness: 200 }));
+    if (index < 2) {
+      lineWidth.value = withDelay(index * 200 + 100, withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }));
+    }
+  }, []);
+
+  const dotStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: dotScale.value }],
+  }));
+
+  const lineStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: lineWidth.value }],
+  }));
+
+  return (
+    <React.Fragment>
+      <View style={styles.progressStep}>
+        <Animated.View style={[styles.progressDot, styles.progressDotActive, dotStyle]}>
+          <Text style={styles.progressDotText}>{index + 1}</Text>
+        </Animated.View>
+        <Text style={[styles.progressLabel, styles.progressLabelActive]}>{step}</Text>
+      </View>
+      {index < 2 && <Animated.View style={[styles.progressLine, styles.progressLineActive, lineStyle]} />}
+    </React.Fragment>
+  );
+}
+
+function AnimatedOptionCard({ children, isSelected, onPress }: {
+  children: React.ReactNode; isSelected: boolean; onPress: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <AnimatedPressable
+      style={[styles.optionCard, isSelected && styles.optionSelected, animStyle]}
+      onPress={onPress}
+      onPressIn={() => { scale.value = withSpring(0.97, { damping: 15, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 12, stiffness: 200 }); }}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
 
 export default function CheckoutScreen() {
   const { cart } = useAppSelector((s) => s.cart);
@@ -128,8 +188,8 @@ export default function CheckoutScreen() {
 
     if (!RazorpayCheckout) {
       Alert.alert(
-        'Dev Build Required',
-        'Payment requires a production build. Razorpay is not available in Expo Go.',
+        'Payment Unavailable',
+        'Payment is currently unavailable. Please update the app and try again.',
       );
       return;
     }
@@ -204,15 +264,7 @@ export default function CheckoutScreen() {
         {/* Checkout Progress */}
         <View style={styles.progressRow}>
           {['Address', 'Delivery', 'Payment'].map((step, i) => (
-            <React.Fragment key={step}>
-              <View style={styles.progressStep}>
-                <View style={[styles.progressDot, styles.progressDotActive]}>
-                  <Text style={styles.progressDotText}>{i + 1}</Text>
-                </View>
-                <Text style={[styles.progressLabel, styles.progressLabelActive]}>{step}</Text>
-              </View>
-              {i < 2 && <View style={[styles.progressLine, styles.progressLineActive]} />}
-            </React.Fragment>
+            <AnimatedProgressDot key={step} step={step} index={i} />
           ))}
         </View>
 
@@ -315,9 +367,9 @@ export default function CheckoutScreen() {
         </View>
 
         {DELIVERY_OPTIONS.map((opt) => (
-          <TouchableOpacity
+          <AnimatedOptionCard
             key={opt.key}
-            style={[styles.optionCard, deliveryMethod === opt.key && styles.optionSelected]}
+            isSelected={deliveryMethod === opt.key}
             onPress={() => setDeliveryMethod(opt.key)}
           >
             <View style={styles.radioOuter}>
@@ -339,7 +391,7 @@ export default function CheckoutScreen() {
                 <Text style={styles.optionDays}>{opt.days}</Text>
               </View>
             </View>
-          </TouchableOpacity>
+          </AnimatedOptionCard>
         ))}
 
         {/* Payment Info */}

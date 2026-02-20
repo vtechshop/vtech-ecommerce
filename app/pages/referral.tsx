@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   Share,
 } from 'react-native';
-import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 import { haptic } from '../../src/utils/haptics';
+import { appConfigApi } from '../../src/api/content';
 
 interface ReferralEntry {
   id: string;
@@ -22,42 +22,62 @@ interface ReferralEntry {
   reward: number;
 }
 
-const MOCK_REFERRALS: ReferralEntry[] = [
-  { id: '1', name: 'Rahul Sharma', date: '10 Feb 2026', status: 'completed', reward: 100 },
-  { id: '2', name: 'Priya Patel', date: '05 Feb 2026', status: 'completed', reward: 100 },
-  { id: '3', name: 'Amit Kumar', date: '01 Feb 2026', status: 'pending', reward: 100 },
-];
+// Referral history will be populated from API when available
 
-const STEPS = [
-  {
-    icon: 'share-social' as const,
-    title: 'Share Code',
-    description: 'Share your unique referral code with friends',
-    color: colors.primary,
-    bgColor: colors.primaryLightest,
-  },
-  {
-    icon: 'person-add' as const,
-    title: 'Friend Signs Up',
-    description: 'Your friend registers using your code',
-    color: colors.info,
-    bgColor: colors.infoLight,
-  },
-  {
-    icon: 'gift' as const,
-    title: 'Both Earn \u20B9100',
-    description: 'You and your friend both get \u20B9100 credit!',
-    color: colors.success,
-    bgColor: colors.successLight,
-  },
-];
+function getSteps(reward: number) {
+  return [
+    {
+      icon: 'share-social' as const,
+      title: 'Share Code',
+      description: 'Share your unique referral code with friends',
+      color: colors.primary,
+      bgColor: colors.primaryLightest,
+    },
+    {
+      icon: 'person-add' as const,
+      title: 'Friend Signs Up',
+      description: 'Your friend registers using your code',
+      color: colors.info,
+      bgColor: colors.infoLight,
+    },
+    {
+      icon: 'gift' as const,
+      title: `Both Earn \u20B9${reward}`,
+      description: `You and your friend both get \u20B9${reward} credit!`,
+      color: colors.success,
+      bgColor: colors.successLight,
+    },
+  ];
+}
 
 export default function ReferralScreen() {
   const [copied, setCopied] = useState(false);
+  const [rewardAmount, setRewardAmount] = useState(100);
 
-  const referralCode = useMemo(() => {
-    const digits = Math.floor(1000 + Math.random() * 9000);
-    return `VTECH${digits}`;
+  useEffect(() => {
+    appConfigApi.get()
+      .then((res) => {
+        const config = res.data.data?.referralConfig;
+        if (config?.isActive && config.referrerReward) {
+          setRewardAmount(config.referrerReward);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const [referralCode, setReferralCode] = useState('LOADING...');
+
+  useEffect(() => {
+    // Try to get user's actual referral code from API
+    import('../../src/api/user').then(({ userApi }) => {
+      userApi.getProfile().then((res) => {
+        const code = res.data.data?.referralCode;
+        if (code) setReferralCode(code);
+        else setReferralCode(`VTECH${res.data.data?._id?.slice(-6).toUpperCase() || '0000'}`);
+      }).catch(() => {
+        setReferralCode('LOGIN REQUIRED');
+      });
+    });
   }, []);
 
   const handleCopyCode = async () => {
@@ -71,19 +91,22 @@ export default function ReferralScreen() {
     haptic.medium();
     try {
       await Share.share({
-        message: `Join V-Tech and get \u20B9100 off your first order! Use my referral code: ${referralCode}\n\nDownload now: https://vtech.app/download`,
-        title: 'Invite Friends to V-Tech',
+        message: `Join V-Tech Kitchen and get \u20B9${rewardAmount} off your first order! Use my referral code: ${referralCode}\n\nShop now: https://vtechkitchen.com`,
+        title: 'Invite Friends to V-Tech Kitchen',
       });
     } catch (error) {
       // User cancelled or error
     }
   };
 
-  const totalEarned = MOCK_REFERRALS
+  const STEPS = getSteps(rewardAmount);
+
+  const [referralHistory, setReferralHistory] = useState<ReferralEntry[]>([]);
+  const totalEarned = referralHistory
     .filter(r => r.status === 'completed')
     .reduce((sum, r) => sum + r.reward, 0);
-  const successfulReferrals = MOCK_REFERRALS.filter(r => r.status === 'completed').length;
-  const pendingReferrals = MOCK_REFERRALS.filter(r => r.status === 'pending').length;
+  const successfulReferrals = referralHistory.filter(r => r.status === 'completed').length;
+  const pendingReferrals = referralHistory.filter(r => r.status === 'pending').length;
 
   const getStatusStyle = (status: ReferralEntry['status']) => {
     switch (status) {
@@ -98,7 +121,6 @@ export default function ReferralScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Refer & Earn' }} />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Header Section */}
         <LinearGradient
@@ -112,7 +134,7 @@ export default function ReferralScreen() {
           </View>
           <Text style={styles.headerTitle}>Invite Friends, Earn Rewards</Text>
           <Text style={styles.headerSubtitle}>
-            Share your referral code and both you and your friend earn \u20B9100!
+            Share your referral code and both you and your friend earn \u20B9{rewardAmount}!
           </Text>
         </LinearGradient>
 
@@ -206,14 +228,19 @@ export default function ReferralScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Referral History</Text>
           <View style={styles.historyCard}>
-            {MOCK_REFERRALS.map((referral, index) => {
+            {referralHistory.length === 0 ? (
+              <View style={{ padding: spacing.lg, alignItems: 'center' }}>
+                <Ionicons name="people-outline" size={40} color={colors.border} />
+                <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, marginTop: spacing.sm, textAlign: 'center' }}>No referrals yet. Share your code to start earning!</Text>
+              </View>
+            ) : referralHistory.map((referral, index) => {
               const statusInfo = getStatusStyle(referral.status);
               return (
                 <View
                   key={referral.id}
                   style={[
                     styles.historyItem,
-                    index < MOCK_REFERRALS.length - 1 && styles.historyItemBorder,
+                    index < referralHistory.length - 1 && styles.historyItemBorder,
                   ]}
                 >
                   <View style={styles.historyAvatar}>
@@ -253,7 +280,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   header: {
-    paddingVertical: spacing.xl,
+    paddingTop: spacing.xl + 60,
+    paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
   },

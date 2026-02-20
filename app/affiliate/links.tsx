@@ -7,6 +7,7 @@ import LoadingScreen from '../../src/components/ui/LoadingScreen';
 import Button from '../../src/components/ui/Button';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 import { ROLES } from '../../src/utils/constants';
+import * as Clipboard from 'expo-clipboard';
 
 const SITE_URL = 'https://vtechkitchen.com';
 
@@ -56,10 +57,11 @@ export default function AffiliateLinks() {
     }
   };
 
-  const handleCopy = (item: any) => {
+  const handleCopy = async (item: any) => {
     const url = getShareUrl(item);
-    Alert.alert('Your Link', url, [
-      { text: 'Share', onPress: () => handleShare(item) },
+    await Clipboard.setStringAsync(url);
+    Alert.alert('Link Copied!', 'Affiliate link has been copied to clipboard.', [
+      { text: 'Share Too', onPress: () => handleShare(item) },
       { text: 'OK' },
     ]);
   };

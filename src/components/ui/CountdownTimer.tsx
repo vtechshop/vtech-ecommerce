@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { colors, spacing, fontSize, fontWeight, borderRadius } from '../../theme';
+import { usePulse } from '../../hooks/usePulse';
 
 interface CountdownTimerProps {
   endTime: Date;
@@ -24,13 +26,16 @@ export default function CountdownTimer({ endTime, onExpired }: CountdownTimerPro
 
   if (timeLeft.total <= 0) return null;
 
+  const isUrgent = timeLeft.total < 300000; // under 5 min
+  const isCritical = timeLeft.total < 60000; // under 1 min
+
   return (
     <View style={styles.container}>
       <TimeBox value={timeLeft.hours} label="HRS" />
       <Text style={styles.separator}>:</Text>
       <TimeBox value={timeLeft.minutes} label="MIN" />
       <Text style={styles.separator}>:</Text>
-      <TimeBox value={timeLeft.seconds} label="SEC" />
+      <AnimatedTimeBox value={timeLeft.seconds} label="SEC" pulse={isUrgent} critical={isCritical} />
     </View>
   );
 }
@@ -41,6 +46,21 @@ function TimeBox({ value, label }: { value: number; label: string }) {
       <Text style={styles.boxValue}>{String(value).padStart(2, '0')}</Text>
       <Text style={styles.boxLabel}>{label}</Text>
     </View>
+  );
+}
+
+function AnimatedTimeBox({ value, label, pulse, critical }: {
+  value: number; label: string; pulse: boolean; critical: boolean;
+}) {
+  const pulseStyle = usePulse({ minScale: 0.92, maxScale: 1.1, duration: 500, active: pulse });
+
+  return (
+    <Animated.View style={pulseStyle}>
+      <View style={[styles.box, critical && styles.boxCritical]}>
+        <Text style={styles.boxValue}>{String(value).padStart(2, '0')}</Text>
+        <Text style={styles.boxLabel}>{label}</Text>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -65,6 +85,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     alignItems: 'center',
     minWidth: 42,
+  },
+  boxCritical: {
+    backgroundColor: colors.error,
   },
   boxValue: {
     fontSize: fontSize.md,

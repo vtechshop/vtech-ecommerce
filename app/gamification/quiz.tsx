@@ -6,69 +6,102 @@ import {
   TouchableOpacity,
   Animated,
   ScrollView,
+  ActivityIndicator,
+  Share,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 import { haptic } from '../../src/utils/haptics';
+import { quizApi, QuizQuestion as ApiQuizQuestion } from '../../src/api/content';
 
 interface Question {
-  id: number;
+  id: string;
   question: string;
   options: string[];
-  correctIndex: number;
+  correctIndex?: number; // Only known for fallback questions; API questions reveal after answer
 }
 
-const QUESTIONS: Question[] = [
+const FALLBACK_QUESTIONS: Question[] = [
   {
-    id: 1,
+    id: '1',
     question: 'Which planet is known as the Red Planet?',
     options: ['Venus', 'Mars', 'Jupiter', 'Saturn'],
     correctIndex: 1,
   },
   {
-    id: 2,
+    id: '2',
     question: 'What is the largest ocean on Earth?',
     options: ['Atlantic Ocean', 'Indian Ocean', 'Pacific Ocean', 'Arctic Ocean'],
     correctIndex: 2,
   },
   {
-    id: 3,
+    id: '3',
     question: 'Who painted the Mona Lisa?',
     options: ['Michelangelo', 'Raphael', 'Vincent van Gogh', 'Leonardo da Vinci'],
     correctIndex: 3,
   },
   {
-    id: 4,
+    id: '4',
     question: 'What is the chemical symbol for Gold?',
     options: ['Go', 'Gd', 'Au', 'Ag'],
     correctIndex: 2,
   },
   {
-    id: 5,
+    id: '5',
     question: 'Which country is home to the kangaroo?',
     options: ['New Zealand', 'South Africa', 'Australia', 'India'],
     correctIndex: 2,
   },
 ];
 
+function mapApiQuestions(apiQuestions: ApiQuizQuestion[]): Question[] {
+  return apiQuestions.map((q) => ({
+    id: q._id,
+    question: q.question,
+    options: q.options,
+    // correctIndex NOT included — revealed from server after answering
+  }));
+}
+
 const TIMER_DURATION = 15;
 
 export default function QuizScreen() {
   const router = useRouter();
+  const [questions, setQuestions] = useState<Question[]>(FALLBACK_QUESTIONS);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(TIMER_DURATION);
   const [isFinished, setIsFinished] = useState(false);
   const [answered, setAnswered] = useState(false);
+  const [revealedCorrectIndex, setRevealedCorrectIndex] = useState<number | null>(null);
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const scorePopAnim = useRef(new Animated.Value(0)).current;
+  const moveNextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const currentQuestion = QUESTIONS[currentIndex];
+  const currentQuestion = questions[currentIndex];
+
+  useEffect(() => {
+    return () => {
+      if (moveNextTimerRef.current) clearTimeout(moveNextTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    quizApi.getDaily()
+      .then((res) => {
+        if (res.data.data && res.data.data.length > 0) {
+          setQuestions(mapApiQuestions(res.data.data));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   // Timer
   useEffect(() => {
@@ -89,11 +122,15 @@ export default function QuizScreen() {
   const handleTimeUp = useCallback(() => {
     haptic.warning();
     setAnswered(true);
-    setTimeout(() => moveToNext(), 1500);
-  }, [currentIndex]);
+    // Reveal correct answer if known (fallback questions)
+    if (currentQuestion?.correctIndex != null) {
+      setRevealedCorrectIndex(currentQuestion.correctIndex);
+    }
+    moveNextTimerRef.current = setTimeout(() => moveToNext(), 1500);
+  }, [currentIndex, currentQuestion]);
 
   const moveToNext = useCallback(() => {
-    if (currentIndex >= QUESTIONS.length - 1) {
+    if (currentIndex >= questions.length - 1) {
       setIsFinished(true);
       Animated.spring(scaleAnim, {
         toValue: 1,
@@ -112,6 +149,7 @@ export default function QuizScreen() {
       setCurrentIndex(prev => prev + 1);
       setSelectedOption(null);
       setAnswered(false);
+      setRevealedCorrectIndex(null);
       setTimeLeft(TIMER_DURATION);
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -119,15 +157,33 @@ export default function QuizScreen() {
         useNativeDriver: true,
       }).start();
     });
-  }, [currentIndex, fadeAnim, scaleAnim]);
+  }, [currentIndex, questions.length, fadeAnim, scaleAnim]);
 
-  const handleOptionPress = useCallback((optionIndex: number) => {
+  const handleOptionPress = useCallback(async (optionIndex: number) => {
     if (answered) return;
 
     setSelectedOption(optionIndex);
     setAnswered(true);
 
-    const isCorrect = optionIndex === currentQuestion.correctIndex;
+    let isCorrect = false;
+    let correctIdx = currentQuestion.correctIndex ?? null;
+
+    // If question came from API (no correctIndex), validate via server
+    if (correctIdx == null) {
+      try {
+        const res = await quizApi.submitAnswer(currentQuestion.id, optionIndex);
+        const data = res.data.data;
+        isCorrect = data?.isCorrect ?? false;
+        correctIdx = data?.correctAnswer ?? optionIndex;
+      } catch {
+        // Fallback: treat as incorrect if API fails
+        correctIdx = optionIndex;
+      }
+    } else {
+      isCorrect = optionIndex === correctIdx;
+    }
+
+    setRevealedCorrectIndex(correctIdx);
 
     if (isCorrect) {
       haptic.success();
@@ -140,32 +196,32 @@ export default function QuizScreen() {
       haptic.error();
     }
 
-    setTimeout(() => moveToNext(), 1500);
+    moveNextTimerRef.current = setTimeout(() => moveToNext(), 1500);
   }, [answered, currentQuestion, moveToNext, scorePopAnim]);
 
   const getOptionStyle = (index: number) => {
-    if (!answered) return styles.option;
+    if (!answered || revealedCorrectIndex == null) return styles.option;
 
-    if (index === currentQuestion.correctIndex) {
+    if (index === revealedCorrectIndex) {
       return [styles.option, styles.optionCorrect];
     }
-    if (index === selectedOption && index !== currentQuestion.correctIndex) {
+    if (index === selectedOption && index !== revealedCorrectIndex) {
       return [styles.option, styles.optionIncorrect];
     }
     return [styles.option, styles.optionDisabled];
   };
 
   const getOptionTextColor = (index: number) => {
-    if (!answered) return colors.text;
-    if (index === currentQuestion.correctIndex) return colors.success;
+    if (!answered || revealedCorrectIndex == null) return colors.text;
+    if (index === revealedCorrectIndex) return colors.success;
     if (index === selectedOption) return colors.error;
     return colors.textSecondary;
   };
 
   const getOptionIcon = (index: number): keyof typeof Ionicons.glyphMap | null => {
-    if (!answered) return null;
-    if (index === currentQuestion.correctIndex) return 'checkmark-circle';
-    if (index === selectedOption && index !== currentQuestion.correctIndex) return 'close-circle';
+    if (!answered || revealedCorrectIndex == null) return null;
+    if (index === revealedCorrectIndex) return 'checkmark-circle';
+    if (index === selectedOption && index !== revealedCorrectIndex) return 'close-circle';
     return null;
   };
 
@@ -173,6 +229,7 @@ export default function QuizScreen() {
     haptic.medium();
     setCurrentIndex(0);
     setSelectedOption(null);
+    setRevealedCorrectIndex(null);
     setScore(0);
     setTimeLeft(TIMER_DURATION);
     setIsFinished(false);
@@ -181,16 +238,35 @@ export default function QuizScreen() {
     fadeAnim.setValue(1);
   };
 
-  const handleShareScore = () => {
+  const handleShareScore = async () => {
     haptic.light();
-    // In a real app, would use Share API
+    const percentage = Math.round((score / questions.length) * 100);
+    try {
+      await Share.share({
+        message: `I scored ${score}/${questions.length} (${percentage}%) on the V-Tech Daily Quiz! Can you beat my score? Download V-Tech now!`,
+      });
+    } catch {}
   };
 
   const timerColor = timeLeft <= 5 ? colors.error : timeLeft <= 10 ? colors.warning : colors.success;
   const timerProgress = timeLeft / TIMER_DURATION;
 
+  if (loading) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Daily Quiz' }} />
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={{ marginTop: spacing.md, color: colors.textSecondary, fontSize: fontSize.sm }}>
+            Loading quiz...
+          </Text>
+        </View>
+      </>
+    );
+  }
+
   if (isFinished) {
-    const percentage = Math.round((score / QUESTIONS.length) * 100);
+    const percentage = Math.round((score / questions.length) * 100);
     const emoji = percentage >= 80 ? 'trophy' : percentage >= 60 ? 'star' : percentage >= 40 ? 'thumbs-up' : 'refresh';
     const message =
       percentage >= 80
@@ -222,7 +298,7 @@ export default function QuizScreen() {
               <View style={styles.resultsIconContainer}>
                 <Ionicons name={emoji as any} size={48} color={colors.secondary} />
               </View>
-              <Text style={styles.resultsScore}>{score}/{QUESTIONS.length}</Text>
+              <Text style={styles.resultsScore}>{score}/{questions.length}</Text>
               <Text style={styles.resultsPercentage}>{percentage}% correct</Text>
               <Text style={styles.resultsMessage}>{message}</Text>
 
@@ -257,7 +333,7 @@ export default function QuizScreen() {
         <View style={styles.progressContainer}>
           <View style={styles.progressHeader}>
             <Text style={styles.questionCounter}>
-              {currentIndex + 1}/{QUESTIONS.length}
+              {currentIndex + 1}/{questions.length}
             </Text>
             <Animated.View
               style={{
@@ -278,7 +354,7 @@ export default function QuizScreen() {
             <View
               style={[
                 styles.progressBarFill,
-                { width: `${((currentIndex + 1) / QUESTIONS.length) * 100}%` },
+                { width: `${((currentIndex + 1) / questions.length) * 100}%` },
               ]}
             />
           </View>
@@ -329,7 +405,7 @@ export default function QuizScreen() {
                   <Ionicons
                     name={icon}
                     size={22}
-                    color={index === currentQuestion.correctIndex ? colors.success : colors.error}
+                    color={index === revealedCorrectIndex ? colors.success : colors.error}
                     style={styles.optionIcon}
                   />
                 )}

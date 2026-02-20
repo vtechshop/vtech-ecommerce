@@ -27,7 +27,7 @@ export default function ForgotPasswordScreen() {
   if (sent) {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <GradientHeader height={180}>
+        <GradientHeader height={200} style={{ paddingBottom: spacing.xxl }}>
           <Ionicons name="lock-closed-outline" size={40} color={colors.white} />
           <Text style={styles.headerTitle}>Reset Password</Text>
         </GradientHeader>
@@ -47,7 +47,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <GradientHeader height={180}>
+      <GradientHeader height={200} style={{ paddingBottom: spacing.xxl }}>
         <Ionicons name="lock-closed-outline" size={40} color={colors.white} />
         <Text style={styles.headerTitle}>Reset Password</Text>
       </GradientHeader>
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.xxl,
-    marginTop: -spacing.xl,
+    marginTop: -spacing.md,
     marginHorizontal: spacing.md,
     padding: spacing.lg,
     ...shadows.lg,

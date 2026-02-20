@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { useAppDispatch, useAppSelector } from '../../src/store';
 import { login, clearError } from '../../src/store/slices/authSlice';
@@ -41,7 +42,7 @@ export default function LoginScreen() {
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
-        <GradientHeader height={180}>
+        <GradientHeader height={200} style={{ paddingBottom: spacing.xxl }}>
           <Text style={styles.headerTitle}>V-Tech</Text>
           <Text style={styles.headerSubtitle}>Welcome back</Text>
         </GradientHeader>
@@ -98,6 +99,34 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* OR Divider */}
+        <View style={styles.orRow}>
+          <View style={styles.orLine} />
+          <Text style={styles.orText}>OR</Text>
+          <View style={styles.orLine} />
+        </View>
+
+        {/* Guest Browse */}
+        <TouchableOpacity style={styles.guestBtn} onPress={() => router.replace('/(tabs)')}>
+          <Ionicons name="eye-outline" size={20} color={colors.primary} />
+          <Text style={styles.guestBtnText}>Browse as Guest</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        {/* Trust Badges */}
+        <View style={styles.trustRow}>
+          {[
+            { icon: 'shield-checkmark-outline' as const, label: 'Secure' },
+            { icon: 'lock-closed-outline' as const, label: 'Encrypted' },
+            { icon: 'finger-print-outline' as const, label: 'Privacy' },
+          ].map((item, i) => (
+            <View key={i} style={styles.trustItem}>
+              <Ionicons name={item.icon} size={16} color={colors.success} />
+              <Text style={styles.trustLabel}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
       </ScrollView>
   );
 }
@@ -119,7 +148,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.xxl,
-    marginTop: -spacing.xl,
+    marginTop: -spacing.md,
     marginHorizontal: spacing.md,
     padding: spacing.lg,
     ...shadows.lg,
@@ -155,5 +184,59 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.primary,
     fontWeight: fontWeight.bold,
+  },
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  orText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: fontWeight.semibold,
+    paddingHorizontal: spacing.md,
+  },
+  guestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1.5,
+    borderColor: colors.primaryLighter,
+    gap: spacing.sm,
+    ...shadows.sm,
+  },
+  guestBtnText: {
+    fontSize: fontSize.md,
+    color: colors.primary,
+    fontWeight: fontWeight.semibold,
+    flex: 1,
+  },
+  trustRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  trustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  trustLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: fontWeight.medium,
   },
 });

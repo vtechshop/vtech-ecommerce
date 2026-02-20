@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { productsApi } from '../../src/api/products';
 import { Product } from '../../src/types';
-import ProductCard from '../../src/components/product/ProductCard';
+import AnimatedProductCard from '../../src/components/product/AnimatedProductCard';
 import { useRecentSearches } from '../../src/hooks/useRecentSearches';
 import { haptic } from '../../src/utils/haptics';
 import { useToast } from '../../src/components/ui/Toast';
@@ -45,11 +45,7 @@ export default function SearchScreen() {
 
   const handleVoiceSearch = () => {
     haptic.light();
-    Alert.alert('Voice Search', 'Voice search requires a development build with expo-speech-recognition. Speak your search query:', [
-      { text: 'Cancel' },
-      { text: 'Use "Wireless Earbuds"', onPress: () => { setQuery('Wireless Earbuds'); doSearch('Wireless Earbuds', 1, sortBy); } },
-      { text: 'Use "Phone Case"', onPress: () => { setQuery('Phone Case'); doSearch('Phone Case', 1, sortBy); } },
-    ]);
+    Alert.alert('Voice Search', 'Voice search is coming soon! In the meantime, please type your search query.');
   };
 
   const handleCameraSearch = async () => {
@@ -303,7 +299,7 @@ export default function SearchScreen() {
           columnWrapperStyle={styles.row}
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl }}
-          renderItem={({ item }) => <ProductCard product={item} />}
+          renderItem={({ item, index }) => <AnimatedProductCard product={item} index={index} />}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={

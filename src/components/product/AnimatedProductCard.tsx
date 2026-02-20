@@ -9,9 +9,12 @@ import Animated, {
   withSpring,
   withDelay,
   withTiming,
+  withSequence,
+  withRepeat,
   Easing,
 } from 'react-native-reanimated';
 import { Product } from '../../types';
+import { haptic } from '../../utils/haptics';
 import { colors, borderRadius, spacing, fontSize, fontWeight, letterSpacing, shadows } from '../../theme';
 
 const { width } = Dimensions.get('window');
@@ -30,6 +33,8 @@ export default function AnimatedProductCard({ product, index = 0, onWishlist, is
   const scale = useSharedValue(1);
   const entryOpacity = useSharedValue(0);
   const entryTranslateY = useSharedValue(40);
+  const heartScale = useSharedValue(1);
+  const badgeScale = useSharedValue(1);
 
   const discount = product.compareAt
     ? Math.round(((product.compareAt - product.price) / product.compareAt) * 100)
@@ -39,6 +44,17 @@ export default function AnimatedProductCard({ product, index = 0, onWishlist, is
     const delay = index * 100;
     entryOpacity.value = withDelay(delay, withTiming(1, { duration: 500, easing: Easing.out(Easing.cubic) }));
     entryTranslateY.value = withDelay(delay, withTiming(0, { duration: 500, easing: Easing.out(Easing.cubic) }));
+    // Pulse discount badge for big discounts
+    if (discount >= 40) {
+      badgeScale.value = withDelay(delay + 600, withRepeat(
+        withSequence(
+          withTiming(1.1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+          withTiming(1, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+        ),
+        -1,
+        true,
+      ));
+    }
   }, []);
 
   const pressStyle = useAnimatedStyle(() => ({
@@ -50,12 +66,30 @@ export default function AnimatedProductCard({ product, index = 0, onWishlist, is
     transform: [{ translateY: entryTranslateY.value }],
   }));
 
+  const heartStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }));
+
+  const badgeStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: badgeScale.value }],
+  }));
+
   const onPressIn = () => {
     scale.value = withSpring(0.96, { damping: 15, stiffness: 200 });
   };
 
   const onPressOut = () => {
     scale.value = withSpring(1, { damping: 15, stiffness: 200 });
+  };
+
+  const handleWishlistPress = () => {
+    haptic.light();
+    heartScale.value = withSequence(
+      withSpring(1.5, { damping: 4, stiffness: 400 }),
+      withSpring(0.8, { damping: 4, stiffness: 400 }),
+      withSpring(1, { damping: 10, stiffness: 200 }),
+    );
+    onWishlist?.();
   };
 
   return (
@@ -80,17 +114,19 @@ export default function AnimatedProductCard({ product, index = 0, onWishlist, is
             </View>
           )}
           {discount > 0 && (
-            <View style={styles.badge}>
+            <Animated.View style={[styles.badge, badgeStyle]}>
               <Text style={styles.badgeText}>{discount}% OFF</Text>
-            </View>
+            </Animated.View>
           )}
           {onWishlist && (
-            <Pressable style={styles.wishlistBtn} onPress={onWishlist}>
-              <Ionicons
-                name={isWishlisted ? 'heart' : 'heart-outline'}
-                size={20}
-                color={isWishlisted ? colors.error : colors.textSecondary}
-              />
+            <Pressable style={styles.wishlistBtn} onPress={handleWishlistPress}>
+              <Animated.View style={heartStyle}>
+                <Ionicons
+                  name={isWishlisted ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={isWishlisted ? colors.error : colors.textSecondary}
+                />
+              </Animated.View>
             </Pressable>
           )}
         </View>

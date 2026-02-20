@@ -1,10 +1,21 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, StatusBar } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Dimensions, TouchableOpacity, StatusBar, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withDelay,
+  withTiming,
+  withSequence,
+  Easing,
+} from 'react-native-reanimated';
 import { useFirstLaunch } from '../src/hooks/useFirstLaunch';
 import { colors, spacing, fontSize, fontWeight, borderRadius, gradients } from '../src/theme';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,10 +63,61 @@ const SLIDES: OnboardingSlide[] = [
   },
 ];
 
+function AnimatedFeatureItem({ text, index }: { text: string; index: number }) {
+  const opacity = useSharedValue(0);
+  const translateX = useSharedValue(-20);
+
+  useEffect(() => {
+    const delay = 300 + index * 150;
+    opacity.value = withDelay(delay, withTiming(1, { duration: 400, easing: Easing.out(Easing.cubic) }));
+    translateX.value = withDelay(delay, withSpring(0, { damping: 18, stiffness: 120 }));
+  }, []);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  return (
+    <Animated.View style={[styles.featureItem, animStyle]}>
+      <View style={styles.featureCheck}>
+        <Ionicons name="checkmark" size={14} color={colors.white} />
+      </View>
+      <Text style={styles.featureText}>{text}</Text>
+    </Animated.View>
+  );
+}
+
+function AnimatedDot({ isActive }: { isActive: boolean }) {
+  const w = useSharedValue(isActive ? 28 : 8);
+  const bg = useSharedValue(isActive ? 1 : 0);
+
+  useEffect(() => {
+    w.value = withSpring(isActive ? 28 : 8, { damping: 15, stiffness: 200 });
+    bg.value = withTiming(isActive ? 1 : 0, { duration: 200 });
+  }, [isActive]);
+
+  const dotStyle = useAnimatedStyle(() => ({
+    width: w.value,
+    backgroundColor: bg.value > 0.5 ? colors.primary : colors.border,
+  }));
+
+  return <Animated.View style={[styles.dot, dotStyle]} />;
+}
+
 export default function OnboardingScreen() {
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const { completeOnboarding } = useFirstLaunch();
+  const iconScale = useSharedValue(0);
+
+  useEffect(() => {
+    iconScale.value = withSequence(
+      withTiming(0, { duration: 0 }),
+      withDelay(100, withSpring(1.15, { damping: 8, stiffness: 200 })),
+      withSpring(1, { damping: 12, stiffness: 200 }),
+    );
+  }, [currentIndex]);
 
   const handleNext = () => {
     if (currentIndex < SLIDES.length - 1) {
@@ -75,12 +137,16 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)' as any);
   };
 
+  const iconAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value }],
+  }));
+
   const renderSlide = ({ item }: { item: OnboardingSlide }) => (
     <View style={styles.slide}>
       <LinearGradient colors={item.gradient} style={styles.gradientTop} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-        <View style={styles.iconCircle}>
+        <Animated.View style={[styles.iconCircle, iconAnimStyle]}>
           <Ionicons name={item.icon} size={64} color={colors.white} />
-        </View>
+        </Animated.View>
         {/* Decorative circles */}
         <View style={[styles.decorCircle, styles.decorCircle1]} />
         <View style={[styles.decorCircle, styles.decorCircle2]} />
@@ -93,12 +159,7 @@ export default function OnboardingScreen() {
 
         <View style={styles.featuresList}>
           {item.features.map((feature, idx) => (
-            <View key={idx} style={styles.featureItem}>
-              <View style={styles.featureCheck}>
-                <Ionicons name="checkmark" size={14} color={colors.white} />
-              </View>
-              <Text style={styles.featureText}>{feature}</Text>
-            </View>
+            <AnimatedFeatureItem key={idx} text={feature} index={idx} />
           ))}
         </View>
       </View>
@@ -138,31 +199,31 @@ export default function OnboardingScreen() {
         {/* Dot indicators */}
         <View style={styles.dotsRow}>
           {SLIDES.map((_, idx) => (
-            <View
-              key={idx}
-              style={[
-                styles.dot,
-                currentIndex === idx && styles.dotActive,
-              ]}
-            />
+            <AnimatedDot key={idx} isActive={currentIndex === idx} />
           ))}
         </View>
 
         {/* Action buttons */}
         <View style={styles.actionsRow}>
           {isLastSlide ? (
-            <TouchableOpacity style={styles.getStartedBtn} onPress={handleGetStarted} activeOpacity={0.8}>
+            <AnimatedPressable
+              style={styles.getStartedBtn}
+              onPress={handleGetStarted}
+            >
               <LinearGradient colors={gradients.primary} style={styles.getStartedGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 <Text style={styles.getStartedText}>Get Started</Text>
                 <Ionicons name="arrow-forward" size={20} color={colors.white} />
               </LinearGradient>
-            </TouchableOpacity>
+            </AnimatedPressable>
           ) : (
-            <TouchableOpacity style={styles.nextBtn} onPress={handleNext} activeOpacity={0.8}>
+            <AnimatedPressable
+              style={styles.nextBtn}
+              onPress={handleNext}
+            >
               <LinearGradient colors={gradients.primary} style={styles.nextGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 <Ionicons name="arrow-forward" size={22} color={colors.white} />
               </LinearGradient>
-            </TouchableOpacity>
+            </AnimatedPressable>
           )}
         </View>
       </View>
@@ -208,8 +269,7 @@ const styles = StyleSheet.create({
   // Bottom
   bottomArea: { paddingBottom: 40, paddingHorizontal: spacing.xl },
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, marginBottom: spacing.lg },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
-  dotActive: { width: 28, backgroundColor: colors.primary },
+  dot: { height: 8, borderRadius: 4, backgroundColor: colors.border },
   actionsRow: { alignItems: 'center' },
   nextBtn: { width: 56, height: 56, borderRadius: 28, overflow: 'hidden' },
   nextGradient: { flex: 1, justifyContent: 'center', alignItems: 'center' },

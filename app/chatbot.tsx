@@ -105,7 +105,7 @@ export default function ChatbotScreen() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: "Hi! I'm V-Tech Assistant. How can I help you shop today?",
+      text: "Hi! I'm V-Tech Kitchen Assistant. I can help with quick questions about deals, orders, returns, and product recommendations. For detailed support, please contact us via the Contact page.",
       isBot: true,
       timestamp: new Date(),
     },
@@ -177,7 +177,7 @@ export default function ChatbotScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'V-Tech Assistant',
+          title: 'V-Tech Kitchen Assistant',
           headerStyle: { backgroundColor: colors.primary },
           headerTintColor: colors.white,
           headerTitleStyle: { fontWeight: fontWeight.bold },

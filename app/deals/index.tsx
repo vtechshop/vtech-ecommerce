@@ -36,9 +36,22 @@ const TABS: Tab[] = [
   { key: 'clearance', label: 'Clearance', icon: 'pricetags' },
 ];
 
-// Generate a random countdown between 1-6 hours for flash deal items
-function generateCountdown(): number {
-  return Date.now() + Math.floor(Math.random() * 6 * 60 * 60 * 1000) + 3600000;
+// Generate a stable countdown for flash deals based on product ID.
+// Same product shows same countdown for the rest of the day, resets at midnight.
+function generateCountdown(productId: string): number {
+  const now = new Date();
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const msUntilEndOfDay = endOfDay.getTime() - now.getTime();
+  // Use product ID hash to create a consistent offset (1-6 hours) within the day
+  let hash = 0;
+  for (let i = 0; i < productId.length; i++) {
+    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+    hash |= 0;
+  }
+  const maxDuration = 6 * 60 * 60 * 1000; // 6 hours
+  const offset = (Math.abs(hash) % maxDuration) + 3600000; // 1-7 hours
+  // Pick the smaller of: offset or time until end of day
+  return Date.now() + Math.min(offset, msUntilEndOfDay);
 }
 
 function formatCountdown(ms: number): string {
@@ -97,12 +110,11 @@ export default function DealsScreen() {
       if (tab === 'flash') {
         const newCountdowns: Record<string, number> = {};
         items.forEach((p: Product) => {
-          newCountdowns[p._id] = generateCountdown();
+          newCountdowns[p._id] = generateCountdown(p._id);
         });
         setCountdowns((prev) => ({ ...prev, ...newCountdowns }));
       }
     } catch (error) {
-      console.error(`Failed to fetch ${tab} deals:`, error);
     } finally {
       setLoading((prev) => ({ ...prev, [tab]: false }));
     }

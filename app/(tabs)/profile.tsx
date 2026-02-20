@@ -1,7 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, TextInput } from 'react-native';
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  interpolate,
+  Extrapolation,
+} from 'react-native-reanimated';
 import { useAppDispatch, useAppSelector } from '../../src/store';
 import { logout } from '../../src/store/slices/authSlice';
 import { userApi } from '../../src/api/user';
@@ -81,22 +89,22 @@ export default function ProfileScreen() {
     setPwSaving(false);
   };
 
-  const menuItems: Array<{ icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; badge?: string }> = [
-    { icon: 'bag-outline', label: 'My Orders', onPress: () => router.push('/orders' as any) },
-    { icon: 'location-outline', label: 'Addresses', onPress: () => router.push('/orders/addresses' as any) },
-    { icon: 'notifications-outline', label: 'Notifications', onPress: () => router.push('/orders/notifications' as any) },
-    { icon: 'star-outline', label: 'Loyalty Points', onPress: () => router.push('/orders/loyalty' as any) },
-    { icon: 'chatbubble-outline', label: 'Support Tickets', onPress: () => router.push('/orders/tickets' as any) },
+  const menuItems: Array<{ icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; color: string; bg: string }> = [
+    { icon: 'bag-outline', label: 'My Orders', onPress: () => router.push('/orders' as any), color: '#3B82F6', bg: '#DBEAFE' },
+    { icon: 'location-outline', label: 'Addresses', onPress: () => router.push('/orders/addresses' as any), color: '#10B981', bg: '#D1FAE5' },
+    { icon: 'notifications-outline', label: 'Notifications', onPress: () => router.push('/orders/notifications' as any), color: '#F59E0B', bg: '#FEF3C7' },
+    { icon: 'star-outline', label: 'Loyalty Points', onPress: () => router.push('/orders/loyalty' as any), color: '#8B5CF6', bg: '#EDE9FE' },
+    { icon: 'chatbubble-outline', label: 'Support Tickets', onPress: () => router.push('/orders/tickets' as any), color: '#EC4899', bg: '#FCE7F3' },
   ];
 
   if (user?.role === ROLES.VENDOR || user?.role === ROLES.ADMIN) {
-    menuItems.push({ icon: 'storefront-outline', label: 'Vendor Dashboard', onPress: () => router.push('/vendor' as any) });
+    menuItems.push({ icon: 'storefront-outline', label: 'Vendor Dashboard', onPress: () => router.push('/vendor' as any), color: '#F97316', bg: '#FFEDD5' });
   }
   if (user?.role === ROLES.AFFILIATE || user?.role === ROLES.ADMIN) {
-    menuItems.push({ icon: 'link-outline', label: 'Affiliate Dashboard', onPress: () => router.push('/affiliate' as any) });
+    menuItems.push({ icon: 'link-outline', label: 'Affiliate Dashboard', onPress: () => router.push('/affiliate' as any), color: '#06B6D4', bg: '#CFFAFE' });
   }
   if (user?.role === ROLES.ADMIN) {
-    menuItems.push({ icon: 'shield-outline', label: 'Admin Panel', onPress: () => router.push('/admin' as any) });
+    menuItems.push({ icon: 'shield-outline', label: 'Admin Panel', onPress: () => router.push('/admin' as any), color: '#EF4444', bg: '#FEE2E2' });
   }
 
   const handleLogout = () => {
@@ -106,8 +114,40 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const scale = interpolate(
+      scrollY.value,
+      [-100, 0],
+      [1.3, 1],
+      Extrapolation.CLAMP,
+    );
+    const translateY = interpolate(
+      scrollY.value,
+      [0, 180],
+      [0, -40],
+      Extrapolation.CLAMP,
+    );
+    const opacity = interpolate(
+      scrollY.value,
+      [0, 140],
+      [1, 0.6],
+      Extrapolation.CLAMP,
+    );
+    return {
+      transform: [{ scale }, { translateY }],
+      opacity,
+    };
+  });
+
   return (
-    <ScrollView style={styles.container}>
+    <Animated.ScrollView style={styles.container} onScroll={scrollHandler} scrollEventThrottle={16}>
       {/* Edit Profile Modal */}
       <Modal visible={showEditProfile} transparent animationType="slide" onRequestClose={() => setShowEditProfile(false)}>
         <View style={styles.modalOverlay}>
@@ -146,24 +186,38 @@ export default function ProfileScreen() {
         </View>
       </Modal>
 
-      {/* Gradient Header */}
-      <GradientHeader colors={gradients.primary} height={180}>
-        <View style={styles.headerContent}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.name}>{user?.name}</Text>
-            <Text style={styles.email}>{user?.email}</Text>
-            <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>{user?.role}</Text>
+      {/* Gradient Header with Parallax */}
+      <Animated.View style={headerAnimatedStyle}>
+        <GradientHeader colors={gradients.primary} height={200}>
+          <View style={styles.headerContent}>
+            <View style={styles.avatarRing}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{user?.name?.charAt(0).toUpperCase()}</Text>
+              </View>
+              <View style={styles.avatarBadge}>
+                <Ionicons name="checkmark" size={10} color={colors.white} />
+              </View>
             </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{user?.name}</Text>
+              <Text style={styles.email}>{user?.email}</Text>
+              <View style={styles.roleBadgeRow}>
+                <View style={styles.roleBadge}>
+                  <Ionicons name="ribbon" size={10} color={colors.white} />
+                  <Text style={styles.roleText}>{user?.role}</Text>
+                </View>
+                <View style={styles.memberBadge}>
+                  <Ionicons name="time-outline" size={10} color="rgba(255,255,255,0.9)" />
+                  <Text style={styles.memberText}>Member since {new Date(user?.createdAt || Date.now()).getFullYear()}</Text>
+                </View>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.editBtn} onPress={() => { setEditName(user?.name || ''); setEditPhone(user?.phone || ''); setShowEditProfile(true); }}>
+              <Ionicons name="create-outline" size={20} color={colors.white} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.editBtn} onPress={() => { setEditName(user?.name || ''); setEditPhone(user?.phone || ''); setShowEditProfile(true); }}>
-            <Ionicons name="create-outline" size={20} color={colors.white} />
-          </TouchableOpacity>
-        </View>
-      </GradientHeader>
+        </GradientHeader>
+      </Animated.View>
 
       {/* Account Actions */}
       <View style={styles.quickActions}>
@@ -187,8 +241,8 @@ export default function ProfileScreen() {
       <View style={styles.menuCard}>
         {menuItems.map((item, index) => (
           <TouchableOpacity key={index} style={[styles.menuItem, index < menuItems.length - 1 && styles.menuItemBorder]} onPress={item.onPress}>
-            <View style={styles.menuIconCircle}>
-              <Ionicons name={item.icon} size={20} color={colors.primary} />
+            <View style={[styles.menuIconCircle, { backgroundColor: item.bg }]}>
+              <Ionicons name={item.icon} size={20} color={item.color} />
             </View>
             <Text style={styles.menuLabel}>{item.label}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
@@ -199,16 +253,16 @@ export default function ProfileScreen() {
       {/* Info Pages */}
       <View style={styles.menuCard}>
         {[
-          { icon: 'newspaper-outline' as keyof typeof Ionicons.glyphMap, label: 'Blog', route: '/pages/blog' },
-          { icon: 'information-circle-outline' as keyof typeof Ionicons.glyphMap, label: 'About Us', route: '/pages/about' },
-          { icon: 'mail-outline' as keyof typeof Ionicons.glyphMap, label: 'Contact Us', route: '/pages/contact' },
-          { icon: 'shield-checkmark-outline' as keyof typeof Ionicons.glyphMap, label: 'Privacy Policy', route: '/pages/privacy-policy' },
-          { icon: 'document-text-outline' as keyof typeof Ionicons.glyphMap, label: 'Terms of Service', route: '/pages/terms' },
-          { icon: 'arrow-undo-outline' as keyof typeof Ionicons.glyphMap, label: 'Return Policy', route: '/pages/return-policy' },
+          { icon: 'newspaper-outline' as keyof typeof Ionicons.glyphMap, label: 'Blog', route: '/pages/blog', color: '#6366F1', bg: '#EEF2FF' },
+          { icon: 'information-circle-outline' as keyof typeof Ionicons.glyphMap, label: 'About Us', route: '/pages/about', color: '#3B82F6', bg: '#DBEAFE' },
+          { icon: 'mail-outline' as keyof typeof Ionicons.glyphMap, label: 'Contact Us', route: '/pages/contact', color: '#10B981', bg: '#D1FAE5' },
+          { icon: 'shield-checkmark-outline' as keyof typeof Ionicons.glyphMap, label: 'Privacy Policy', route: '/pages/privacy-policy', color: '#8B5CF6', bg: '#EDE9FE' },
+          { icon: 'document-text-outline' as keyof typeof Ionicons.glyphMap, label: 'Terms of Service', route: '/pages/terms', color: '#F59E0B', bg: '#FEF3C7' },
+          { icon: 'arrow-undo-outline' as keyof typeof Ionicons.glyphMap, label: 'Return Policy', route: '/pages/return-policy', color: '#EF4444', bg: '#FEE2E2' },
         ].map((item, index, arr) => (
           <TouchableOpacity key={index} style={[styles.menuItem, index < arr.length - 1 && styles.menuItemBorder]} onPress={() => router.push(item.route as any)}>
-            <View style={styles.menuIconCircle}>
-              <Ionicons name={item.icon} size={20} color={colors.primary} />
+            <View style={[styles.menuIconCircle, { backgroundColor: item.bg }]}>
+              <Ionicons name={item.icon} size={20} color={item.color} />
             </View>
             <Text style={styles.menuLabel}>{item.label}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} style={{ marginLeft: 'auto' }} />
@@ -223,8 +277,8 @@ export default function ProfileScreen() {
       </TouchableOpacity>
 
       {/* App Version */}
-      <Text style={styles.version}>V-Tech Mobile v1.0.0</Text>
-    </ScrollView>
+      <Text style={styles.version}>V-Tech Mobile v{Constants.expoConfig?.version ?? '1.0.0'}</Text>
+    </Animated.ScrollView>
   );
 }
 
@@ -235,12 +289,17 @@ const styles = StyleSheet.create({
   authTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.text, marginTop: spacing.lg },
   authText: { fontSize: fontSize.md, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm },
   headerContent: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  avatar: { width: 60, height: 60, borderRadius: borderRadius.full, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 3, borderColor: colors.white, justifyContent: 'center', alignItems: 'center' },
+  avatarRing: { position: 'relative' },
+  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 3, borderColor: colors.white, justifyContent: 'center', alignItems: 'center' },
   avatarText: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.white },
+  avatarBadge: { position: 'absolute', bottom: 0, right: -2, width: 20, height: 20, borderRadius: 10, backgroundColor: colors.success, borderWidth: 2, borderColor: colors.white, justifyContent: 'center', alignItems: 'center' },
   name: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.white },
   email: { fontSize: fontSize.sm, color: 'rgba(255,255,255,0.8)' },
-  roleBadge: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.full, alignSelf: 'flex-start', marginTop: spacing.xs },
+  roleBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs, flexWrap: 'wrap' },
+  roleBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.full },
   roleText: { fontSize: fontSize.xs, color: colors.white, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
+  memberBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.full },
+  memberText: { fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: fontWeight.medium },
   editBtn: { padding: spacing.sm, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full },
   // Quick Actions
   quickActions: { flexDirection: 'row', backgroundColor: colors.white, marginHorizontal: spacing.md, marginTop: -spacing.lg, borderRadius: borderRadius.xl, ...shadows.md },

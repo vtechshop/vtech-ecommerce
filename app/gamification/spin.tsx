@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
-import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 import { haptic } from '../../src/utils/haptics';
+import { spinApi, SpinSegment } from '../../src/api/content';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const WHEEL_SIZE = SCREEN_WIDTH * 0.8;
@@ -28,7 +29,7 @@ interface Segment {
   isWin: boolean;
 }
 
-const SEGMENTS: Segment[] = [
+const FALLBACK_SEGMENTS: Segment[] = [
   { label: '\u20B910', color: '#4F46E5', isWin: true },
   { label: '\u20B925', color: '#7C3AED', isWin: true },
   { label: '\u20B950', color: '#3B82F6', isWin: true },
@@ -39,7 +40,13 @@ const SEGMENTS: Segment[] = [
   { label: 'Try\nAgain', color: '#EF4444', isWin: false },
 ];
 
-const SEGMENT_ANGLE = 360 / SEGMENTS.length;
+function mapApiSegments(apiSegments: SpinSegment[]): Segment[] {
+  return apiSegments.map((s) => ({
+    label: s.type === 'no_prize' ? 'Better\nLuck' : `\u20B9${s.value}`,
+    color: s.color,
+    isWin: s.type !== 'no_prize',
+  }));
+}
 
 export default function SpinScreen() {
   const rotation = useSharedValue(0);
@@ -47,38 +54,68 @@ export default function SpinScreen() {
   const [hasSpun, setHasSpun] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [result, setResult] = useState<Segment | null>(null);
+  const [segments, setSegments] = useState<Segment[]>(FALLBACK_SEGMENTS);
+  const [loading, setLoading] = useState(true);
+  const spinTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
+    };
+  }, []);
+
+  const SEGMENT_ANGLE = 360 / segments.length;
+
+  useEffect(() => {
+    spinApi.getConfig()
+      .then((res) => {
+        const config = res.data.data;
+        if (config?.segments && config.segments.length > 0) {
+          setSegments(mapApiSegments(config.segments));
+        }
+        if (config?.remainingSpins === 0) {
+          setHasSpun(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
-  const handleSpin = useCallback(() => {
+  const handleSpin = useCallback(async () => {
     if (isSpinning || hasSpun) return;
 
     haptic.medium();
     setIsSpinning(true);
 
-    // Random segment to land on
-    const randomSegmentIndex = Math.floor(Math.random() * SEGMENTS.length);
-    const fullRotations = 3 + Math.floor(Math.random() * 3); // 3-5 full rotations
-    // Calculate the target angle so the pointer (at top) points to the selected segment
-    const segmentCenter = randomSegmentIndex * SEGMENT_ANGLE + SEGMENT_ANGLE / 2;
+    let serverSegmentIndex: number | null = null;
+
+    try {
+      const res = await spinApi.spin();
+      serverSegmentIndex = res.data.data?.segment ?? null;
+    } catch {
+      // Fallback to random if API fails
+    }
+
+    const targetIndex = serverSegmentIndex ?? Math.floor(Math.random() * segments.length);
+    const fullRotations = 3 + Math.floor(Math.random() * 3);
+    const segmentCenter = targetIndex * SEGMENT_ANGLE + SEGMENT_ANGLE / 2;
     const targetAngle = fullRotations * 360 + (360 - segmentCenter);
 
     rotation.value = withTiming(targetAngle, {
       duration: 4000,
       easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-    }, (finished) => {
-      // Note: this callback runs on UI thread, not JS thread
     });
 
-    // Use setTimeout to handle result after animation
-    setTimeout(() => {
+    spinTimerRef.current = setTimeout(() => {
       setIsSpinning(false);
       setHasSpun(true);
-      setResult(SEGMENTS[randomSegmentIndex]);
+      setResult(segments[targetIndex]);
 
-      if (SEGMENTS[randomSegmentIndex].isWin) {
+      if (segments[targetIndex].isWin) {
         haptic.success();
       } else {
         haptic.warning();
@@ -86,7 +123,7 @@ export default function SpinScreen() {
 
       setShowModal(true);
     }, 4200);
-  }, [isSpinning, hasSpun, rotation]);
+  }, [isSpinning, hasSpun, rotation, segments, SEGMENT_ANGLE]);
 
   const renderWheel = () => {
     return (
@@ -98,7 +135,7 @@ export default function SpinScreen() {
 
         <Animated.View style={[styles.wheel, animatedStyle]}>
           {/* Wheel segments as colored sections */}
-          {SEGMENTS.map((segment, index) => {
+          {segments.map((segment, index) => {
             const angle = index * SEGMENT_ANGLE;
             return (
               <View
@@ -131,7 +168,7 @@ export default function SpinScreen() {
           </View>
 
           {/* Outer ring decorations */}
-          {SEGMENTS.map((_, index) => {
+          {segments.map((_, index) => {
             const angle = index * SEGMENT_ANGLE;
             return (
               <View
@@ -169,7 +206,6 @@ export default function SpinScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Spin & Win' }} />
       <View style={styles.container}>
         {/* Header */}
         <LinearGradient
@@ -184,7 +220,9 @@ export default function SpinScreen() {
         </LinearGradient>
 
         {/* Wheel */}
-        {renderWheel()}
+        {loading ? (
+          <ActivityIndicator size="large" color={colors.white} style={{ marginTop: spacing.xl }} />
+        ) : renderWheel()}
 
         {/* After spin message */}
         {hasSpun && (
@@ -251,7 +289,8 @@ const styles = StyleSheet.create({
   },
   header: {
     width: '100%',
-    paddingVertical: spacing.lg,
+    paddingTop: spacing.lg + 60,
+    paddingBottom: spacing.lg,
     alignItems: 'center',
     gap: spacing.xs,
   },

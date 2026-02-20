@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { useAppDispatch, useAppSelector } from '../../src/store';
 import { register, clearError } from '../../src/store/slices/authSlice';
@@ -44,7 +45,7 @@ export default function RegisterScreen() {
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
-        <GradientHeader height={150}>
+        <GradientHeader height={180} style={{ paddingBottom: spacing.xxl }}>
           <Text style={styles.headerTitle}>Create Account</Text>
           <Text style={styles.headerSubtitle}>Join V-Tech today</Text>
         </GradientHeader>
@@ -85,6 +86,20 @@ export default function RegisterScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Trust Badges */}
+        <View style={styles.trustRow}>
+          {[
+            { icon: 'shield-checkmark-outline' as const, label: 'Secure' },
+            { icon: 'lock-closed-outline' as const, label: 'Encrypted' },
+            { icon: 'finger-print-outline' as const, label: 'Privacy' },
+          ].map((item, i) => (
+            <View key={i} style={styles.trustItem}>
+              <Ionicons name={item.icon} size={16} color={colors.success} />
+              <Text style={styles.trustLabel}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
       </ScrollView>
   );
 }
@@ -106,7 +121,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.xxl,
-    marginTop: -spacing.xl,
+    marginTop: -spacing.md,
     marginHorizontal: spacing.md,
     padding: spacing.lg,
     ...shadows.lg,
@@ -125,5 +140,22 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.primary,
     fontWeight: fontWeight.bold,
+  },
+  trustRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
+  },
+  trustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  trustLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: fontWeight.medium,
   },
 });

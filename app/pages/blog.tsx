@@ -72,7 +72,7 @@ export default function BlogScreen() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>V-Tech Blog</Text>
+        <Text style={styles.headerTitle}>V-Tech Kitchen Blog</Text>
         <Text style={styles.headerSubtitle}>Tips, guides, and news from the kitchen world</Text>
       </View>
 

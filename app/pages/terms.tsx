@@ -73,8 +73,8 @@ const SECTIONS = [
     title: '12. Contact',
     content: `For questions about these Terms of Service, contact us at:
 
-Email: support@vtechkitchen.com
-Phone: +91 98765 43210`,
+Email: vtechshop.customercare@gmail.com
+Phone: +91 99445 56683`,
   },
 ];
 
@@ -82,7 +82,7 @@ export default function TermsScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Terms of Service</Text>
-      <Text style={styles.updated}>Last updated: January 2025</Text>
+      <Text style={styles.updated}>Last updated: February 2026</Text>
       <Text style={styles.intro}>
         Welcome to V-Tech Kitchen. These Terms of Service govern your use of our mobile application and services. Please read them carefully.
       </Text>

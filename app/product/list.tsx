@@ -1,14 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { productsApi } from '../../src/api/products';
 import { Product } from '../../src/types';
-import ProductCard from '../../src/components/product/ProductCard';
+import AnimatedProductCard from '../../src/components/product/AnimatedProductCard';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpacing } from '../../src/theme';
 
 const PAGE_LIMIT = 20;
+
+const SORT_OPTIONS = [
+  { label: 'Relevance', value: '' },
+  { label: 'Price: Low', value: 'price_asc' },
+  { label: 'Price: High', value: 'price_desc' },
+  { label: 'Newest', value: 'newest' },
+  { label: 'Rating', value: 'rating' },
+];
 
 export default function ProductListScreen() {
   const params = useLocalSearchParams<{ category?: string; search?: string; sort?: string; featured?: string; title?: string }>();
@@ -19,6 +27,7 @@ export default function ProductListScreen() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [activeSort, setActiveSort] = useState(params.sort || '');
 
   const navigation = useNavigation();
 
@@ -35,7 +44,7 @@ export default function ProductListScreen() {
       const { data } = await productsApi.getAll({
         category: params.category,
         search: search || params.search,
-        sort: params.sort,
+        sort: activeSort || params.sort,
         featured: params.featured === 'true' ? true : undefined,
         page: pageNum,
         limit: PAGE_LIMIT,
@@ -115,9 +124,22 @@ export default function ProductListScreen() {
 
       {params.title && <Text style={styles.title}>{params.title}</Text>}
 
-      {/* Results count */}
+      {/* Results count + Sort */}
       {!loading && products.length > 0 && (
-        <Text style={styles.resultCount}>{products.length} product{products.length !== 1 ? 's' : ''}{hasMore ? '+' : ''}</Text>
+        <View style={styles.resultsRow}>
+          <Text style={styles.resultCount}>{products.length} product{products.length !== 1 ? 's' : ''}{hasMore ? '+' : ''}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs, paddingRight: spacing.md }}>
+            {SORT_OPTIONS.map((s) => (
+              <TouchableOpacity
+                key={s.value}
+                style={[styles.sortChip, activeSort === s.value && styles.sortChipActive]}
+                onPress={() => { setActiveSort(s.value); setPage(1); setHasMore(true); setProducts([]); setLoading(true); loadProducts(1, searchQuery || undefined); }}
+              >
+                <Text style={[styles.sortChipText, activeSort === s.value && styles.sortChipTextActive]}>{s.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
       )}
 
       {loading ? (
@@ -135,7 +157,11 @@ export default function ProductListScreen() {
           <View style={styles.emptyIconCircle}>
             <Ionicons name="search-outline" size={32} color={colors.primary} />
           </View>
-          <Text style={styles.emptyText}>No products found</Text>
+          <Text style={styles.emptyTitle}>No products found</Text>
+          <Text style={styles.emptyText}>Try a different search or browse categories</Text>
+          <TouchableOpacity onPress={() => { setSearchQuery(''); loadProducts(1, ''); }} style={styles.clearBtn}>
+            <Text style={styles.clearBtnText}>Clear Search</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList
@@ -144,7 +170,7 @@ export default function ProductListScreen() {
           columnWrapperStyle={styles.row}
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl }}
-          renderItem={({ item }) => <ProductCard product={item} />}
+          renderItem={({ item, index }) => <AnimatedProductCard product={item} index={index} />}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
@@ -183,12 +209,36 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     letterSpacing: letterSpacing.tight,
   },
+  resultsRow: {
+    paddingTop: spacing.sm,
+    gap: spacing.xs,
+  },
   resultCount: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
     fontWeight: fontWeight.medium,
+  },
+  sortChip: {
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: spacing.xs + 1,
+    borderRadius: borderRadius.full,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+  },
+  sortChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLightest,
+  },
+  sortChipText: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: fontWeight.medium,
+  },
+  sortChipTextActive: {
+    color: colors.primary,
+    fontWeight: fontWeight.semibold,
   },
   row: { justifyContent: 'space-between' },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -200,11 +250,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  emptyTitle: {
+    fontSize: fontSize.lg,
+    color: colors.text,
+    fontWeight: fontWeight.bold,
+    marginTop: spacing.lg,
+  },
   emptyText: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     color: colors.textSecondary,
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
     fontWeight: fontWeight.medium,
+  },
+  clearBtn: {
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.primaryLighter,
+  },
+  clearBtnText: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: fontWeight.semibold,
   },
   retryBtn: { marginTop: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, backgroundColor: colors.primary, borderRadius: borderRadius.lg },
   retryText: { color: colors.white, fontWeight: fontWeight.semibold, fontSize: fontSize.md },

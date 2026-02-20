@@ -24,8 +24,11 @@ export const ordersApi = {
     apiClient.post<ApiResponse<Order>>(`/orders/${id}/return`, data),
 
   trackOrder: (orderId: string) =>
-    apiClient.post<ApiResponse<{ status: string; tracking: object }>>('/orders/track', { orderId }),
+    apiClient.post<ApiResponse<{ status: string; tracking: { provider?: string; trackingId?: string; url?: string; estimatedDelivery?: string } }>>('/orders/track', { orderId }),
 
   trackByAwb: (awb: string) =>
     apiClient.post<ApiResponse<object>>('/orders/track-awb', { awb }),
+
+  getInvoice: (id: string) =>
+    apiClient.get<Blob>(`/orders/${id}/invoice`, { responseType: 'blob' }),
 };

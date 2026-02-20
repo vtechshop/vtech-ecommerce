@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { gradients, spacing, borderRadius } from '../../theme';
 
 interface GradientHeaderProps {
-  colors?: readonly string[];
+  colors?: readonly [string, string, ...string[]];
   height?: number;
   children?: React.ReactNode;
   style?: ViewStyle;
@@ -18,7 +18,7 @@ export default function GradientHeader({
 }: GradientHeaderProps) {
   return (
     <LinearGradient
-      colors={gradientColors as string[]}
+      colors={gradientColors}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={[styles.container, { height }, style]}

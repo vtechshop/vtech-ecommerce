@@ -1,24 +1,69 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { Provider } from 'react-redux';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { store, useAppDispatch } from '../src/store';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
+import { store, useAppDispatch, useAppSelector } from '../src/store';
 import { loadUser } from '../src/store/slices/authSlice';
 import { useFirstLaunch } from '../src/hooks/useFirstLaunch';
 import { ToastProvider } from '../src/components/ui/Toast';
-import { colors, fontWeight, letterSpacing } from '../src/theme';
+import { colors, fontWeight } from '../src/theme';
+
+SplashScreen.preventAutoHideAsync();
+
+// Error boundary to catch and display crashes
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: string }
+> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: '' };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: `${error.name}: ${error.message}\n${error.stack?.slice(0, 500)}` };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={ebStyles.container}>
+          <Text style={ebStyles.title}>APP CRASH CAUGHT</Text>
+          <Text style={ebStyles.error}>{this.state.error}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const ebStyles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FEE2E2', padding: 20 },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#DC2626', marginBottom: 16 },
+  error: { fontSize: 12, color: '#991B1B', fontFamily: 'monospace' },
+});
 
 function RootLayoutInner() {
   const dispatch = useAppDispatch();
   const { isFirstLaunch } = useFirstLaunch();
+  const { isLoading: authLoading } = useAppSelector((s) => s.auth);
 
   useEffect(() => {
     dispatch(loadUser());
   }, []);
 
-  // Wait for first launch check
-  if (isFirstLaunch === null) return null;
+  // Hide splash screen once both auth check and first launch check are done
+  const isReady = isFirstLaunch !== null && !authLoading;
+
+  useEffect(() => {
+    if (isReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [isReady]);
+
+  if (!isReady) return null;
 
   return (
     <>
@@ -28,7 +73,7 @@ function RootLayoutInner() {
           headerStyle: { backgroundColor: colors.white },
           headerShadowVisible: false,
           headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: fontWeight.bold, letterSpacing: letterSpacing.tight },
+          headerTitleStyle: { fontWeight: fontWeight.bold },
           contentStyle: { backgroundColor: colors.background },
           animation: 'slide_from_right',
         }}
@@ -37,16 +82,16 @@ function RootLayoutInner() {
         <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="product" options={{ headerShown: false }} />
-        <Stack.Screen name="checkout" options={{ headerShown: false }} />
-        <Stack.Screen name="orders" options={{ headerShown: false }} />
-        <Stack.Screen name="vendor" options={{ headerShown: false }} />
-        <Stack.Screen name="affiliate" options={{ headerShown: false }} />
-        <Stack.Screen name="admin" options={{ headerShown: false }} />
-        <Stack.Screen name="pages" options={{ headerShown: false }} />
-        <Stack.Screen name="chatbot" options={{ title: 'V-Tech Assistant', headerTintColor: colors.primary }} />
-        <Stack.Screen name="gamification" options={{ headerShown: false }} />
-        <Stack.Screen name="deals" options={{ headerShown: false }} />
+        <Stack.Screen name="product" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="checkout" options={{ headerShown: false, animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="orders" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="vendor" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="affiliate" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="admin" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="pages" options={{ headerShown: false, animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="chatbot" options={{ title: 'V-Tech Assistant', headerTintColor: colors.primary, animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="gamification" options={{ headerShown: false, animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="deals" options={{ headerShown: false, animation: 'slide_from_right' }} />
       </Stack>
     </>
   );
@@ -54,12 +99,16 @@ function RootLayoutInner() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Provider store={store}>
-        <ToastProvider>
-          <RootLayoutInner />
-        </ToastProvider>
-      </Provider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <Provider store={store}>
+            <ToastProvider>
+              <RootLayoutInner />
+            </ToastProvider>
+          </Provider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

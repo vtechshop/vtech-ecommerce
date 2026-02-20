@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, FlatList, Alert, Share, Modal, Pressable, Linking } from 'react-native';
+import React, { useEffect, useState, useMemo, useRef, useCallback, Component, ErrorInfo, ReactNode } from 'react';
+import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, FlatList, Alert, Share, Modal, Pressable, Linking, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useNavigation, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,13 +69,56 @@ function getDeliveryEstimate() {
   return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-export default function ProductDetailScreen() {
+// Error boundary to catch and display crashes
+class ProductErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
+  state = { hasError: false, error: '' };
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message || String(error) };
+  }
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('ProductDetail crash:', error, info?.componentStack);
+  }
+  resetError = () => {
+    this.setState({ hasError: false, error: '' });
+  };
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: colors.background }}>
+          <Ionicons name="bug-outline" size={48} color={colors.error} />
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.error, marginTop: 12, marginBottom: 8 }}>Something went wrong</Text>
+          <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 4 }}>{this.state.error}</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 }}>Please report this if it persists.</Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity onPress={this.resetError} style={{ paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+              <Text style={{ color: colors.text, fontWeight: '600' }}>Retry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.back()} style={{ paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.primary, borderRadius: 12 }}>
+              <Text style={{ color: colors.white, fontWeight: '600' }}>Go Back</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function ProductDetailWrapper() {
+  return (
+    <ProductErrorBoundary>
+      <ProductDetailScreen />
+    </ProductErrorBoundary>
+  );
+}
+
+function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAppSelector((s) => s.auth);
   const { addItem: addToRecentlyViewed } = useRecentlyViewed();
-  const carouselRef = useRef<FlatList>(null);
+  const carouselRef = useRef<ScrollView>(null);
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
@@ -88,31 +131,52 @@ export default function ProductDetailScreen() {
   const [zoomIndex, setZoomIndex] = useState(0);
   const [reviewFilter, setReviewFilter] = useState(0); // 0 = all, 1-5 = star filter
   const [reviewSort, setReviewSort] = useState<'recent' | 'helpful'>('recent');
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, number>>({});
+  const [showHeavySections, setShowHeavySections] = useState(false);
 
   const loadProduct = async () => {
     if (!id) return;
     setError(null);
     setLoading(true);
     try {
+      console.log('[ProductDetail] Loading product:', id);
       const [prodRes, revRes] = await Promise.all([
         productsApi.getById(id),
         productsApi.getReviews(id, { limit: 10 }).catch(() => ({ data: { data: [] } })),
       ]);
-      const prod = prodRes.data.data;
+      const prod = prodRes.data?.data;
+      if (!prod || !prod._id) {
+        console.error('[ProductDetail] Invalid product data:', JSON.stringify(prodRes.data).slice(0, 200));
+        setError('Product data is invalid');
+        setLoading(false);
+        return;
+      }
+      console.log('[ProductDetail] Product loaded:', prod.title, '| Images:', (prod.images || []).length);
       setProduct(prod);
-      setReviews(revRes.data.data || []);
-      if (prod?.title) navigation.setOptions({ title: prod.title });
-      if (prod) addToRecentlyViewed(prod);
+      setReviews(Array.isArray(revRes.data?.data) ? revRes.data.data : []);
+      if (prod.title) navigation.setOptions({ title: prod.title });
+      addToRecentlyViewed(prod);
       productsApi.getSimilar(id).then((res) => {
-        setSimilarProducts((res.data.data || []).slice(0, 6));
+        const similar = Array.isArray(res.data?.data) ? res.data.data : [];
+        setSimilarProducts(similar.slice(0, 6));
       }).catch(() => {});
     } catch (e: any) {
+      console.error('[ProductDetail] Load error:', e.message || e);
       setError(e.response?.data?.message || 'Failed to load product');
     }
     setLoading(false);
   };
 
   useEffect(() => { loadProduct(); }, [id]);
+
+  // Defer heavy sections to avoid overwhelming the JS thread on mount
+  useEffect(() => {
+    if (!loading && product) {
+      const timer = setTimeout(() => setShowHeavySections(true), 100);
+      return () => clearTimeout(timer);
+    }
+    setShowHeavySections(false);
+  }, [loading, product?._id]);
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -161,16 +225,21 @@ export default function ProductDetailScreen() {
     if (!product) return;
     try {
       await Share.share({
-        message: `Check out ${product.title} on V-Tech!\n₹${product.price.toLocaleString()}\nhttps://vtech.com/product/${product.slug}`,
+        message: `Check out ${product.title} on V-Tech Kitchen!\n₹${product.price.toLocaleString()}\nhttps://vtechkitchen.com/product/${product.slug}`,
         title: product.title,
       });
     } catch {}
   };
 
   const handleThumbnailPress = (index: number) => {
-    carouselRef.current?.scrollToIndex({ index, animated: true });
+    carouselRef.current?.scrollTo({ x: index * width, animated: true });
     setActiveImage(index);
   };
+
+  const onCarouselScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+    setActiveImage(idx);
+  }, []);
 
   const handleVideoPress = () => {
     if (product?.videoUrl) Linking.openURL(product.videoUrl);
@@ -192,6 +261,14 @@ export default function ProductDetailScreen() {
     }
   };
 
+  // useMemo MUST be before any early returns to follow Rules of Hooks
+  const highlights = useMemo(() => {
+    if (!product) return [];
+    if (product.tags && product.tags.length > 0) return product.tags.slice(0, 4);
+    if (product.specifications && product.specifications.length > 0) return product.specifications.slice(0, 3).map((s) => `${s.label}: ${s.value}`);
+    return [];
+  }, [product]);
+
   if (loading) return <LoadingScreen />;
 
   if (error || !product) {
@@ -206,73 +283,69 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const discount = product.compareAt ? Math.round(((product.compareAt - product.price) / product.compareAt) * 100) : 0;
-  const savedAmount = product.compareAt ? product.compareAt - product.price : 0;
-  const vendorInfo = typeof product.vendorId === 'object' ? product.vendorId : null;
-  const isLowStock = product.stock > 0 && product.stock <= 5;
+  const discount = product.compareAt ? Math.round(((product.compareAt - (product.price || 0)) / product.compareAt) * 100) : 0;
+  const savedAmount = product.compareAt ? product.compareAt - (product.price || 0) : 0;
+  const vendorInfo = typeof product.vendorId === 'object' && product.vendorId ? product.vendorId : null;
+  const isLowStock = (product.stock || 0) > 0 && (product.stock || 0) <= 5;
   const deliveryEstimate = getDeliveryEstimate();
-
-  const highlights = useMemo(() => {
-    if (product.tags && product.tags.length > 0) return product.tags.slice(0, 4);
-    if (product.specifications && product.specifications.length > 0) return product.specifications.slice(0, 3).map((s) => `${s.label}: ${s.value}`);
-    return [];
-  }, [product]);
+  const safeImages = (product.images || []).filter(Boolean);
 
   return (
     <View style={styles.container}>
-      {/* Image Zoom Modal */}
-      <Modal visible={zoomVisible} transparent animationType="fade" onRequestClose={() => setZoomVisible(false)}>
-        <View style={styles.zoomOverlay}>
-          <TouchableOpacity style={styles.zoomClose} onPress={() => setZoomVisible(false)}>
-            <Ionicons name="close" size={28} color={colors.white} />
-          </TouchableOpacity>
-          <FlatList
-            data={product.images || []}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            initialScrollIndex={zoomIndex}
-            getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-            keyExtractor={(_, i) => `zoom-${i}`}
-            renderItem={({ item }) => (
-              <View style={{ width, height: SCREEN_HEIGHT * 0.7, justifyContent: 'center', alignItems: 'center' }}>
-                <Image source={{ uri: item }} style={{ width, height: SCREEN_HEIGHT * 0.7 }} contentFit="contain" />
-              </View>
-            )}
-          />
-          <Text style={styles.zoomHint}>Swipe to navigate</Text>
-        </View>
-      </Modal>
+      {/* Image Zoom Modal - only mount when visible to avoid FlatList conflicts */}
+      {zoomVisible && (
+        <Modal visible transparent animationType="fade" onRequestClose={() => setZoomVisible(false)}>
+          <View style={styles.zoomOverlay}>
+            <TouchableOpacity style={styles.zoomClose} onPress={() => setZoomVisible(false)}>
+              <Ionicons name="close" size={28} color={colors.white} />
+            </TouchableOpacity>
+            <FlatList
+              data={(product.images || []).filter(Boolean)}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              initialScrollIndex={Math.min(zoomIndex, (product.images || []).length - 1)}
+              getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+              keyExtractor={(_, i) => `zoom-${i}`}
+              renderItem={({ item }) => (
+                <View style={{ width, height: SCREEN_HEIGHT * 0.7, justifyContent: 'center', alignItems: 'center' }}>
+                  <Image source={{ uri: item }} style={{ width, height: SCREEN_HEIGHT * 0.7 }} contentFit="contain" />
+                </View>
+              )}
+            />
+            <Text style={styles.zoomHint}>Swipe to navigate</Text>
+          </View>
+        </Modal>
+      )}
 
       <ScrollView>
         {/* Image Carousel */}
-        <FlatList
+        <ScrollView
           ref={carouselRef}
-          data={product.images || []}
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-          onMomentumScrollEnd={(e) => setActiveImage(Math.round(e.nativeEvent.contentOffset.x / width))}
-          keyExtractor={(_, i) => i.toString()}
-          renderItem={({ item, index }) => (
-            <Pressable onPress={() => { setZoomIndex(index); setZoomVisible(true); }}>
-              <Image source={{ uri: item }} style={styles.image} contentFit="cover" />
+          onMomentumScrollEnd={onCarouselScroll}
+          nestedScrollEnabled
+        >
+          {(product.images || []).filter(Boolean).map((img, index) => (
+            <Pressable key={index} onPress={() => { setZoomIndex(index); setZoomVisible(true); }}>
+              <Image source={{ uri: img }} style={styles.image} contentFit="cover" />
             </Pressable>
-          )}
-        />
+          ))}
+        </ScrollView>
         <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
           <Ionicons name="share-social-outline" size={22} color={colors.primary} />
         </TouchableOpacity>
 
         {/* Dots */}
         <View style={styles.dots}>
-          {(product.images || []).map((_, i) => <AnimatedDot key={i} active={i === activeImage} />)}
+          {(product.images || []).filter(Boolean).map((_, i) => <AnimatedDot key={i} active={i === activeImage} />)}
         </View>
 
         {/* Thumbnail Strip */}
         <ImageThumbnailStrip
-          images={product.images || []}
+          images={(product.images || []).filter(Boolean)}
           activeIndex={activeImage}
           onThumbnailPress={handleThumbnailPress}
           videoUrl={product.videoUrl}
@@ -410,11 +483,18 @@ export default function ProductDetailScreen() {
                 <View key={variant._id} style={{ marginTop: spacing.md }}>
                   <Text style={styles.variantLabel}>{variant.name}:</Text>
                   <View style={styles.variantOptions}>
-                    {variant.options.map((opt, i) => (
-                      <TouchableOpacity key={i} style={[styles.variantChip, i === 0 && styles.variantChipActive]}>
-                        <Text style={[styles.variantChipText, i === 0 && styles.variantChipTextActive]}>{opt}</Text>
-                      </TouchableOpacity>
-                    ))}
+                    {variant.options.map((opt, i) => {
+                      const isSelected = (selectedVariants[variant._id] ?? 0) === i;
+                      return (
+                        <TouchableOpacity
+                          key={i}
+                          style={[styles.variantChip, isSelected && styles.variantChipActive]}
+                          onPress={() => setSelectedVariants((prev) => ({ ...prev, [variant._id]: i }))}
+                        >
+                          <Text style={[styles.variantChipText, isSelected && styles.variantChipTextActive]}>{opt}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 </View>
               ))}
@@ -473,113 +553,112 @@ export default function ProductDetailScreen() {
             </StaggeredView>
           )}
 
-          {/* FAQs (Collapsible) */}
-          {(product.faqs ?? []).length > 0 && (
-            <StaggeredView delay={800}>
-              <CollapsibleSection title="FAQs">
-                {(product.faqs ?? []).map((faq, i) => (
-                  <View key={i} style={styles.faqCard}>
-                    <View style={styles.faqQRow}><Ionicons name="help-circle" size={18} color={colors.primary} /><Text style={styles.faqQuestion}>{faq.question}</Text></View>
-                    <Text style={styles.faqAnswer}>{faq.answer}</Text>
-                  </View>
-                ))}
-              </CollapsibleSection>
-            </StaggeredView>
-          )}
-
-          {/* Reviews */}
-          {reviews.length > 0 && (
-            <StaggeredView delay={900}>
-              <View style={styles.sectionTitleWrapper}><Text style={styles.sectionTitle}>Reviews ({product.reviewCount ?? 0})</Text><View style={styles.sectionAccent} /></View>
-              {/* Review Filter & Sort Controls */}
-              <View style={styles.reviewControls}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs }}>
-                  {[0, 5, 4, 3, 2, 1].map((star) => (
-                    <TouchableOpacity
-                      key={star}
-                      style={[styles.reviewFilterChip, reviewFilter === star && styles.reviewFilterChipActive]}
-                      onPress={() => setReviewFilter(star === reviewFilter ? 0 : star)}
-                    >
-                      {star > 0 ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                          <Text style={[styles.reviewFilterText, reviewFilter === star && styles.reviewFilterTextActive]}>{star}</Text>
-                          <Ionicons name="star" size={10} color={reviewFilter === star ? colors.white : colors.secondary} />
-                        </View>
-                      ) : (
-                        <Text style={[styles.reviewFilterText, reviewFilter === star && styles.reviewFilterTextActive]}>All</Text>
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-                <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm }}>
-                  <TouchableOpacity
-                    style={[styles.sortChip, reviewSort === 'recent' && styles.sortChipActive]}
-                    onPress={() => setReviewSort('recent')}
-                  >
-                    <Text style={[styles.sortChipText, reviewSort === 'recent' && styles.sortChipTextActive]}>Most Recent</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.sortChip, reviewSort === 'helpful' && styles.sortChipActive]}
-                    onPress={() => setReviewSort('helpful')}
-                  >
-                    <Text style={[styles.sortChipText, reviewSort === 'helpful' && styles.sortChipTextActive]}>Most Helpful</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              {/* Filtered Reviews */}
-              {reviews
-                .filter((r) => reviewFilter === 0 || Math.round(r.rating) === reviewFilter)
-                .sort((a, b) => reviewSort === 'recent'
-                  ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                  : (b.verifiedPurchase ? 1 : 0) - (a.verifiedPurchase ? 1 : 0)
-                )
-                .slice(0, 5)
-                .map((review) => (
-                <View key={review._id} style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <Text style={styles.reviewAuthor}>{review.userId?.name || 'User'}</Text>
-                    <View style={styles.reviewStars}>{[1, 2, 3, 4, 5].map((s) => <Ionicons key={s} name={s <= review.rating ? 'star' : 'star-outline'} size={14} color={colors.secondary} />)}</View>
-                  </View>
-                  <Text style={styles.reviewComment}>{review.comment}</Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xs }}>
-                    {review.verifiedPurchase && <Text style={styles.verified}>Verified Purchase</Text>}
-                    <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary }}>{new Date(review.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
-                  </View>
-                </View>
-              ))}
-              {reviews.filter((r) => reviewFilter === 0 || Math.round(r.rating) === reviewFilter).length === 0 && (
-                <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.md }}>No {reviewFilter}-star reviews yet</Text>
+          {/* Heavy sections - deferred render to avoid mount overload */}
+          {showHeavySections && (
+            <>
+              {/* FAQs (Collapsible) */}
+              {(product.faqs ?? []).length > 0 && (
+                <StaggeredView delay={100}>
+                  <CollapsibleSection title="FAQs">
+                    {(product.faqs ?? []).map((faq, i) => (
+                      <View key={i} style={styles.faqCard}>
+                        <View style={styles.faqQRow}><Ionicons name="help-circle" size={18} color={colors.primary} /><Text style={styles.faqQuestion}>{faq.question}</Text></View>
+                        <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                      </View>
+                    ))}
+                  </CollapsibleSection>
+                </StaggeredView>
               )}
-            </StaggeredView>
-          )}
 
-          {/* Frequently Bought Together */}
-          {similarProducts.length >= 2 && (
-            <StaggeredView delay={950}>
-              <View style={{ marginTop: spacing.lg }}>
-                <FrequentlyBoughtTogether
-                  currentProduct={product}
-                  similarProducts={similarProducts}
-                  onAddAllToCart={handleAddAllToCart}
-                />
-              </View>
-            </StaggeredView>
-          )}
+              {/* Reviews */}
+              {reviews.length > 0 && (
+                <StaggeredView delay={200}>
+                  <View style={styles.sectionTitleWrapper}><Text style={styles.sectionTitle}>Reviews ({product.reviewCount ?? 0})</Text><View style={styles.sectionAccent} /></View>
+                  {/* Review Filter & Sort Controls */}
+                  <View style={styles.reviewControls}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled contentContainerStyle={{ gap: spacing.xs }}>
+                      {[0, 5, 4, 3, 2, 1].map((star) => (
+                        <TouchableOpacity
+                          key={star}
+                          style={[styles.reviewFilterChip, reviewFilter === star && styles.reviewFilterChipActive]}
+                          onPress={() => setReviewFilter(star === reviewFilter ? 0 : star)}
+                        >
+                          {star > 0 ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                              <Text style={[styles.reviewFilterText, reviewFilter === star && styles.reviewFilterTextActive]}>{star}</Text>
+                              <Ionicons name="star" size={10} color={reviewFilter === star ? colors.white : colors.secondary} />
+                            </View>
+                          ) : (
+                            <Text style={[styles.reviewFilterText, reviewFilter === star && styles.reviewFilterTextActive]}>All</Text>
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm }}>
+                      <TouchableOpacity
+                        style={[styles.sortChip, reviewSort === 'recent' && styles.sortChipActive]}
+                        onPress={() => setReviewSort('recent')}
+                      >
+                        <Text style={[styles.sortChipText, reviewSort === 'recent' && styles.sortChipTextActive]}>Most Recent</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.sortChip, reviewSort === 'helpful' && styles.sortChipActive]}
+                        onPress={() => setReviewSort('helpful')}
+                      >
+                        <Text style={[styles.sortChipText, reviewSort === 'helpful' && styles.sortChipTextActive]}>Most Helpful</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  {/* Filtered Reviews */}
+                  {reviews
+                    .filter((r) => reviewFilter === 0 || Math.round(r.rating) === reviewFilter)
+                    .sort((a, b) => reviewSort === 'recent'
+                      ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                      : (b.verifiedPurchase ? 1 : 0) - (a.verifiedPurchase ? 1 : 0)
+                    )
+                    .slice(0, 5)
+                    .map((review) => (
+                    <View key={review._id} style={styles.reviewCard}>
+                      <View style={styles.reviewHeader}>
+                        <Text style={styles.reviewAuthor}>{review.userId?.name || 'User'}</Text>
+                        <View style={styles.reviewStars}>{[1, 2, 3, 4, 5].map((s) => <Ionicons key={s} name={s <= review.rating ? 'star' : 'star-outline'} size={14} color={colors.secondary} />)}</View>
+                      </View>
+                      <Text style={styles.reviewComment}>{review.comment}</Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xs }}>
+                        {review.verifiedPurchase && <Text style={styles.verified}>Verified Purchase</Text>}
+                        <Text style={{ fontSize: fontSize.xs, color: colors.textSecondary }}>{new Date(review.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+                      </View>
+                    </View>
+                  ))}
+                  {reviews.filter((r) => reviewFilter === 0 || Math.round(r.rating) === reviewFilter).length === 0 && (
+                    <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', paddingVertical: spacing.md }}>No {reviewFilter}-star reviews yet</Text>
+                  )}
+                </StaggeredView>
+              )}
 
-          {/* Similar Products */}
-          {similarProducts.length > 0 && (
-            <StaggeredView delay={1000}>
-              <View style={styles.sectionTitleWrapper}><Text style={styles.sectionTitle}>You May Also Like</Text><View style={styles.sectionAccent} /></View>
-              <FlatList
-                data={similarProducts}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item) => `sim-${item._id}`}
-                renderItem={({ item, index }) => (
-                  <View style={{ marginRight: spacing.md }}><AnimatedProductCard product={item} index={index} /></View>
-                )}
-              />
-            </StaggeredView>
+              {/* Frequently Bought Together */}
+              {similarProducts.length >= 2 && (
+                <View style={{ marginTop: spacing.lg }}>
+                  <FrequentlyBoughtTogether
+                    currentProduct={product}
+                    similarProducts={similarProducts}
+                    onAddAllToCart={handleAddAllToCart}
+                  />
+                </View>
+              )}
+
+              {/* Similar Products */}
+              {similarProducts.length > 0 && (
+                <StaggeredView delay={300}>
+                  <View style={styles.sectionTitleWrapper}><Text style={styles.sectionTitle}>You May Also Like</Text><View style={styles.sectionAccent} /></View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
+                    {similarProducts.map((item, index) => (
+                      <View key={`sim-${item._id}`} style={{ marginRight: spacing.md }}><AnimatedProductCard product={item} index={index} /></View>
+                    ))}
+                  </ScrollView>
+                </StaggeredView>
+              )}
+            </>
           )}
         </View>
       </ScrollView>

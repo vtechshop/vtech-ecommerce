@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { View, FlatList, StyleSheet, Dimensions, Text, TouchableOpacity } from 'react-native';
+import { View, FlatList, StyleSheet, Dimensions, Text } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -7,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { bannersApi, Banner } from '../../api/content';
 import { colors, spacing, fontSize, borderRadius, fontWeight, gradients } from '../../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -18,53 +20,56 @@ interface BannerItem {
   id: string;
   title: string;
   subtitle: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  gradient: readonly string[];
+  image?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  gradient?: readonly [string, string, ...string[]];
 }
 
-const banners: BannerItem[] = [
-  {
-    id: '1',
-    title: 'Welcome to V-Tech',
-    subtitle: 'Discover amazing products at best prices',
-    icon: 'sparkles',
-    gradient: gradients.primary,
-  },
-  {
-    id: '2',
-    title: 'Free Shipping',
-    subtitle: 'On orders above ₹999',
-    icon: 'airplane',
-    gradient: gradients.info,
-  },
-  {
-    id: '3',
-    title: 'Hot Deals',
-    subtitle: 'Up to 50% off on trending items',
-    icon: 'flame',
-    gradient: gradients.sunset,
-  },
-  {
-    id: '4',
-    title: 'Earn Rewards',
-    subtitle: 'Collect loyalty points on every purchase',
-    icon: 'star',
-    gradient: gradients.purple,
-  },
+// Fallback banners shown when API returns empty or fails
+const FALLBACK_BANNERS: BannerItem[] = [
+  { id: 'f1', title: 'Welcome to V-Tech', subtitle: 'Discover amazing products at best prices', icon: 'sparkles', gradient: gradients.primary },
+  { id: 'f2', title: 'Free Shipping', subtitle: 'On orders above ₹999', icon: 'airplane', gradient: gradients.info },
+  { id: 'f3', title: 'Hot Deals', subtitle: 'Up to 50% off on trending items', icon: 'flame', gradient: gradients.sunset },
+  { id: 'f4', title: 'Earn Rewards', subtitle: 'Collect loyalty points on every purchase', icon: 'star', gradient: gradients.purple },
 ];
+
+function mapApiBanners(apiBanners: Banner[]): BannerItem[] {
+  return apiBanners.map((b) => ({
+    id: b._id,
+    title: b.title,
+    subtitle: b.subtitle || '',
+    image: b.image,
+  }));
+}
 
 export default function HomeBanner() {
   const flatListRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [banners, setBanners] = useState<BannerItem[]>(FALLBACK_BANNERS);
   const autoScrollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    bannersApi.getAll()
+      .then((res) => {
+        if (res.data.data && res.data.data.length > 0) {
+          setBanners(mapApiBanners(res.data.data));
+        }
+      })
+      .catch(() => {
+        // Keep fallback banners on error
+      });
+  }, []);
 
   const startAutoScroll = useCallback(() => {
     if (autoScrollRef.current) clearInterval(autoScrollRef.current);
     autoScrollRef.current = setInterval(() => {
-      setActiveIndex((prev) => {
-        const next = (prev + 1) % banners.length;
-        flatListRef.current?.scrollToIndex({ index: next, animated: true });
-        return next;
+      setBanners((currentBanners) => {
+        setActiveIndex((prev) => {
+          const next = (prev + 1) % currentBanners.length;
+          flatListRef.current?.scrollToIndex({ index: next, animated: true });
+          return next;
+        });
+        return currentBanners;
       });
     }, AUTO_SCROLL_INTERVAL);
   }, []);
@@ -90,23 +95,43 @@ export default function HomeBanner() {
   };
 
   const renderBanner = ({ item }: { item: BannerItem }) => (
-    <LinearGradient
-      colors={item.gradient as string[]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.banner}
-    >
+    <View style={styles.banner}>
+      {item.image ? (
+        <>
+          <Image
+            source={{ uri: item.image }}
+            style={StyleSheet.absoluteFillObject}
+            contentFit="cover"
+            transition={300}
+          />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.6)']}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </>
+      ) : (
+        <LinearGradient
+          colors={item.gradient || gradients.primary}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFillObject}
+        />
+      )}
       <View style={styles.bannerContent}>
-        <View style={styles.bannerIconCircle}>
-          <Ionicons name={item.icon} size={28} color={colors.white} />
-        </View>
+        {item.icon && (
+          <View style={styles.bannerIconCircle}>
+            <Ionicons name={item.icon} size={28} color={colors.white} />
+          </View>
+        )}
         <Text style={styles.bannerTitle}>{item.title}</Text>
         <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
       </View>
-      <View style={styles.bannerDecoration}>
-        <Ionicons name={item.icon} size={120} color="rgba(255,255,255,0.08)" />
-      </View>
-    </LinearGradient>
+      {!item.image && item.icon && (
+        <View style={styles.bannerDecoration}>
+          <Ionicons name={item.icon} size={120} color="rgba(255,255,255,0.08)" />
+        </View>
+      )}
+    </View>
   );
 
   return (
@@ -124,13 +149,13 @@ export default function HomeBanner() {
         onScrollBeginDrag={onScrollBeginDrag}
         onScrollEndDrag={onScrollEndDrag}
         onMomentumScrollEnd={onMomentumScrollEnd}
+        onScrollToIndexFailed={() => {}}
         getItemLayout={(_, index) => ({
           length: BANNER_WIDTH,
           offset: BANNER_WIDTH * index,
           index,
         })}
       />
-      {/* Dot Indicators */}
       <View style={styles.dots}>
         {banners.map((_, index) => (
           <DotIndicator key={index} active={index === activeIndex} />

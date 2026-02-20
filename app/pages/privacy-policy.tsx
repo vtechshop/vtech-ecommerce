@@ -6,12 +6,13 @@ import { colors, spacing, fontSize, borderRadius } from '../../src/theme';
 const SECTIONS = [
   {
     title: '1. Information We Collect',
-    content: `We collect the following types of information when you use V-Tech Kitchen:
+    content: `We collect the following types of information when you use V-Tech:
 
 • Personal Information: Name, email address, phone number, and shipping address when you create an account or place an order.
 • Payment Information: Payment details are processed securely through Razorpay. We do not store your card details.
 • Usage Data: We collect information about how you interact with our app, including pages viewed, products browsed, and search queries.
-• Device Information: Device type, operating system, and app version for improving your experience.`,
+• Device Information: Device type, operating system, and app version for improving your experience.
+• Kitchen Preferences: Your cooking preferences and kitchen product interests to personalize recommendations.`,
   },
   {
     title: '2. How We Use Your Information',
@@ -55,7 +56,7 @@ We do not sell your personal information to third parties.`,
 • Opt out of marketing communications
 • Request data portability
 
-To exercise these rights, contact us at support@vtechkitchen.com.`,
+To exercise these rights, contact us at vtechshop.customercare@gmail.com.`,
   },
   {
     title: '6. Cookies & Tracking',
@@ -69,8 +70,8 @@ To exercise these rights, contact us at support@vtechkitchen.com.`,
     title: '8. Contact Us',
     content: `If you have questions about this Privacy Policy, contact us at:
 
-Email: support@vtechkitchen.com
-Phone: +91 98765 43210`,
+Email: vtechshop.customercare@gmail.com
+Phone: +91 99445 56683`,
   },
 ];
 
@@ -78,7 +79,7 @@ export default function PrivacyPolicyScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Privacy Policy</Text>
-      <Text style={styles.updated}>Last updated: January 2025</Text>
+      <Text style={styles.updated}>Last updated: February 2026</Text>
       <Text style={styles.intro}>
         V-Tech Kitchen ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our mobile application and services.
       </Text>

@@ -5,8 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { adminApi } from '../../src/api/admin';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpacing } from '../../src/theme';
+import { useAuthGuard } from '../../src/hooks/useAuthGuard';
+import { ROLES } from '../../src/utils/constants';
 
 export default function AdminDashboard() {
+  const { isReady } = useAuthGuard([ROLES.ADMIN]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -24,6 +27,7 @@ export default function AdminDashboard() {
   useEffect(() => { loadData(); }, []);
   const onRefresh = async () => { setRefreshing(true); await loadData(); setRefreshing(false); };
 
+  if (!isReady) return <LoadingScreen />;
   if (loading) return <LoadingScreen />;
 
   const statsCards = [

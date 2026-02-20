@@ -1,30 +1,137 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { View, Text, Pressable, Dimensions, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fontSize, fontWeight, letterSpacing, shadows } from '../../src/theme';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { colors, fontSize, fontWeight, letterSpacing, shadows, spacing } from '../../src/theme';
 import { useAppSelector } from '../../src/store';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const TAB_COUNT = 5;
+const TAB_WIDTH = SCREEN_WIDTH / TAB_COUNT;
+
+function AnimatedBadge({ count }: { count: number }) {
+  const scale = useSharedValue(0);
+
+  useEffect(() => {
+    scale.value = withSequence(
+      withTiming(0, { duration: 0 }),
+      withSpring(1.3, { damping: 8, stiffness: 300 }),
+      withSpring(1, { damping: 12, stiffness: 200 })
+    );
+  }, [count]);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <Animated.View style={[tabStyles.badge, style]}>
+      <Text style={tabStyles.badgeText}>{count}</Text>
+    </Animated.View>
+  );
+}
+
+function AnimatedTabButton({ options, isFocused, onPress, onLongPress, badge }: {
+  options: any;
+  isFocused: boolean;
+  onPress: () => void;
+  onLongPress: () => void;
+  badge?: number;
+}) {
+  const iconScale = useSharedValue(1);
+
+  useEffect(() => {
+    if (isFocused) {
+      iconScale.value = withSequence(
+        withSpring(1.2, { damping: 10, stiffness: 300 }),
+        withSpring(1, { damping: 12, stiffness: 200 })
+      );
+    }
+  }, [isFocused]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: iconScale.value }],
+  }));
+
+  const color = isFocused ? colors.primary : colors.textSecondary;
+
+  return (
+    <Pressable style={tabStyles.tabButton} onPress={onPress} onLongPress={onLongPress}>
+      <Animated.View style={iconStyle}>
+        {options.tabBarIcon?.({ color, size: 24 })}
+      </Animated.View>
+      <Text style={[tabStyles.label, { color }]}>
+        {options.title}
+      </Text>
+      {badge != null && badge > 0 && <AnimatedBadge count={badge} />}
+    </Pressable>
+  );
+}
+
+function AnimatedTabBar({ state, descriptors, navigation }: any) {
+  const translateX = useSharedValue(state.index * TAB_WIDTH);
+
+  useEffect(() => {
+    translateX.value = withSpring(state.index * TAB_WIDTH, {
+      damping: 20,
+      stiffness: 200,
+    });
+  }, [state.index]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  return (
+    <View style={tabStyles.container}>
+      <Animated.View style={[tabStyles.indicatorWrapper, indicatorStyle]}>
+        <View style={tabStyles.indicator} />
+      </Animated.View>
+
+      {state.routes.map((route: any, index: number) => {
+        const { options } = descriptors[route.key];
+        const isFocused = state.index === index;
+
+        const onPress = () => {
+          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name);
+          }
+        };
+
+        const onLongPress = () => {
+          navigation.emit({ type: 'tabLongPress', target: route.key });
+        };
+
+        return (
+          <AnimatedTabButton
+            key={route.key}
+            options={options}
+            isFocused={isFocused}
+            onPress={onPress}
+            onLongPress={onLongPress}
+            badge={options.tabBarBadge}
+          />
+        );
+      })}
+    </View>
+  );
+}
 
 export default function TabLayout() {
   const cartItemCount = useAppSelector((s) => s.cart.cart?.items.length ?? 0);
 
   return (
     <Tabs
+      tabBar={(props) => <AnimatedTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: {
-          backgroundColor: colors.white,
-          borderTopWidth: 0,
-          height: 65,
-          paddingBottom: 10,
-          paddingTop: 6,
-          ...shadows.lg,
-        },
-        tabBarLabelStyle: {
-          fontSize: fontSize.xs,
-          fontWeight: fontWeight.semibold,
-          letterSpacing: letterSpacing.wide,
-        },
         headerStyle: { backgroundColor: colors.white },
         headerShadowVisible: false,
         headerTintColor: colors.text,
@@ -74,3 +181,55 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const tabStyles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    height: 65,
+    paddingBottom: 10,
+    paddingTop: 6,
+    ...shadows.lg,
+  },
+  indicatorWrapper: {
+    position: 'absolute',
+    top: 0,
+    width: TAB_WIDTH,
+    alignItems: 'center',
+  },
+  indicator: {
+    width: 40,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  label: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: letterSpacing.wide,
+    marginTop: 2,
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: '22%',
+    backgroundColor: colors.error,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: fontWeight.bold,
+  },
+});

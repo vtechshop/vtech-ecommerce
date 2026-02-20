@@ -1,13 +1,13 @@
 import apiClient from './client';
-import { ApiResponse, Address, Product, Notification } from '../types';
+import { ApiResponse, Address, Product, Notification, User } from '../types';
 
 export const userApi = {
   // Profile
   getProfile: () =>
-    apiClient.get<ApiResponse<object>>('/user/profile'),
+    apiClient.get<ApiResponse<User>>('/user/profile'),
 
-  updateProfile: (data: object) =>
-    apiClient.put<ApiResponse<object>>('/user/profile', data),
+  updateProfile: (data: Partial<User>) =>
+    apiClient.put<ApiResponse<User>>('/user/profile', data),
 
   // Addresses
   getAddresses: () =>

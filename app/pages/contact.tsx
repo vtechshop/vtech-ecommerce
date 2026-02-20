@@ -1,42 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Alert, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { userApi } from '../../src/api/user';
+import { appConfigApi, AppConfig } from '../../src/api/content';
 import Button from '../../src/components/ui/Button';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 
-const CONTACT_OPTIONS = [
-  {
-    icon: 'mail-outline' as const,
-    title: 'Email Us',
-    detail: 'support@vtechkitchen.com',
-    onPress: () => Linking.openURL('mailto:support@vtechkitchen.com'),
-  },
-  {
-    icon: 'call-outline' as const,
-    title: 'Call Us',
-    detail: '+91 98765 43210',
-    onPress: () => Linking.openURL('tel:+919876543210'),
-  },
-  {
-    icon: 'logo-whatsapp' as const,
-    title: 'WhatsApp',
-    detail: '+91 98765 43210',
-    onPress: () => Linking.openURL('https://wa.me/919876543210'),
-  },
-  {
-    icon: 'globe-outline' as const,
-    title: 'Website',
-    detail: 'vtechkitchen.com',
-    onPress: () => Linking.openURL('https://vtechkitchen.com/page/contact'),
-  },
-];
+function buildContactOptions(info: AppConfig['contactInfo']) {
+  return [
+    {
+      icon: 'mail-outline' as const,
+      title: 'Email Us',
+      detail: info.email,
+      onPress: () => Linking.openURL(`mailto:${info.email}`),
+    },
+    {
+      icon: 'call-outline' as const,
+      title: 'Call Us',
+      detail: info.phone,
+      onPress: () => Linking.openURL(`tel:${info.phone.replace(/\s/g, '')}`),
+    },
+    {
+      icon: 'logo-whatsapp' as const,
+      title: 'WhatsApp',
+      detail: info.whatsapp,
+      onPress: () => Linking.openURL(`https://wa.me/${info.whatsapp.replace(/[^0-9]/g, '')}`),
+    },
+    {
+      icon: 'globe-outline' as const,
+      title: 'Website',
+      detail: info.website,
+      onPress: () => Linking.openURL(`https://${info.website}`),
+    },
+  ];
+}
 
 export default function ContactScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [contactInfo, setContactInfo] = useState<AppConfig['contactInfo']>({
+    email: 'vtechshop.customercare@gmail.com',
+    phone: '+91 99445 56683',
+    whatsapp: '+91 99445 56683',
+    website: 'vtechkitchen.com',
+    businessHours: 'Monday - Saturday: 9:00 AM - 6:00 PM',
+    address: '',
+  });
+
+  useEffect(() => {
+    appConfigApi.get()
+      .then((res) => {
+        if (res.data.data?.contactInfo) {
+          setContactInfo(res.data.data.contactInfo);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const CONTACT_OPTIONS = buildContactOptions(contactInfo);
 
   const handleSend = async () => {
     if (!name.trim() || !email.trim() || !message.trim()) {
@@ -65,7 +88,7 @@ export default function ContactScreen() {
       // Fallback: open email client if API fails (e.g., not logged in)
       const subject = encodeURIComponent(`Contact: ${name.trim()}`);
       const body = encodeURIComponent(`Name: ${name.trim()}\nEmail: ${email.trim()}\n\n${message.trim()}`);
-      const mailUrl = `mailto:support@vtechkitchen.com?subject=${subject}&body=${body}`;
+      const mailUrl = `mailto:vtechshop.customercare@gmail.com?subject=${subject}&body=${body}`;
       Alert.alert(
         'Sending via Email',
         'We\'ll open your email app to send this message.',
@@ -139,7 +162,7 @@ export default function ContactScreen() {
         <Ionicons name="time-outline" size={20} color={colors.text} />
         <View style={{ marginLeft: spacing.sm }}>
           <Text style={styles.hoursTitle}>Business Hours</Text>
-          <Text style={styles.hoursText}>Monday - Saturday: 9:00 AM - 6:00 PM</Text>
+          <Text style={styles.hoursText}>{contactInfo.businessHours}</Text>
           <Text style={styles.hoursText}>Sunday: Closed</Text>
         </View>
       </View>
@@ -151,7 +174,7 @@ export default function ContactScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  header: { backgroundColor: colors.primary, padding: spacing.lg },
+  header: { backgroundColor: colors.primary, padding: spacing.lg, paddingTop: spacing.lg + 60 },
   headerTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.white },
   headerSubtitle: { fontSize: fontSize.sm, color: 'rgba(255,255,255,0.8)', marginTop: spacing.xs },
   optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.md, gap: spacing.sm },

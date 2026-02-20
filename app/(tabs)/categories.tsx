@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { View, Text, SectionList, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, SectionList, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming, withSpring } from 'react-native-reanimated';
 import { productsApi } from '../../src/api/products';
 import { Category } from '../../src/types';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -35,6 +37,76 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
     <Animated.View style={animStyle}>
       <Ionicons name="chevron-forward" size={16} color={colors.primary} />
     </Animated.View>
+  );
+}
+
+function AnimatedCategoryCard({ cat, onPress }: { cat: Category; onPress: () => void }) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <AnimatedPressable
+      style={[styles.card, animStyle]}
+      onPress={onPress}
+      onPressIn={() => { scale.value = withSpring(0.96, { damping: 15, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 12, stiffness: 200 }); }}
+    >
+      {cat.image ? (
+        <Image source={{ uri: cat.image }} style={styles.image} />
+      ) : (
+        <View style={[styles.image, styles.placeholder]}>
+          <Ionicons name="grid" size={24} color={colors.primary} />
+        </View>
+      )}
+      <View style={styles.info}>
+        <Text style={styles.name}>{cat.name}</Text>
+      </View>
+      <View style={styles.chevronCircle}>
+        <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+      </View>
+    </AnimatedPressable>
+  );
+}
+
+function AnimatedSectionHeader({ sec, childCount, onToggle, onViewAll }: {
+  sec: CategorySection; childCount: number; onToggle: () => void; onViewAll: () => void;
+}) {
+  const scale = useSharedValue(1);
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
+  return (
+    <AnimatedPressable
+      style={[styles.sectionHeader, animStyle]}
+      onPress={onToggle}
+      onPressIn={() => { scale.value = withSpring(0.97, { damping: 15, stiffness: 300 }); }}
+      onPressOut={() => { scale.value = withSpring(1, { damping: 12, stiffness: 200 }); }}
+    >
+      <View style={styles.sectionHeaderLeft}>
+        {sec.parentCategory.image ? (
+          <Image source={{ uri: sec.parentCategory.image }} style={styles.sectionImage} />
+        ) : (
+          <View style={[styles.sectionImage, styles.sectionImagePlaceholder]}>
+            <Ionicons name="grid" size={20} color={colors.white} />
+          </View>
+        )}
+        <View>
+          <Text style={styles.sectionTitle}>{sec.title}</Text>
+          <Text style={styles.sectionCount}>{childCount} sub-categor{childCount === 1 ? 'y' : 'ies'}</Text>
+        </View>
+      </View>
+      <View style={styles.sectionHeaderRight}>
+        <TouchableOpacity
+          style={styles.viewAllBtn}
+          onPress={onViewAll}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={styles.viewAllText}>View All</Text>
+        </TouchableOpacity>
+        <View style={styles.chevronCircle}>
+          <ChevronIcon expanded={sec.isExpanded} />
+        </View>
+      </View>
+    </AnimatedPressable>
   );
 }
 
@@ -131,21 +203,7 @@ export default function CategoriesScreen() {
         contentContainerStyle={{ padding: spacing.md }}
         renderSectionHeader={() => null}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onPress={() => navigateToCategory(item)}>
-            {item.image ? (
-              <Image source={{ uri: item.image }} style={styles.image} />
-            ) : (
-              <View style={[styles.image, styles.placeholder]}>
-                <Ionicons name="grid" size={24} color={colors.primary} />
-              </View>
-            )}
-            <View style={styles.info}>
-              <Text style={styles.name}>{item.name}</Text>
-            </View>
-            <View style={styles.chevronCircle}>
-              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-            </View>
-          </TouchableOpacity>
+          <AnimatedCategoryCard cat={item} onPress={() => navigateToCategory(item)} />
         )}
       />
     );
@@ -162,21 +220,7 @@ export default function CategoriesScreen() {
         standaloneCategories.length > 0 ? (
           <View style={styles.standaloneSection}>
             {standaloneCategories.map(cat => (
-              <TouchableOpacity key={cat._id} style={styles.card} onPress={() => navigateToCategory(cat)}>
-                {cat.image ? (
-                  <Image source={{ uri: cat.image }} style={styles.image} />
-                ) : (
-                  <View style={[styles.image, styles.placeholder]}>
-                    <Ionicons name="grid" size={24} color={colors.primary} />
-                  </View>
-                )}
-                <View style={styles.info}>
-                  <Text style={styles.name}>{cat.name}</Text>
-                </View>
-                <View style={styles.chevronCircle}>
-                  <Ionicons name="chevron-forward" size={16} color={colors.primary} />
-                </View>
-              </TouchableOpacity>
+              <AnimatedCategoryCard key={cat._id} cat={cat} onPress={() => navigateToCategory(cat)} />
             ))}
           </View>
         ) : null
@@ -186,37 +230,12 @@ export default function CategoriesScreen() {
         const childCount = categories.filter(c => c.parent === sec.parentCategory._id).length;
 
         return (
-          <TouchableOpacity
-            style={styles.sectionHeader}
-            onPress={() => toggleSection(sec.parentCategory._id)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              {sec.parentCategory.image ? (
-                <Image source={{ uri: sec.parentCategory.image }} style={styles.sectionImage} />
-              ) : (
-                <View style={[styles.sectionImage, styles.sectionImagePlaceholder]}>
-                  <Ionicons name="grid" size={20} color={colors.white} />
-                </View>
-              )}
-              <View>
-                <Text style={styles.sectionTitle}>{sec.title}</Text>
-                <Text style={styles.sectionCount}>{childCount} sub-categor{childCount === 1 ? 'y' : 'ies'}</Text>
-              </View>
-            </View>
-            <View style={styles.sectionHeaderRight}>
-              <TouchableOpacity
-                style={styles.viewAllBtn}
-                onPress={() => navigateToCategory(sec.parentCategory)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Text style={styles.viewAllText}>View All</Text>
-              </TouchableOpacity>
-              <View style={styles.chevronCircle}>
-                <ChevronIcon expanded={sec.isExpanded} />
-              </View>
-            </View>
-          </TouchableOpacity>
+          <AnimatedSectionHeader
+            sec={sec}
+            childCount={childCount}
+            onToggle={() => toggleSection(sec.parentCategory._id)}
+            onViewAll={() => navigateToCategory(sec.parentCategory)}
+          />
         );
       }}
       renderItem={({ item }) => (

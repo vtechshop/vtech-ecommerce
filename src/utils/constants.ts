@@ -4,11 +4,15 @@
 // AND testing on an emulator (e.g. 'http://10.0.2.2:8080/api').
 export const API_BASE_URL = 'https://vtech-ecommerce.onrender.com/api';
 
-export const RAZORPAY_KEY = 'your_razorpay_key';
 
 export const TOKEN_KEYS = {
   ACCESS: 'vtech_access_token',
   REFRESH: 'vtech_refresh_token',
+};
+
+// SecureStore options - disable biometric/fingerprint prompts
+export const SECURE_STORE_OPTIONS = {
+  requireAuthentication: false,
 };
 
 export const ROLES = {
