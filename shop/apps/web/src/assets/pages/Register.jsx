@@ -8,6 +8,7 @@ import Input from '@/components/common/Input';
 import CustomSelect from '@/components/common/CustomSelect';
 import ShinyButton from '@/components/animations/ShinyButton';
 import ScrollReveal from '@/components/animations/ScrollReveal';
+import { NoIndex } from '@/components/common/SEO';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -93,6 +94,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
+      <NoIndex title="Create Account - V-Tech Kitchen" />
       <div className="max-w-md w-full">
         <ScrollReveal direction="down" duration={0.5}>
           <div className="text-center mb-8">

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { formatDate } from '@/utils/format';
 import useAuth from '@/hooks/useAuth';
+import SEO from '@/components/common/SEO';
 import toast from 'react-hot-toast';
 import { PLACEHOLDER_IMAGE_MD, handleImageError } from '@/utils/placeholders';
 import ScrollReveal from '@/components/common/ScrollReveal';
@@ -298,6 +299,13 @@ const BlogPost = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title={`${data.title} - V-Tech Kitchen Blog`}
+        description={data.excerpt || data.title}
+        image={data.featuredImage}
+        type="article"
+        url={`https://www.vtechkitchen.com/blog/${data.slug}`}
+      />
       {/* Hero Section */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-6">

@@ -7,6 +7,7 @@ import useNotifications from '@/hooks/useNotifications';
 import NotificationBadge from '@/components/common/NotificationBadge';
 import Header from './Header';
 import { useToast } from '@/components/common/ToastContainer';
+import { NoIndex } from '@/components/common/SEO';
 import { refreshUser } from '@/store/slices/authSlice';
 
 const DashboardLayout = () => {
@@ -287,6 +288,7 @@ const DashboardLayout = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
+      <NoIndex title="Dashboard - V-Tech Kitchen" />
       <Header onMobileMenuToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
       <div className="flex flex-1">

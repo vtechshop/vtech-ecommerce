@@ -7,6 +7,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import ShinyButton from '@/components/animations/ShinyButton';
 import ScrollReveal from '@/components/animations/ScrollReveal';
+import { NoIndex } from '@/components/common/SEO';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -75,6 +76,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
+      <NoIndex title="Sign In - V-Tech Kitchen" />
       <div className="max-w-md w-full">
         <ScrollReveal direction="down" duration={0.5}>
           <div className="text-center mb-8">

@@ -9,6 +9,7 @@ import AdBanner from '@/components/common/AdBanner';
 import ShinyButton from '@/components/animations/ShinyButton';
 import { formatCurrency } from '@/utils/format';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
+import { NoIndex } from '@/components/common/SEO';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -95,6 +96,7 @@ const Cart = () => {
 
   return (
     <div className="bg-white min-h-screen">
+      <NoIndex title="Shopping Cart - V-Tech Kitchen" />
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         {/* Ad Banner - Top of Cart */}
         <AdBanner placement="cart_top" position="top" className="mb-6 md:mb-8 fade-in" />

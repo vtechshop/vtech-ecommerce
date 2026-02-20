@@ -10,6 +10,7 @@ import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
 import { ShieldCheck, Search, ChevronDown, ChevronUp, Package, User, LogIn, Clock, AlertTriangle, CheckCircle, XCircle, MessageCircle, Phone, HelpCircle, Truck } from 'lucide-react';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import SEO from '@/components/common/SEO';
 
 const WarrantyCheck = () => {
   const { user, isAuthenticated } = useAuth();
@@ -72,6 +73,11 @@ const WarrantyCheck = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <SEO
+        title="Warranty Check - V-Tech Kitchen"
+        description="Check your product warranty status at V-Tech Kitchen. View warranty coverage, expiry dates, and claim support for your purchases."
+        keywords="warranty check, product warranty, warranty status, V-Tech Kitchen"
+      />
       {/* Hero - Compact */}
       <div className="bg-gradient-to-r from-primary-700 to-primary-900 text-white py-8">
         <div className="container mx-auto px-4 text-center">

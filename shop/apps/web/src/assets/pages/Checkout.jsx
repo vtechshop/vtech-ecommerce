@@ -18,6 +18,7 @@ import { useToast } from '@/components/common/ToastContainer';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { getAffiliateCode, clearAffiliateCode } from '@/utils/affiliateTracking';
+import { NoIndex } from '@/components/common/SEO';
 import ScrollReveal from '@/components/common/ScrollReveal';
 
 const Checkout = () => {
@@ -321,6 +322,7 @@ const Checkout = () => {
 
   return (
     <div className="bg-white min-h-screen">
+      <NoIndex title="Checkout - V-Tech Kitchen" />
       <ScrollReveal animation="fadeUp">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 max-w-screen-2xl">
         {/* Header */}

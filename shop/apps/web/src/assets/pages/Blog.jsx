@@ -11,6 +11,7 @@ import { Clock, Eye, Heart, Calendar, Video, FileText, Search } from 'lucide-rea
 import { formatDate } from '@/utils/format';
 import { PLACEHOLDER_BLOG, handleImageError } from '@/utils/placeholders';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import SEO from '@/components/common/SEO';
 
 const Blog = () => {
   const [page, setPage] = useState(1);
@@ -56,6 +57,11 @@ const Blog = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      <SEO
+        title="Blog - V-Tech Kitchen | Tips, Recipes & Kitchen Guides"
+        description="Read the latest kitchen tips, recipes, product guides, and cooking advice from V-Tech Kitchen. Expert insights for your modern kitchen."
+        keywords="kitchen blog, cooking tips, kitchen guides, recipes, kitchen appliance reviews"
+      />
       {/* Hero Section */}
       <ScrollReveal animation="fadeIn">
         <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white py-16 mb-8">

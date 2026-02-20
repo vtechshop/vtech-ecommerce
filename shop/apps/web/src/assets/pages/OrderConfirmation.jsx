@@ -13,6 +13,7 @@ import FloatingParticles from '@/components/animations/FloatingParticles';
 import Confetti from '@/components/common/Confetti';
 import { playCheckoutSuccess } from '@/utils/sounds';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import { NoIndex } from '@/components/common/SEO';
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
@@ -79,6 +80,7 @@ const OrderConfirmation = () => {
 
   return (
     <div className="min-h-screen bg-blue-50 py-8 relative overflow-hidden">
+      <NoIndex title="Order Confirmation - V-Tech Kitchen" />
       {/* Crackers Blast - After successful payment */}
       {/* Check for both 'paid' and 'captured' - Razorpay uses 'captured' for successful payments */}
       {(order.payment?.status === 'paid' || order.payment?.status === 'captured') && (

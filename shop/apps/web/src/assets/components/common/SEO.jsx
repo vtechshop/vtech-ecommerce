@@ -1,15 +1,23 @@
 import { Helmet } from 'react-helmet-async';
 
+const BASE_URL = 'https://www.vtechkitchen.com';
+
 const SEO = ({
   title = 'V-Tech Kitchen - Premium Kitchen Appliances & Utensils',
   description = 'Shop premium kitchen appliances and utensils at V-Tech Kitchen. Discover quality cookware, gadgets, and tools for your modern kitchen. Fast shipping, great prices.',
   keywords = 'kitchen appliances, cookware, kitchen utensils, kitchen gadgets, cooking tools, premium kitchenware',
-  image = 'https://www.vtechkitchen.com/og-image.jpg',
+  image = `${BASE_URL}/og-image.jpg`,
   url,
   type = 'website',
+  noindex = false,
   structuredData,
 }) => {
-  const canonicalUrl = url || (typeof window !== 'undefined' ? window.location.href : 'https://www.vtechkitchen.com');
+  // Build canonical URL: strip query params to avoid duplicate content
+  let canonicalUrl = url;
+  if (!canonicalUrl && typeof window !== 'undefined') {
+    canonicalUrl = `${BASE_URL}${window.location.pathname}`;
+  }
+  canonicalUrl = canonicalUrl || BASE_URL;
 
   return (
     <Helmet>
@@ -18,6 +26,9 @@ const SEO = ({
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       <link rel="canonical" href={canonicalUrl} />
+
+      {/* Robots directive */}
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type} />
@@ -43,5 +54,16 @@ const SEO = ({
     </Helmet>
   );
 };
+
+/**
+ * NoIndex component - blocks search engine indexing for private pages.
+ * Use on: cart, login, register, checkout, dashboards, etc.
+ */
+export const NoIndex = ({ title }) => (
+  <Helmet>
+    {title && <title>{title}</title>}
+    <meta name="robots" content="noindex, nofollow" />
+  </Helmet>
+);
 
 export default SEO;

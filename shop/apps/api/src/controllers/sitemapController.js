@@ -215,26 +215,42 @@ exports.generateRobotsTxt = async (req, res, next) => {
 
 User-agent: *
 Allow: /
-
-Disallow: /dashboard/
-Disallow: /admin/
-Disallow: /checkout/
-Disallow: /account/
-Disallow: /cart
-Disallow: /login
-Disallow: /register
-Disallow: /forgot-password
-Disallow: /reset-password
-Disallow: /api/
-
 Allow: /products
 Allow: /product/
 Allow: /category/
 Allow: /blog/
 Allow: /vendor/
 Allow: /page/
+Allow: /track-order
+Allow: /warranty-check
 
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /admin-dashboard
+Disallow: /admin-dashboard/
+Disallow: /vendor-dashboard
+Disallow: /vendor-dashboard/
+Disallow: /affiliate-dashboard
+Disallow: /affiliate-dashboard/
+Disallow: /support-dashboard
+Disallow: /support-dashboard/
+Disallow: /checkout
+Disallow: /cart
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /order-confirmation
+Disallow: /api/
+Disallow: /search
+Disallow: /*?page=
+Disallow: /*?sort=
+Disallow: /*?filter=
 Disallow: /*?ref=
+Disallow: /*?view=
+Disallow: /*?featured=
+Disallow: /*?tab=
 
 Crawl-delay: 1
 

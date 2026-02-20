@@ -8,6 +8,7 @@ import OrderTimeline from '@/components/tracking/OrderTimeline';
 import { formatCurrency, formatDateTime } from '@/utils/format';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import SEO from '@/components/common/SEO';
 
 const TrackOrder = () => {
   const [orderId, setOrderId] = useState('');
@@ -34,6 +35,11 @@ const TrackOrder = () => {
 
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
+      <SEO
+        title="Track Your Order - V-Tech Kitchen"
+        description="Track your V-Tech Kitchen order status in real-time. Enter your order ID and email to get the latest delivery updates."
+        keywords="track order, order status, delivery tracking, V-Tech Kitchen"
+      />
       <div className="container mx-auto px-3 sm:px-4 md:px-6">
       <ScrollReveal animation="fadeUp">
       <div className="max-w-4xl mx-auto p-6">
