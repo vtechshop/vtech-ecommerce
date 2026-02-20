@@ -289,7 +289,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
 
       const invoiceRows = [
         ['Order ID', `#${order.orderId}`],
-        ['Invoice No', order.orderId],
+        ['Invoice No', order.invoiceNumber || order.orderId],
         ['Order Date', formatDate(order.createdAt)],
         ['Place of Supply', placeOfSupply],
         ['Payment Mode', paymentDisplay],

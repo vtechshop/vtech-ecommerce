@@ -4,7 +4,8 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Order = require('../models/Order');
 const Commission = require('../models/Commission');
-const { slugify, generateSKU, getPaginationMeta } = require('../utils/helpers');
+const Warranty = require('../models/Warranty');
+const { slugify, generateSKU, getPaginationMeta, generateOrderId } = require('../utils/helpers');
 const logger = require('../config/logger');
 const notificationHelper = require('../services/notificationHelper');
 const notificationService = require('../services/notificationService');
@@ -1983,6 +1984,158 @@ async function deleteCategory(req, res, next) {
   }
 }
 
+// ---------- Vendor Manual Orders ----------
+async function getVendorManualOrders(req, res, next) {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) return res.status(403).json({ success: false, error: { message: 'Vendor profile required' } });
+
+    const { page = 1, limit = 20, search, source } = req.query;
+    const query = { 'items.vendorId': vendor._id, source: { $in: ['in-store', 'phone'] } };
+    if (source && source !== 'all') query.source = source;
+    if (search) {
+      query.$or = [
+        { orderId: { $regex: search, $options: 'i' } },
+        { customerPhone: { $regex: search, $options: 'i' } },
+        { 'shipTo.fullName': { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const total = await Order.countDocuments(query);
+    const orders = await Order.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .lean();
+
+    res.json({ success: true, data: orders, pagination: { page: parseInt(page), limit: parseInt(limit), total, totalPages: Math.ceil(total / limit) } });
+  } catch (error) { next(error); }
+}
+
+async function createVendorManualOrder(req, res, next) {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) return res.status(403).json({ success: false, error: { message: 'Vendor profile required' } });
+
+    const { customerName, customerPhone, customerEmail, items, paymentMethod, amountPaid, source = 'in-store', notes, discount = 0 } = req.body;
+    if (!customerName || !customerPhone || !items?.length) {
+      return res.status(400).json({ success: false, error: { message: 'Customer name, phone and at least one item are required' } });
+    }
+
+    const orderItems = [];
+    let subtotal = 0;
+    for (const item of items) {
+      const product = await Product.findOne({ _id: item.productId, vendorId: vendor._id });
+      if (!product) return res.status(400).json({ success: false, error: { message: `Product not found or not yours: ${item.productId}` } });
+
+      const price = item.price || product.price;
+      const qty = item.qty || 1;
+      subtotal += price * qty;
+
+      const orderItem = {
+        productId: product._id, vendorId: vendor._id,
+        name: product.title || product.name, image: product.images?.[0] || '',
+        productSlug: product.slug, sku: product.sku, hsnCode: product.hsnCode || '',
+        priceSnapshot: price, qty,
+      };
+
+      if (product.hasWarranty && product.warranty) {
+        orderItem.warranty = {
+          hasWarranty: true, duration: product.warranty.duration, durationType: product.warranty.durationType,
+          description: product.warranty.description, terms: product.warranty.terms,
+          provider: product.warranty.provider, activationRequired: false,
+          warrantyCode: item.serialNumber || undefined,
+        };
+      }
+      orderItems.push(orderItem);
+    }
+
+    const order = await Order.create({
+      orderId: generateOrderId(), items: orderItems, source, customerPhone, isVendorOrder: true,
+      shipTo: { fullName: customerName, phone: customerPhone },
+      totals: { subtotal, tax: 0, shipping: 0, discount: parseFloat(discount) || 0, total: amountPaid || (subtotal - (parseFloat(discount) || 0)) },
+      status: 'delivered',
+      payment: { method: paymentMethod || 'cash', status: 'paid', paidAt: new Date(), amount: amountPaid || subtotal, currency: 'INR' },
+      events: [
+        { status: 'placed', description: `Manual order by vendor (${source})`, timestamp: new Date() },
+        { status: 'paid', description: `Payment received: ${paymentMethod || 'cash'}`, timestamp: new Date() },
+        { status: 'delivered', description: 'In-store pickup / delivered', timestamp: new Date() },
+      ],
+      customerNotes: notes,
+      guestEmail: customerEmail || undefined,
+    });
+
+    // Auto-activate warranties
+    const { activateWarrantiesForOrder } = require('./adminController');
+    await activateWarrantiesForOrder(order);
+    await order.save();
+
+    // Create warranty records if missing
+    for (const item of order.items) {
+      if (!item.warranty?.hasWarranty) continue;
+      try {
+        const exists = await Warranty.findOne({ purchaseId: order.orderId, productId: item.productId });
+        if (exists) continue;
+        const warrantyId = await Warranty.generateWarrantyId();
+        const now = new Date();
+        let days = item.warranty.durationType === 'lifetime' ? 36500 : item.warranty.durationType === 'years' ? (item.warranty.duration || 1) * 365 : (item.warranty.duration || 1) * 30;
+        const endDate = new Date(now); endDate.setDate(endDate.getDate() + days);
+        await Warranty.create({
+          warrantyId, purchaseId: order.orderId, orderId: order._id,
+          customerName, customerEmail: customerEmail || undefined, customerPhone,
+          productId: item.productId, product: { name: item.name, model: item.sku || '' },
+          purchaseDate: now, warrantyStartDate: now, warrantyEndDate: endDate, warrantyPeriodDays: days,
+          warrantyType: 'manufacturer', status: 'active',
+          extraInfo: { store: 'Vendor Store', invoiceNo: order.orderId },
+        });
+      } catch (err) { logger.error(`Vendor manual warranty failed: ${err.message}`); }
+    }
+
+    res.status(201).json({ success: true, data: order });
+  } catch (error) { next(error); }
+}
+
+async function updateVendorManualOrder(req, res, next) {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) return res.status(403).json({ success: false, error: { message: 'Vendor profile required' } });
+    const order = await Order.findOne({ _id: req.params.id, 'items.vendorId': vendor._id, source: { $in: ['in-store', 'phone'] } });
+    if (!order) return res.status(404).json({ success: false, error: { message: 'Order not found' } });
+
+    const { customerName, customerPhone, customerEmail, source, paymentMethod, notes } = req.body;
+    if (customerName) order.shipTo.fullName = customerName;
+    if (customerPhone) { order.shipTo.phone = customerPhone; order.customerPhone = customerPhone; }
+    if (customerEmail) order.guestEmail = customerEmail;
+    if (source) order.source = source;
+    if (paymentMethod) order.payment.method = paymentMethod;
+    if (notes !== undefined) order.customerNotes = notes;
+    await order.save();
+    res.json({ success: true, data: order });
+  } catch (error) { next(error); }
+}
+
+async function cancelVendorManualOrder(req, res, next) {
+  try {
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) return res.status(403).json({ success: false, error: { message: 'Vendor profile required' } });
+    const order = await Order.findOne({ _id: req.params.id, 'items.vendorId': vendor._id, source: { $in: ['in-store', 'phone'] } });
+    if (!order) return res.status(404).json({ success: false, error: { message: 'Order not found' } });
+    if (order.status === 'cancelled') return res.status(400).json({ success: false, error: { message: 'Already cancelled' } });
+
+    order.status = 'cancelled';
+    order.cancellation = { reason: req.body.reason || 'Cancelled by vendor', cancelledAt: new Date(), cancelledBy: req.user._id };
+    order.events.push({ status: 'cancelled', description: req.body.reason || 'Cancelled by vendor', timestamp: new Date() });
+    for (const item of order.items) {
+      if (item.warranty?.hasWarranty) {
+        item.warranty.isActivated = false;
+        await Warranty.updateMany({ purchaseId: order.orderId, productId: item.productId }, { status: 'voided' });
+      }
+    }
+    await order.save();
+    res.json({ success: true, data: order });
+  } catch (error) { next(error); }
+}
+
 module.exports = {
   getVendorBySlug,
   getVendorReviews,
@@ -2022,4 +2175,9 @@ module.exports = {
   createCategory,
   updateCategory,
   deleteCategory,
+  // Manual Orders
+  getVendorManualOrders,
+  createVendorManualOrder,
+  updateVendorManualOrder,
+  cancelVendorManualOrder,
 };

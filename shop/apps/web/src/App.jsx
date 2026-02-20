@@ -113,6 +113,7 @@ const Settlements = lazy(() => import('./assets/pages/dashboard/vendor/Settlemen
 const VendorCategories = lazy(() => import('./assets/pages/dashboard/vendor/Categories'));
 const VendorAds = lazy(() => import('./assets/pages/dashboard/vendor/Ads'));
 const VendorSettings = lazy(() => import('./assets/pages/dashboard/vendor/VendorSettings'));
+const VendorManualOrders = lazy(() => import('./assets/pages/dashboard/vendor/VendorManualOrders'));
 const VendorSupport = lazy(() => import('./assets/pages/dashboard/vendor/Support'));
 
 const AffiliateDashboard = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateDashboard'));
@@ -318,6 +319,7 @@ function App() {
             <Route path="inventory" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><Inventory /></ProtectedRoute>} />
             <Route path="orders" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorOrders /></ProtectedRoute>} />
             <Route path="orders/:id" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorOrderDetail /></ProtectedRoute>} />
+            <Route path="manual-orders" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorManualOrders /></ProtectedRoute>} />
             <Route path="settlements" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><Settlements /></ProtectedRoute>} />
             <Route path="ads" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorAds /></ProtectedRoute>} />
             <Route path="settings" element={<ProtectedRoute user={user} initialized={initialized} requireVendorApproval><VendorSettings /></ProtectedRoute>} />

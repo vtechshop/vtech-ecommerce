@@ -97,6 +97,7 @@ const DashboardLayout = () => {
         { path: '/vendor-dashboard/categories', label: 'Categories', icon: 'folder' },
         { path: '/vendor-dashboard/inventory', label: 'Inventory', icon: 'box' },
         { path: '/vendor-dashboard/orders', label: 'Orders', icon: 'shopping-bag' },
+        { path: '/vendor-dashboard/manual-orders', label: 'Manual Orders', icon: 'store' },
         { path: '/vendor-dashboard/settlements', label: 'Settlements', icon: 'dollar' },
         { path: '/vendor-dashboard/ads', label: 'Sponsored Ads', icon: 'megaphone' },
         { path: '/vendor-dashboard/settings', label: 'Settings', icon: 'settings' },

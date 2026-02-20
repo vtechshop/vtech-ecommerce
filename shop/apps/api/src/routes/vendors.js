@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const vendorController = require('../controllers/vendorController');
 const razorpayAccountController = require('../controllers/razorpayAccountController');
+const invoiceController = require('../controllers/invoiceController');
 const { authenticate, authorize, requireApprovedKYC } = require('../middleware/auth');
 
 // Authenticated onboarding
@@ -34,9 +35,16 @@ router.get('/inventory/stats', authenticate, authorize(['vendor', 'admin']), ven
 router.get('/inventory', authenticate, authorize(['vendor', 'admin']), vendorController.getInventory);
 router.put('/inventory/:productId', authenticate, authorize(['vendor', 'admin']), vendorController.updateInventory);
 
+// Manual order routes - require approved KYC
+router.get('/manual-orders', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getVendorManualOrders);
+router.post('/manual-orders', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.createVendorManualOrder);
+router.put('/manual-orders/:id', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.updateVendorManualOrder);
+router.put('/manual-orders/:id/cancel', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.cancelVendorManualOrder);
+
 // Order routes - require approved KYC
 router.get('/orders/counts', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getVendorOrderCounts);
 router.get('/orders', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getVendorOrders);
+router.get('/orders/:id/invoice', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, invoiceController.downloadInvoiceVendor);
 router.put('/orders/:id/status', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.updateOrderStatus);
 router.get('/settlements/stats', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.getSettlementStats);
 router.get('/settlements/export', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.exportSettlements);

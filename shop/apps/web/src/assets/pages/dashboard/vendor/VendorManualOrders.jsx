@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/dashboard/admin/ManualOrders.jsx
+// FILE: apps/web/src/pages/dashboard/vendor/VendorManualOrders.jsx
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -8,7 +8,7 @@ import { useToast } from '@/components/common/ToastContainer';
 import { formatCurrency } from '@/utils/format';
 import { Plus, Search, Store, Phone, X, Trash2, ShieldCheck, ChevronDown, ChevronUp, Send, Package, Hash, Receipt, Pencil, Ban, AlertTriangle, RefreshCw, FileDown } from 'lucide-react';
 
-const ManualOrders = () => {
+const VendorManualOrders = () => {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [showModal, setShowModal] = useState(false);
@@ -20,12 +20,12 @@ const ManualOrders = () => {
   const [expandedOrder, setExpandedOrder] = useState(null);
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['manual-orders', page, search, sourceFilter],
+    queryKey: ['vendor-manual-orders', page, search, sourceFilter],
     queryFn: async () => {
       const params = new URLSearchParams({ page, limit: 20 });
       if (search) params.append('search', search);
       if (sourceFilter !== 'all') params.append('source', sourceFilter);
-      const res = await api.get(`/admin/manual-orders?${params}`);
+      const res = await api.get(`/vendors/manual-orders?${params}`);
       return res.data;
     },
   });
@@ -48,14 +48,14 @@ const ManualOrders = () => {
       ? `\n\n*Warranty Info:*\n${warrantyItems.map(i => `- ${i.name}: ${i.warranty.duration} ${i.warranty.durationType}${i.warranty.expiresAt ? ` (expires ${new Date(i.warranty.expiresAt).toLocaleDateString('en-IN')})` : ''}`).join('\n')}`
       : '';
     const message = encodeURIComponent(
-      `*V-Tech Kitchen - Purchase Receipt*\n\nOrder: ${order.orderId}\nDate: ${new Date(order.createdAt).toLocaleDateString('en-IN')}\nCustomer: ${order.shipTo?.fullName}\n\n*Items:*\n${itemsList}\n\n*Total: ${formatCurrency(order.totals?.total)}*\nPayment: ${order.payment?.method}${warrantyInfo}\n\nThank you for your purchase! Check warranty anytime at: ${window.location.origin}/warranty-check`
+      `*Purchase Receipt*\n\nOrder: ${order.orderId}\nDate: ${new Date(order.createdAt).toLocaleDateString('en-IN')}\nCustomer: ${order.shipTo?.fullName}\n\n*Items:*\n${itemsList}\n\n*Total: ${formatCurrency(order.totals?.total)}*\nPayment: ${order.payment?.method}${warrantyInfo}\n\nThank you for your purchase! Check warranty anytime at: ${window.location.origin}/warranty-check`
     );
     window.open(`https://wa.me/91${phone}?text=${message}`, '_blank');
   };
 
   const downloadInvoice = async (order) => {
     try {
-      const res = await api.get(`/admin/orders/${order._id}/invoice`, { responseType: 'blob' });
+      const res = await api.get(`/vendors/orders/${order._id}/invoice`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const a = document.createElement('a');
       a.href = url;
@@ -67,7 +67,7 @@ const ManualOrders = () => {
     }
   };
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['manual-orders'] });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['vendor-manual-orders'] });
 
   const isCancelled = (order) => order.status === 'cancelled';
 
@@ -541,7 +541,7 @@ const ManualOrders = () => {
 
       {/* Create Modal */}
       {showModal && (
-        <CreateManualOrderModal
+        <CreateVendorManualOrderModal
           onClose={() => setShowModal(false)}
           onSuccess={() => { setShowModal(false); invalidate(); }}
         />
@@ -549,7 +549,7 @@ const ManualOrders = () => {
 
       {/* Edit Modal */}
       {editingOrder && (
-        <EditManualOrderModal
+        <EditVendorManualOrderModal
           order={editingOrder}
           onClose={() => setEditingOrder(null)}
           onSuccess={() => { setEditingOrder(null); invalidate(); }}
@@ -558,7 +558,7 @@ const ManualOrders = () => {
 
       {/* Cancel Dialog */}
       {cancellingOrder && (
-        <CancelManualOrderDialog
+        <CancelVendorManualOrderDialog
           order={cancellingOrder}
           onClose={() => setCancellingOrder(null)}
           onSuccess={() => { setCancellingOrder(null); invalidate(); }}
@@ -569,7 +569,7 @@ const ManualOrders = () => {
 };
 
 // ─── Edit Manual Order Modal ────────────────────────────────────────────────
-const EditManualOrderModal = ({ order, onClose, onSuccess }) => {
+const EditVendorManualOrderModal = ({ order, onClose, onSuccess }) => {
   const toast = useToast();
   const [form, setForm] = useState({
     customerName: order.shipTo?.fullName || '',
@@ -582,7 +582,7 @@ const EditManualOrderModal = ({ order, onClose, onSuccess }) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => api.put(`/admin/manual-orders/${order._id}`, data),
+    mutationFn: (data) => api.put(`/vendors/manual-orders/${order._id}`, data),
     onSuccess: () => {
       toast.success('Order updated successfully');
       onSuccess();
@@ -650,7 +650,7 @@ const EditManualOrderModal = ({ order, onClose, onSuccess }) => {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Internal Notes</label>
-              <textarea value={form.internalNotes} onChange={(e) => setForm({ ...form, internalNotes: e.target.value })} className="input w-full" rows={2} placeholder="Admin-only notes..." />
+              <textarea value={form.internalNotes} onChange={(e) => setForm({ ...form, internalNotes: e.target.value })} className="input w-full" rows={2} placeholder="Your private notes..." />
             </div>
 
             {/* Read-only items summary */}
@@ -684,13 +684,13 @@ const EditManualOrderModal = ({ order, onClose, onSuccess }) => {
 };
 
 // ─── Cancel Manual Order Dialog ─────────────────────────────────────────────
-const CancelManualOrderDialog = ({ order, onClose, onSuccess }) => {
+const CancelVendorManualOrderDialog = ({ order, onClose, onSuccess }) => {
   const toast = useToast();
   const [reason, setReason] = useState('');
   const warrantyItems = order.items?.filter(i => i.warranty?.hasWarranty) || [];
 
   const cancelMutation = useMutation({
-    mutationFn: (data) => api.put(`/admin/manual-orders/${order._id}/cancel`, data),
+    mutationFn: (data) => api.put(`/vendors/manual-orders/${order._id}/cancel`, data),
     onSuccess: (res) => {
       const voided = res.data?.warrantiesVoided || 0;
       toast.success(`Order cancelled${voided > 0 ? ` and ${voided} warranty(s) voided` : ''}`);
@@ -770,7 +770,7 @@ const CancelManualOrderDialog = ({ order, onClose, onSuccess }) => {
 };
 
 // ─── Create Manual Order Modal ──────────────────────────────────────────────
-const CreateManualOrderModal = ({ onClose, onSuccess }) => {
+const CreateVendorManualOrderModal = ({ onClose, onSuccess }) => {
   const toast = useToast();
   const [form, setForm] = useState({
     customerName: '',
@@ -784,19 +784,19 @@ const CreateManualOrderModal = ({ onClose, onSuccess }) => {
   const [items, setItems] = useState([]);
   const [productSearch, setProductSearch] = useState('');
 
-  // Product search
+  // Product search - searches vendor's own products
   const { data: searchResults } = useQuery({
-    queryKey: ['product-search', productSearch],
+    queryKey: ['vendor-product-search', productSearch],
     queryFn: async () => {
       if (!productSearch || productSearch.length < 2) return [];
-      const res = await api.get(`/admin/products?search=${encodeURIComponent(productSearch)}&limit=10`);
+      const res = await api.get(`/vendors/products?search=${encodeURIComponent(productSearch)}&limit=10`);
       return res.data?.data || [];
     },
     enabled: productSearch.length >= 2,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => api.post('/admin/manual-orders', data),
+    mutationFn: (data) => api.post('/vendors/manual-orders', data),
     onSuccess: (res) => {
       toast.success(`Order ${res.data?.data?.orderId} created successfully!`);
       onSuccess();
@@ -899,7 +899,7 @@ const CreateManualOrderModal = ({ onClose, onSuccess }) => {
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="input w-full pl-10"
-                  placeholder="Search products by name or SKU..."
+                  placeholder="Search your products by name or SKU..."
                 />
                 {searchResults?.length > 0 && productSearch.length >= 2 && (
                   <div className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -1110,4 +1110,4 @@ const CreateManualOrderModal = ({ onClose, onSuccess }) => {
   );
 };
 
-export default ManualOrders;
+export default VendorManualOrders;

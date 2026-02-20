@@ -1,6 +1,7 @@
 // FILE: apps/api/src/controllers/invoiceController.js
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
+const Counter = require('../models/Counter');
 const Vendor = require('../models/Vendor');
 const { generateInvoicePDF, buildSellerFromVendor } = require('../services/invoiceService');
 
@@ -22,6 +23,24 @@ async function resolveSellerForOrder(order) {
   if (!vendor) return null;
 
   return buildSellerFromVendor(vendor);
+}
+
+/**
+ * Assign invoice number to an order if it doesn't have one.
+ * Website orders: W-00001, Manual orders: M-00001
+ */
+async function ensureInvoiceNumber(order) {
+  if (order.invoiceNumber) return order.invoiceNumber;
+
+  const isManual = order.source === 'in-store' || order.source === 'phone';
+  const prefix = isManual ? 'M' : 'W';
+  const seq = await Counter.getNextSequence(`invoice_${prefix}`);
+  const invoiceNumber = `${prefix}-${String(seq).padStart(5, '0')}`;
+
+  await Order.findByIdAndUpdate(order._id, { invoiceNumber });
+  order.invoiceNumber = invoiceNumber;
+
+  return invoiceNumber;
 }
 
 /**
@@ -62,10 +81,13 @@ exports.downloadInvoice = async (req, res, next) => {
       });
     }
 
+    // Assign invoice number if not already assigned
+    await ensureInvoiceNumber(order);
+
     // Resolve seller: vendor details for vendor orders, platform details for own orders
     const seller = await resolveSellerForOrder(order);
 
-    const filename = `Invoice-${order.orderId}.pdf`;
+    const filename = `Invoice-${order.invoiceNumber}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
@@ -91,16 +113,54 @@ exports.downloadInvoiceAdmin = async (req, res, next) => {
       });
     }
 
+    // Assign invoice number if not already assigned
+    await ensureInvoiceNumber(order);
+
     // Resolve seller: vendor details for vendor orders, platform details for own orders
     const seller = await resolveSellerForOrder(order);
 
-    const filename = `Invoice-${order.orderId}.pdf`;
+    const filename = `Invoice-${order.invoiceNumber}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
     await generateInvoicePDF(order, res, seller);
   } catch (error) {
     console.error('Admin invoice generation failed:', error);
+    next(error);
+  }
+};
+
+/**
+ * Download invoice PDF for vendor's own order.
+ * GET /api/vendors/orders/:id/invoice
+ */
+exports.downloadInvoiceVendor = async (req, res, next) => {
+  try {
+    const Vendor = require('../models/Vendor');
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor) {
+      return res.status(403).json({ success: false, error: { code: 'NOT_VENDOR', message: 'Vendor profile required' } });
+    }
+
+    const order = await Order.findOne({
+      _id: req.params.id,
+      'items.vendorId': vendor._id,
+    }).populate('userId', 'email phone').lean();
+
+    if (!order) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } });
+    }
+
+    await ensureInvoiceNumber(order);
+    const seller = await resolveSellerForOrder(order);
+
+    const filename = `Invoice-${order.invoiceNumber}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    await generateInvoicePDF(order, res, seller);
+  } catch (error) {
+    console.error('Vendor invoice generation failed:', error);
     next(error);
   }
 };

@@ -23,7 +23,8 @@ import {
   IndianRupee,
   Box,
   Search,
-  RefreshCw
+  RefreshCw,
+  FileDown
 } from 'lucide-react';
 
 const VendorOrders = () => {
@@ -42,6 +43,20 @@ const VendorOrders = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedOrder, setExpandedOrder] = useState(null);
+
+  const downloadInvoice = async (order) => {
+    try {
+      const res = await api.get(`/vendors/orders/${order._id}/invoice`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${order.orderId}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert('Failed to download invoice');
+    }
+  };
 
   // Fetch orders with current filters
   const { data, isLoading, refetch } = useQuery({
@@ -289,6 +304,16 @@ const VendorOrders = () => {
                           title="View Details"
                         >
                           <Eye className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadInvoice(order);
+                          }}
+                          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                          title="Download Invoice"
+                        >
+                          <FileDown className="w-5 h-5" />
                         </button>
                         <button className="p-2 text-gray-400 hover:text-gray-600">
                           {expandedOrder === order._id ? (

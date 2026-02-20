@@ -2,6 +2,7 @@
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { FileDown } from 'lucide-react';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
@@ -17,6 +18,20 @@ const VendorOrderDetail = () => {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [newStatus, setNewStatus] = useState('');
+
+  const downloadInvoice = async () => {
+    try {
+      const res = await api.get(`/vendors/orders/${id}/invoice`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${id}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Failed to download invoice');
+    }
+  };
   const [carrierName, setCarrierName] = useState('');
   const [awbNumber, setAwbNumber] = useState('');
   const [assignMode, setAssignMode] = useState('manual'); // 'manual' or 'auto'
@@ -166,6 +181,13 @@ const VendorOrderDetail = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2">Order {order.orderId}</h1>
             <p className="text-gray-700">Placed on {formatDate(order.createdAt)}</p>
+            <button
+              onClick={downloadInvoice}
+              className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+            >
+              <FileDown className="w-4 h-4" />
+              Download Invoice
+            </button>
           </div>
           <span
             className={`px-4 py-2 rounded-full text-sm font-semibold ${

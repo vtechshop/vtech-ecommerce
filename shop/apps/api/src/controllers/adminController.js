@@ -3923,6 +3923,7 @@ exports.createManualOrder = async (req, res, next) => {
         image: product.images?.[0] || '',
         productSlug: product.slug,
         sku: product.sku,
+        hsnCode: product.hsnCode || '',
         priceSnapshot: price,
         qty,
       };

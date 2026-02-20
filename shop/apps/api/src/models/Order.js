@@ -94,6 +94,7 @@ const orderSchema = new mongoose.Schema({
     estimatedDelivery: Date, // Estimated delivery date from carrier
     events: [{ code: String, description: String, location: String, timestamp: Date }],
   },
+  invoiceNumber: { type: String, unique: true, sparse: true }, // e.g., W-00001, M-00001
   invoices: [{ url: String, generatedAt: Date }],
   affiliateCode: String, // Affiliate code used during order placement
   source: { type: String, enum: ['online', 'in-store', 'phone'], default: 'online' },
