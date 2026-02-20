@@ -134,11 +134,11 @@ const ProductSnippet = React.memo(({ product, onAddToCart, onViewDetails, onTogg
         {/* Price */}
         <div className="mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-gray-900">
+            <span className="text-lg font-bold text-green-600">
               {formatCurrency(product.price)}
             </span>
             {product.comparePrice && (
-              <span className="text-sm text-gray-500 line-through">
+              <span className="text-sm text-red-400 line-through">
                 {formatCurrency(product.comparePrice)}
               </span>
             )}

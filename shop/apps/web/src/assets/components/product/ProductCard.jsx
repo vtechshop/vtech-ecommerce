@@ -205,11 +205,11 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
 
         {/* Price */}
         <div className="flex items-baseline gap-2 mb-3">
-          <span className={`text-lg sm:text-xl font-bold text-gray-900 ${hasDiscount ? 'text-red-600' : ''}`}>
+          <span className={`text-lg sm:text-xl font-bold ${hasDiscount ? 'text-green-600' : 'text-gray-900'}`}>
             {formatCurrency(product.price)}
           </span>
           {hasDiscount && (
-            <span className="text-sm text-gray-400 line-through">
+            <span className="text-sm text-red-400 line-through">
               {formatCurrency(product.compareAt)}
             </span>
           )}

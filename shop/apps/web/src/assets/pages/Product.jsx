@@ -591,12 +591,12 @@ const Product = () => {
 
           <div className="bg-blue-100 p-4 rounded-lg border border-gray-200">
             <div className="flex flex-wrap items-baseline gap-3">
-              <span className="text-3xl font-bold text-gray-900">
+              <span className="text-3xl font-bold text-green-600">
                 {formatCurrency(product.price)}
               </span>
               {product.comparePrice && (
                 <>
-                  <span className="text-lg text-gray-500 line-through">
+                  <span className="text-lg text-red-400 line-through">
                     {formatCurrency(product.comparePrice)}
                   </span>
                   {discountPercentage > 0 && (
@@ -1106,7 +1106,7 @@ const Product = () => {
           <div className="flex items-center gap-3">
             {/* Price */}
             <div className="flex-shrink-0">
-              <p className="text-lg font-bold text-gray-900 leading-tight">{formatCurrency(product.price)}</p>
+              <p className="text-lg font-bold text-green-600 leading-tight">{formatCurrency(product.price)}</p>
               {product.comparePrice && discountPercentage > 0 && (
                 <p className="text-xs text-red-600 font-medium">-{discountPercentage}% off</p>
               )}
