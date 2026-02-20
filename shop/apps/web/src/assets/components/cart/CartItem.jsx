@@ -83,11 +83,11 @@ const CartItem = ({ item }) => {
       </div>
 
       <div className="text-right">
-        <p className="text-lg font-bold text-green-600" data-testid="item-price">
+        <p className="text-lg font-bold text-green-700" data-testid="item-price">
           {formatCurrency(item.product.price * item.quantity)}
         </p>
         {item.product.compareAt && (
-          <p className="text-sm text-red-400 line-through">
+          <p className="text-sm text-red-500 line-through">
             {formatCurrency(item.product.compareAt * item.quantity)}
           </p>
         )}

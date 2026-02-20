@@ -174,11 +174,11 @@ const RecentlyViewed = ({ currentProductId = null, limit = 6 }) => {
 
                   {/* Price */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-base font-extrabold text-green-600">
+                    <span className="text-base font-extrabold text-green-700">
                       {formatCurrency(product.price)}
                     </span>
                     {product.compareAt && product.compareAt > product.price && (
-                      <span className="text-xs text-red-400 line-through font-medium">
+                      <span className="text-xs text-red-500 line-through font-medium">
                         {formatCurrency(product.compareAt)}
                       </span>
                     )}

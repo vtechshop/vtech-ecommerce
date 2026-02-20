@@ -217,11 +217,11 @@ const QuickView = ({ product, isOpen, onClose }) => {
             {/* Price */}
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold text-green-600">
+                <span className="text-3xl font-bold text-green-700">
                   {formatCurrency(product.price)}
                 </span>
                 {product.comparePrice && (
-                  <span className="text-lg text-red-400 line-through">
+                  <span className="text-lg text-red-500 line-through">
                     {formatCurrency(product.comparePrice)}
                   </span>
                 )}
