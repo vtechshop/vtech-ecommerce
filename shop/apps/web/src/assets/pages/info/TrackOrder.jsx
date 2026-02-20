@@ -470,9 +470,9 @@ const TrackOrder = () => {
 
         {/* Help Text */}
         {!tracking && !error && (
-          <div className="bg-primary-50 border border-primary-200 rounded-lg p-5 mt-2">
-            <h3 className="font-semibold text-gray-900 mb-2">Can't find your order number?</h3>
-            <ul className="text-sm text-gray-700 space-y-1.5">
+          <div className="bg-primary-700 rounded-lg p-5 mt-2">
+            <h3 className="font-semibold text-white mb-2">Can't find your order number?</h3>
+            <ul className="text-sm text-blue-100 space-y-1.5">
               <li>- Check your email confirmation for the order number</li>
               <li>- You can also track using the AWB number from your shipping notification</li>
               <li>- Log in to your account to view all your orders</li>
