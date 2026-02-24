@@ -352,7 +352,7 @@ if (env.NODE_ENV === 'production') {
   const seoController = require('./controllers/seoController');
 
   // Bot User-Agent detection pattern
-  const BOT_UA_PATTERN = /googlebot|google-inspectiontool|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|rogerbot|screaming frog/i;
+  const BOT_UA_PATTERN = /googlebot|google-inspectiontool|bingbot|slurp|duckduckbot|baiduspider|yandexbot|facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegrambot|applebot|petalbot|semrushbot|ahrefs|mj12bot|dotbot|rogerbot|screaming frog/i;
 
   // Only serve frontend if the build exists (for combined deployments)
   // If frontend is deployed separately (e.g., Vercel), this will be skipped

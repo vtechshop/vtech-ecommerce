@@ -7,7 +7,7 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const About = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'About V-Tech Kitchen - Kitchen Equipment Manufacturer, Coimbatore',
+      title: 'About V-Tech Kitchen | Equipment Manufacturer, Coimbatore',
       description: 'V-Tech Kitchen is a leading manufacturer of commercial kitchen equipment in Coimbatore. Premium blenders, grinders, cutting machines, and cookware.',
       canonical: 'https://www.vtechkitchen.com/page/about',
     });

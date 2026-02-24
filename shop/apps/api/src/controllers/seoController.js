@@ -353,6 +353,8 @@ exports.renderPage = async (req, res, next) => {
         .limit(12)
         .lean();
 
+      pageData.title = 'V-Tech Kitchen - Premium Kitchen Appliances';
+      pageData.description = 'Shop premium kitchen appliances, commercial equipment & cookware at V-Tech Kitchen. Cast iron tawa, cutting machines & more. Free shipping over ₹500.';
       pageData.content = `
         <h1>V-Tech Kitchen - Premium Kitchen Appliances & Utensils</h1>
         <p>Discover the finest collection of kitchen appliances, cookware, and utensils. Premium quality products from trusted brands.</p>
@@ -453,6 +455,9 @@ exports.renderPage = async (req, res, next) => {
         .limit(20)
         .lean();
 
+      // Derive a readable name from the slug in case the category isn't in DB
+      const slugCategoryName = pathParts[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
       if (category) {
         pageData.title = `${category.name} - V-Tech Kitchen`;
         pageData.description = category.description || `Shop ${category.name} at V-Tech Kitchen. Best prices, fast delivery.`;
@@ -465,6 +470,10 @@ exports.renderPage = async (req, res, next) => {
             ${products.map(p => `<li><a href="${clientUrl}/product/${p.slug}">${p.title} - ₹${p.price?.toLocaleString('en-IN')}</a></li>`).join('')}
           </ul>
         `;
+      } else {
+        pageData.title = `${slugCategoryName} - V-Tech Kitchen`;
+        pageData.description = `Shop ${slugCategoryName} products at V-Tech Kitchen. Premium quality kitchen equipment with best prices and fast delivery across India.`;
+        pageData.content = `<h1>${slugCategoryName}</h1><p>Browse our collection of premium ${slugCategoryName} products at V-Tech Kitchen. Discover high-quality kitchen equipment at the best prices.</p>`;
       }
     }
 
@@ -498,7 +507,8 @@ exports.renderPage = async (req, res, next) => {
         .lean();
 
       if (post) {
-        pageData.title = `${post.title} - V-Tech Kitchen Blog`;
+        const blogSuffix = ' - V-Tech Kitchen Blog';
+        pageData.title = (post.title + blogSuffix).length <= 70 ? post.title + blogSuffix : post.title.substring(0, 70 - blogSuffix.length) + blogSuffix;
         pageData.description = (post.excerpt || post.content?.substring(0, 155) || `Read ${post.title} on V-Tech Kitchen Blog.`).substring(0, 155);
         pageData.image = post.featuredImage || pageData.image;
         pageData.type = 'article';
@@ -532,7 +542,7 @@ exports.renderPage = async (req, res, next) => {
         .lean();
 
       pageData.title = 'All Products - V-Tech Kitchen';
-      pageData.description = 'Browse all premium kitchen appliances, cookware, and utensils at V-Tech Kitchen. Best prices, fast delivery.';
+      pageData.description = 'Browse all premium kitchen appliances, cookware, and commercial kitchen equipment at V-Tech Kitchen. Best prices with fast pan-India delivery. Trusted by thousands.';
       pageData.content = `
         <h1>All Products - V-Tech Kitchen</h1>
         <p>Browse our complete collection of premium kitchen appliances and utensils.</p>
@@ -543,7 +553,7 @@ exports.renderPage = async (req, res, next) => {
     // Blog listing page
     else if (pathParts[0] === 'blog' && !pathParts[1]) {
       pageData.title = 'Blog - V-Tech Kitchen';
-      pageData.description = 'Read tips, guides, and news about kitchen appliances and cooking on the V-Tech Kitchen blog.';
+      pageData.description = 'Read tips, guides, cooking ideas, and kitchen appliance reviews on the V-Tech Kitchen blog. Expert advice on cookware, grinders, cutting machines, and more.';
       pageData.content = `
         <h1>Blog - V-Tech Kitchen</h1>
         <p>Tips, guides, and news about kitchen appliances and cooking.</p>
@@ -576,23 +586,67 @@ exports.renderPage = async (req, res, next) => {
     else if (pathParts[0] === 'page') {
       const pageName = pathParts[1];
       const pageContent = {
-        'privacy': { title: 'Privacy Policy', desc: 'Learn how V-Tech Kitchen protects your privacy and handles your data.' },
-        'terms': { title: 'Terms of Service', desc: 'Read the terms and conditions for using V-Tech Kitchen.' },
-        'returns': { title: 'Return & Refund Policy', desc: 'Learn about our return and refund policies at V-Tech Kitchen.' },
-        'shipping': { title: 'Shipping Information', desc: 'Delivery options, shipping times, and costs for V-Tech Kitchen orders.' },
-        'faq': { title: 'Frequently Asked Questions', desc: 'Find answers to common questions about V-Tech Kitchen products and services.' },
-        'about': { title: 'About Us', desc: 'Learn about V-Tech Kitchen - your trusted source for premium kitchen products.' },
-        'contact': { title: 'Contact Us', desc: 'Get in touch with V-Tech Kitchen for support or inquiries.' },
-        'vendor-terms': { title: 'Vendor Terms', desc: 'Terms and conditions for vendors selling on V-Tech Kitchen.' },
-        'vendor-guide': { title: 'Vendor Guide', desc: 'Guide for vendors on how to sell on V-Tech Kitchen marketplace.' },
-        'affiliate-terms': { title: 'Affiliate Terms', desc: 'Terms and conditions for the V-Tech Kitchen affiliate program.' },
-        'affiliate-guide': { title: 'Affiliate Guide', desc: 'Guide to earning with the V-Tech Kitchen affiliate program.' },
+        'privacy': {
+          title: 'Privacy Policy - V-Tech Kitchen',
+          desc: 'V-Tech Kitchen privacy policy explains how we collect, use, and protect your personal information when you shop with us. Your data security is our priority.',
+          body: '<h1>Privacy Policy</h1><p>V-Tech Kitchen is committed to protecting your privacy. This policy explains how we collect, store, and use your personal information when you visit or make a purchase from our website.</p><h2>Data We Collect</h2><p>We collect information you provide during registration, purchases, and communications — including name, email, phone number, and delivery address.</p><h2>How We Use Your Data</h2><p>Your data is used to process orders, send order updates, provide customer support, and improve our services. We do not sell your personal information to third parties.</p><h2>Contact</h2><p>For privacy concerns, email vtechshop.customercare@gmail.com.</p>',
+        },
+        'terms': {
+          title: 'Terms of Service - V-Tech Kitchen',
+          desc: 'Read V-Tech Kitchen terms of service covering account usage, orders, payments, shipping, returns, and user responsibilities on our marketplace platform.',
+          body: '<h1>Terms of Service</h1><p>By using V-Tech Kitchen, you agree to these terms governing your use of our marketplace. Please read them carefully before making a purchase.</p><h2>Account Usage</h2><p>Users must be 18 years or older to create an account. You are responsible for maintaining account security and all activities under your account.</p><h2>Orders &amp; Payments</h2><p>All payments are processed securely via Razorpay. Prices include applicable GST unless stated otherwise. Orders are confirmed only after successful payment.</p><h2>Returns &amp; Refunds</h2><p>We offer a 7-day return policy on eligible products in original condition. Refunds are processed within 5-7 business days.</p><h2>Intellectual Property</h2><p>All content on V-Tech Kitchen is protected by copyright. Unauthorized reproduction or distribution is prohibited.</p>',
+        },
+        'returns': {
+          title: 'Returns & Refunds Policy - V-Tech Kitchen',
+          desc: 'Easy returns and refunds at V-Tech Kitchen. 7-day return policy with free pickup, quick refund processing, and hassle-free exchange options for all products.',
+          body: '<h1>Returns &amp; Refunds Policy</h1><p>V-Tech Kitchen offers a 7-day return policy on eligible products. We want you to be fully satisfied with your purchase.</p><h2>How to Initiate a Return</h2><p>Contact us within 7 days of delivery via email or phone. Provide your order ID and reason for return. We will arrange free pickup for eligible returns.</p><h2>Refund Timeline</h2><p>Refunds are processed within 5-7 business days after we receive the returned product. The amount is credited back to your original payment method.</p><h2>Non-Returnable Items</h2><p>Perishable goods, customized products, and items damaged due to misuse are not eligible for return.</p>',
+        },
+        'shipping': {
+          title: 'Shipping Information - V-Tech Kitchen',
+          desc: 'Free shipping on orders over ₹500 at V-Tech Kitchen. Standard delivery in 2-10 days, express in 2-3 days. Pan-India coverage with real-time order tracking.',
+          body: '<h1>Shipping Information</h1><p>V-Tech Kitchen ships across India with reliable courier partners. Enjoy free shipping on all orders above ₹500.</p><h2>Delivery Times</h2><ul><li><strong>Standard Delivery:</strong> 2-10 business days</li><li><strong>Express Delivery:</strong> 2-3 business days (available in select cities)</li></ul><h2>Shipping Charges</h2><p>Free shipping on orders above ₹500. Orders below ₹500 attract a flat ₹49 shipping fee.</p><h2>Order Tracking</h2><p>Track your order in real-time using your order ID on our Track Order page. SMS and email updates are sent at every delivery milestone.</p>',
+        },
+        'faq': {
+          title: 'Frequently Asked Questions - V-Tech Kitchen',
+          desc: 'Find answers about orders, payments, shipping, returns, vendor program and affiliate commissions at V-Tech Kitchen. Quick help for all queries and concerns.',
+          body: '<h1>Frequently Asked Questions</h1><h2>Orders &amp; Tracking</h2><p>Track your order using the Track Order page with your order ID. You will receive real-time delivery updates via SMS and email.</p><h2>Payments</h2><p>We accept UPI, credit/debit cards, net banking, and EMI through Razorpay. All transactions are 100% secure and encrypted.</p><h2>Returns &amp; Refunds</h2><p>Return eligible products within 7 days of delivery. Contact support to initiate a return. Refunds are processed in 5-7 business days.</p><h2>Vendor Program</h2><p>Apply to become a vendor on V-Tech Kitchen through the vendor registration page. Expand your reach to customers across India.</p><h2>Affiliate Program</h2><p>Earn 5-8% commission by promoting V-Tech Kitchen products. Join through your account dashboard.</p>',
+        },
+        'about': {
+          title: 'About V-Tech Kitchen | Equipment Manufacturer, Coimbatore',
+          desc: 'V-Tech Kitchen is a leading manufacturer of commercial kitchen equipment in Coimbatore. Premium blenders, grinders, cutting machines, and cookware for professional kitchens.',
+          body: '<h1>About V-Tech Kitchen</h1><p>V-Tech Kitchen is a leading manufacturer and retailer of commercial kitchen equipment based in Coimbatore, Tamil Nadu, India. We design and manufacture premium kitchen appliances for both home kitchens and professional catering businesses.</p><h2>Our Products</h2><ul><li>Cast Iron Tawa &amp; Cookware</li><li>Electric Cutting &amp; Chopping Machines</li><li>Industrial Blenders &amp; Wet Grinders</li><li>Commercial Kitchen Equipment</li><li>Kitchen Utensils &amp; Accessories</li></ul><h2>Our Mission</h2><p>Empowering professional kitchens across India with durable, high-quality equipment that makes cooking easier, faster, and more efficient.</p><h2>Get in Touch</h2><p>Call us at +91 99438 82409 or email vtechshop.customercare@gmail.com. Available Monday to Saturday, 9AM - 7PM IST.</p>',
+        },
+        'contact': {
+          title: 'Contact V-Tech Kitchen - Support & Inquiries',
+          desc: 'Get in touch with V-Tech Kitchen for product inquiries, orders, or support. Call +91 99438 82409, email us, or use our contact form. Available Mon-Sat 9AM-7PM IST.',
+          body: '<h1>Contact V-Tech Kitchen</h1><p>We are here to help with product inquiries, order support, warranty claims, and general questions.</p><h2>Contact Details</h2><ul><li><strong>Phone:</strong> +91 99438 82409</li><li><strong>Email:</strong> vtechshop.customercare@gmail.com</li><li><strong>Hours:</strong> Monday to Saturday, 9AM - 7PM IST</li></ul><h2>Our Location</h2><p>Coimbatore, Tamil Nadu, India.</p><h2>Support</h2><p>For order issues, tracking, returns, or warranty claims, please have your order ID ready when contacting us for faster resolution.</p>',
+        },
+        'vendor-terms': {
+          title: 'Vendor Terms & Conditions - V-Tech Kitchen',
+          desc: 'Terms and conditions for selling on V-Tech Kitchen marketplace. Commission structure, product listing guidelines, payment terms, and vendor responsibilities.',
+          body: '<h1>Vendor Terms &amp; Conditions</h1><p>These terms govern your participation as a vendor on V-Tech Kitchen marketplace. By registering as a vendor, you agree to these terms.</p><h2>Commission Structure</h2><p>V-Tech Kitchen charges a commission on each sale completed through the platform. Commission rates vary by product category and are detailed in your vendor agreement.</p><h2>Product Listings</h2><p>All products must be accurately described with correct images, pricing, and specifications. Misleading or inaccurate listings will be removed without notice.</p><h2>Order Fulfilment</h2><p>Vendors must ship confirmed orders within 2 business days. Failure to fulfil orders may result in account suspension.</p><h2>Payments</h2><p>Vendor settlements are processed weekly. Minimum payout threshold is ₹500.</p>',
+        },
+        'vendor-guide': {
+          title: 'Vendor Guide - V-Tech Kitchen Marketplace',
+          desc: 'Step-by-step guide to selling on V-Tech Kitchen marketplace. Set up your store, list products, manage orders, and grow your business with our full support.',
+          body: '<h1>Vendor Guide</h1><p>Welcome to V-Tech Kitchen marketplace. This guide helps you get started as a vendor and maximize your sales.</p><h2>Getting Started</h2><ol><li>Register as a vendor on V-Tech Kitchen</li><li>Complete KYC verification with Aadhaar/PAN</li><li>Set up your store profile and logo</li><li>List your products with images and descriptions</li></ol><h2>Managing Orders</h2><p>Track and manage orders through your vendor dashboard. Ship orders within 2 business days of confirmation to maintain good ratings.</p><h2>Payments &amp; Settlements</h2><p>Receive weekly settlements for completed orders directly to your bank account. Track all earnings in the settlements section of your dashboard.</p>',
+        },
+        'affiliate-terms': {
+          title: 'Affiliate Program Terms - V-Tech Kitchen',
+          desc: 'Terms and conditions for V-Tech Kitchen affiliate program. Learn about commission rates, payment terms, promotional guidelines, and partner responsibilities.',
+          body: '<h1>Affiliate Program Terms</h1><p>The V-Tech Kitchen Affiliate Program allows you to earn commissions by promoting our products to your audience.</p><h2>Commission Rates</h2><p>Earn 5-8% commission on every sale generated through your unique affiliate links. Commission rates vary by product category.</p><h2>Eligibility</h2><p>You must have an active V-Tech Kitchen account and comply with all promotional guidelines to participate in the affiliate program.</p><h2>Payment Terms</h2><p>Commissions are paid monthly via bank transfer or UPI. Minimum payout threshold is ₹500. Earnings are tracked in your affiliate dashboard.</p><h2>Prohibited Activities</h2><p>Spam, self-referrals, cookie stuffing, and misleading promotions are strictly prohibited and may result in immediate account termination.</p>',
+        },
+        'affiliate-guide': {
+          title: 'Affiliate Guide - V-Tech Kitchen',
+          desc: 'Complete guide to V-Tech Kitchen affiliate program. Earn 5-8% commissions by promoting products. Learn about tiers, payment methods, and how to maximize your earnings.',
+          body: '<h1>Affiliate Guide</h1><p>Join V-Tech Kitchen\'s affiliate program and start earning commissions by sharing product links with your audience.</p><h2>How It Works</h2><ol><li>Sign up for the affiliate program from your account dashboard</li><li>Get unique product affiliate links</li><li>Share links on social media, blogs, YouTube, or websites</li><li>Earn 5-8% commission on every completed sale</li></ol><h2>Tips to Maximize Earnings</h2><ul><li>Focus on high-value products (commercial equipment, cast iron cookware)</li><li>Create product review content and comparison articles</li><li>Share during festive seasons and sale events</li><li>Use all available channels — Instagram, YouTube, WhatsApp</li></ul><h2>Payouts</h2><p>Earnings are paid monthly. Track all clicks, conversions, and earnings in your affiliate dashboard.</p>',
+        },
       };
 
       if (pageContent[pageName]) {
-        pageData.title = `${pageContent[pageName].title} - V-Tech Kitchen`;
+        pageData.title = pageContent[pageName].title;
         pageData.description = pageContent[pageName].desc;
-        pageData.content = `<h1>${pageContent[pageName].title}</h1><p>${pageContent[pageName].desc}</p>`;
+        pageData.content = pageContent[pageName].body;
       }
     }
 
@@ -689,6 +743,7 @@ exports.renderPage = async (req, res, next) => {
           <li><a href="${clientUrl}/page/faq">FAQ</a></li>
           <li><a href="${clientUrl}/track-order">Track Order</a></li>
           <li><a href="${clientUrl}/warranty-check">Warranty Check</a></li>
+          <li><a href="${clientUrl}/cookie-policy">Cookie Policy</a></li>
         </ul>
       </div>
     </div>

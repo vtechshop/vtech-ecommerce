@@ -93,7 +93,7 @@ const ResetPassword = () => {
           <Link to="/" className="text-3xl font-bold text-blue-600">
             Shop
           </Link>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">Set new password</h2>
+          <h1 className="mt-6 text-3xl font-bold text-gray-900">Set new password</h1>
           <p className="mt-2 text-sm text-gray-700">
             Enter your new password below.
           </p>

@@ -83,7 +83,7 @@ const Login = () => {
             <Link to="/" className="text-3xl font-bold text-blue-600 btn-scale">
               Shop
             </Link>
-            <h2 className="mt-6 text-3xl md:text-4xl font-bold text-gray-900">Sign in to your account</h2>
+            <h1 className="mt-6 text-3xl md:text-4xl font-bold text-gray-900">Sign in to your account</h1>
             <p className="mt-2 text-sm text-gray-700">
               Or{' '}
               <Link to="/register" className="font-medium text-blue-600 hover:text-gray-600 hover:underline">
