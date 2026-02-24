@@ -117,9 +117,10 @@ export const generateProductSchema = (product) => {
         '@type': 'MerchantReturnPolicy',
         applicableCountry: 'IN',
         returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
-        merchantReturnDays: 7,
+        merchantReturnDays: 15,
         returnMethod: 'https://schema.org/ReturnByMail',
         returnFees: 'https://schema.org/FreeReturn',
+        merchantReturnLink: 'https://www.vtechkitchen.com/page/returns',
       },
       shippingDetails: {
         '@type': 'OfferShippingDetails',

@@ -414,6 +414,42 @@ exports.renderPage = async (req, res, next) => {
               '@type': 'Organization',
               name: product.vendorId?.storeName || 'V-Tech Kitchen',
             },
+            hasMerchantReturnPolicy: {
+              '@type': 'MerchantReturnPolicy',
+              applicableCountry: 'IN',
+              returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+              merchantReturnDays: 15,
+              returnMethod: 'https://schema.org/ReturnByMail',
+              returnFees: 'https://schema.org/FreeReturn',
+              merchantReturnLink: 'https://www.vtechkitchen.com/page/returns',
+            },
+            shippingDetails: {
+              '@type': 'OfferShippingDetails',
+              shippingRate: {
+                '@type': 'MonetaryAmount',
+                value: 100,
+                currency: 'INR',
+              },
+              shippingDestination: {
+                '@type': 'DefinedRegion',
+                addressCountry: 'IN',
+              },
+              deliveryTime: {
+                '@type': 'ShippingDeliveryTime',
+                handlingTime: {
+                  '@type': 'QuantitativeValue',
+                  minValue: 1,
+                  maxValue: 2,
+                  unitCode: 'DAY',
+                },
+                transitTime: {
+                  '@type': 'QuantitativeValue',
+                  minValue: 3,
+                  maxValue: 7,
+                  unitCode: 'DAY',
+                },
+              },
+            },
           },
         };
 
@@ -799,6 +835,10 @@ exports.getProductFeed = async (req, res, next) => {
       <g:availability>${product.stock > 0 ? 'in stock' : 'out of stock'}</g:availability>
       <g:price>${product.price} INR</g:price>
       <g:brand>${brand}</g:brand>
+      <g:shipping>
+        <g:country>IN</g:country>
+        <g:price>100 INR</g:price>
+      </g:shipping>
     </item>`;
     });
 

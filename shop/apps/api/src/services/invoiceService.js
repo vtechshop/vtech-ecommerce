@@ -622,7 +622,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
 
       // Return policy note
       doc.fontSize(6.5).font('Helvetica').fillColor('#6b7280');
-      doc.text('Return Policy: Products can be returned within 7 days of delivery if unused and in original packaging. No returns on used or installed items.', L, doc.y, {
+      doc.text('Return Policy: Products can be returned within 15 days of delivery if unused and in original packaging. No returns on used or installed items.', L, doc.y, {
         align: 'center', width: W,
       });
       doc.moveDown(0.4);
