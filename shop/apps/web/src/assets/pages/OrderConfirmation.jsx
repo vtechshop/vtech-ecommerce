@@ -59,6 +59,35 @@ const OrderConfirmation = () => {
           });
         }
       });
+
+      // Google Customer Reviews opt-in survey (only for paid orders)
+      if (order.payment?.status === 'paid' || order.payment?.status === 'captured') {
+        const deliveryDate = new Date(order.createdAt);
+        deliveryDate.setDate(deliveryDate.getDate() + 7);
+        const estimatedDelivery = deliveryDate.toISOString().split('T')[0];
+
+        window.renderOptIn = function () {
+          window.gapi.load('surveyoptin', function () {
+            window.gapi.surveyoptin.render({
+              merchant_id: 5724396980,
+              order_id: order.orderId,
+              email: user?.email || order.guestEmail || '',
+              delivery_country: 'IN',
+              estimated_delivery_date: estimatedDelivery,
+            });
+          });
+        };
+
+        if (!document.querySelector('script[src*="apis.google.com/js/platform.js"]')) {
+          const script = document.createElement('script');
+          script.src = 'https://apis.google.com/js/platform.js?onload=renderOptIn';
+          script.async = true;
+          script.defer = true;
+          document.head.appendChild(script);
+        } else if (window.gapi) {
+          window.renderOptIn();
+        }
+      }
     }
   }, [order]);
 

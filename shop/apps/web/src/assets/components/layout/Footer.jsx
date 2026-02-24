@@ -1,10 +1,29 @@
 // FILE: apps/web/src/components/layout/Footer.jsx
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+
+  // Google Customer Reviews badge
+  useEffect(() => {
+    if (!document.getElementById('merchantWidgetScript')) {
+      const script = document.createElement('script');
+      script.id = 'merchantWidgetScript';
+      script.src = 'https://www.gstatic.com/shopping/merchant/merchantwidget.js';
+      script.defer = true;
+      script.addEventListener('load', () => {
+        window.merchantwidget.start({
+          merchant_id: 5724396980,
+          position: 'BOTTOM_RIGHT',
+          region: 'IN',
+        });
+      });
+      document.head.appendChild(script);
+    }
+  }, []);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
