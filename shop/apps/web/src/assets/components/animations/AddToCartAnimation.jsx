@@ -1,13 +1,12 @@
-// FILE: AddToCartAnimation.jsx - Flying product animation to cart
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// CSS-only flying animation (no framer-motion for faster initial load)
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 const AddToCartAnimation = ({ product, startPosition, onComplete }) => {
   const [endPosition, setEndPosition] = useState(null);
+  const elRef = useRef(null);
 
   useEffect(() => {
-    // Find cart icon position (assumes cart icon has id="cart-icon")
     const cartIcon = document.getElementById('cart-icon') || document.querySelector('[data-cart-icon]');
     if (cartIcon) {
       const rect = cartIcon.getBoundingClientRect();
@@ -18,53 +17,46 @@ const AddToCartAnimation = ({ product, startPosition, onComplete }) => {
     }
   }, []);
 
+  useEffect(() => {
+    if (!elRef.current || !endPosition) return;
+    const el = elRef.current;
+    // Trigger animation on next frame
+    requestAnimationFrame(() => {
+      el.style.transform = `translate(${endPosition.x - startPosition.x}px, ${endPosition.y - startPosition.y}px) scale(0.3)`;
+      el.style.opacity = '0';
+    });
+    const timer = setTimeout(onComplete, 800);
+    return () => clearTimeout(timer);
+  }, [endPosition, startPosition, onComplete]);
+
   if (!startPosition || !endPosition) return null;
 
   return createPortal(
-    <AnimatePresence>
-      <motion.div
-        initial={{
-          x: startPosition.x,
-          y: startPosition.y,
-          scale: 1,
-          opacity: 1,
-        }}
-        animate={{
-          x: endPosition.x,
-          y: endPosition.y,
-          scale: 0.3,
-          opacity: 0.7,
-        }}
-        exit={{
-          opacity: 0,
-          scale: 0,
-        }}
-        transition={{
-          duration: 0.8,
-          ease: [0.43, 0.13, 0.23, 0.96],
-        }}
-        onAnimationComplete={onComplete}
-        className="fixed z-50 pointer-events-none"
-        style={{
-          width: '80px',
-          height: '80px',
-        }}
-      >
-        <div className="relative w-full h-full">
-          {/* Product Image */}
-          <img
-            src={product?.image || product?.images?.[0]}
-            alt={product?.name}
-            className="w-full h-full object-contain rounded-lg shadow-2xl border-2 border-primary-600 bg-white"
-          />
-
-          {/* Plus Icon */}
-          <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg">
-            +1
-          </div>
+    <div
+      ref={elRef}
+      className="fixed z-50 pointer-events-none"
+      style={{
+        left: startPosition.x,
+        top: startPosition.y,
+        width: '80px',
+        height: '80px',
+        transform: 'translate(0, 0) scale(1)',
+        opacity: 1,
+        transition: 'transform 0.8s cubic-bezier(0.43, 0.13, 0.23, 0.96), opacity 0.8s cubic-bezier(0.43, 0.13, 0.23, 0.96)',
+        willChange: 'transform, opacity',
+      }}
+    >
+      <div className="relative w-full h-full">
+        <img
+          src={product?.image || product?.images?.[0]}
+          alt={product?.name}
+          className="w-full h-full object-contain rounded-lg shadow-2xl border-2 border-primary-600 bg-white"
+        />
+        <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg">
+          +1
         </div>
-      </motion.div>
-    </AnimatePresence>,
+      </div>
+    </div>,
     document.body
   );
 };
@@ -78,7 +70,7 @@ export const useAddToCartAnimation = () => {
 
     const rect = element.getBoundingClientRect();
     const startPosition = {
-      x: rect.left + rect.width / 2 - 40, // Center the 80px image
+      x: rect.left + rect.width / 2 - 40,
       y: rect.top + rect.height / 2 - 40,
     };
 
