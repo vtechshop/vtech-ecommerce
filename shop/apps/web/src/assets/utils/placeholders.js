@@ -83,15 +83,18 @@ export const getResponsiveImageUrls = (url) => {
     }
   }
 
-  // Responsive widths - smaller for mobile, matches actual card display sizes
-  const widths = [160, 200, 300];
+  // Responsive widths - sized to match actual display sizes × common DPRs
+  // Mobile cards ~160px display × 2-3 DPR = need 320-480px
+  // Tablet cards ~200px display × 2 DPR = need 400px
+  // Desktop cards ~300px display × 1-2 DPR = need 300-600px
+  const widths = [160, 320, 480];
   const srcSet = widths.map(w => {
     const optimized = baseUrl.replace('/upload/', `/upload/q_auto,f_auto,w_${w},c_fill/`);
     return `${optimized} ${w}w`;
   }).join(', ');
 
-  // Default src - mobile-first size
-  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_200,c_fill/');
+  // Default src - mobile-first, matches most common display
+  const src = baseUrl.replace('/upload/', '/upload/q_auto,f_auto,w_320,c_fill/');
 
   // Sizes attribute - match actual card display sizes on different screens
   const sizes = '(max-width: 480px) 160px, (max-width: 768px) 200px, 300px';

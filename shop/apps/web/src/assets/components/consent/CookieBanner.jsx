@@ -18,15 +18,17 @@ const CookieBanner = () => {
     marketing: false,
   });
 
-  // Delay banner render to not affect LCP
+  // Delay banner render to not affect LCP — wait until browser is idle
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Wait for page to be interactive before showing banner
-    const timer = setTimeout(() => {
-      setIsReady(true);
-    }, 500); // Brief delay to not affect LCP
-
+    const show = () => setIsReady(true);
+    // Use requestIdleCallback so the banner never competes with hero for LCP
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(show, { timeout: 3000 });
+      return () => cancelIdleCallback(id);
+    }
+    const timer = setTimeout(show, 3000);
     return () => clearTimeout(timer);
   }, []);
 

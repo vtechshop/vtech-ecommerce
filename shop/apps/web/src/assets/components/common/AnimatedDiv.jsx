@@ -1,13 +1,17 @@
-import { motion } from 'framer-motion';
+// CSS-only animated div (no framer-motion dependency for faster initial load)
+import { useRef, useEffect, useState } from 'react';
 
-/**
- * Reusable animated div component with common animation presets
- *
- * @param {string} animation - Animation type: fadeIn, slideUp, slideLeft, slideRight, scale, stagger
- * @param {number} delay - Animation delay in seconds
- * @param {number} duration - Animation duration in seconds
- * @param {ReactNode} children - Child components
- */
+const animationPresets = {
+  fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+  fadeInDown: { from: { opacity: 0, transform: 'translateY(-20px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+  fadeInUp: { from: { opacity: 0, transform: 'translateY(20px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+  slideLeft: { from: { opacity: 0, transform: 'translateX(-30px)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+  slideRight: { from: { opacity: 0, transform: 'translateX(30px)' }, to: { opacity: 1, transform: 'translateX(0)' } },
+  slideUp: { from: { opacity: 0, transform: 'translateY(30px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+  scale: { from: { opacity: 0, transform: 'scale(0.8)' }, to: { opacity: 1, transform: 'scale(1)' } },
+  scaleUp: { from: { transform: 'scale(0)' }, to: { transform: 'scale(1)' } },
+};
+
 const AnimatedDiv = ({
   children,
   animation = 'fadeIn',
@@ -16,66 +20,28 @@ const AnimatedDiv = ({
   className = '',
   ...props
 }) => {
-  const animations = {
-    fadeIn: {
-      initial: { opacity: 0 },
-      animate: { opacity: 1 },
-      exit: { opacity: 0 },
-    },
-    fadeInDown: {
-      initial: { opacity: 0, y: -20 },
-      animate: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: -20 },
-    },
-    fadeInUp: {
-      initial: { opacity: 0, y: 20 },
-      animate: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: 20 },
-    },
-    slideLeft: {
-      initial: { opacity: 0, x: -30 },
-      animate: { opacity: 1, x: 0 },
-      exit: { opacity: 0, x: -30 },
-    },
-    slideRight: {
-      initial: { opacity: 0, x: 30 },
-      animate: { opacity: 1, x: 0 },
-      exit: { opacity: 0, x: 30 },
-    },
-    slideUp: {
-      initial: { opacity: 0, y: 30 },
-      animate: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: 30 },
-    },
-    scale: {
-      initial: { opacity: 0, scale: 0.8 },
-      animate: { opacity: 1, scale: 1 },
-      exit: { opacity: 0, scale: 0.8 },
-    },
-    scaleUp: {
-      initial: { scale: 0 },
-      animate: { scale: 1 },
-      exit: { scale: 0 },
-    },
-  };
+  const [mounted, setMounted] = useState(false);
+  const ref = useRef(null);
+  const preset = animationPresets[animation] || animationPresets.fadeIn;
 
-  const selectedAnimation = animations[animation] || animations.fadeIn;
+  useEffect(() => {
+    const timer = setTimeout(() => setMounted(true), delay * 1000);
+    return () => clearTimeout(timer);
+  }, [delay]);
 
   return (
-    <motion.div
-      initial={selectedAnimation.initial}
-      animate={selectedAnimation.animate}
-      exit={selectedAnimation.exit}
-      transition={{
-        duration,
-        delay,
-        ease: [0.4, 0, 0.2, 1], // Custom cubic-bezier easing
-      }}
+    <div
+      ref={ref}
       className={className}
+      style={{
+        ...(!mounted ? preset.from : preset.to),
+        transition: `opacity ${duration}s cubic-bezier(0.4, 0, 0.2, 1), transform ${duration}s cubic-bezier(0.4, 0, 0.2, 1)`,
+        willChange: mounted ? 'auto' : 'opacity, transform',
+      }}
       {...props}
     >
       {children}
-    </motion.div>
+    </div>
   );
 };
 

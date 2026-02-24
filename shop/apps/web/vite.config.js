@@ -94,9 +94,13 @@ export default defineConfig({
             if (id.includes('@tanstack')) {
               return 'query';
             }
-            // UI libraries
-            if (id.includes('lucide') || id.includes('framer-motion')) {
-              return 'ui';
+            // Icons (used in Header/SearchAutocomplete - initial bundle)
+            if (id.includes('lucide')) {
+              return 'icons';
+            }
+            // Animation library (lazy-loaded - not needed for initial render)
+            if (id.includes('framer-motion')) {
+              return 'motion';
             }
           }
         },
