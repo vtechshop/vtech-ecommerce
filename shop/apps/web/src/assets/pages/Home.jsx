@@ -95,7 +95,7 @@ const Home = React.memo(() => {
       <section className="bg-gradient-to-r from-primary-600 to-primary-200 fade-in">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-16 max-w-screen-2xl">
           <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white fade-in-down">{t('home.heroTitle')}</h1>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white">{t('home.heroTitle')}</h1>
             <p className="text-lg md:text-xl mb-6 md:mb-8 text-white leading-relaxed fade-in-down stagger-1">
               {t('home.heroDesc')}
             </p>

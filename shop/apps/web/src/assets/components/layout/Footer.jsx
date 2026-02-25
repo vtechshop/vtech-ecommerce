@@ -7,21 +7,28 @@ import api from '@/utils/api';
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
-  // Google Customer Reviews badge
+  // Google Customer Reviews badge - deferred to avoid blocking main thread
   useEffect(() => {
-    if (!document.getElementById('merchantWidgetScript')) {
-      const script = document.createElement('script');
-      script.id = 'merchantWidgetScript';
-      script.src = 'https://www.gstatic.com/shopping/merchant/merchantwidget.js';
-      script.defer = true;
-      script.addEventListener('load', () => {
-        window.merchantwidget.start({
-          merchant_id: 5724396980,
-          position: 'BOTTOM_RIGHT',
-          region: 'IN',
+    const loadWidget = () => {
+      if (!document.getElementById('merchantWidgetScript')) {
+        const script = document.createElement('script');
+        script.id = 'merchantWidgetScript';
+        script.src = 'https://www.gstatic.com/shopping/merchant/merchantwidget.js';
+        script.defer = true;
+        script.addEventListener('load', () => {
+          window.merchantwidget.start({
+            merchant_id: 5724396980,
+            position: 'BOTTOM_RIGHT',
+            region: 'IN',
+          });
         });
-      });
-      document.head.appendChild(script);
+        document.head.appendChild(script);
+      }
+    };
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(loadWidget, { timeout: 10000 });
+    } else {
+      setTimeout(loadWidget, 8000);
     }
   }, []);
 
