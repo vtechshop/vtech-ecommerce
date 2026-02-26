@@ -56,14 +56,15 @@
 
     <title>V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment</title>
 
-    <!-- Analytics - Deferred until after page is interactive to reduce TBT/LCP -->
+    <!-- Analytics - Deferred until well after page load to avoid TBT impact -->
     <script>
-      // Load all analytics after page is fully interactive
+      // Initialize gtag early (just the queue, no network requests)
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      window.gtag = gtag;
+
       function loadAnalytics() {
         // Google Analytics
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        window.gtag = gtag;
         var ga = document.createElement('script');
         ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-MGV9FDZXSL';
         ga.async = true;
@@ -71,18 +72,21 @@
         gtag('js', new Date());
         gtag('config', 'G-MGV9FDZXSL');
 
-        // Microsoft Clarity
-        (function(c,l,a,r,i,t,y){
-          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i+"?ref=bwt";
-          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-        })(window, document, "clarity", "script", "vk9crjp0w8");
+        // Microsoft Clarity - load 3s after GA to stagger CPU usage
+        setTimeout(function() {
+          (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i+"?ref=bwt";
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+          })(window, document, "clarity", "script", "vk9crjp0w8");
+        }, 3000);
       }
-      // Defer: load analytics only after page is fully loaded and idle
-      if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(loadAnalytics, { timeout: 8000 });
+      // Wait for load event + 5s delay to ensure we're past TBT measurement window
+      function scheduleAnalytics() { setTimeout(loadAnalytics, 5000); }
+      if (document.readyState === 'complete') {
+        scheduleAnalytics();
       } else {
-        setTimeout(loadAnalytics, 6000);
+        window.addEventListener('load', scheduleAnalytics);
       }
     </script>
 

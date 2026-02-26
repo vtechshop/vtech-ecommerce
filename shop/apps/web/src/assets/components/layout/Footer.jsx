@@ -7,28 +7,30 @@ import api from '@/utils/api';
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
-  // Google Customer Reviews badge - deferred to avoid blocking main thread
+  // Google Customer Reviews badge - load only after page is fully loaded + delay
+  // This prevents the widget (953ms CPU) from executing during TBT window
   useEffect(() => {
     const loadWidget = () => {
-      if (!document.getElementById('merchantWidgetScript')) {
-        const script = document.createElement('script');
-        script.id = 'merchantWidgetScript';
-        script.src = 'https://www.gstatic.com/shopping/merchant/merchantwidget.js';
-        script.defer = true;
-        script.addEventListener('load', () => {
-          window.merchantwidget.start({
-            merchant_id: 5724396980,
-            position: 'BOTTOM_RIGHT',
-            region: 'IN',
-          });
+      if (document.getElementById('merchantWidgetScript')) return;
+      const script = document.createElement('script');
+      script.id = 'merchantWidgetScript';
+      script.src = 'https://www.gstatic.com/shopping/merchant/merchantwidget.js';
+      script.defer = true;
+      script.addEventListener('load', () => {
+        window.merchantwidget.start({
+          merchant_id: 5724396980,
+          position: 'BOTTOM_RIGHT',
+          region: 'IN',
         });
-        document.head.appendChild(script);
-      }
+      });
+      document.head.appendChild(script);
     };
-    if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(loadWidget, { timeout: 10000 });
+    // Wait for load event + 12s to ensure we're well past TBT measurement
+    const scheduleLoad = () => setTimeout(loadWidget, 12000);
+    if (document.readyState === 'complete') {
+      scheduleLoad();
     } else {
-      setTimeout(loadWidget, 8000);
+      window.addEventListener('load', scheduleLoad, { once: true });
     }
   }, []);
 

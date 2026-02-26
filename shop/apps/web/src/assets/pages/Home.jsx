@@ -92,14 +92,14 @@ const Home = React.memo(() => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-200 fade-in">
+      <section className="bg-gradient-to-r from-primary-600 to-primary-200">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-16 max-w-screen-2xl">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white">{t('home.heroTitle')}</h1>
-            <p className="text-lg md:text-xl mb-6 md:mb-8 text-white leading-relaxed fade-in-down stagger-1">
+            <p className="text-lg md:text-xl mb-6 md:mb-8 text-white leading-relaxed">
               {t('home.heroDesc')}
             </p>
-            <div className="flex gap-4 fade-in-down stagger-2">
+            <div className="flex gap-4">
               <Link
                 to="/products"
                 className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-100 transition-all duration-300 shadow-lg btn-scale"
