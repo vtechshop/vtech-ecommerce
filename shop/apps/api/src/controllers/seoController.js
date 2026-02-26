@@ -367,7 +367,7 @@ exports.renderPage = async (req, res, next) => {
     else if (pathParts[0] === 'product' && pathParts[1]) {
       const product = await Product.findOne({ slug: pathParts[1], published: true })
         .populate('vendorId', 'storeName')
-        .populate('categoryIds', 'name')
+        .populate('categoryIds', 'name slug')
         .lean();
 
       if (product) {
@@ -480,6 +480,18 @@ exports.renderPage = async (req, res, next) => {
             },
           }));
         }
+
+        // BreadcrumbList for product pages
+        const cat = product.categoryIds?.[0];
+        pageData.breadcrumbSchema = {
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.vtechkitchen.com' },
+            ...(cat ? [{ '@type': 'ListItem', position: 2, name: cat.name, item: `https://www.vtechkitchen.com/category/${cat.slug}` }] : []),
+            { '@type': 'ListItem', position: cat ? 3 : 2, name: product.title, item: fullUrl },
+          ],
+        };
       }
     }
 
@@ -712,6 +724,7 @@ exports.renderPage = async (req, res, next) => {
   <meta name="twitter:image" content="${pageData.image}">
 
   ${pageData.schema ? `<script type="application/ld+json">${JSON.stringify(pageData.schema)}</script>` : ''}
+  ${pageData.breadcrumbSchema ? `<script type="application/ld+json">${JSON.stringify(pageData.breadcrumbSchema)}</script>` : ''}
 
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; color: #1f2937; }

@@ -956,6 +956,72 @@ class NotificationService {
 
     return this.sendEmail(email, subject, html);
   }
+
+  async sendReviewRequestEmail(user, order) {
+    const itemsHtml = order.items.map(item => {
+      const productUrl = `${env.CLIENT_URL}/product/${item.productSlug || item.productId}#reviews`;
+      const imageUrl = item.image || '';
+      return `
+        <tr>
+          <td style="padding: 15px; border-bottom: 1px solid #eee; width: 60px;">
+            ${imageUrl ? `<img src="${imageUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: contain; border-radius: 8px;" />` : ''}
+          </td>
+          <td style="padding: 15px; border-bottom: 1px solid #eee;">
+            <strong>${item.name}</strong>
+            ${item.variantName ? `<br><small style="color: #666;">${item.variantName}</small>` : ''}
+          </td>
+          <td style="padding: 15px; border-bottom: 1px solid #eee; text-align: center;">
+            <a href="${productUrl}" style="display: inline-block; background: #FF9F1C; color: white; padding: 8px 16px; text-decoration: none; border-radius: 5px; font-size: 13px; font-weight: bold;">Write a Review</a>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #FF9F1C 0%, #2EC4B6 100%); color: white; padding: 30px; text-align: center; border-radius: 5px 5px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1 style="margin: 0;">How was your order?</h1>
+            <p style="margin: 10px 0 0; opacity: 0.9;">We'd love to hear your feedback</p>
+          </div>
+          <div class="content">
+            <p>Hi ${user.name || 'there'},</p>
+            <p>Your order <strong>#${order.orderId}</strong> was delivered recently. We hope you're enjoying your purchase!</p>
+            <p>Could you take a moment to share your experience? Your review helps other customers make informed decisions.</p>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: white; border-radius: 8px;">
+              ${itemsHtml}
+            </table>
+
+            <p style="text-align: center; margin-top: 30px;">
+              <a href="${env.CLIENT_URL}/dashboard/orders/${order._id}" style="display: inline-block; background: #2EC4B6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px;">View Your Order</a>
+            </p>
+
+            <p style="margin-top: 30px; color: #666; font-size: 13px;">Thank you for shopping with us!</p>
+            <p><em>- V-Tech Kitchen Team</em></p>
+          </div>
+          <div class="footer">
+            <p>&copy; ${new Date().getFullYear()} V-Tech Kitchen. All rights reserved.</p>
+            <p style="color: #999; font-size: 11px;">You received this email because you placed an order at vtechkitchen.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    return this.sendEmail(user.email, `How was your V-Tech Kitchen order #${order.orderId}?`, html);
+  }
 }
 
 module.exports = new NotificationService();

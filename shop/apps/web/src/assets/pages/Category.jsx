@@ -8,8 +8,9 @@ import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
 import SponsoredLabel from '@/components/ads/SponsoredLabel';
 import AdBanner from '@/components/common/AdBanner';
 import ScrollReveal from '@/components/animations/ScrollReveal';
-import { updateMetaTags, injectJSONLD } from '@/utils/seo';
+import { updateMetaTags } from '@/utils/seo';
 import SEO from '@/components/common/SEO';
+import Breadcrumb from '@/components/common/Breadcrumb';
 
 const Category = () => {
   const { slug } = useParams();
@@ -87,14 +88,6 @@ const Category = () => {
         description: category.description || `Browse ${category.name} products`,
         canonical: `https://www.vtechkitchen.com/category/${slug}`,
       });
-      injectJSONLD({
-        '@context': 'https://schema.org',
-        '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://www.vtechkitchen.com' },
-          { '@type': 'ListItem', position: 2, name: category.name, item: `https://www.vtechkitchen.com/category/${slug}` },
-        ],
-      });
     }
   }, [category, slug]);
 
@@ -167,6 +160,11 @@ const Category = () => {
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl py-6">
         {/* Ad Banner - Top of Category Page */}
         <AdBanner placement="category_top_banner" position="top" className="mb-6" />
+
+        <Breadcrumb items={[
+          { name: 'Home', path: '/' },
+          { name: category.name },
+        ]} />
 
         <ScrollReveal direction="down" duration={0.5}>
           <div className="mb-6">

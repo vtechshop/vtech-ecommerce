@@ -131,7 +131,18 @@ function setupCronJobs() {
       }
     });
 
-    logger.info('✅ Cron jobs scheduled: Abandoned carts (hourly), Inventory alerts (9 AM), Loyalty expiration (2 AM), GDPR deletions (3 AM), Payment reconciliation (every 5 min), Auto-release transfers (10 AM)');
+    // Daily at 10:30 AM - Send review request emails (3 days after delivery)
+    cron.schedule('30 10 * * *', async () => {
+      try {
+        logger.info('[Cron] Running review request emails...');
+        const sendReviewRequests = require('./jobs/reviewRequestJob');
+        await sendReviewRequests();
+      } catch (error) {
+        logger.error('[Cron] Review request emails failed:', error);
+      }
+    });
+
+    logger.info('✅ Cron jobs scheduled: Abandoned carts (hourly), Inventory alerts (9 AM), Loyalty expiration (2 AM), GDPR deletions (3 AM), Payment reconciliation (every 5 min), Auto-release transfers (10 AM), Review requests (10:30 AM)');
   } catch (error) {
     logger.error('Failed to set up cron jobs:', error);
   }

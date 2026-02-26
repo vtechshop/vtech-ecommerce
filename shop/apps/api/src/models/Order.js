@@ -82,6 +82,8 @@ const orderSchema = new mongoose.Schema({
   confirmationEmailSentAt: { type: Date },
   vendorNotificationSent: { type: Boolean, default: false },
   vendorNotificationSentAt: { type: Date },
+  reviewEmailSent: { type: Boolean, default: false },
+  reviewEmailSentAt: { type: Date },
   shipment: {
     carrier: String,
     awb: String,

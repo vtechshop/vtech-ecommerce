@@ -26,6 +26,7 @@ import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
 import SEO from '@/components/common/SEO';
 import { playWishlistAdd, playAddToCart, playError } from '@/utils/sounds';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import Breadcrumb from '@/components/common/Breadcrumb';
 
 // Customer Reviews Carousel Component
 const CustomerReviewsCarousel = ({ reviews, renderStars, onEdit, onDelete, currentUser }) => {
@@ -520,6 +521,19 @@ const Product = () => {
       />
       <div className="min-h-screen bg-blue-50 pt-12">
         <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
+        {product.categoryIds?.[0] && (
+          <Breadcrumb items={[
+            { name: 'Home', path: '/' },
+            { name: product.categoryIds[0].name, path: `/category/${product.categoryIds[0].slug}` },
+            { name: product.title },
+          ]} />
+        )}
+        {!product.categoryIds?.[0] && (
+          <Breadcrumb items={[
+            { name: 'Home', path: '/' },
+            { name: product.title },
+          ]} />
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-6">
           {/* Product Images - wider for magnifier panel */}
           <div className="lg:col-span-5 fade-in-left">

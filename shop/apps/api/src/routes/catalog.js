@@ -88,7 +88,7 @@ router.get('/products', async (req, res, next) => {
 router.get('/products/:slug', async (req, res, next) => {
   try {
     const { slug } = req.params;
-    const product = await Product.findOne({ slug, published: true }).populate('vendorId', 'storeName slug').lean();
+    const product = await Product.findOne({ slug, published: true }).populate('vendorId', 'storeName slug').populate('categoryIds', 'name slug').lean();
     if (!product) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' }});
     res.json({ success: true, data: product });
   } catch (err) {
