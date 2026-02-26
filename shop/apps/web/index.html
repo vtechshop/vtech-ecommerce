@@ -45,13 +45,14 @@
     <!-- Preconnect - critical origins only -->
     <link rel="preconnect" href="https://api.vtechkitchen.com" crossorigin="use-credentials">
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.googletagmanager.com">
     <link rel="dns-prefetch" href="https://www.clarity.ms">
 
-    <!-- Google Fonts - deferred with reduced weights -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"></noscript>
+    <!-- Google Fonts - deferred, optional display to avoid FOIT on slow connections -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=optional"></noscript>
 
     <title>V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment</title>
 
@@ -77,11 +78,11 @@
           y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
         })(window, document, "clarity", "script", "vk9crjp0w8");
       }
-      // Defer: use requestIdleCallback or fallback to 4s timeout
+      // Defer: load analytics only after page is fully loaded and idle
       if (typeof requestIdleCallback === 'function') {
-        requestIdleCallback(loadAnalytics, { timeout: 5000 });
+        requestIdleCallback(loadAnalytics, { timeout: 8000 });
       } else {
-        setTimeout(loadAnalytics, 4000);
+        setTimeout(loadAnalytics, 6000);
       }
     </script>
 

@@ -7,7 +7,7 @@ import Pagination from '@/components/common/Pagination';
 import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
 import SponsoredLabel from '@/components/ads/SponsoredLabel';
 import AdBanner from '@/components/common/AdBanner';
-import ScrollReveal from '@/components/animations/ScrollReveal';
+import ScrollReveal from '@/components/common/ScrollReveal';
 import { updateMetaTags } from '@/utils/seo';
 import SEO from '@/components/common/SEO';
 import Breadcrumb from '@/components/common/Breadcrumb';
@@ -166,7 +166,7 @@ const Category = () => {
           { name: category.name },
         ]} />
 
-        <ScrollReveal direction="down" duration={0.5}>
+        <ScrollReveal animation="fadeIn" duration={0.5}>
           <div className="mb-6">
             <h1 className="text-3xl font-bold mb-2">{category.name}</h1>
             {category.description && <p className="text-gray-700 text-lg">{category.description}</p>}

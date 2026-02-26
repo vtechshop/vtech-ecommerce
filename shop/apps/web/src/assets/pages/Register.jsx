@@ -7,7 +7,7 @@ import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import CustomSelect from '@/components/common/CustomSelect';
 import ShinyButton from '@/components/animations/ShinyButton';
-import ScrollReveal from '@/components/animations/ScrollReveal';
+import ScrollReveal from '@/components/common/ScrollReveal';
 import { NoIndex } from '@/components/common/SEO';
 
 const Register = () => {
@@ -96,7 +96,7 @@ const Register = () => {
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
       <NoIndex title="Create Account - V-Tech Kitchen" />
       <div className="max-w-md w-full">
-        <ScrollReveal direction="down" duration={0.5}>
+        <ScrollReveal animation="fadeIn" duration={0.5}>
           <div className="text-center mb-8">
             <Link to="/" className="text-3xl font-bold text-blue-600">
               Shop
@@ -111,7 +111,7 @@ const Register = () => {
           </div>
         </ScrollReveal>
 
-        <ScrollReveal direction="up" delay={0.2}>
+        <ScrollReveal animation="fadeUp" delay={0.2}>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover-lift">
           <form onSubmit={handleSubmit} className="space-y-6" data-testid="register-form">
             {error && (
