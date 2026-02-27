@@ -193,6 +193,34 @@ function setupCronJobs() {
       }
     }
 
+    // Create/update test account for Google Play Store review
+    if (process.env.TEST_ACCOUNT_EMAIL && process.env.TEST_ACCOUNT_PASSWORD) {
+      try {
+        const User = require('./models/User');
+        const { hashPassword } = require('./utils/hash');
+
+        let testUser = await User.findOne({ email: process.env.TEST_ACCOUNT_EMAIL });
+        if (testUser) {
+          testUser.password = await hashPassword(process.env.TEST_ACCOUNT_PASSWORD);
+          testUser.loginAttempts = 0;
+          testUser.lockUntil = null;
+          await testUser.save();
+          logger.info(`✅ Test account password updated: ${process.env.TEST_ACCOUNT_EMAIL}`);
+        } else {
+          testUser = await User.create({
+            name: 'Test User',
+            email: process.env.TEST_ACCOUNT_EMAIL,
+            password: await hashPassword(process.env.TEST_ACCOUNT_PASSWORD),
+            role: 'customer',
+            emailVerified: true,
+          });
+          logger.info(`✅ Test account created: ${process.env.TEST_ACCOUNT_EMAIL}`);
+        }
+      } catch (err) {
+        logger.error('Test account setup failed:', err.message);
+      }
+    }
+
     const PORT = Number(process.env.PORT) || 3000;
     const server = app.listen(PORT, () => logger.info(`API listening on port ${PORT}`));
 
