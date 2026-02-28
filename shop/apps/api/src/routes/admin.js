@@ -57,6 +57,7 @@ router.put('/products/:id', validateObjectId('id'), admin.updateProduct);
 router.delete('/products/:id', validateObjectId('id'), admin.deleteProduct);
 router.put('/products/:id/approve', validateObjectId('id'), admin.approveProduct);
 router.put('/products/:id/reject', validateObjectId('id'), admin.rejectProduct);
+router.post('/products/reassign', admin.reassignProducts);
 router.put('/products/:id/commission-rules', validateObjectId('id'), admin.updateProductCommissionRules);
 
 // Categories - SECURITY: Added ObjectId validation

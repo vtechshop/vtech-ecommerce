@@ -718,6 +718,44 @@ exports.deleteProduct = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+exports.reassignProducts = async (req, res, next) => {
+  try {
+    const { toVendorId, fromVendorId, productIds } = req.body;
+
+    if (!toVendorId) {
+      return res.status(400).json({ success: false, error: { code: 'MISSING_FIELD', message: 'toVendorId is required' } });
+    }
+
+    const toVendor = await Vendor.findById(toVendorId);
+    if (!toVendor) {
+      return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Target vendor not found' } });
+    }
+
+    const query = {};
+    if (productIds && productIds.length > 0) {
+      query._id = { $in: productIds };
+    } else if (fromVendorId) {
+      query.vendorId = fromVendorId;
+    } else {
+      query.vendorId = { $ne: toVendorId };
+    }
+
+    const result = await Product.updateMany(query, { $set: { vendorId: toVendorId } });
+
+    // Update totalProducts counts
+    const total = await Product.countDocuments({ vendorId: toVendorId });
+    await Vendor.updateOne({ _id: toVendorId }, { totalProducts: total });
+
+    if (fromVendorId) {
+      const fromTotal = await Product.countDocuments({ vendorId: fromVendorId });
+      await Vendor.updateOne({ _id: fromVendorId }, { totalProducts: fromTotal });
+    }
+
+    logger.info(`Admin reassigned ${result.modifiedCount} products to vendor: ${toVendor.storeName}`);
+    res.json({ success: true, data: { modifiedCount: result.modifiedCount, vendor: toVendor.storeName } });
+  } catch (error) { next(error); }
+};
+
 // ---------- Categories ----------
 exports.getCategories = async (req, res, next) => {
   try {
