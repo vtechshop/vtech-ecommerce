@@ -221,6 +221,33 @@ function setupCronJobs() {
       }
     }
 
+    // Ensure all products belong to the primary vendor (one-time fix)
+    if (process.env.VENDOR_EMAIL) {
+      try {
+        const User = require('./models/User');
+        const Vendor = require('./models/Vendor');
+        const Product = require('./models/Product');
+
+        const vendorUser = await User.findOne({ email: process.env.VENDOR_EMAIL });
+        if (vendorUser) {
+          const vendor = await Vendor.findOne({ userId: vendorUser._id });
+          if (vendor) {
+            const result = await Product.updateMany(
+              { vendorId: { $ne: vendor._id } },
+              { $set: { vendorId: vendor._id } }
+            );
+            if (result.modifiedCount > 0) {
+              const total = await Product.countDocuments({ vendorId: vendor._id });
+              await Vendor.updateOne({ _id: vendor._id }, { totalProducts: total });
+              logger.info(`✅ Reassigned ${result.modifiedCount} products to vendor: ${vendor.storeName} (${total} total)`);
+            }
+          }
+        }
+      } catch (err) {
+        logger.error('Vendor product reassignment failed:', err.message);
+      }
+    }
+
     const PORT = Number(process.env.PORT) || 3000;
     const server = app.listen(PORT, () => logger.info(`API listening on port ${PORT}`));
 
