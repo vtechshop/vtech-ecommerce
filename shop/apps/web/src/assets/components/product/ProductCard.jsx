@@ -91,7 +91,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
       onClick={handleClick}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden block h-full group hover:shadow-xl"
+      className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full group hover:shadow-xl"
       style={{ transition: 'transform 0.15s ease-out, box-shadow 0.3s ease', willChange: 'transform' }}
       data-testid="product-card"
       data-cy="product-card"
@@ -173,7 +173,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
       </div>
 
       {/* Content */}
-      <div className="p-3 sm:p-4">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col">
         {/* Vendor Name */}
         {product.vendorId && (
           <button
@@ -204,7 +204,7 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
         </div>
 
         {/* Price */}
-        <div className="flex items-baseline gap-2 mb-3">
+        <div className="flex items-baseline gap-2 mb-3 mt-auto">
           <span className={`text-lg sm:text-xl font-bold ${hasDiscount ? 'text-green-700' : 'text-gray-900'}`}>
             {formatCurrency(product.price)}
           </span>

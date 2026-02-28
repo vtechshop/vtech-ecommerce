@@ -256,7 +256,7 @@ const Search = () => {
       <AdBanner placement="search_top" position="top" className="mb-6 fade-in" />
 
       {/* Header with Sort */}
-      <ScrollReveal animation="fadeUp">
+      <ScrollReveal animation="fadeUp" className="relative z-10">
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
