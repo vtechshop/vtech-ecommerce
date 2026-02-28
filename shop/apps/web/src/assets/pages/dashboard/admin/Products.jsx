@@ -403,6 +403,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
   console.log('ProductModal Debug:', { product: !!product, isViewing, productId: product?._id });
 
   const [formData, setFormData] = useState({
+    vendorId: product?.vendorId?._id || product?.vendorId || '',
     title: product?.title || '',
     description: product?.description || '',
     videoUrl: product?.videoUrl || '',
@@ -467,7 +468,17 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     },
   });
 
+  // Fetch vendors for assignment dropdown
+  const { data: vendorsData } = useQuery({
+    queryKey: ['admin-vendors'],
+    queryFn: async () => {
+      const response = await api.get('/admin/vendors');
+      return response.data.data;
+    },
+  });
+
   const categories = categoriesData || [];
+  const vendors = vendorsData || [];
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -528,6 +539,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     e.preventDefault();
     const dataToSubmit = {
       ...formData,
+      vendorId: formData.vendorId || undefined,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       structuredData: schemaData, // Fixed: changed from 'schema' to 'structuredData'
       // Images with SEO alt tags
@@ -679,6 +691,27 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                 {categories.map((cat) => (
                   <option key={cat._id} value={cat._id}>
                     {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Vendor Assignment */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assign to Vendor <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.vendorId}
+                onChange={(e) => setFormData({ ...formData, vendorId: e.target.value })}
+                disabled={isViewing}
+                className="input w-full"
+                required
+              >
+                <option value="">Select a vendor</option>
+                {vendors.map((v) => (
+                  <option key={v._id} value={v._id}>
+                    {v.storeName} ({v.userId?.email || v.status})
                   </option>
                 ))}
               </select>
