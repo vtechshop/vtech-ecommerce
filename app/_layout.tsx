@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { Provider } from 'react-redux';
@@ -9,6 +9,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { store, useAppDispatch, useAppSelector } from '../src/store';
 import { loadUser } from '../src/store/slices/authSlice';
 import { useFirstLaunch } from '../src/hooks/useFirstLaunch';
+import { useKeepAlive } from '../src/hooks/useKeepAlive';
 import { ToastProvider } from '../src/components/ui/Toast';
 import { colors, fontWeight } from '../src/theme';
 
@@ -49,6 +50,8 @@ function RootLayoutInner() {
   const dispatch = useAppDispatch();
   const { isFirstLaunch } = useFirstLaunch();
   const { isLoading: authLoading } = useAppSelector((s) => s.auth);
+
+  useKeepAlive();
 
   useEffect(() => {
     dispatch(loadUser());

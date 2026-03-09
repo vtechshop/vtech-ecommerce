@@ -139,19 +139,16 @@ function ProductDetailScreen() {
     setError(null);
     setLoading(true);
     try {
-      console.log('[ProductDetail] Loading product:', id);
       const [prodRes, revRes] = await Promise.all([
         productsApi.getById(id),
         productsApi.getReviews(id, { limit: 10 }).catch(() => ({ data: { data: [] } })),
       ]);
       const prod = prodRes.data?.data;
       if (!prod || !prod._id) {
-        console.error('[ProductDetail] Invalid product data:', JSON.stringify(prodRes.data).slice(0, 200));
         setError('Product data is invalid');
         setLoading(false);
         return;
       }
-      console.log('[ProductDetail] Product loaded:', prod.title, '| Images:', (prod.images || []).length);
       setProduct(prod);
       setReviews(Array.isArray(revRes.data?.data) ? revRes.data.data : []);
       if (prod.title) navigation.setOptions({ title: prod.title });
@@ -161,7 +158,7 @@ function ProductDetailScreen() {
         setSimilarProducts(similar.slice(0, 6));
       }).catch(() => {});
     } catch (e: any) {
-      console.error('[ProductDetail] Load error:', e.message || e);
+      // Error handled by state
       setError(e.response?.data?.message || 'Failed to load product');
     }
     setLoading(false);
@@ -288,7 +285,6 @@ function ProductDetailScreen() {
   const vendorInfo = typeof product.vendorId === 'object' && product.vendorId ? product.vendorId : null;
   const isLowStock = (product.stock || 0) > 0 && (product.stock || 0) <= 5;
   const deliveryEstimate = getDeliveryEstimate();
-  const safeImages = (product.images || []).filter(Boolean);
 
   return (
     <View style={styles.container}>
