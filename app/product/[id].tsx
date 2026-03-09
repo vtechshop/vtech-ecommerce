@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef, useCallback, Component, ErrorInfo, ReactNode } from 'react';
+import React, { useEffect, useState, useRef, Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, FlatList, Alert, Share, Modal, Pressable, Linking, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useNavigation, router } from 'expo-router';
@@ -233,10 +233,10 @@ function ProductDetailScreen() {
     setActiveImage(index);
   };
 
-  const onCarouselScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const onCarouselScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / width);
     setActiveImage(idx);
-  }, []);
+  };
 
   const handleVideoPress = () => {
     if (product?.videoUrl) Linking.openURL(product.videoUrl);
@@ -258,14 +258,6 @@ function ProductDetailScreen() {
     }
   };
 
-  // useMemo MUST be before any early returns to follow Rules of Hooks
-  const highlights = useMemo(() => {
-    if (!product) return [];
-    if (product.tags && product.tags.length > 0) return product.tags.slice(0, 4);
-    if (product.specifications && product.specifications.length > 0) return product.specifications.slice(0, 3).map((s) => `${s.label}: ${s.value}`);
-    return [];
-  }, [product]);
-
   if (loading) return <LoadingScreen />;
 
   if (error || !product) {
@@ -279,6 +271,13 @@ function ProductDetailScreen() {
       </View>
     );
   }
+
+  // Compute highlights (plain variable - no hooks after early returns)
+  const highlights = product.tags && product.tags.length > 0
+    ? product.tags.slice(0, 4)
+    : product.specifications && product.specifications.length > 0
+      ? product.specifications.slice(0, 3).map((s) => `${s.label}: ${s.value}`)
+      : [];
 
   const discount = product.compareAt ? Math.round(((product.compareAt - (product.price || 0)) / product.compareAt) * 100) : 0;
   const savedAmount = product.compareAt ? product.compareAt - (product.price || 0) : 0;
