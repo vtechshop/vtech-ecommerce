@@ -6,6 +6,7 @@ const QRCode = require('qrcode');
 const env = require('../config/env');
 
 const LOGO_PATH = path.resolve(__dirname, '../assets/logo.png');
+const ESIGN_PATH = path.resolve(__dirname, '../assets/e-sign.png');
 
 // Default platform seller details
 const PLATFORM_SELLER = {
@@ -594,13 +595,21 @@ async function generateInvoicePDF(order, outputStream, seller) {
       doc.fontSize(8).font('Helvetica-Bold').fillColor('#111827')
         .text(`For ${CO.name}`, sigX, sigSectionY, { width: 170, align: 'right' });
 
-      // Space for signature/seal
-      const sigLineY = sigSectionY + 45;
+      // E-Signature image
+      if (fs.existsSync(ESIGN_PATH)) {
+        const signW = 80;
+        const signH = 35;
+        const signImgX = R - signW - 45;
+        doc.image(ESIGN_PATH, signImgX, sigSectionY + 14, { width: signW, height: signH, align: 'center' });
+      }
+
+      // Authorized signatory label
+      const sigLineY = sigSectionY + 55;
       doc.fontSize(7).font('Helvetica').fillColor('#6b7280')
         .text('Authorized Signatory', sigX, sigLineY, { width: 170, align: 'right' });
 
       // Move past both QR and signature sections
-      const sectionEndY = Math.max(qrEndY, sigLineY + 12) + 15;
+      const sectionEndY = Math.max(qrEndY, sigLineY + 14) + 15;
       doc.y = sectionEndY;
 
       // ═══════════════ FOOTER ═══════════════
@@ -628,7 +637,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
       doc.moveDown(0.4);
 
       doc.fontSize(6.5).font('Helvetica').fillColor('#9ca3af');
-      doc.text('This is a computer-generated invoice and does not require a physical signature.', L, doc.y, {
+      doc.text('This is a computer-generated invoice with an electronic signature.', L, doc.y, {
         align: 'center', width: W,
       });
       doc.moveDown(0.3);
