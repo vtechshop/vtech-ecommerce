@@ -3,6 +3,15 @@
    Modern designs and smooth transitions
    ======================================== */
 
+/* Hero carousel auto-play progress bar */
+@keyframes heroProgress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+.hero-progress {
+  animation: heroProgress 5s linear forwards;
+}
+
 /* ===== UTILITY CLASSES ===== */
 
 .hover-lift {
