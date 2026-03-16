@@ -48,9 +48,9 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
           }`}
           aria-hidden={index !== current}
         >
-          {/* Background image */}
+          {/* Background image — Banner model uses `image` field */}
           <img
-            src={normalizeImageUrl(item.imageUrl, { width: 1400 })}
+            src={normalizeImageUrl(item.image || item.imageUrl, { width: 1400 })}
             alt={item.title || ''}
             className="absolute inset-0 w-full h-full object-cover"
             loading={index === 0 ? 'eager' : 'lazy'}
@@ -64,17 +64,13 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
           <div className="relative z-10 h-full flex items-center">
             <div className="container mx-auto px-6 sm:px-10 md:px-16 max-w-screen-2xl">
               <div className="max-w-lg">
-                {item.brand && (
-                  <p className="text-white/70 text-xs font-semibold mb-2 tracking-widest uppercase">
-                    {item.brand}
-                  </p>
-                )}
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">
                   {item.title}
                 </h2>
-                {item.description && (
+                {/* Banner uses `subtitle`, Carousel uses `description` */}
+                {(item.subtitle || item.description) && (
                   <p className="text-white/80 text-sm md:text-base mb-5 line-clamp-2 leading-relaxed">
-                    {item.description}
+                    {item.subtitle || item.description}
                   </p>
                 )}
                 {item.link && (

@@ -100,7 +100,17 @@ const Home = React.memo(() => {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Carousel items from CMS
+  // Hero banners (admin-uploadable via Banners Management)
+  const { data: heroBanners } = useQuery({
+    queryKey: ['hero-banners'],
+    queryFn: async () => {
+      const { data } = await api.get('/banners');
+      return data.data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Carousel items from CMS (used for ThreeDCarousel below)
   const { data: carouselItems } = useQuery({
     queryKey: ['carousel-items'],
     queryFn: async () => {
@@ -112,12 +122,12 @@ const Home = React.memo(() => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section — dynamic carousel if banners exist, else static fallback */}
-      {carouselItems && carouselItems.length > 0 ? (
+      {/* Hero Section — dynamic carousel if banners uploaded, else static fallback */}
+      {heroBanners && heroBanners.length > 0 ? (
         <Suspense fallback={
           <div className="bg-gradient-to-r from-primary-600 to-primary-200" style={{ height: 'clamp(280px, 42vw, 540px)' }} />
         }>
-          <HeroCarousel items={carouselItems} fallback={<StaticHero t={t} />} />
+          <HeroCarousel items={heroBanners} fallback={<StaticHero t={t} />} />
         </Suspense>
       ) : (
         <StaticHero t={t} />
