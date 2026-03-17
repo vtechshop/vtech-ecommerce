@@ -147,11 +147,18 @@ const LinkUrlInput = ({ value, onChange }) => {
 
   const { data: catData } = useQuery({
     queryKey: ['categories-for-banner-link'],
-    queryFn: async () => {
-      const res = await api.get('/categories?limit=100');
-      return res.data;
-    },
+    queryFn: async () => (await api.get('/categories?limit=100')).data,
     staleTime: 10 * 60 * 1000,
+  });
+
+  const { data: prodData } = useQuery({
+    queryKey: ['products-for-banner-link', filter],
+    queryFn: async () => {
+      const q = filter && filter.length > 1 ? `&search=${encodeURIComponent(filter)}` : '';
+      return (await api.get(`/products?limit=30&published=true${q}`)).data;
+    },
+    staleTime: 30 * 1000,
+    enabled: showDropdown,
   });
 
   // Close dropdown on outside click
@@ -162,21 +169,31 @@ const LinkUrlInput = ({ value, onChange }) => {
   }, []);
 
   const categories = catData?.data || catData || [];
+  const products = prodData?.data || prodData?.products || [];
   const staticOptions = [
-    { label: 'All Products', path: '/products' },
-    { label: 'All Categories', path: '/categories' },
-    { label: 'Blog', path: '/blog' },
-    { label: 'About Us', path: '/page/about' },
-    { label: 'Contact', path: '/page/contact' },
+    { label: 'All Products', path: '/products', group: 'Pages' },
+    { label: 'All Categories', path: '/categories', group: 'Pages' },
+    { label: 'Blog', path: '/blog', group: 'Pages' },
+    { label: 'About Us', path: '/page/about', group: 'Pages' },
+    { label: 'Contact', path: '/page/contact', group: 'Pages' },
   ];
   const categoryOptions = categories.map(c => ({
-    label: `Category: ${c.name}`,
+    label: c.name,
     path: `/category/${c.slug || c.name.toLowerCase().replace(/\s+/g, '-')}`,
+    group: 'Categories',
   }));
-  const allOptions = [...staticOptions, ...categoryOptions];
-  const filtered = filter
+  const productOptions = products.map(p => ({
+    label: p.title,
+    path: `/product/${p.slug || p._id}`,
+    group: 'Products',
+  }));
+  const allOptions = [...staticOptions, ...categoryOptions, ...productOptions];
+  const filtered = filter && filter.length > 0
     ? allOptions.filter(o => o.label.toLowerCase().includes(filter.toLowerCase()) || o.path.includes(filter))
     : allOptions;
+
+  // Group for display
+  const groups = ['Pages', 'Categories', 'Products'];
 
   return (
     <div ref={wrapperRef}>
@@ -186,26 +203,35 @@ const LinkUrlInput = ({ value, onChange }) => {
           type="text"
           value={value}
           onChange={(e) => { onChange(e.target.value); setFilter(e.target.value); setShowDropdown(true); }}
-          onFocus={() => { setFilter(''); setShowDropdown(true); }}
-          placeholder="/products or search category..."
+          onFocus={() => { setShowDropdown(true); }}
+          placeholder="Search product, category or page..."
           className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
         />
         {showDropdown && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
             {filtered.length === 0 && (
               <div className="px-3 py-2 text-xs text-gray-400">No matches</div>
             )}
-            {filtered.map((opt) => (
-              <button
-                key={opt.path}
-                type="button"
-                onMouseDown={() => { onChange(opt.path); setShowDropdown(false); }}
-                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center justify-between gap-2"
-              >
-                <span className="text-gray-700">{opt.label}</span>
-                <span className="text-xs text-gray-400 font-mono">{opt.path}</span>
-              </button>
-            ))}
+            {groups.map(group => {
+              const items = filtered.filter(o => o.group === group);
+              if (items.length === 0) return null;
+              return (
+                <div key={group}>
+                  <div className="px-3 py-1 text-xs font-semibold text-gray-400 bg-gray-50 border-b">{group}</div>
+                  {items.map((opt) => (
+                    <button
+                      key={opt.path}
+                      type="button"
+                      onMouseDown={() => { onChange(opt.path); setShowDropdown(false); }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center justify-between gap-2"
+                    >
+                      <span className="text-gray-700 truncate">{opt.label}</span>
+                      <span className="text-xs text-gray-400 font-mono shrink-0">{opt.path}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
