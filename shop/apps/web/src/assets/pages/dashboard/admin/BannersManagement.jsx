@@ -1,5 +1,5 @@
 // FILE: apps/web/src/assets/pages/dashboard/admin/BannersManagement.jsx
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
@@ -139,6 +139,81 @@ const BannersManagement = () => {
   );
 };
 
+// Dynamic Link URL input with category/page suggestions from DB
+const LinkUrlInput = ({ value, onChange }) => {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [filter, setFilter] = useState('');
+  const wrapperRef = useRef(null);
+
+  const { data: catData } = useQuery({
+    queryKey: ['categories-for-banner-link'],
+    queryFn: async () => {
+      const res = await api.get('/categories?limit=100');
+      return res.data;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => { if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setShowDropdown(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const categories = catData?.data || catData || [];
+  const staticOptions = [
+    { label: 'All Products', path: '/products' },
+    { label: 'All Categories', path: '/categories' },
+    { label: 'Blog', path: '/blog' },
+    { label: 'About Us', path: '/page/about' },
+    { label: 'Contact', path: '/page/contact' },
+  ];
+  const categoryOptions = categories.map(c => ({
+    label: `Category: ${c.name}`,
+    path: `/category/${c.slug || c.name.toLowerCase().replace(/\s+/g, '-')}`,
+  }));
+  const allOptions = [...staticOptions, ...categoryOptions];
+  const filtered = filter
+    ? allOptions.filter(o => o.label.toLowerCase().includes(filter.toLowerCase()) || o.path.includes(filter))
+    : allOptions;
+
+  return (
+    <div ref={wrapperRef}>
+      <label className="block text-sm font-medium text-gray-700 mb-1">Link URL</label>
+      <div className="relative">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => { onChange(e.target.value); setFilter(e.target.value); setShowDropdown(true); }}
+          onFocus={() => { setFilter(''); setShowDropdown(true); }}
+          placeholder="/products or search category..."
+          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+        />
+        {showDropdown && (
+          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-52 overflow-y-auto">
+            {filtered.length === 0 && (
+              <div className="px-3 py-2 text-xs text-gray-400">No matches</div>
+            )}
+            {filtered.map((opt) => (
+              <button
+                key={opt.path}
+                type="button"
+                onMouseDown={() => { onChange(opt.path); setShowDropdown(false); }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex items-center justify-between gap-2"
+              >
+                <span className="text-gray-700">{opt.label}</span>
+                <span className="text-xs text-gray-400 font-mono">{opt.path}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <p className="text-xs text-gray-400 mt-1">Shows "Shop Now →" button. Click or type to search.</p>
+    </div>
+  );
+};
+
 const BannerModal = ({ banner, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     title: banner?.title || '',
@@ -274,28 +349,10 @@ const BannerModal = ({ banner, onClose, onSave }) => {
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Link URL</label>
-                <input
-                  type="text"
-                  list="banner-link-suggestions"
-                  value={formData.link}
-                  onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                  placeholder="/products or /category/grinders"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
-                />
-                <datalist id="banner-link-suggestions">
-                  <option value="/products" />
-                  <option value="/categories" />
-                  <option value="/category/juice-extractors" />
-                  <option value="/category/kitchen-equipment" />
-                  <option value="/category/lab-instruments" />
-                  <option value="/page/about" />
-                  <option value="/page/contact" />
-                  <option value="/blog" />
-                </datalist>
-                <p className="text-xs text-gray-400 mt-1">Shows "Shop Now →" button on banner. Type / for suggestions.</p>
-              </div>
+              <LinkUrlInput
+                value={formData.link}
+                onChange={(val) => setFormData({ ...formData, link: val })}
+              />
             </div>
 
             {/* Right column */}
