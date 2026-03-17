@@ -53,6 +53,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             src={normalizeImageUrl(item.image || item.imageUrl, { width: 1400 })}
             alt={item.title || ''}
             className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: `center ${item.imagePosition || '50'}%` }}
             loading={index === 0 ? 'eager' : 'lazy'}
             fetchPriority={index === 0 ? 'high' : 'auto'}
           />

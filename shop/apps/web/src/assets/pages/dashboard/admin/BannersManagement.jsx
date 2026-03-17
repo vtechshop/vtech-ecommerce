@@ -148,6 +148,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
     isActive: banner?.isActive !== undefined ? banner.isActive : true,
     startDate: banner?.startDate ? banner.startDate.split('T')[0] : '',
     endDate: banner?.endDate ? banner.endDate.split('T')[0] : '',
+    imagePosition: banner?.imagePosition || '50',
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(banner?.image || '');
@@ -160,6 +161,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
       fd.append('link', data.link);
       fd.append('order', data.order);
       fd.append('isActive', data.isActive);
+      fd.append('imagePosition', data.imagePosition);
       if (data.startDate) fd.append('startDate', data.startDate);
       if (data.endDate) fd.append('endDate', data.endDate);
       if (imageFile) {
@@ -217,7 +219,12 @@ const BannerModal = ({ banner, onClose, onSave }) => {
             style={{ height: '200px' }}
           >
             {imagePreview ? (
-              <img src={imagePreview} alt="Banner preview" className="absolute inset-0 w-full h-full object-cover" />
+              <img
+                src={imagePreview}
+                alt="Banner preview"
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ objectPosition: `center ${formData.imagePosition}%` }}
+              />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-400 flex items-center justify-center">
                 <p className="text-white/40 text-sm">Upload an image to see preview</p>
@@ -286,6 +293,26 @@ const BannerModal = ({ banner, onClose, onSave }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Banner Image *</label>
                 <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm" />
                 <p className="text-xs text-gray-400 mt-1">Recommended: 1400×500px, JPG/PNG, max 2MB</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Image Position — <span className="text-primary-600 font-semibold">
+                    {formData.imagePosition === '0' ? 'Top' : formData.imagePosition === '100' ? 'Bottom' : formData.imagePosition === '50' ? 'Center' : `${formData.imagePosition}%`}
+                  </span>
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-gray-400">Top</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={formData.imagePosition}
+                    onChange={(e) => setFormData({ ...formData, imagePosition: e.target.value })}
+                    className="flex-1 h-2 accent-primary-600 cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-400">Bottom</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Drag to show which part of image is visible</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

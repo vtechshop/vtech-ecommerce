@@ -33,6 +33,10 @@ const bannerSchema = new mongoose.Schema({
   endDate: {
     type: Date,
   },
+  imagePosition: {
+    type: String,
+    default: '50',  // vertical % — '0' = top, '50' = center, '100' = bottom
+  },
 }, { timestamps: true });
 
 // Indexes

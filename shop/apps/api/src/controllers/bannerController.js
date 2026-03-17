@@ -36,7 +36,7 @@ exports.getAllBanners = asyncHandler(async (req, res) => {
 
 // POST /api/banners - Admin: Create banner
 exports.createBanner = asyncHandler(async (req, res) => {
-  const { title, subtitle, link, isActive, order, startDate, endDate } = req.body;
+  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition } = req.body;
 
   if (!title) {
     throw AppError.badRequest('Title is required');
@@ -72,6 +72,7 @@ exports.createBanner = asyncHandler(async (req, res) => {
     order: order || 0,
     startDate: startDate || undefined,
     endDate: endDate || undefined,
+    imagePosition: imagePosition || '50',
   });
 
   res.status(201).json({ success: true, data: banner });
@@ -84,7 +85,7 @@ exports.updateBanner = asyncHandler(async (req, res) => {
     throw AppError.notFound('Banner');
   }
 
-  const { title, subtitle, link, isActive, order, startDate, endDate } = req.body;
+  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition } = req.body;
 
   // Handle new image upload
   if (req.file) {
@@ -110,6 +111,7 @@ exports.updateBanner = asyncHandler(async (req, res) => {
   if (order !== undefined) banner.order = order;
   if (startDate !== undefined) banner.startDate = startDate || null;
   if (endDate !== undefined) banner.endDate = endDate || null;
+  if (imagePosition !== undefined) banner.imagePosition = imagePosition;
 
   await banner.save();
   res.json({ success: true, data: banner });
