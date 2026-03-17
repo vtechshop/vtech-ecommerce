@@ -278,12 +278,23 @@ const BannerModal = ({ banner, onClose, onSave }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Link URL</label>
                 <input
                   type="text"
+                  list="banner-link-suggestions"
                   value={formData.link}
                   onChange={(e) => setFormData({ ...formData, link: e.target.value })}
                   placeholder="/products or /category/grinders"
                   className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                 />
-                <p className="text-xs text-gray-400 mt-1">Shows "Shop Now →" button on banner</p>
+                <datalist id="banner-link-suggestions">
+                  <option value="/products" />
+                  <option value="/categories" />
+                  <option value="/category/juice-extractors" />
+                  <option value="/category/kitchen-equipment" />
+                  <option value="/category/lab-instruments" />
+                  <option value="/page/about" />
+                  <option value="/page/contact" />
+                  <option value="/blog" />
+                </datalist>
+                <p className="text-xs text-gray-400 mt-1">Shows "Shop Now →" button on banner. Type / for suggestions.</p>
               </div>
             </div>
 
