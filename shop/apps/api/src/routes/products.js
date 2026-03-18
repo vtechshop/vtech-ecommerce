@@ -142,7 +142,7 @@ router.post('/:productId/reviews', authenticate, async (req, res, next) => {
         { guestEmail: req.user.email, isGuest: true }
       ],
       'items.productId': productId,
-      status: { $in: ['delivered', 'shipped', 'out_for_delivery'] }
+      status: { $in: ['delivered', 'shipped', 'out_for_delivery', 'packed', 'paid'] }
     });
 
     if (!hasPurchased) {
