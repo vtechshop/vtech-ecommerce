@@ -173,6 +173,7 @@ app.use((req, res, next) => {
     '/api/upload',     // File uploads - protected by JWT authentication
     '/api/user',       // User profile/addresses - protected by JWT authentication
     '/api/shipping',   // Shipping/carrier operations - protected by JWT + role check
+    '/api/products',   // Product reviews - protected by JWT authentication
     '/health',         // Health check
   ];
 
