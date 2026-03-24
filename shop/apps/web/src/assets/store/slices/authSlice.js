@@ -33,7 +33,7 @@ export const initializeAuth = createAsyncThunk(
 
           // Store in cookie with proper settings
           Cookies.set('accessToken', newAccessToken, {
-            expires: 1/96, // 15 minutes
+            expires: 1, // 1 day (JWT expiry enforced server-side; interceptor handles 401 refresh)
             sameSite: 'Lax',
             secure: window.location.protocol === 'https:',
           });
@@ -68,7 +68,7 @@ export const login = createAsyncThunk(
 
       // Store token in cookie (persists across refreshes)
       Cookies.set('accessToken', accessToken, {
-        expires: 1/96, // 15 minutes
+        expires: 1, // 1 day (JWT expiry enforced server-side; interceptor handles 401 refresh)
         sameSite: 'Lax',
         secure: window.location.protocol === 'https:',
       });
@@ -89,7 +89,7 @@ export const register = createAsyncThunk(
 
       // Store token in cookie (persists across refreshes)
       Cookies.set('accessToken', accessToken, {
-        expires: 1/96, // 15 minutes
+        expires: 1, // 1 day (JWT expiry enforced server-side; interceptor handles 401 refresh)
         sameSite: 'Lax',
         secure: window.location.protocol === 'https:',
       });
@@ -146,7 +146,7 @@ const slice = createSlice({
 
       // Store in cookie
       Cookies.set('accessToken', action.payload.accessToken, {
-        expires: 1/96, // 15 minutes
+        expires: 1, // 1 day (JWT expiry enforced server-side; interceptor handles 401 refresh)
         sameSite: 'Lax',
         secure: window.location.protocol === 'https:',
       });

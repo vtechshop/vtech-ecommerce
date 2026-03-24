@@ -6,10 +6,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import Loading from './assets/components/common/Loading';
 import { ToastProvider } from './assets/components/common/ToastContainer';
 import { loadConsent } from './assets/store/slices/consentSlice';
-import { initializeAuth, forceInitialized } from './assets/store/slices/authSlice';
+import { initializeAuth, forceInitialized, clearCredentials } from './assets/store/slices/authSlice';
 import { loadCart } from './assets/store/slices/cartSlice';
 import useAnalytics from './assets/hooks/useAnalytics';
-import { initCsrfProtection } from './assets/utils/api';
+import { initCsrfProtection, setSessionExpiredCallback } from './assets/utils/api';
 import { initWebVitals } from './assets/utils/webVitals';
 import { captureAffiliateFromURL } from './assets/utils/affiliateTracking';
 
@@ -169,6 +169,9 @@ function App() {
   useAnalytics();
 
   useEffect(() => {
+    // When refresh token fails, clear Redux auth state immediately so ProtectedRoute redirects to login
+    setSessionExpiredCallback(() => dispatch(clearCredentials()));
+
     dispatch(loadConsent());
     dispatch(loadCart());
     // Initialize CSRF protection (only active in production)

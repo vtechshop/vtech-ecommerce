@@ -14,6 +14,10 @@ const api = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
+// Callback to clear auth state when session expires (set by App)
+let onSessionExpired = null;
+export const setSessionExpiredCallback = (cb) => { onSessionExpired = cb; };
+
 const processQueue = (error, token = null) => {
   failedQueue.forEach(prom => {
     if (error) {
@@ -164,9 +168,9 @@ api.interceptors.response.use(
         const response = await api.post('/auth/refresh');
         const { accessToken } = response.data.data;
 
-        // Store new access token (15 minutes) with proper settings for mobile
+        // Store new access token with proper settings for mobile
         Cookies.set('accessToken', accessToken, {
-          expires: 1/96,
+          expires: 1,
           sameSite: 'Lax',
           secure: window.location.protocol === 'https:',
         });
@@ -184,9 +188,8 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         Cookies.remove('accessToken');
 
-        // Don't redirect here - let the authSlice handle the redirect
-        // Redirecting here causes infinite loops as it reloads the page
-        // and triggers initializeAuth again
+        // Clear Redux auth state so ProtectedRoute redirects to login immediately
+        if (onSessionExpired) onSessionExpired();
 
         return Promise.reject(refreshError);
       } finally {
