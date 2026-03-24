@@ -495,9 +495,15 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       onSave();
     },
     onError: (error) => {
-      // Show detailed error from server
-      const errorMsg = error.response?.data?.error?.message || error.response?.data?.message || error.message;
-      toast.error('Failed to save product: ' + errorMsg);
+      const errData = error.response?.data?.error;
+      const fieldErrors = errData?.fields;
+      if (fieldErrors && Object.keys(fieldErrors).length > 0) {
+        const firstField = Object.keys(fieldErrors)[0];
+        toast.error(`Validation error — ${firstField}: ${fieldErrors[firstField]}`);
+      } else {
+        const errorMsg = errData?.message || error.response?.data?.message || error.message;
+        toast.error('Failed to save product: ' + errorMsg);
+      }
       console.error('Product save error:', error.response?.data || error);
     },
   });
@@ -553,6 +559,11 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       affiliateCommissionPercentage: formData.affiliateCommissionPercentage ? parseFloat(formData.affiliateCommissionPercentage) : undefined,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
       taxIncluded: formData.taxIncluded,
+      // Warranty - convert duration from empty string to undefined
+      warranty: {
+        ...formData.warranty,
+        duration: formData.warranty.duration ? parseInt(formData.warranty.duration, 10) : undefined,
+      },
       // SEO Data
       seo: {
         title: formData.seoTitle || formData.title, // Fallback to product title
