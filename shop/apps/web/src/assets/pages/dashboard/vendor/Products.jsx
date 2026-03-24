@@ -50,9 +50,9 @@ const Products = () => {
   const [showActionsDropdown, setShowActionsDropdown] = useState(null);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['vendor-products', page],
+    queryKey: ['vendor-products'],
     queryFn: async () => {
-      const response = await api.get(`/vendors/products?page=${page}&limit=50`);
+      const response = await api.get(`/vendors/products?page=1&limit=100`);
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
