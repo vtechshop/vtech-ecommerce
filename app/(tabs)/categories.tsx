@@ -176,7 +176,7 @@ export default function CategoriesScreen() {
   }, [categories, expandedSections]);
 
   const navigateToCategory = (cat: Category) => {
-    router.push({ pathname: '/product/list' as any, params: { category: cat._id, title: cat.name } });
+    router.push({ pathname: '/product/list' as any, params: { category: cat.slug || cat._id, title: cat.name } });
   };
 
   if (loading) return <LoadingScreen />;
@@ -319,10 +319,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    paddingLeft: spacing.xl,
+    paddingLeft: 40,
     backgroundColor: colors.surface,
-    marginLeft: spacing.lg,
-    marginRight: spacing.xs,
+    marginRight: spacing.md,
     borderLeftWidth: 2,
     borderLeftColor: colors.primaryLighter,
   },

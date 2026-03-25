@@ -19,15 +19,16 @@ function normalizeCart(raw: any): Cart {
   if (!raw) return raw;
   return {
     ...raw,
-    items: (raw.items || []).map((item: any) => ({
-      ...item,
-      product: item.product && typeof item.product === 'object'
+    items: (raw.items || []).map((item: any) => {
+      const product = item.product && typeof item.product === 'object'
         ? item.product
         : item.productId && typeof item.productId === 'object'
           ? item.productId
-          : null,
-      price: item.price ?? item.productId?.price ?? item.product?.price ?? 0,
-    })),
+          : null;
+      const price = item.price ?? item.unitPrice ?? product?.price ?? 0;
+      const quantity = item.quantity ?? item.qty ?? item.count ?? 1;
+      return { ...item, product, price, quantity };
+    }),
   };
 }
 
@@ -44,7 +45,9 @@ export const addToCart = createAsyncThunk(
   'cart/add',
   async ({ productId, quantity, variant }: { productId: string; quantity: number; variant?: string }, { rejectWithValue }) => {
     try {
-      const { data } = await cartApi.addItem(productId, quantity, variant);
+      await cartApi.addItem(productId, quantity, variant);
+      // Fetch full cart with populated product data
+      const { data } = await cartApi.get();
       return normalizeCart(data.data);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to add item');
@@ -56,7 +59,8 @@ export const updateCartItem = createAsyncThunk(
   'cart/update',
   async ({ itemId, quantity }: { itemId: string; quantity: number }, { rejectWithValue }) => {
     try {
-      const { data } = await cartApi.updateItem(itemId, quantity);
+      await cartApi.updateItem(itemId, quantity);
+      const { data } = await cartApi.get();
       return normalizeCart(data.data);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update item');

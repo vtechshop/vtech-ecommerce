@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   cardPrice: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.primary },
   cardCompare: { fontSize: fontSize.sm, color: colors.textSecondary, textDecorationLine: 'line-through' },
   cardActions: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.surfaceDark },
-  moveToCartBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm + 2, backgroundColor: colors.primary },
+  moveToCartBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.md, minHeight: 48, backgroundColor: colors.primary },
   moveToCartText: { fontSize: fontSize.sm, color: colors.white, fontWeight: fontWeight.semibold },
   removeWishlistBtn: { paddingHorizontal: spacing.lg, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.errorLight },
   // Empty

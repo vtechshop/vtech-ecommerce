@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput, ActivityIndicator, Pressable } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput, ActivityIndicator, Pressable, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,13 +13,9 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import * as Location from 'expo-location';
-let RazorpayCheckout: any = null;
-try {
-  RazorpayCheckout = require('react-native-razorpay').default;
-} catch {
-  // Not available in Expo Go - requires dev build
-}
-import { useAppSelector } from '../../src/store';
+import { WebView } from 'react-native-webview';
+import { useAppDispatch, useAppSelector } from '../../src/store';
+import { updateCartItem, removeCartItem } from '../../src/store/slices/cartSlice';
 import { userApi } from '../../src/api/user';
 import { paymentApi } from '../../src/api/payment';
 import { ordersApi } from '../../src/api/orders';
@@ -36,7 +32,6 @@ type DeliveryMethod = 'standard' | 'express';
 
 const DELIVERY_OPTIONS: { key: DeliveryMethod; label: string; desc: string; price: number; days: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'standard', label: 'Standard Delivery', desc: 'Free shipping on all orders', price: 0, days: '5-7 business days', icon: 'bicycle-outline' },
-  { key: 'express', label: 'Express Delivery', desc: 'Priority handling & faster shipping', price: 99, days: '2-3 business days', icon: 'rocket-outline' },
 ];
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -92,6 +87,7 @@ function AnimatedOptionCard({ children, isSelected, onPress }: {
 }
 
 export default function CheckoutScreen() {
+  const dispatch = useAppDispatch();
   const { cart } = useAppSelector((s) => s.cart);
   const { user } = useAppSelector((s) => s.auth);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -104,6 +100,15 @@ export default function CheckoutScreen() {
   const [orderNotes, setOrderNotes] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('standard');
   const [locatingGPS, setLocatingGPS] = useState(false);
+  const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [showStatePicker, setShowStatePicker] = useState(false);
+  const [razorpayWebView, setRazorpayWebView] = useState<{
+    html: string;
+    internalOrderId: string;
+    displayOrderId: string;
+  } | null>(null);
+  const razorpayResolveRef = useRef<((result: any) => void) | null>(null);
+  const razorpayRejectRef = useRef<((err: any) => void) | null>(null);
 
   const loadAddresses = async () => {
     try {
@@ -174,6 +179,33 @@ export default function CheckoutScreen() {
     setLocatingGPS(false);
   };
 
+  const handlePincodeLookup = async (pincode: string) => {
+    if (pincode.length !== 6) return;
+    setPincodeLoading(true);
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
+      const data = await res.json();
+      if (data?.[0]?.Status === 'Success' && data[0].PostOffice?.length > 0) {
+        const po = data[0].PostOffice[0];
+        setForm((prev) => ({
+          ...prev,
+          city: po.District || po.Block || po.Name || prev.city,
+          state: po.State || prev.state,
+        }));
+      }
+    } catch {}
+    setPincodeLoading(false);
+  };
+
+  const INDIAN_STATES = [
+    'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat',
+    'Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh',
+    'Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab',
+    'Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand',
+    'West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu',
+    'Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry',
+  ];
+
   const selectedDelivery = DELIVERY_OPTIONS.find((d) => d.key === deliveryMethod)!;
   const deliveryCharge = selectedDelivery.price;
   const subtotal = cart?.totals?.subtotal ?? 0;
@@ -186,30 +218,72 @@ export default function CheckoutScreen() {
   const handlePayment = async () => {
     if (!selectedAddress || !cart) return;
 
-    if (!RazorpayCheckout) {
-      Alert.alert(
-        'Payment Unavailable',
-        'Payment is currently unavailable. Please update the app and try again.',
-      );
-      return;
-    }
-
     setProcessing(true);
 
     try {
-      const [keyRes, orderRes] = await Promise.all([
+      // Build items with correct field names (backend expects 'qty' not 'quantity')
+      const orderItems = (cart.items ?? []).map((item) => {
+        const productId = String(
+          item.product?._id ||
+          (item as any).productId?._id ||
+          (item as any).productId || ''
+        ).replace(/^undefined$|^null$/, '');
+        const qty = Math.min(99, Math.max(1, Math.floor(Number(item.quantity) || Number((item as any).qty) || 1)));
+        return { productId, qty };
+      }).filter((i) => i.productId && i.productId !== 'undefined' && i.productId !== 'null');
+
+      if (orderItems.length === 0) {
+        Alert.alert('Error', 'Cart is empty. Please go back and add products.');
+        setProcessing(false);
+        return;
+      }
+
+      // Backend expects 'shipTo' as address object, not 'addressId'
+      const addr = addresses.find((a) => a._id === selectedAddress);
+      const shipTo = addr ? {
+        fullName: addr.fullName,
+        phone: addr.phone,
+        addressLine1: addr.addressLine1,
+        addressLine2: addr.addressLine2 || '',
+        city: addr.city,
+        state: addr.state,
+        zipCode: addr.pincode,
+        country: addr.country || 'India',
+      } : undefined;
+
+      const { data: orderData } = await ordersApi.create({
+        addressId: selectedAddress,
+        shipTo,
+        paymentMethod: 'razorpay',
+        items: orderItems as any,
+        notes: orderNotes.trim() || undefined,
+      } as any);
+      // Backend returns { vendorOrders: [{_id, orderId, ...}], orderIds: [...], totalAmount }
+      const orderResponse = orderData.data;
+      const firstVendorOrder = orderResponse.vendorOrders?.[0];
+      const internalOrderId = firstVendorOrder?._id;
+      const displayOrderId = orderResponse.orderIds?.[0] || firstVendorOrder?.orderId || internalOrderId;
+
+      if (!internalOrderId) {
+        Alert.alert('Order Error', 'Could not retrieve order ID from server. Please contact support.');
+        setProcessing(false);
+        return;
+      }
+
+      // Step 2: Get Razorpay key and create Razorpay order with internal orderId
+      const [keyRes, razorpayOrderRes] = await Promise.all([
         paymentApi.getRazorpayKey(),
-        paymentApi.createRazorpayOrder(grandTotal),
+        paymentApi.createRazorpayOrder(Math.round(grandTotal * 100), internalOrderId),
       ]);
-      const razorpayKey = keyRes.data.data.key;
-      const razorpayOrder = orderRes.data.data;
+      const razorpayKey = keyRes.data.keyId;
+      const razorpayOrder = razorpayOrderRes.data.data;
 
       const options = {
         key: razorpayKey,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency || 'INR',
-        name: 'V-Tech Mobile',
-        description: `Order Payment`,
+        name: 'V-Tech Kitchen',
+        description: `Order #${displayOrderId}`,
         order_id: razorpayOrder.id,
         prefill: {
           name: user?.name || '',
@@ -219,40 +293,96 @@ export default function CheckoutScreen() {
         theme: { color: colors.primary },
       };
 
-      const paymentResult = await RazorpayCheckout.open(options);
+      // Use WebView-based Razorpay checkout (works in Expo Go)
+      const razorpayHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .loading { font-family: sans-serif; font-size: 16px; color: #333; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="loading">Opening Payment...</div>
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    var opts = ${JSON.stringify(options)};
+    opts.handler = function(response) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SUCCESS', data: response }));
+    };
+    opts.modal = {
+      ondismiss: function() {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'CANCELLED' }));
+      }
+    };
+    window.onload = function() {
+      var rzp = new Razorpay(opts);
+      rzp.on('payment.failed', function(response) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'FAILED', data: response.error }));
+      });
+      rzp.open();
+    };
+  </script>
+</body>
+</html>`;
 
+      const paymentResult: any = await new Promise((resolve, reject) => {
+        razorpayResolveRef.current = resolve;
+        razorpayRejectRef.current = reject;
+        setRazorpayWebView({ html: razorpayHtml, internalOrderId, displayOrderId });
+      });
+
+      // Step 3: Verify payment
       await paymentApi.verifyPayment({
         razorpay_order_id: paymentResult.razorpay_order_id,
         razorpay_payment_id: paymentResult.razorpay_payment_id,
         razorpay_signature: paymentResult.razorpay_signature,
       });
 
-      const { data } = await ordersApi.create({
-        addressId: selectedAddress,
-        paymentMethod: 'razorpay',
-        razorpayOrderId: paymentResult.razorpay_order_id,
-        razorpayPaymentId: paymentResult.razorpay_payment_id,
-        razorpaySignature: paymentResult.razorpay_signature,
-        notes: orderNotes.trim() || undefined,
-      });
-
-      Alert.alert('Order Placed!', `Order ID: ${data.data.orderId}`, [
-        { text: 'View Order', onPress: () => router.replace(`/orders/${data.data._id}` as any) },
+      Alert.alert('Order Placed!', `Order ID: ${displayOrderId}`, [
+        { text: 'View Order', onPress: () => router.replace(`/orders/${internalOrderId}` as any) },
       ]);
     } catch (e: any) {
-      if (e?.code === 'PAYMENT_CANCELLED') {
-        // User cancelled
+      if (e?.code === 'PAYMENT_CANCELLED' || e?.type === 'CANCELLED') {
+        // User cancelled — do nothing
       } else if (e?.error?.reason) {
         try {
           await paymentApi.handleFailure({ razorpay_order_id: e?.error?.metadata?.order_id || '', error: e.error });
         } catch { /* best-effort */ }
         Alert.alert('Payment Failed', e.error.description || 'Payment could not be completed');
       } else {
-        Alert.alert('Payment Error', e.response?.data?.message || e.message || 'Payment initiation failed');
+        const code = e.response?.data?.code || '';
+        const rawMsg = e.response?.data?.message || e.response?.data?.error || e.message || 'Payment initiation failed';
+        const errMsg = typeof rawMsg === 'string' ? rawMsg : JSON.stringify(rawMsg);
+        if (code === 'INVALID_QUANTITY' || code === 'ITEMS_REQUIRED') {
+          Alert.alert(
+            'Cart Issue',
+            'One or more products in your cart are invalid or out of stock. Please go back to cart, remove invalid items, and try again.',
+            [{ text: 'Edit Cart', onPress: () => router.back() }, { text: 'OK' }],
+          );
+        } else {
+          Alert.alert('Payment Error', errMsg);
+        }
       }
     }
 
     setProcessing(false);
+  };
+
+  const handleWebViewMessage = async (event: any) => {
+    try {
+      const msg = JSON.parse(event.nativeEvent.data);
+      setRazorpayWebView(null);
+      if (msg.type === 'SUCCESS') {
+        razorpayResolveRef.current?.(msg.data);
+      } else if (msg.type === 'CANCELLED') {
+        razorpayRejectRef.current?.({ type: 'CANCELLED' });
+      } else if (msg.type === 'FAILED') {
+        razorpayRejectRef.current?.({ error: msg.data });
+      }
+    } catch {}
   };
 
   if (loading) return <LoadingScreen />;
@@ -260,6 +390,38 @@ export default function CheckoutScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Razorpay WebView Modal */}
+      {razorpayWebView && (
+        <Modal visible animationType="slide" onRequestClose={() => {
+          setRazorpayWebView(null);
+          razorpayRejectRef.current?.({ type: 'CANCELLED' });
+        }}>
+          <View style={{ flex: 1, backgroundColor: '#000' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primary, paddingTop: 44, paddingBottom: 12, paddingHorizontal: 16 }}>
+              <TouchableOpacity onPress={() => {
+                setRazorpayWebView(null);
+                razorpayRejectRef.current?.({ type: 'CANCELLED' });
+              }}>
+                <Ionicons name="close" size={24} color="#fff" />
+              </TouchableOpacity>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600', marginLeft: 12 }}>Secure Payment</Text>
+            </View>
+            <WebView
+              source={{ html: razorpayWebView.html }}
+              onMessage={handleWebViewMessage}
+              javaScriptEnabled
+              domStorageEnabled
+              startInLoadingState
+              renderLoading={() => (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f2f5' }}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                  <Text style={{ marginTop: 12, color: colors.textSecondary }}>Loading Payment...</Text>
+                </View>
+              )}
+            />
+          </View>
+        </Modal>
+      )}
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Checkout Progress */}
         <View style={styles.progressRow}>
@@ -313,44 +475,127 @@ export default function CheckoutScreen() {
           </TouchableOpacity>
         ) : (
           <View style={styles.formCard}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={styles.formTitle}>New Address</Text>
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.infoLight, paddingHorizontal: spacing.sm + 2, paddingVertical: spacing.xs + 1, borderRadius: borderRadius.full }}
-                onPress={handleGPSAutoFill}
-                disabled={locatingGPS}
-              >
-                {locatingGPS ? (
-                  <ActivityIndicator size={14} color={colors.info} />
-                ) : (
-                  <Ionicons name="location" size={14} color={colors.info} />
-                )}
-                <Text style={{ fontSize: fontSize.xs, color: colors.info, fontWeight: fontWeight.semibold }}>
-                  {locatingGPS ? 'Locating...' : 'Use My Location'}
-                </Text>
+            {/* Header */}
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>Add New Address</Text>
+              <TouchableOpacity style={styles.locationBtn} onPress={handleGPSAutoFill} disabled={locatingGPS}>
+                {locatingGPS
+                  ? <ActivityIndicator size={13} color={colors.primary} />
+                  : <Ionicons name="locate" size={13} color={colors.primary} />}
+                <Text style={styles.locationBtnText}>{locatingGPS ? 'Detecting...' : 'Use my location'}</Text>
               </TouchableOpacity>
             </View>
-            {[
-              { key: 'fullName', label: 'Full Name *', placeholder: 'John Doe' },
-              { key: 'phone', label: 'Phone *', placeholder: '9876543210', keyboard: 'phone-pad' as const },
-              { key: 'addressLine1', label: 'Address Line 1 *', placeholder: '123 Main St' },
-              { key: 'addressLine2', label: 'Address Line 2', placeholder: 'Apartment, floor...' },
-              { key: 'city', label: 'City *', placeholder: 'Chennai' },
-              { key: 'state', label: 'State *', placeholder: 'Tamil Nadu' },
-              { key: 'pincode', label: 'Pincode *', placeholder: '600001', keyboard: 'numeric' as const },
-            ].map((field) => (
-              <View key={field.key} style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>{field.label}</Text>
-                <TextInput
-                  style={styles.input}
-                  value={(form as any)[field.key]}
-                  onChangeText={(val) => setForm((prev) => ({ ...prev, [field.key]: val }))}
-                  placeholder={field.placeholder}
-                  keyboardType={field.keyboard || 'default'}
-                  placeholderTextColor={colors.textSecondary}
-                />
+
+            {/* Full Name */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Full name</Text>
+              <TextInput style={styles.input} value={form.fullName}
+                onChangeText={(v) => setForm((p) => ({ ...p, fullName: v }))}
+                placeholder="First and last name" placeholderTextColor={colors.textSecondary} />
+            </View>
+
+            {/* Mobile */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Mobile number</Text>
+              <View style={styles.phoneRow}>
+                <View style={styles.phonePrefix}><Text style={styles.phonePrefixText}>+91</Text></View>
+                <TextInput style={[styles.input, { flex: 1, marginBottom: 0 }]} value={form.phone}
+                  onChangeText={(v) => setForm((p) => ({ ...p, phone: v.replace(/\D/g, '').slice(0, 10) }))}
+                  placeholder="10-digit mobile number" placeholderTextColor={colors.textSecondary}
+                  keyboardType="phone-pad" maxLength={10} />
               </View>
-            ))}
+            </View>
+
+            {/* Pincode */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>PIN code</Text>
+              <View style={styles.pincodeRow}>
+                <View style={{ flex: 1, position: 'relative' }}>
+                  <TextInput style={styles.input}
+                    value={form.pincode}
+                    onChangeText={(v) => {
+                      const clean = v.replace(/\D/g, '').slice(0, 6);
+                      setForm((p) => ({ ...p, pincode: clean }));
+                      if (clean.length === 6) handlePincodeLookup(clean);
+                    }}
+                    placeholder="6-digit PIN code" placeholderTextColor={colors.textSecondary}
+                    keyboardType="numeric" maxLength={6} />
+                  {pincodeLoading && (
+                    <ActivityIndicator size={14} color={colors.primary} style={{ position: 'absolute', right: 12, top: 14 }} />
+                  )}
+                </View>
+              </View>
+              {form.pincode.length === 6 && form.city ? (
+                <View style={styles.pincodeSuccess}>
+                  <Ionicons name="checkmark-circle" size={14} color="#067D62" />
+                  <Text style={styles.pincodeSuccessText}>{form.city}, {form.state}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            {/* Flat/House/Building */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Flat, House no., Building, Company, Apartment</Text>
+              <TextInput style={styles.input} value={form.addressLine1}
+                onChangeText={(v) => setForm((p) => ({ ...p, addressLine1: v }))}
+                placeholder="e.g. 12B, Sunshine Apartments" placeholderTextColor={colors.textSecondary} />
+            </View>
+
+            {/* Area/Street */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Area, Colony, Street, Sector, Village</Text>
+              <TextInput style={styles.input} value={form.addressLine2}
+                onChangeText={(v) => setForm((p) => ({ ...p, addressLine2: v }))}
+                placeholder="e.g. Anna Nagar, OMR Road" placeholderTextColor={colors.textSecondary} />
+            </View>
+
+            {/* Town/City — auto-filled, editable */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Town/City</Text>
+              <TextInput style={styles.input} value={form.city}
+                onChangeText={(v) => setForm((p) => ({ ...p, city: v }))}
+                placeholder="Town or city" placeholderTextColor={colors.textSecondary} />
+            </View>
+
+            {/* State — dropdown, auto-filled */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>State</Text>
+              <TouchableOpacity
+                style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 }]}
+                onPress={() => setShowStatePicker(true)}
+              >
+                <Text style={{ fontSize: fontSize.md, color: form.state ? colors.text : colors.textSecondary }}>
+                  {form.state || '-- Select --'}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* State Picker Modal */}
+            <Modal visible={showStatePicker} animationType="slide" onRequestClose={() => setShowStatePicker(false)}>
+              <View style={{ flex: 1, backgroundColor: '#fff' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#e0e0e0', paddingTop: 44, paddingBottom: 14, paddingHorizontal: 16, gap: 14, backgroundColor: '#fff' }}>
+                  <TouchableOpacity onPress={() => setShowStatePicker(false)}>
+                    <Ionicons name="arrow-back" size={22} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Select State</Text>
+                </View>
+                <ScrollView>
+                  {INDIAN_STATES.map((state) => (
+                    <TouchableOpacity
+                      key={state}
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#f5f5f5', backgroundColor: form.state === state ? colors.primaryLightest : '#fff' }}
+                      onPress={() => { setForm((p) => ({ ...p, state })); setShowStatePicker(false); }}
+                    >
+                      <Text style={{ fontSize: 15, color: form.state === state ? colors.primary : colors.text, fontWeight: form.state === state ? '700' : '400' }}>
+                        {state}
+                      </Text>
+                      {form.state === state && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </Modal>
             <View style={styles.formActions}>
               <Button title="Cancel" variant="outline" onPress={() => { setShowAddForm(false); setForm(emptyAddress); }} style={{ flex: 1 }} />
               <Button title="Save Address" onPress={handleAddAddress} loading={saving} style={{ flex: 1 }} />
@@ -443,11 +688,15 @@ export default function CheckoutScreen() {
             <Ionicons name="bag" size={18} color={colors.primary} />
           </View>
           <Text style={styles.sectionTitle}>Order Items ({cart.items?.length ?? 0})</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.manageBtn}>
+            <Text style={styles.manageBtnText}>Edit Cart</Text>
+            <Ionicons name="create-outline" size={14} color={colors.primary} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.itemsCard}>
-          {cart.items.map((item, idx) => (
-            <View key={item._id} style={[styles.cartItem, idx < cart.items.length - 1 && styles.cartItemBorder]}>
+          {(cart.items ?? []).map((item, idx) => (
+            <View key={item._id} style={[styles.cartItem, idx < (cart.items?.length ?? 0) - 1 && styles.cartItemBorder]}>
               {item.product?.images?.[0] ? (
                 <Image source={{ uri: item.product.images[0] }} style={styles.cartItemImage} contentFit="cover" />
               ) : (
@@ -456,10 +705,35 @@ export default function CheckoutScreen() {
                 </View>
               )}
               <View style={{ flex: 1 }}>
-                <Text style={styles.cartItemTitle} numberOfLines={1}>{item.product?.title || 'Product'}</Text>
-                <Text style={styles.cartItemMeta}>Qty: {item.quantity} x ₹{(item.price ?? 0).toLocaleString()}</Text>
+                <Text style={styles.cartItemTitle} numberOfLines={2}>{item.product?.title || 'Product'}</Text>
+                <Text style={styles.cartItemPrice}>₹{(item.price ?? 0).toLocaleString()}</Text>
+                {/* Quantity Controls */}
+                <View style={styles.qtyRow}>
+                  <TouchableOpacity
+                    style={styles.qtyBtn}
+                    onPress={() => {
+                      if (item.quantity <= 1) {
+                        Alert.alert('Remove Item', 'Remove this item?', [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Remove', style: 'destructive', onPress: () => dispatch(removeCartItem(item._id)) },
+                        ]);
+                      } else {
+                        dispatch(updateCartItem({ itemId: item._id, quantity: item.quantity - 1 }));
+                      }
+                    }}
+                  >
+                    <Ionicons name={item.quantity <= 1 ? 'trash-outline' : 'remove'} size={14} color={item.quantity <= 1 ? colors.error : colors.text} />
+                  </TouchableOpacity>
+                  <Text style={styles.qtyNum}>{item.quantity}</Text>
+                  <TouchableOpacity
+                    style={styles.qtyBtn}
+                    onPress={() => dispatch(updateCartItem({ itemId: item._id, quantity: item.quantity + 1 }))}
+                  >
+                    <Ionicons name="add" size={14} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={styles.cartItemMeta}>= ₹{((item.price ?? 0) * item.quantity).toLocaleString()}</Text>
+                </View>
               </View>
-              <Text style={styles.cartItemTotal}>₹{((item.price ?? 0) * item.quantity).toLocaleString()}</Text>
             </View>
           ))}
         </View>
@@ -495,7 +769,7 @@ export default function CheckoutScreen() {
       </ScrollView>
 
       <View style={styles.bottomBar}>
-        <View>
+        <View style={{ justifyContent: 'center' }}>
           <Text style={styles.payLabel}>Total</Text>
           <Text style={styles.payAmount}>₹{grandTotal.toLocaleString()}</Text>
         </View>
@@ -568,10 +842,19 @@ const styles = StyleSheet.create({
   addAddressText: { fontSize: fontSize.md, color: colors.primary, fontWeight: fontWeight.semibold },
   // Form
   formCard: { backgroundColor: colors.white, borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.md, ...shadows.sm },
-  formTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.md },
-  fieldGroup: { marginBottom: spacing.sm },
-  fieldLabel: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.text, marginBottom: spacing.xs },
-  input: { borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.xl, padding: spacing.sm + 4, fontSize: fontSize.md, color: colors.text, backgroundColor: colors.surface },
+  formHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
+  formTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
+  locationBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.primary, borderRadius: borderRadius.full, paddingHorizontal: 10, paddingVertical: 5 },
+  locationBtnText: { fontSize: 11, color: colors.primary, fontWeight: '600' },
+  fieldGroup: { marginBottom: 14 },
+  fieldLabel: { fontSize: 12, fontWeight: '500', color: colors.textSecondary, marginBottom: 5 },
+  input: { borderWidth: 1.5, borderColor: '#d5d9d9', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 12, fontSize: fontSize.md, color: colors.text, backgroundColor: '#fff' },
+  phoneRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  phonePrefix: { borderWidth: 1.5, borderColor: '#d5d9d9', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 12, backgroundColor: '#f0f2f5' },
+  phonePrefixText: { fontSize: fontSize.md, color: colors.text, fontWeight: '600' },
+  pincodeRow: { flexDirection: 'row', gap: 8 },
+  pincodeSuccess: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
+  pincodeSuccessText: { fontSize: 12, color: '#067D62', fontWeight: '600' },
   formActions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   // Options (delivery/payment)
   optionCard: {
@@ -603,12 +886,16 @@ const styles = StyleSheet.create({
   charCount: { fontSize: fontSize.xs, color: colors.textSecondary, textAlign: 'right', marginTop: spacing.xs },
   // Cart Items Preview
   itemsCard: { backgroundColor: colors.white, borderRadius: borderRadius.xl, overflow: 'hidden', ...shadows.sm },
-  cartItem: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: spacing.sm },
+  cartItem: { flexDirection: 'row', alignItems: 'flex-start', padding: spacing.md, gap: spacing.sm },
   cartItemBorder: { borderBottomWidth: 1, borderBottomColor: colors.surfaceDark },
-  cartItemImage: { width: 44, height: 44, borderRadius: borderRadius.md },
-  cartItemTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text },
-  cartItemMeta: { fontSize: fontSize.xs, color: colors.textSecondary, marginTop: 2 },
+  cartItemImage: { width: 56, height: 56, borderRadius: borderRadius.md },
+  cartItemTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.text, lineHeight: 18 },
+  cartItemPrice: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: colors.text, marginTop: 2 },
+  cartItemMeta: { fontSize: fontSize.xs, color: colors.textSecondary, marginLeft: spacing.sm },
   cartItemTotal: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, color: colors.text },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs },
+  qtyBtn: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
+  qtyNum: { fontSize: fontSize.sm, fontWeight: fontWeight.bold, minWidth: 28, textAlign: 'center', color: colors.text },
   // Summary
   summaryCard: { backgroundColor: colors.white, borderRadius: borderRadius.xl, padding: spacing.md, ...shadows.sm },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing.sm },

@@ -12,8 +12,8 @@ import { bannersApi, Banner } from '../../api/content';
 import { colors, spacing, fontSize, borderRadius, fontWeight, gradients } from '../../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const BANNER_WIDTH = SCREEN_WIDTH - spacing.md * 2;
-const BANNER_HEIGHT = 180;
+const BANNER_WIDTH = SCREEN_WIDTH;
+const BANNER_HEIGHT = 220;
 const AUTO_SCROLL_INTERVAL = 4000;
 
 interface BannerItem {
@@ -186,40 +186,39 @@ function DotIndicator({ active }: { active: boolean }) {
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
   banner: {
     width: BANNER_WIDTH,
     height: BANNER_HEIGHT,
-    borderRadius: borderRadius.xxl,
     overflow: 'hidden',
     position: 'relative',
   },
   bannerContent: {
     flex: 1,
     justifyContent: 'center',
-    padding: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     zIndex: 1,
   },
   bannerIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   bannerTitle: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.extrabold,
+    fontSize: 26,
+    fontWeight: '800',
     color: colors.white,
     marginBottom: spacing.xs,
   },
   bannerSubtitle: {
-    fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.85)',
+    fontSize: fontSize.md,
+    color: 'rgba(255,255,255,0.9)',
     fontWeight: fontWeight.medium,
   },
   bannerDecoration: {

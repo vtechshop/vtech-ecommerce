@@ -5,6 +5,7 @@ export const ordersApi = {
   create: (data: {
     addressId: string;
     paymentMethod: string;
+    items?: any[];
     razorpayPaymentId?: string;
     razorpayOrderId?: string;
     razorpaySignature?: string;

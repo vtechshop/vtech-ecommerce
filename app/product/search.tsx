@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, Alert, Platform } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, Platform } from 'react-native';
+import Animated, { useSharedValue, withRepeat, withTiming, useAnimatedStyle, Easing, withSequence } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { productsApi } from '../../src/api/products';
@@ -35,17 +36,42 @@ export default function SearchScreen() {
   const [sortBy, setSortBy] = useState('');
   const [showSort, setShowSort] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-  const [minRating, setMinRating] = useState(0);
   const { searches: recentSearches, addSearch, removeSearch, clearAll: clearRecentSearches } = useRecentSearches();
   const [showCamera, setShowCamera] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const { showToast } = useToast();
+  const inputRef = useRef<TextInput>(null);
+
+  // Voice modal pulse animation
+  const voicePulse1 = useSharedValue(1);
+  const voicePulse2 = useSharedValue(1);
+  const voicePulse3 = useSharedValue(1);
+
+  useEffect(() => {
+    if (showVoice) {
+      voicePulse1.value = withRepeat(withTiming(1.4, { duration: 900, easing: Easing.out(Easing.ease) }), -1, true);
+      voicePulse2.value = withRepeat(withSequence(withTiming(1, { duration: 300 }), withTiming(1.7, { duration: 900, easing: Easing.out(Easing.ease) })), -1, true);
+      voicePulse3.value = withRepeat(withSequence(withTiming(1, { duration: 600 }), withTiming(2.0, { duration: 900, easing: Easing.out(Easing.ease) })), -1, true);
+    } else {
+      voicePulse1.value = 1;
+      voicePulse2.value = 1;
+      voicePulse3.value = 1;
+    }
+  }, [showVoice]);
+
+  const pulse1Style = useAnimatedStyle(() => ({ transform: [{ scale: voicePulse1.value }], opacity: 2 - voicePulse1.value }));
+  const pulse2Style = useAnimatedStyle(() => ({ transform: [{ scale: voicePulse2.value }], opacity: 2 - voicePulse2.value }));
+  const pulse3Style = useAnimatedStyle(() => ({ transform: [{ scale: voicePulse3.value }], opacity: 2 - voicePulse3.value }));
 
   const handleVoiceSearch = () => {
     haptic.light();
-    Alert.alert('Voice Search', 'Voice search is coming soon! In the meantime, please type your search query.');
+    setShowVoice(true);
+  };
+
+  const closeVoice = () => {
+    setShowVoice(false);
+    setTimeout(() => inputRef.current?.focus(), 300);
   };
 
   const handleCameraSearch = async () => {
@@ -75,11 +101,8 @@ export default function SearchScreen() {
     setError(null);
     setShowSuggestions(false);
     try {
-      const params: any = { search: q, page: pageNum, limit: PAGE_LIMIT };
+      const params: any = { q, page: pageNum, limit: PAGE_LIMIT };
       if (sort) params.sort = sort;
-      if (minPrice) params.minPrice = Number(minPrice);
-      if (maxPrice) params.maxPrice = Number(maxPrice);
-      if (minRating > 0) params.rating = minRating;
       const { data } = await productsApi.getAll(params);
       const items = data.data || [];
       if (pageNum === 1) { setResults(items); addSearch(q.trim()); }
@@ -104,7 +127,7 @@ export default function SearchScreen() {
       debounceRef.current = setTimeout(async () => {
         try {
           const { data } = await productsApi.autocomplete(text.trim());
-          setSuggestions(data.data || []);
+          setSuggestions(data.data?.suggestions || []);
           setShowSuggestions(true);
         } catch { setSuggestions([]); }
       }, 300);
@@ -126,18 +149,14 @@ export default function SearchScreen() {
     if (searched && query.trim()) { setPage(1); setHasMore(true); doSearch(query, 1, value); }
   };
 
-  const applyFilters = () => {
-    setShowFilter(false);
-    if (searched && query.trim()) { setPage(1); setHasMore(true); doSearch(query, 1, sortBy); }
-  };
-
-  const activeFilterCount = (minPrice ? 1 : 0) + (maxPrice ? 1 : 0) + (minRating > 0 ? 1 : 0);
+  const activeFilterCount = 0;
 
   return (
     <View style={styles.container}>
       <View style={styles.searchBar}>
         <Ionicons name="search" size={20} color={colors.primary} />
         <TextInput
+          ref={inputRef}
           style={styles.input}
           placeholder="Search products..."
           placeholderTextColor={colors.textSecondary}
@@ -172,6 +191,29 @@ export default function SearchScreen() {
             <Text style={styles.cameraHint}>Point camera at a barcode or product</Text>
             <TouchableOpacity style={styles.cameraClose} onPress={() => setShowCamera(false)}>
               <Ionicons name="close-circle" size={40} color={colors.white} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Voice Search Modal */}
+      <Modal visible={showVoice} transparent animationType="fade" onRequestClose={closeVoice}>
+        <View style={styles.voiceOverlay}>
+          <View style={styles.voiceSheet}>
+            <Text style={styles.voiceTitle}>Voice Search</Text>
+            <Text style={styles.voiceHint}>Use your keyboard's 🎤 mic button to speak</Text>
+            <View style={styles.voiceCircleWrap}>
+              <Animated.View style={[styles.voicePulse, styles.voicePulse3, pulse3Style]} />
+              <Animated.View style={[styles.voicePulse, styles.voicePulse2, pulse2Style]} />
+              <Animated.View style={[styles.voicePulse, styles.voicePulse1, pulse1Style]} />
+              <View style={styles.voiceMicCircle}>
+                <Ionicons name="mic" size={36} color={colors.white} />
+              </View>
+            </View>
+            <Text style={styles.voiceListening}>Listening...</Text>
+            <Text style={styles.voiceSubHint}>Tap the mic on your keyboard or type below</Text>
+            <TouchableOpacity style={styles.voiceCloseBtn} onPress={closeVoice}>
+              <Text style={styles.voiceCloseBtnText}>Type Instead</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -228,30 +270,13 @@ export default function SearchScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Filters</Text>
-            <Text style={styles.filterLabel}>Price Range</Text>
-            <View style={styles.priceRow}>
-              <TextInput style={styles.priceInput} placeholder="Min" placeholderTextColor={colors.textSecondary} value={minPrice} onChangeText={setMinPrice} keyboardType="numeric" />
-              <Text style={styles.priceDash}>-</Text>
-              <TextInput style={styles.priceInput} placeholder="Max" placeholderTextColor={colors.textSecondary} value={maxPrice} onChangeText={setMaxPrice} keyboardType="numeric" />
-            </View>
-            <Text style={styles.filterLabel}>Minimum Rating</Text>
-            <View style={styles.ratingRow}>
-              {[0, 3, 3.5, 4, 4.5].map((r) => (
-                <TouchableOpacity key={r} style={[styles.ratingChip, minRating === r && styles.ratingChipActive]} onPress={() => setMinRating(r)}>
-                  <Text style={[styles.ratingChipText, minRating === r && styles.ratingChipTextActive]}>{r === 0 ? 'Any' : `${r}+`}</Text>
-                  {r > 0 && <Ionicons name="star" size={12} color={minRating === r ? colors.primary : colors.secondary} />}
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.filterActions}>
-              <TouchableOpacity style={styles.clearBtn} onPress={() => { setMinPrice(''); setMaxPrice(''); setMinRating(0); setShowFilter(false); }}>
-                <Text style={styles.clearBtnText}>Clear All</Text>
+            <Text style={styles.modalTitle}>Sort By</Text>
+            {SORT_OPTIONS.map((opt) => (
+              <TouchableOpacity key={opt.value} style={[styles.sortOption, sortBy === opt.value && styles.sortOptionActive]} onPress={() => { setSortBy(opt.value); setShowFilter(false); if (searched && query.trim()) { setPage(1); setHasMore(true); doSearch(query, 1, opt.value); } }}>
+                <Text style={[styles.sortOptionText, sortBy === opt.value && styles.sortOptionTextActive]}>{opt.label}</Text>
+                {sortBy === opt.value && <Ionicons name="checkmark" size={20} color={colors.primary} />}
               </TouchableOpacity>
-              <TouchableOpacity style={styles.applyBtn} onPress={applyFilters}>
-                <Text style={styles.applyBtnText}>Apply</Text>
-              </TouchableOpacity>
-            </View>
+            ))}
           </View>
         </View>
       </Modal>
@@ -330,7 +355,7 @@ const styles = StyleSheet.create({
   filterBadge: { backgroundColor: colors.error, borderRadius: 8, width: 16, height: 16, justifyContent: 'center', alignItems: 'center' },
   filterBadgeText: { fontSize: 10, color: colors.white, fontWeight: fontWeight.bold },
   modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: colors.white, borderTopLeftRadius: borderRadius.xxl, borderTopRightRadius: borderRadius.xxl, padding: spacing.lg, ...shadows.xl },
+  modalSheet: { backgroundColor: colors.white, borderTopLeftRadius: borderRadius.xxl, borderTopRightRadius: borderRadius.xxl, padding: spacing.lg, paddingBottom: spacing.xxl + spacing.md, maxHeight: '85%', ...shadows.xl },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: spacing.lg },
   modalTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.lg },
   sortOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.surfaceDark },
@@ -368,4 +393,19 @@ const styles = StyleSheet.create({
   cameraOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', paddingBottom: spacing.xxl, paddingTop: spacing.md, backgroundColor: 'rgba(0,0,0,0.4)' },
   cameraHint: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.medium, marginBottom: spacing.md },
   cameraClose: { marginTop: spacing.sm },
+  // Voice search modal
+  voiceOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  voiceSheet: { backgroundColor: colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: spacing.xl, paddingBottom: spacing.xxl + spacing.lg, paddingHorizontal: spacing.xl, alignItems: 'center' },
+  voiceTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs },
+  voiceHint: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.xl, textAlign: 'center' },
+  voiceCircleWrap: { width: 160, height: 160, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
+  voicePulse: { position: 'absolute', borderRadius: 999, backgroundColor: colors.primary },
+  voicePulse1: { width: 100, height: 100, opacity: 0.3 },
+  voicePulse2: { width: 100, height: 100, opacity: 0.2 },
+  voicePulse3: { width: 100, height: 100, opacity: 0.1 },
+  voiceMicCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12 },
+  voiceListening: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.primary, marginBottom: spacing.xs },
+  voiceSubHint: { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
+  voiceCloseBtn: { paddingHorizontal: spacing.xxl, paddingVertical: spacing.md, borderRadius: borderRadius.full, borderWidth: 1.5, borderColor: colors.primary },
+  voiceCloseBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.primary },
 });

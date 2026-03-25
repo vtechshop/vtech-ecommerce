@@ -146,6 +146,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
@@ -186,9 +187,11 @@ const tabStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    height: 65,
-    paddingBottom: 10,
-    paddingTop: 6,
+    height: 62,
+    paddingBottom: 8,
+    paddingTop: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#e8e8e8',
     ...shadows.lg,
   },
   indicatorWrapper: {
@@ -198,7 +201,7 @@ const tabStyles = StyleSheet.create({
     alignItems: 'center',
   },
   indicator: {
-    width: 40,
+    width: 32,
     height: 3,
     borderRadius: 2,
     backgroundColor: colors.primary,
@@ -207,29 +210,31 @@ const tabStyles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 1,
   },
   label: {
-    fontSize: fontSize.xs,
+    fontSize: 10,
     fontWeight: fontWeight.semibold,
-    letterSpacing: letterSpacing.wide,
+    letterSpacing: 0,
     marginTop: 2,
   },
   badge: {
     position: 'absolute',
-    top: 4,
-    right: '22%',
-    backgroundColor: colors.error,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+    top: 2,
+    right: '18%',
+    backgroundColor: '#e53935',
+    borderRadius: 9,
+    minWidth: 17,
+    height: 17,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: colors.white,
   },
   badgeText: {
     color: colors.white,
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: fontWeight.bold,
   },
 });

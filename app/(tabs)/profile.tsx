@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   memberText: { fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: fontWeight.medium },
   editBtn: { padding: spacing.sm, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: borderRadius.full },
   // Quick Actions
-  quickActions: { flexDirection: 'row', backgroundColor: colors.white, marginHorizontal: spacing.md, marginTop: -spacing.lg, borderRadius: borderRadius.xl, ...shadows.md },
+  quickActions: { flexDirection: 'row', backgroundColor: colors.white, marginHorizontal: spacing.md, marginTop: spacing.md, borderRadius: borderRadius.xl, ...shadows.md },
   quickActionBtn: { flex: 1, alignItems: 'center', paddingVertical: spacing.md, gap: spacing.xs },
   quickActionText: { fontSize: fontSize.xs, color: colors.text, fontWeight: fontWeight.semibold },
   quickDivider: { width: 1, backgroundColor: colors.surfaceDark, marginVertical: spacing.sm },

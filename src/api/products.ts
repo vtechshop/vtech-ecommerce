@@ -2,15 +2,12 @@ import apiClient from './client';
 import { ApiResponse, Product, Category, Review } from '../types';
 
 export const productsApi = {
+  // Backend uses ?q= for search (not ?search=), no ?category filter — use getCategoryProducts for category
   getAll: (params?: {
     page?: number;
     limit?: number;
-    category?: string;
-    search?: string;
+    q?: string;
     sort?: string;
-    minPrice?: number;
-    maxPrice?: number;
-    rating?: number;
     featured?: boolean;
     tag?: string;
     vendor?: string;
@@ -28,8 +25,9 @@ export const productsApi = {
   getCategories: () =>
     apiClient.get<ApiResponse<Category[]>>('/catalog/categories'),
 
-  getCategoryBySlug: (slug: string) =>
-    apiClient.get<ApiResponse<Category>>(`/catalog/categories/${slug}`),
+  // Returns { category, items: Product[] }
+  getCategoryProducts: (slug: string, params?: { page?: number; limit?: number; sort?: string }) =>
+    apiClient.get<{ success: boolean; data: { category: Category; items: Product[] } }>(`/catalog/categories/${slug}`, { params }),
 
   getReviews: (productId: string, params?: { page?: number; limit?: number }) =>
     apiClient.get<ApiResponse<Review[]>>(`/products/${productId}/reviews`, { params }),
@@ -37,15 +35,13 @@ export const productsApi = {
   addReview: (productId: string, data: { rating: number; comment: string }) =>
     apiClient.post<ApiResponse<Review>>(`/products/${productId}/reviews`, data),
 
-  search: (query: string) =>
-    apiClient.get<ApiResponse<Product[]>>('/catalog/products', { params: { search: query } }),
-
+  // Returns { suggestions: string[], products: Product[], categories: Category[] }
   autocomplete: (query: string) =>
-    apiClient.get<ApiResponse<string[]>>('/catalog/autocomplete', { params: { q: query } }),
+    apiClient.get<{ success: boolean; data: { suggestions: string[]; products: Product[]; categories: Category[] } }>('/catalog/autocomplete', { params: { q: query } }),
 
-  getRecommendations: (productId?: string) =>
+  getRecommendations: () =>
     apiClient.get<ApiResponse<Product[]>>('/catalog/recommendations/trending'),
 
   getSimilar: (productId: string) =>
-    apiClient.get<ApiResponse<Product[]>>(`/catalog/products/${productId}/similar`),
+    apiClient.get<ApiResponse<Product[]>>(`/products/${productId}/similar`),
 };

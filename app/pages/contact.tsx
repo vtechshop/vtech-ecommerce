@@ -43,7 +43,7 @@ export default function ContactScreen() {
   const [contactInfo, setContactInfo] = useState<AppConfig['contactInfo']>({
     email: 'vtechshop.customercare@gmail.com',
     phone: '+91 99445 56683',
-    whatsapp: '+91 99445 56683',
+    whatsapp: '+91 99445 56683 / +91 99445 56620',
     website: 'vtechkitchen.com',
     businessHours: 'Monday - Saturday: 9:00 AM - 6:00 PM',
     address: '',

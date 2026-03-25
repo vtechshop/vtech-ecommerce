@@ -2,7 +2,7 @@ import apiClient from './client';
 import { ApiResponse } from '../types';
 
 export const paymentApi = {
-  createRazorpayOrder: (amount: number, orderId?: string) =>
+  createRazorpayOrder: (amount: number, orderId: string) =>
     apiClient.post<ApiResponse<{
       id: string;
       amount: number;
@@ -22,5 +22,5 @@ export const paymentApi = {
   }) => apiClient.post<ApiResponse<null>>('/payment/razorpay/failure', data),
 
   getRazorpayKey: () =>
-    apiClient.get<ApiResponse<{ key: string }>>('/payment/razorpay/key'),
+    apiClient.get<{ success: boolean; keyId: string }>('/payment/razorpay/key'),
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,22 +12,24 @@ const PAGE_LIMIT = 20;
 
 const SORT_OPTIONS = [
   { label: 'Relevance', value: '' },
-  { label: 'Price: Low', value: 'price_asc' },
-  { label: 'Price: High', value: 'price_desc' },
-  { label: 'Newest', value: 'newest' },
-  { label: 'Rating', value: 'rating' },
+  { label: 'Price: Low', value: 'price' },
+  { label: 'Price: High', value: '-price' },
+  { label: 'Newest', value: '-createdAt' },
+  { label: 'Rating', value: '-rating' },
 ];
 
 export default function ProductListScreen() {
-  const params = useLocalSearchParams<{ category?: string; search?: string; sort?: string; featured?: string; title?: string }>();
+  const params = useLocalSearchParams<{ category?: string; search?: string; q?: string; sort?: string; featured?: string; title?: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(params.search || '');
+  const [searchQuery, setSearchQuery] = useState(params.search || params.q || '');
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [activeSort, setActiveSort] = useState(params.sort || '');
+  // For category: cache all items from backend, sort+paginate client-side
+  const allCategoryItems = useRef<Product[]>([]);
 
   const navigation = useNavigation();
 
@@ -36,26 +38,48 @@ export default function ProductListScreen() {
     else if (params.featured === 'true') navigation.setOptions({ title: 'Featured Products' });
   }, [params.title, params.featured]);
 
-  const loadProducts = async (pageNum: number = 1, search?: string) => {
+  const sortItems = (items: Product[], sort: string): Product[] => {
+    const sorted = [...items];
+    switch (sort) {
+      case 'price':      return sorted.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+      case '-price':     return sorted.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+      case '-rating':    return sorted.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      case '-createdAt': return sorted.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+      default:           return sorted;
+    }
+  };
+
+  const loadProducts = async (pageNum: number = 1, search?: string, sort?: string) => {
     if (pageNum === 1) setLoading(true);
     else setLoadingMore(true);
     setError(null);
+    const resolvedSort = sort !== undefined ? sort : (activeSort || params.sort || '');
     try {
-      const { data } = await productsApi.getAll({
-        category: params.category,
-        search: search || params.search,
-        sort: activeSort || params.sort,
-        featured: params.featured === 'true' ? true : undefined,
-        page: pageNum,
-        limit: PAGE_LIMIT,
-      });
-      const newProducts = data.data || [];
-      if (pageNum === 1) {
-        setProducts(newProducts);
+      if (params.category) {
+        // Fetch all items once (page 1), cache them, then sort+paginate client-side
+        if (pageNum === 1) {
+          const { data } = await productsApi.getCategoryProducts(params.category);
+          allCategoryItems.current = data.data?.items || [];
+        }
+        const sorted = sortItems(allCategoryItems.current, resolvedSort);
+        const start = (pageNum - 1) * PAGE_LIMIT;
+        const slice = sorted.slice(start, start + PAGE_LIMIT);
+        if (pageNum === 1) setProducts(slice);
+        else setProducts((prev) => [...prev, ...slice]);
+        setHasMore(start + PAGE_LIMIT < allCategoryItems.current.length);
       } else {
-        setProducts((prev) => [...prev, ...newProducts]);
+        const { data } = await productsApi.getAll({
+          q: search || params.search,
+          sort: resolvedSort,
+          featured: params.featured === 'true' ? true : undefined,
+          page: pageNum,
+          limit: PAGE_LIMIT,
+        });
+        const newProducts = data.data || [];
+        if (pageNum === 1) setProducts(newProducts);
+        else setProducts((prev) => [...prev, ...newProducts]);
+        setHasMore(newProducts.length >= PAGE_LIMIT);
       }
-      setHasMore(newProducts.length >= PAGE_LIMIT);
       setPage(pageNum);
     } catch (e: any) {
       setError(e.response?.data?.message || 'Something went wrong');
@@ -128,12 +152,25 @@ export default function ProductListScreen() {
       {!loading && products.length > 0 && (
         <View style={styles.resultsRow}>
           <Text style={styles.resultCount}>{products.length} product{products.length !== 1 ? 's' : ''}{hasMore ? '+' : ''}</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs, paddingRight: spacing.md }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs, paddingHorizontal: spacing.md }}>
             {SORT_OPTIONS.map((s) => (
               <TouchableOpacity
                 key={s.value}
                 style={[styles.sortChip, activeSort === s.value && styles.sortChipActive]}
-                onPress={() => { setActiveSort(s.value); setPage(1); setHasMore(true); setProducts([]); setLoading(true); loadProducts(1, searchQuery || undefined); }}
+                onPress={() => {
+                  setActiveSort(s.value);
+                  setPage(1);
+                  setHasMore(true);
+                  setProducts([]);
+                  if (params.category) {
+                    // Re-sort cached items instantly, no network call
+                    const sorted = sortItems(allCategoryItems.current, s.value);
+                    setProducts(sorted.slice(0, PAGE_LIMIT));
+                    setHasMore(PAGE_LIMIT < allCategoryItems.current.length);
+                  } else {
+                    loadProducts(1, searchQuery || undefined, s.value);
+                  }
+                }}
               >
                 <Text style={[styles.sortChipText, activeSort === s.value && styles.sortChipTextActive]}>{s.label}</Text>
               </TouchableOpacity>
@@ -181,7 +218,7 @@ export default function ProductListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: '#f0f2f5' },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -189,11 +226,11 @@ const styles = StyleSheet.create({
     margin: spacing.md,
     marginBottom: 0,
     paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.xxl,
-    borderWidth: 1.5,
-    borderColor: colors.primaryLighter,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
     gap: spacing.sm,
-    ...shadows.md,
+    ...shadows.sm,
   },
   searchInput: {
     flex: 1,
