@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, Text, Pressable, Dimensions, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -76,6 +77,7 @@ function AnimatedTabButton({ options, isFocused, onPress, onLongPress, badge }: 
 }
 
 function AnimatedTabBar({ state, descriptors, navigation }: any) {
+  const { bottom } = useSafeAreaInsets();
   const translateX = useSharedValue(state.index * TAB_WIDTH);
 
   useEffect(() => {
@@ -90,7 +92,7 @@ function AnimatedTabBar({ state, descriptors, navigation }: any) {
   }));
 
   return (
-    <View style={tabStyles.container}>
+    <View style={[tabStyles.container, { paddingBottom: Math.max(bottom, 8) }]}>
       <Animated.View style={[tabStyles.indicatorWrapper, indicatorStyle]}>
         <View style={tabStyles.indicator} />
       </Animated.View>
@@ -187,8 +189,6 @@ const tabStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: colors.white,
-    height: 62,
-    paddingBottom: 8,
     paddingTop: 5,
     borderTopWidth: 1,
     borderTopColor: '#e8e8e8',
