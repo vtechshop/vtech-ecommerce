@@ -31,7 +31,7 @@ module.exports = {
   JWT_REFRESH_SECRET: isProduction
     ? validateSecret('JWT_REFRESH_SECRET', process.env.JWT_REFRESH_SECRET)
     : (process.env.JWT_REFRESH_SECRET || process.env.REFRESH_TOKEN_SECRET || 'dev-refresh-secret-change-in-production'),
-  JWT_ACCESS_TTL: process.env.JWT_ACCESS_TTL || process.env.ACCESS_TOKEN_EXPIRES_IN || '15m',
+  JWT_ACCESS_TTL: process.env.JWT_ACCESS_TTL || process.env.ACCESS_TOKEN_EXPIRES_IN || '24h',
   JWT_REFRESH_TTL: process.env.JWT_REFRESH_TTL || process.env.REFRESH_TOKEN_EXPIRES_IN || '7d',
   
   MAILERSEND_API_KEY: process.env.MAILERSEND_API_KEY,

@@ -21,38 +21,50 @@ export const initializeAuth = createAsyncThunk(
       return state.auth.user ? { user: state.auth.user, accessToken: state.auth.accessToken } : null;
     }
 
+    const tryRefresh = async () => {
+      const refreshRes = await api.post('/auth/refresh');
+      const newAccessToken = refreshRes.data.data.accessToken;
+      Cookies.set('accessToken', newAccessToken, {
+        expires: 1, // 1 day (JWT expiry enforced server-side; interceptor handles 401 refresh)
+        sameSite: 'Lax',
+        secure: window.location.protocol === 'https:',
+      });
+      const res = await api.get('/auth/me');
+      return { user: res.data.data, accessToken: newAccessToken };
+    };
+
     try {
-      // Get token from cookie (persists across refreshes)
-      let accessToken = Cookies.get('accessToken');
+      // Get token from cookie (persists across page reloads)
+      const accessToken = Cookies.get('accessToken');
 
-      // If no access token, try to refresh using the refresh token (stored as httpOnly cookie)
-      if (!accessToken) {
+      if (accessToken) {
         try {
-          const refreshRes = await api.post('/auth/refresh');
-          const newAccessToken = refreshRes.data.data.accessToken;
-
-          // Store in cookie with proper settings
-          Cookies.set('accessToken', newAccessToken, {
-            expires: 1, // 1 day (JWT expiry enforced server-side; interceptor handles 401 refresh)
-            sameSite: 'Lax',
-            secure: window.location.protocol === 'https:',
-          });
-
-          // Now get user data with the new token
+          // Verify token by fetching user data
           const res = await api.get('/auth/me');
-          return { user: res.data.data, accessToken: newAccessToken };
-        } catch (refreshErr) {
-          // No valid refresh token either, user needs to login
-          // Don't throw an error, just return null (not authenticated)
+          return { user: res.data.data, accessToken };
+        } catch (meErr) {
+          if (meErr.response?.status === 401) {
+            // Access token expired — attempt refresh before giving up
+            Cookies.remove('accessToken');
+            try {
+              return await tryRefresh();
+            } catch {
+              return null; // Refresh token also invalid, user must log in
+            }
+          }
+          // Non-401 error (network, server error) — clear token and bail
+          Cookies.remove('accessToken');
           return null;
         }
       }
 
-      // Access token exists, verify it by fetching user data
-      const res = await api.get('/auth/me'); // Authorization header comes from api interceptor
-      return { user: res.data.data, accessToken };
+      // No access token in cookie — try refresh using httpOnly refreshToken cookie
+      try {
+        return await tryRefresh();
+      } catch {
+        return null; // No valid session, user needs to login
+      }
     } catch (err) {
-      // If /auth/me fails, clear the token and return null (not authenticated)
       Cookies.remove('accessToken');
       return null;
     }
