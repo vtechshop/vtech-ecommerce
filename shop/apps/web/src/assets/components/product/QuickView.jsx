@@ -220,22 +220,68 @@ const QuickView = ({ product, isOpen, onClose }) => {
             </div>
 
             {/* Price */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold text-green-700">
-                  {formatCurrency(product.price)}
-                </span>
-                {product.comparePrice && (
-                  <span className="text-lg text-red-500 line-through">
-                    {formatCurrency(product.comparePrice)}
-                  </span>
-                )}
-                {discountPercentage > 0 && (
-                  <span className="bg-red-100 text-red-800 text-sm font-semibold px-2 py-1 rounded">
-                    Save {discountPercentage}%
-                  </span>
-                )}
-              </div>
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+              {product.taxable && product.taxRate > 0 && !product.taxIncluded ? (
+                <>
+                  {product.comparePrice && (
+                    <p className="text-sm text-gray-500 mb-1">
+                      M.R.P.:{' '}
+                      <span className="line-through">{formatCurrency(product.comparePrice)}</span>
+                      {discountPercentage > 0 && (
+                        <span className="ml-2 text-red-600 font-semibold">-{discountPercentage}%</span>
+                      )}
+                    </p>
+                  )}
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-green-700">
+                      {formatCurrency(product.price)}
+                    </span>
+                    <span className="text-sm text-gray-500">(excl. GST)</span>
+                  </div>
+                  <div className="mt-1.5 text-sm text-gray-600 space-y-0.5">
+                    <div>+ {formatCurrency(product.price * product.taxRate / 100)} GST ({product.taxRate}%)</div>
+                    <div className="flex items-baseline gap-1 pt-1 border-t border-blue-200">
+                      <span className="font-semibold text-gray-900">
+                        = {formatCurrency(product.price * (1 + product.taxRate / 100))}
+                      </span>
+                      <span className="text-xs text-gray-500">(incl. of all taxes)</span>
+                    </div>
+                  </div>
+                  {discountPercentage > 0 && (
+                    <p className="text-sm text-green-700 font-medium mt-1">
+                      You save {formatCurrency(product.comparePrice - product.price)}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-bold text-green-700">
+                      {formatCurrency(product.price)}
+                    </span>
+                    {product.comparePrice && (
+                      <span className="text-lg text-red-500 line-through">
+                        {formatCurrency(product.comparePrice)}
+                      </span>
+                    )}
+                    {discountPercentage > 0 && (
+                      <span className="bg-red-100 text-red-800 text-sm font-semibold px-2 py-1 rounded">
+                        -{discountPercentage}%
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {product.taxable && product.taxRate > 0
+                      ? `Inclusive of GST (${product.taxRate}%)`
+                      : 'Inclusive of all taxes'}
+                  </p>
+                  {discountPercentage > 0 && (
+                    <p className="text-sm text-green-700 font-medium mt-1">
+                      You save {formatCurrency(product.comparePrice - product.price)}
+                    </p>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Stock Status */}

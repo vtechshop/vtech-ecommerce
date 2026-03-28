@@ -605,57 +605,82 @@ const Product = () => {
           </div>
 
           <div className="bg-blue-100 p-4 rounded-lg border border-gray-200">
-            <div className="flex flex-wrap items-baseline gap-3">
-              <span className="text-3xl font-bold text-green-700">
-                {formatCurrency(product.price)}
-              </span>
-              {product.comparePrice && (
-                <>
-                  <span className="text-lg text-red-500 line-through">
-                    {formatCurrency(product.comparePrice)}
-                  </span>
-                  {discountPercentage > 0 && (
-                    <span className="bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-md">
-                      -{discountPercentage}%
+            {/* Amazon-style GST price breakdown */}
+            {product.taxable && product.taxRate > 0 && !product.taxIncluded ? (
+              <>
+                {/* MRP line (comparePrice = original MRP) */}
+                {product.comparePrice && (
+                  <p className="text-sm text-gray-500 mb-1">
+                    M.R.P.:{' '}
+                    <span className="line-through">
+                      {formatCurrency(product.comparePrice)}
                     </span>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* GST/Tax Information */}
-            {product.taxable && product.taxRate > 0 ? (
-              <div className="mt-2 flex items-center gap-2 text-sm">
-                {product.taxIncluded ? (
-                  <>
-                    <span className="text-green-700 font-medium">
-                      Tax Included in Price
-                    </span>
-                    <span className="text-gray-500">
-                      • GST {product.taxRate}%
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-gray-700">
-                      Tax will be added at checkout
-                    </span>
-                    <span className="text-gray-500">
-                      • GST {product.taxRate}%
-                    </span>
-                  </>
+                    {discountPercentage > 0 && (
+                      <span className="ml-2 text-red-600 font-semibold">
+                        -{discountPercentage}%
+                      </span>
+                    )}
+                  </p>
                 )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-700 mt-2">
-                (Price inclusive of all taxes)
-              </p>
-            )}
 
-            {discountPercentage > 0 && (
-              <p className="text-sm text-green-700 font-medium mt-2">
-                You save {formatCurrency(product.comparePrice - product.price)}
-              </p>
+                {/* Base price (excl. GST) */}
+                <div className="flex flex-wrap items-baseline gap-2">
+                  <span className="text-3xl font-bold text-green-700">
+                    {formatCurrency(product.price)}
+                  </span>
+                  <span className="text-sm text-gray-500">(excl. GST)</span>
+                </div>
+
+                {/* GST breakdown */}
+                <div className="mt-2 text-sm text-gray-600 space-y-0.5">
+                  <div className="flex items-center gap-1">
+                    <span>+ {formatCurrency(product.price * product.taxRate / 100)}</span>
+                    <span className="text-gray-500">GST ({product.taxRate}%)</span>
+                  </div>
+                  <div className="flex items-baseline gap-2 pt-1 border-t border-gray-300">
+                    <span className="text-base font-semibold text-gray-900">
+                      = {formatCurrency(product.price * (1 + product.taxRate / 100))}
+                    </span>
+                    <span className="text-xs text-gray-500">(incl. of all taxes)</span>
+                  </div>
+                </div>
+
+                {discountPercentage > 0 && (
+                  <p className="text-sm text-green-700 font-medium mt-2">
+                    You save {formatCurrency(product.comparePrice - product.price)}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <span className="text-3xl font-bold text-green-700">
+                    {formatCurrency(product.price)}
+                  </span>
+                  {product.comparePrice && (
+                    <>
+                      <span className="text-lg text-red-500 line-through">
+                        {formatCurrency(product.comparePrice)}
+                      </span>
+                      {discountPercentage > 0 && (
+                        <span className="bg-red-500 text-white text-sm font-semibold px-3 py-1 rounded-md">
+                          -{discountPercentage}%
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 mt-1">
+                  {product.taxable && product.taxRate > 0
+                    ? `Inclusive of GST (${product.taxRate}%)`
+                    : 'Inclusive of all taxes'}
+                </p>
+                {discountPercentage > 0 && (
+                  <p className="text-sm text-green-700 font-medium mt-2">
+                    You save {formatCurrency(product.comparePrice - product.price)}
+                  </p>
+                )}
+              </>
             )}
           </div>
 
