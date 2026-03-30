@@ -2,7 +2,16 @@
 const Banner = require('../models/Banner');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../middleware/asyncHandler');
-const { v2: cloudinary } = require('cloudinary');
+const uploadService = require('../services/uploadService');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+
+async function uploadBannerImage(file) {
+  const adapter = uploadService.getAdapter();
+  const filename = `banners/${uuidv4()}${path.extname(file.originalname)}`;
+  const storedPath = await adapter.upload(file, filename);
+  return adapter.getUrl(storedPath);
+}
 
 // GET /api/banners - Public: Get all active banners
 exports.getActiveBanners = asyncHandler(async (req, res) => {
@@ -36,27 +45,12 @@ exports.getAllBanners = asyncHandler(async (req, res) => {
 
 // POST /api/banners - Admin: Create banner
 exports.createBanner = asyncHandler(async (req, res) => {
-  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition } = req.body;
-
-  if (!title) {
-    throw AppError.badRequest('Title is required');
-  }
+  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, bannerHeight, imageScale } = req.body;
 
   let imageUrl = req.body.image;
 
-  // Handle file upload
   if (req.file) {
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'vtech/banners', resource_type: 'image' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      stream.end(req.file.buffer);
-    });
-    imageUrl = result.secure_url;
+    imageUrl = await uploadBannerImage(req.file);
   }
 
   if (!imageUrl) {
@@ -73,6 +67,8 @@ exports.createBanner = asyncHandler(async (req, res) => {
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     imagePosition: imagePosition || '50',
+    bannerHeight: bannerHeight ? Math.min(650, Math.max(250, parseInt(bannerHeight))) : 420,
+    imageScale: imageScale ? Math.min(150, Math.max(50, parseInt(imageScale))) : 100,
   });
 
   res.status(201).json({ success: true, data: banner });
@@ -85,21 +81,10 @@ exports.updateBanner = asyncHandler(async (req, res) => {
     throw AppError.notFound('Banner');
   }
 
-  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition } = req.body;
+  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, bannerHeight, imageScale } = req.body;
 
-  // Handle new image upload
   if (req.file) {
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'vtech/banners', resource_type: 'image' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      stream.end(req.file.buffer);
-    });
-    banner.image = result.secure_url;
+    banner.image = await uploadBannerImage(req.file);
   } else if (req.body.image) {
     banner.image = req.body.image;
   }
@@ -112,6 +97,8 @@ exports.updateBanner = asyncHandler(async (req, res) => {
   if (startDate !== undefined) banner.startDate = startDate || null;
   if (endDate !== undefined) banner.endDate = endDate || null;
   if (imagePosition !== undefined) banner.imagePosition = imagePosition;
+  if (bannerHeight !== undefined) banner.bannerHeight = Math.min(650, Math.max(250, parseInt(bannerHeight) || 420));
+  if (imageScale !== undefined) banner.imageScale = Math.min(150, Math.max(50, parseInt(imageScale) || 100));
 
   await banner.save();
   res.json({ success: true, data: banner });
@@ -122,21 +109,6 @@ exports.deleteBanner = asyncHandler(async (req, res) => {
   const banner = await Banner.findById(req.params.id);
   if (!banner) {
     throw AppError.notFound('Banner');
-  }
-
-  // Try to delete image from Cloudinary
-  if (banner.image && banner.image.includes('cloudinary')) {
-    try {
-      const urlParts = banner.image.split('/');
-      const uploadIdx = urlParts.indexOf('upload');
-      if (uploadIdx !== -1) {
-        const publicIdParts = urlParts.slice(uploadIdx + 2); // skip version
-        const publicId = publicIdParts.join('/').replace(/\.[^.]+$/, '');
-        await cloudinary.uploader.destroy(publicId);
-      }
-    } catch (err) {
-      // Non-critical - continue with deletion
-    }
   }
 
   await Banner.findByIdAndDelete(req.params.id);

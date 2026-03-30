@@ -34,8 +34,8 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-gray-900"
-      style={{ height: 'clamp(280px, 42vw, 540px)' }}
+      className="relative w-full overflow-hidden bg-white"
+      style={{ aspectRatio: '1400/500', maxHeight: '600px' }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
@@ -52,39 +52,44 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
           <img
             src={normalizeImageUrl(item.image || item.imageUrl, { width: 1400 })}
             alt={item.title || ''}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: `center ${item.imagePosition || '50'}%` }}
+            className="absolute inset-0 w-full h-full"
+            style={{ objectFit: 'fill' }}
             loading={index === 0 ? 'eager' : 'lazy'}
             fetchPriority={index === 0 ? 'high' : 'auto'}
           />
 
-          {/* Gradient overlay — left-heavy for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
+          {/* Gradient overlay — only when text/CTA is present */}
+          {(item.title || item.subtitle || item.description || item.link) && (
+            <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
+          )}
 
           {/* Text + CTA */}
-          <div className="relative z-10 h-full flex items-center">
-            <div className="container mx-auto px-6 sm:px-10 md:px-16 max-w-screen-2xl">
-              <div className="max-w-lg">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">
-                  {item.title}
-                </h2>
-                {/* Banner uses `subtitle`, Carousel uses `description` */}
-                {(item.subtitle || item.description) && (
-                  <p className="text-white/80 text-sm md:text-base mb-5 line-clamp-2 leading-relaxed">
-                    {item.subtitle || item.description}
-                  </p>
-                )}
-                {item.link && (
-                  <Link
-                    to={item.link}
-                    className="inline-block bg-white text-gray-900 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-primary-50 transition-all duration-200 shadow-lg"
-                  >
-                    Shop Now →
-                  </Link>
-                )}
+          {(item.title || item.subtitle || item.description || item.link) && (
+            <div className="relative z-10 h-full flex items-center">
+              <div className="container mx-auto px-6 sm:px-10 md:px-16 max-w-screen-2xl">
+                <div className="max-w-lg">
+                  {item.title && (
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">
+                      {item.title}
+                    </h2>
+                  )}
+                  {(item.subtitle || item.description) && (
+                    <p className="text-white/80 text-sm md:text-base mb-5 line-clamp-2 leading-relaxed">
+                      {item.subtitle || item.description}
+                    </p>
+                  )}
+                  {item.link && (
+                    <Link
+                      to={item.link}
+                      className="inline-block bg-white text-gray-900 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-primary-50 transition-all duration-200 shadow-lg"
+                    >
+                      Shop Now →
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       ))}
 

@@ -147,7 +147,7 @@ const LinkUrlInput = ({ value, onChange }) => {
 
   const { data: catData } = useQuery({
     queryKey: ['categories-for-banner-link'],
-    queryFn: async () => (await api.get('/categories?limit=100')).data,
+    queryFn: async () => (await api.get('/catalog/categories?limit=100')).data,
     staleTime: 10 * 60 * 1000,
   });
 
@@ -250,6 +250,8 @@ const BannerModal = ({ banner, onClose, onSave }) => {
     startDate: banner?.startDate ? banner.startDate.split('T')[0] : '',
     endDate: banner?.endDate ? banner.endDate.split('T')[0] : '',
     imagePosition: banner?.imagePosition || '50',
+    bannerHeight: banner?.bannerHeight || 420,
+    imageScale: banner?.imageScale || 100,
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(banner?.image || '');
@@ -263,6 +265,8 @@ const BannerModal = ({ banner, onClose, onSave }) => {
       fd.append('order', data.order);
       fd.append('isActive', data.isActive);
       fd.append('imagePosition', data.imagePosition);
+      fd.append('bannerHeight', data.bannerHeight);
+      fd.append('imageScale', data.imageScale);
       if (data.startDate) fd.append('startDate', data.startDate);
       if (data.endDate) fd.append('endDate', data.endDate);
       if (imageFile) {
@@ -297,7 +301,6 @@ const BannerModal = ({ banner, onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title) return toast.error('Title is required');
     if (!imageFile && !banner?.image) return toast.error('Image is required');
     saveMutation.mutate(formData);
   };
@@ -316,37 +319,43 @@ const BannerModal = ({ banner, onClose, onSave }) => {
             <Eye className="w-3.5 h-3.5" /> Live Preview — Homepage Hero
           </p>
           <div
-            className="relative w-full overflow-hidden rounded-lg bg-gray-800"
-            style={{ height: '200px' }}
+            className="relative w-full overflow-hidden rounded-lg bg-white"
+            style={{ aspectRatio: '1400/500' }}
           >
             {imagePreview ? (
               <img
                 src={imagePreview}
                 alt="Banner preview"
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ objectPosition: `center ${formData.imagePosition}%` }}
+                className="absolute inset-0 w-full h-full"
+                style={{ objectFit: 'fill' }}
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-400 flex items-center justify-center">
                 <p className="text-white/40 text-sm">Upload an image to see preview</p>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
-            <div className="absolute inset-0 flex items-center px-8">
-              <div className="max-w-xs">
-                <h3 className="text-white font-bold text-lg leading-tight mb-1">
-                  {formData.title || 'Your Banner Title'}
-                </h3>
-                {formData.subtitle && (
-                  <p className="text-white/80 text-xs mb-3 line-clamp-2">{formData.subtitle}</p>
-                )}
-                {formData.link && (
-                  <span className="inline-block bg-white text-gray-900 px-3 py-1.5 rounded-md text-xs font-semibold">
-                    Shop Now →
-                  </span>
-                )}
+            {(formData.title || formData.subtitle || formData.link) && (
+              <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
+            )}
+            {(formData.title || formData.subtitle || formData.link) && (
+              <div className="absolute inset-0 flex items-center px-8">
+                <div className="max-w-xs">
+                  {formData.title && (
+                    <h3 className="text-white font-bold text-lg leading-tight mb-1">
+                      {formData.title}
+                    </h3>
+                  )}
+                  {formData.subtitle && (
+                    <p className="text-white/80 text-xs mb-3 line-clamp-2">{formData.subtitle}</p>
+                  )}
+                  {formData.link && (
+                    <span className="inline-block bg-white text-gray-900 px-3 py-1.5 rounded-md text-xs font-semibold">
+                      Shop Now →
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
           <p className="text-xs text-gray-400 mt-1.5">Actual size: ~1400×500px. Recommended image ratio: 16:5</p>
         </div>
@@ -356,7 +365,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
             {/* Left column */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                 <input
                   type="text"
                   value={formData.title}
@@ -387,26 +396,6 @@ const BannerModal = ({ banner, onClose, onSave }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Banner Image *</label>
                 <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm" />
                 <p className="text-xs text-gray-400 mt-1">Recommended: 1400×500px, JPG/PNG, max 2MB</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Image Position — <span className="text-primary-600 font-semibold">
-                    {formData.imagePosition === '0' ? 'Top' : formData.imagePosition === '100' ? 'Bottom' : formData.imagePosition === '50' ? 'Center' : `${formData.imagePosition}%`}
-                  </span>
-                </label>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-400">Top</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={formData.imagePosition}
-                    onChange={(e) => setFormData({ ...formData, imagePosition: e.target.value })}
-                    className="flex-1 h-2 accent-primary-600 cursor-pointer"
-                  />
-                  <span className="text-xs text-gray-400">Bottom</span>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">Drag to show which part of image is visible</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
