@@ -69,8 +69,8 @@ export default function ProductListScreen() {
         setHasMore(start + PAGE_LIMIT < allCategoryItems.current.length);
       } else {
         const { data } = await productsApi.getAll({
-          q: search || params.search,
-          sort: resolvedSort,
+          q: search || params.search || undefined,
+          sort: resolvedSort || undefined,
           featured: params.featured === 'true' ? true : undefined,
           page: pageNum,
           limit: PAGE_LIMIT,
