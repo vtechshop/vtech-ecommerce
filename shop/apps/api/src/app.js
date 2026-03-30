@@ -174,6 +174,7 @@ app.use((req, res, next) => {
     '/api/user',       // User profile/addresses - protected by JWT authentication
     '/api/shipping',   // Shipping/carrier operations - protected by JWT + role check
     '/api/products',   // Product reviews - protected by JWT authentication
+    '/api/banners',    // Banner management - protected by JWT + admin role check
     '/health',         // Health check
   ];
 
