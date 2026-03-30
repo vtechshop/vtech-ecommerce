@@ -334,7 +334,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
                 <p className="text-white/40 text-sm">Upload an image to see preview</p>
               </div>
             )}
-            {(formData.title || formData.subtitle || formData.link) && (
+            {(formData.title || formData.subtitle) && (
               <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
             )}
             {(formData.title || formData.subtitle || formData.link) && (

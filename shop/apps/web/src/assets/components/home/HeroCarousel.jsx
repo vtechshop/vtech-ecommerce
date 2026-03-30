@@ -58,8 +58,8 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             fetchPriority={index === 0 ? 'high' : 'auto'}
           />
 
-          {/* Gradient overlay — only when text/CTA is present */}
-          {(item.title || item.subtitle || item.description || item.link) && (
+          {/* Gradient overlay — only when there is text to display */}
+          {(item.title || item.subtitle || item.description) && (
             <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
           )}
 
