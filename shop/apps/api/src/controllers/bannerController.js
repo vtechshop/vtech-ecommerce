@@ -16,15 +16,22 @@ async function uploadBannerImage(file) {
 // GET /api/banners - Public: Get all active banners
 exports.getActiveBanners = asyncHandler(async (req, res) => {
   const now = new Date();
+  const { platform } = req.query; // 'web' | 'mobile' — if omitted, returns all
 
-  const banners = await Banner.find({
+  const query = {
     isActive: true,
     $or: [
       { startDate: { $exists: false } },
       { startDate: null },
       { startDate: { $lte: now } },
     ],
-  })
+  };
+
+  if (platform) {
+    query.platform = { $in: [platform, 'both'] };
+  }
+
+  const banners = await Banner.find(query)
     .sort({ order: 1 })
     .lean();
 
@@ -45,7 +52,7 @@ exports.getAllBanners = asyncHandler(async (req, res) => {
 
 // POST /api/banners - Admin: Create banner
 exports.createBanner = asyncHandler(async (req, res) => {
-  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, bannerHeight, imageScale } = req.body;
+  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, bannerHeight, imageScale, platform } = req.body;
 
   let imageUrl = req.body.image;
 
@@ -69,6 +76,7 @@ exports.createBanner = asyncHandler(async (req, res) => {
     imagePosition: imagePosition || '50',
     bannerHeight: bannerHeight ? Math.min(650, Math.max(250, parseInt(bannerHeight))) : 420,
     imageScale: imageScale ? Math.min(150, Math.max(50, parseInt(imageScale))) : 100,
+    platform: ['web', 'mobile', 'both'].includes(platform) ? platform : 'both',
   });
 
   res.status(201).json({ success: true, data: banner });
@@ -81,7 +89,7 @@ exports.updateBanner = asyncHandler(async (req, res) => {
     throw AppError.notFound('Banner');
   }
 
-  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, bannerHeight, imageScale } = req.body;
+  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, bannerHeight, imageScale, platform } = req.body;
 
   if (req.file) {
     banner.image = await uploadBannerImage(req.file);
@@ -99,6 +107,7 @@ exports.updateBanner = asyncHandler(async (req, res) => {
   if (imagePosition !== undefined) banner.imagePosition = imagePosition;
   if (bannerHeight !== undefined) banner.bannerHeight = Math.min(650, Math.max(250, parseInt(bannerHeight) || 420));
   if (imageScale !== undefined) banner.imageScale = Math.min(150, Math.max(50, parseInt(imageScale) || 100));
+  if (platform !== undefined && ['web', 'mobile', 'both'].includes(platform)) banner.platform = platform;
 
   await banner.save();
   res.json({ success: true, data: banner });

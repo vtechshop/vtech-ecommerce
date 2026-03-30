@@ -252,6 +252,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
     imagePosition: banner?.imagePosition || '50',
     bannerHeight: banner?.bannerHeight || 420,
     imageScale: banner?.imageScale || 100,
+    platform: banner?.platform || 'both',
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(banner?.image || '');
@@ -267,6 +268,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
       fd.append('imagePosition', data.imagePosition);
       fd.append('bannerHeight', data.bannerHeight);
       fd.append('imageScale', data.imageScale);
+      fd.append('platform', data.platform);
       if (data.startDate) fd.append('startDate', data.startDate);
       if (data.endDate) fd.append('endDate', data.endDate);
       if (imageFile) {
@@ -392,6 +394,25 @@ const BannerModal = ({ banner, onClose, onSave }) => {
 
             {/* Right column */}
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Show On</label>
+                <div className="flex gap-2">
+                  {[{ value: 'both', label: '🌐 Both' }, { value: 'web', label: '💻 Web only' }, { value: 'mobile', label: '📱 Mobile only' }].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, platform: opt.value })}
+                      className={`flex-1 py-2 px-2 rounded-md text-xs font-medium border transition-all ${
+                        formData.platform === opt.value
+                          ? 'bg-primary-600 text-white border-primary-600'
+                          : 'bg-white text-gray-600 border-gray-300 hover:border-primary-400'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Banner Image *</label>
                 <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm" />

@@ -104,7 +104,7 @@ const Home = React.memo(() => {
   const { data: heroBanners } = useQuery({
     queryKey: ['hero-banners'],
     queryFn: async () => {
-      const { data } = await api.get('/banners');
+      const { data } = await api.get('/banners?platform=web');
       return data.data;
     },
     staleTime: 10 * 60 * 1000,

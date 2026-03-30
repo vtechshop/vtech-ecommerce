@@ -7,6 +7,11 @@ const bannerSchema = new mongoose.Schema({
     default: '',
     trim: true,
   },
+  platform: {
+    type: String,
+    enum: ['web', 'mobile', 'both'],
+    default: 'both',
+  },
   subtitle: {
     type: String,
     trim: true,
