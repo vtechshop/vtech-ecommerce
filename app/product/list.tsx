@@ -92,7 +92,7 @@ export default function ProductListScreen() {
     setPage(1);
     setHasMore(true);
     loadProducts(1);
-  }, [params.category, params.sort]);
+  }, [params.category, params.sort, params.featured]);
 
   const handleSearch = () => {
     setPage(1);

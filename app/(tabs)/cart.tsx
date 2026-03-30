@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Pressable, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -176,6 +177,7 @@ function CartItemCard({ item, onRemove, onSaveLater }: {
 }
 
 export default function CartScreen() {
+  const { bottom: bottomInset } = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const { cart, isLoading } = useAppSelector((s) => s.cart);
   const { isAuthenticated } = useAppSelector((s) => s.auth);
@@ -370,7 +372,7 @@ export default function CartScreen() {
       />
 
       {/* Bottom summary */}
-      <View style={styles.summary}>
+      <View style={[styles.summary, { paddingBottom: Math.max(bottomInset, spacing.md) }]}>
         {/* Coupon */}
         <View style={styles.couponRow}>
           <View style={styles.couponInput}>
