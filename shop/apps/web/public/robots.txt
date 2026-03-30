@@ -6,6 +6,7 @@ Allow: /
 Allow: /products
 Allow: /product/
 Allow: /category/
+Allow: /search
 Allow: /blog/
 Allow: /vendor/
 Allow: /page/
@@ -33,16 +34,10 @@ Disallow: /verify-email
 Disallow: /order-confirmation
 Disallow: /api/
 
-# Disallow old /search URLs (redirects to /products)
-Disallow: /search
-
-# Disallow query parameter variations
+# Disallow query parameter variations that create duplicate content
 Disallow: /*?page=
 Disallow: /*?sort=
-Disallow: /*?filter=
 Disallow: /*?ref=
-Disallow: /*?view=
-Disallow: /*?featured=
 Disallow: /*?tab=
 
 # Crawl-delay for polite crawling
