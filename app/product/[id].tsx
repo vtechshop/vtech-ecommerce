@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, FlatList, Alert, Share, Modal, Pressable, Linking, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useNavigation, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -117,6 +118,7 @@ function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const navigation = useNavigation();
   const dispatch = useAppDispatch();
+  const { bottom: bottomInset } = useSafeAreaInsets();
   const { isAuthenticated } = useAppSelector((s) => s.auth);
   const cartItemCount = useAppSelector((s) => s.cart.cart?.items.length ?? 0);
   const { showToast } = useToast();
@@ -728,7 +730,7 @@ function ProductDetailScreen() {
       )}
 
       {/* Bottom Bar: Wishlist + Add to Cart + Buy Now */}
-      <SlideUpView style={styles.bottomBar}>
+      <SlideUpView style={[styles.bottomBar, { paddingBottom: Math.max(bottomInset, 10) }]}>
         <TouchableOpacity style={styles.wishlistButton} onPress={handleWishlist}>
           <Ionicons name={isWishlisted ? 'heart' : 'heart-outline'} size={22} color={isWishlisted ? '#e53935' : colors.text} />
         </TouchableOpacity>

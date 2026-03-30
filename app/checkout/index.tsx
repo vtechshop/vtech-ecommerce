@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, TextInput, ActivityIndicator, Pressable, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
@@ -87,6 +88,7 @@ function AnimatedOptionCard({ children, isSelected, onPress }: {
 }
 
 export default function CheckoutScreen() {
+  const { bottom: bottomInset } = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const { cart } = useAppSelector((s) => s.cart);
   const { user } = useAppSelector((s) => s.auth);
@@ -768,7 +770,7 @@ export default function CheckoutScreen() {
         </View>
       </ScrollView>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(bottomInset, 12) }]}>
         <View style={{ justifyContent: 'center' }}>
           <Text style={styles.payLabel}>Total</Text>
           <Text style={styles.payAmount}>₹{grandTotal.toLocaleString()}</Text>
