@@ -125,7 +125,7 @@ const Home = React.memo(() => {
       {/* Hero Section — dynamic carousel if banners uploaded, else static fallback */}
       {heroBanners && heroBanners.length > 0 ? (
         <Suspense fallback={
-          <div className="bg-gradient-to-r from-primary-600 to-primary-200" style={{ height: 'clamp(180px, 55vw, 520px)' }} />
+          <div className="bg-gradient-to-r from-primary-600 to-primary-200" style={{ aspectRatio: '1400/500', maxHeight: '600px' }} />
         }>
           <HeroCarousel items={heroBanners} fallback={<StaticHero t={t} />} />
         </Suspense>
