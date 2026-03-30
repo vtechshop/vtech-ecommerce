@@ -36,7 +36,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
   return (
     <div
       className="relative w-full overflow-hidden bg-white"
-      style={{ aspectRatio: '1400/500', maxHeight: '600px' }}
+      style={{ height: 'clamp(180px, 55vw, 520px)' }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
@@ -58,8 +58,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
           <img
             src={normalizeImageUrl(item.image || item.imageUrl, { width: 1400 })}
             alt={item.title || ''}
-            className="absolute inset-0 w-full h-full"
-            style={{ objectFit: 'fill' }}
+            className="absolute inset-0 w-full h-full object-contain"
             loading={index === 0 ? 'eager' : 'lazy'}
             fetchPriority={index === 0 ? 'high' : 'auto'}
           />

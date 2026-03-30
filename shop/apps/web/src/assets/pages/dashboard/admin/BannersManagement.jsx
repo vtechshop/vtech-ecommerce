@@ -319,15 +319,14 @@ const BannerModal = ({ banner, onClose, onSave }) => {
             <Eye className="w-3.5 h-3.5" /> Live Preview — Homepage Hero
           </p>
           <div
-            className="relative w-full overflow-hidden rounded-lg bg-white"
-            style={{ aspectRatio: '1400/500' }}
+            className="relative w-full overflow-hidden rounded-lg bg-white border"
+            style={{ height: '220px' }}
           >
             {imagePreview ? (
               <img
                 src={imagePreview}
                 alt="Banner preview"
-                className="absolute inset-0 w-full h-full"
-                style={{ objectFit: 'fill' }}
+                className="absolute inset-0 w-full h-full object-contain"
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-400 flex items-center justify-center">
