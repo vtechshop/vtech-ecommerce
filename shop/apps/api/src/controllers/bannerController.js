@@ -28,7 +28,15 @@ exports.getActiveBanners = asyncHandler(async (req, res) => {
   };
 
   if (platform) {
-    query.platform = { $in: [platform, 'both'] };
+    // Also include old banners that have no platform field set (backwards compat)
+    query.$and = [{
+      $or: [
+        { platform: platform },
+        { platform: 'both' },
+        { platform: { $exists: false } },
+        { platform: null },
+      ],
+    }];
   }
 
   const banners = await Banner.find(query)
