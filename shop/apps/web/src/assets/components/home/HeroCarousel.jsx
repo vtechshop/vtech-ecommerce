@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { normalizeImageUrl } from '@/utils/placeholders';
 
@@ -7,6 +7,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
   const [current, setCurrent] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
+  const navigate = useNavigate();
 
   const next = useCallback(() => {
     setCurrent(prev => (prev + 1) % items.length);
@@ -48,7 +49,12 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
           }`}
           aria-hidden={index !== current}
         >
-          {/* Background image — Banner model uses `image` field */}
+          {/* Entire slide is clickable if link exists */}
+          {item.link ? (
+            <Link to={item.link} className="absolute inset-0 z-10" aria-label={item.title || 'View product'} />
+          ) : null}
+
+          {/* Background image */}
           <img
             src={normalizeImageUrl(item.image || item.imageUrl, { width: 1400 })}
             alt={item.title || ''}
@@ -63,28 +69,20 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
           )}
 
-          {/* Text + CTA */}
-          {(item.title || item.subtitle || item.description || item.link) && (
-            <div className="relative z-10 h-full flex items-center">
+          {/* Text — desktop only, no Shop Now button */}
+          {(item.title || item.subtitle || item.description) && (
+            <div className="relative z-10 h-full flex items-center pointer-events-none">
               <div className="container mx-auto px-6 sm:px-10 md:px-16 max-w-screen-2xl">
                 <div className="max-w-lg">
                   {item.title && (
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">
+                    <h2 className="hidden sm:block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">
                       {item.title}
                     </h2>
                   )}
                   {(item.subtitle || item.description) && (
-                    <p className="text-white/80 text-sm md:text-base mb-5 line-clamp-2 leading-relaxed">
+                    <p className="hidden sm:block text-white/80 text-sm md:text-base line-clamp-2 leading-relaxed">
                       {item.subtitle || item.description}
                     </p>
-                  )}
-                  {item.link && (
-                    <Link
-                      to={item.link}
-                      className="inline-block bg-white text-gray-900 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-primary-50 transition-all duration-200 shadow-lg"
-                    >
-                      Shop Now →
-                    </Link>
                   )}
                 </div>
               </div>
@@ -97,14 +95,14 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
       {items.length > 1 && (
         <>
           <button
-            onClick={prev}
+            onClick={(e) => { e.preventDefault(); prev(); }}
             className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 bg-black/25 backdrop-blur-sm hover:bg-black/45 rounded-full flex items-center justify-center text-white transition-all"
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
-            onClick={next}
+            onClick={(e) => { e.preventDefault(); next(); }}
             className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 bg-black/25 backdrop-blur-sm hover:bg-black/45 rounded-full flex items-center justify-center text-white transition-all"
             aria-label="Next slide"
           >
@@ -119,7 +117,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
           {items.map((_, idx) => (
             <button
               key={idx}
-              onClick={() => goTo(idx)}
+              onClick={(e) => { e.preventDefault(); goTo(idx); }}
               className={`h-2 rounded-full transition-all duration-300 ${
                 current === idx ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
               }`}
