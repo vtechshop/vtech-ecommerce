@@ -106,7 +106,7 @@ export interface QuizAnswerResult {
 
 export const bannersApi = {
   getAll: () =>
-    apiClient.get<ApiResponse<Banner[]>>('/banners'),
+    apiClient.get<ApiResponse<Banner[]>>('/banners', { params: { platform: 'mobile' } }),
 };
 
 export const couponsApi = {
