@@ -89,12 +89,12 @@ export default function HomeScreen() {
         productsApi.getFeatured(),
         productsApi.getCategories(),
         productsApi.getAll({ sort: '-createdAt', limit: 10 }),
-        productsApi.getRecommendations().catch(() => ({ data: [] })),
+        productsApi.getRecommendations().catch(() => ({ data: { data: [] } })),
       ]);
       setFeatured(featuredRes.data.data || []);
       setCategories(catRes.data.data || []);
       setNewArrivals(newRes.data.data || []);
-      setTrending((trendRes as any).data || []);
+      setTrending((trendRes as any).data.data || []);
 
       const allProducts = [...(featuredRes.data.data || []), ...(newRes.data.data || [])];
       const unique = new Map<string, Product>();
