@@ -36,7 +36,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
   return (
     <div
       className="relative w-full overflow-hidden bg-white"
-      style={{ aspectRatio: '1400/500', maxHeight: '420px' }}
+      style={{ aspectRatio: '1060/370', maxHeight: '370px' }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >

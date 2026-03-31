@@ -322,7 +322,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
           </p>
           <div
             className="relative w-full overflow-hidden rounded-lg bg-white"
-            style={{ aspectRatio: '1400/500' }}
+            style={{ aspectRatio: '1060/370' }}
           >
             {imagePreview ? (
               <img
