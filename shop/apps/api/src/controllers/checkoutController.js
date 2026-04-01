@@ -2,80 +2,106 @@
 const ShippingZone = require('../models/ShippingZone');
 const Tax = require('../models/Tax');
 const AppError = require('../utils/AppError');
+const Product = require('../models/Product');
+const shippingService = require('../services/shippingService');
+const env = require('../config/env');
+const logger = require('../config/logger');
 
-// Get shipping quotes
+// Get shipping quotes — uses Delhivery API with pincode + weight
 exports.getShippingQuotes = async (req, res, next) => {
   try {
-    const { addressId, address, items } = req.body;
+    const { address, items } = req.body;
 
-    // SECURITY: Validate that either addressId or address is provided
-    if (!addressId && !address) {
-      return next(new AppError('Either addressId or address must be provided', 400, 'MISSING_ADDRESS'));
+    if (!address || typeof address !== 'object') {
+      return next(new AppError('Address is required', 400, 'MISSING_ADDRESS'));
     }
 
-    // SECURITY: Validate address structure if provided
-    if (address && typeof address !== 'object') {
-      return next(new AppError('Address must be an object', 400, 'INVALID_ADDRESS'));
+    const destinationPin = address.zipCode;
+    if (!destinationPin) {
+      return next(new AppError('Destination pincode is required', 400, 'MISSING_PINCODE'));
     }
 
-    // In a real app, you'd get the address and calculate shipping
-    // For now, return mock quotes (prices in INR)
-    const quotes = [
-      {
-        id: 'free-shipping',
-        name: 'Free Standard Shipping',
-        description: '7-10 business days',
-        cost: 0,
-        estimatedDays: 10,
-      },
-      {
+    // Calculate total weight in grams from cart items
+    let totalWeight = 500; // default 500g fallback
+    if (items && items.length > 0) {
+      const productIds = items.map(i => i.productId).filter(Boolean);
+      if (productIds.length > 0) {
+        const products = await Product.find({ _id: { $in: productIds } }).select('weight');
+        totalWeight = items.reduce((sum, item) => {
+          const product = products.find(p => p._id.toString() === item.productId?.toString());
+          return sum + ((product?.weight || 500) * (item.qty || item.quantity || 1));
+        }, 0);
+      }
+    }
+
+    const originPin = env.DEFAULT_ORIGIN_ZIP || '110001';
+    const quotes = [];
+
+    // Try Delhivery live rates
+    try {
+      const delhivery = shippingService.getCarrier('delhivery');
+
+      // Surface rate (cheaper, 5-7 days)
+      try {
+        const surface = await delhivery.calculateRate(originPin, destinationPin, totalWeight, 'Prepaid', 'S');
+        if (surface.rate > 0) {
+          quotes.push({
+            id: 'delhivery-surface',
+            name: 'Delhivery Surface',
+            description: '5-7 business days',
+            cost: Math.round(surface.rate),
+            estimatedDays: 7,
+            carrier: 'Delhivery',
+          });
+        }
+      } catch (e) {
+        logger.warn('Delhivery Surface rate unavailable:', e.message);
+      }
+
+      // Express rate (faster, 2-3 days)
+      try {
+        const express = await delhivery.calculateRate(originPin, destinationPin, totalWeight, 'Prepaid', 'E');
+        if (express.rate > 0) {
+          quotes.push({
+            id: 'delhivery-express',
+            name: 'Delhivery Express',
+            description: '2-3 business days',
+            cost: Math.round(express.rate),
+            estimatedDays: 3,
+            carrier: 'Delhivery',
+          });
+        }
+      } catch (e) {
+        logger.warn('Delhivery Express rate unavailable:', e.message);
+      }
+    } catch (carrierErr) {
+      logger.warn('Delhivery carrier not available:', carrierErr.message);
+    }
+
+    // Fallback: weight-based fixed rates if Delhivery API fails
+    if (quotes.length === 0) {
+      const weightKg = totalWeight / 1000;
+      let cost;
+      if (weightKg <= 0.5)       cost = 60;
+      else if (weightKg <= 1)    cost = 100;
+      else if (weightKg <= 2)    cost = 150;
+      else if (weightKg <= 5)    cost = 250;
+      else if (weightKg <= 10)   cost = 450;
+      else if (weightKg <= 20)   cost = 800;
+      else cost = 800 + Math.ceil((weightKg - 20) / 5) * 100;
+
+      quotes.push({
         id: 'standard',
         name: 'Standard Shipping',
         description: '5-7 business days',
-        cost: 499,
+        cost,
         estimatedDays: 7,
-      },
-      {
-        id: 'priority',
-        name: 'Priority Shipping',
-        description: '3-5 business days',
-        cost: 799,
-        estimatedDays: 5,
-      },
-      {
-        id: 'express',
-        name: 'Express Shipping',
-        description: '2-3 business days',
-        cost: 1199,
-        estimatedDays: 3,
-      },
-      {
-        id: 'two-day',
-        name: 'Two-Day Shipping',
-        description: 'Guaranteed 2 business days',
-        cost: 1599,
-        estimatedDays: 2,
-      },
-      {
-        id: 'overnight',
-        name: 'Overnight Shipping',
-        description: 'Next business day delivery',
-        cost: 2399,
-        estimatedDays: 1,
-      },
-      {
-        id: 'same-day',
-        name: 'Same Day Delivery',
-        description: 'Order before 2 PM for same-day delivery',
-        cost: 3199,
-        estimatedDays: 0,
-      },
-    ];
+      });
 
-    res.json({
-      success: true,
-      data: quotes,
-    });
+      logger.warn(`Delhivery unavailable — using weight-based fallback rate ₹${cost} for ${weightKg.toFixed(2)}kg`);
+    }
+
+    res.json({ success: true, data: { quotes, totalWeightGrams: totalWeight } });
   } catch (error) {
     next(error);
   }
