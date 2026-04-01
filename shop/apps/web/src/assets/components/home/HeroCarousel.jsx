@@ -55,7 +55,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
 
           {/* Image — natural width/height, no cropping */}
           <img
-            src={normalizeImageUrl(item.image || item.imageUrl, { width: 1400, quality: 90 })}
+            src={item.image || item.imageUrl}
             alt={item.title || ''}
             className="w-full h-auto block"
             loading={index === 0 ? 'eager' : 'lazy'}
