@@ -58,8 +58,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
           <img
             src={normalizeImageUrl(item.image || item.imageUrl, { width: 1400 })}
             alt={item.title || ''}
-            className="absolute inset-0 w-full h-full"
-            style={{ objectFit: 'fill' }}
+            className="absolute inset-0 w-full h-full object-cover object-center"
             loading={index === 0 ? 'eager' : 'lazy'}
             fetchPriority={index === 0 ? 'high' : 'auto'}
           />

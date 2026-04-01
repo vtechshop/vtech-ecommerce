@@ -328,8 +328,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
               <img
                 src={imagePreview}
                 alt="Banner preview"
-                className="absolute inset-0 w-full h-full"
-                style={{ objectFit: 'fill' }}
+                className="absolute inset-0 w-full h-full object-cover object-center"
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-400 flex items-center justify-center">
