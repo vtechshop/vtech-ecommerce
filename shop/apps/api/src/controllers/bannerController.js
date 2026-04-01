@@ -5,8 +5,27 @@ const asyncHandler = require('../middleware/asyncHandler');
 const uploadService = require('../services/uploadService');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const env = require('../config/env');
 
 async function uploadBannerImage(file) {
+  // Use Cloudinary directly with NO quality transformation — preserve original quality
+  if (env.UPLOAD_DRIVER === 'cloudinary' && env.CLOUDINARY_CLOUD_NAME) {
+    const { v2: cloudinary } = require('cloudinary');
+    cloudinary.config({
+      cloud_name: env.CLOUDINARY_CLOUD_NAME,
+      api_key: env.CLOUDINARY_API_KEY,
+      api_secret: env.CLOUDINARY_API_SECRET,
+    });
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'vtech/banners', resource_type: 'image', quality: 100 },
+        (error, result) => error ? reject(error) : resolve(result)
+      );
+      stream.end(file.buffer);
+    });
+    return result.secure_url;
+  }
+  // Local fallback
   const adapter = uploadService.getAdapter();
   const filename = `banners/${uuidv4()}${path.extname(file.originalname)}`;
   const storedPath = await adapter.upload(file, filename);
