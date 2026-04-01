@@ -56,7 +56,7 @@ const optimizeCloudinaryUrl = (url, options = {}) => {
 
   // Build new transforms
   const transforms = [`q_${quality}`, `f_${format}`];
-  if (width) transforms.push(`w_${width}`, 'c_fill');
+  if (width) transforms.push(`w_${width}`);
   const transformations = transforms.join(',');
 
   return cleanUrl.replace('/upload/', `/upload/${transformations}/`);
