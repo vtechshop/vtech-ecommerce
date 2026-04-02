@@ -11,6 +11,7 @@ const BannersManagement = () => {
   const queryClient = useQueryClient();
   const [editingBanner, setEditingBanner] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('web'); // 'web' | 'mobile'
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-banners'],
@@ -40,15 +41,40 @@ const BannersManagement = () => {
     return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
   }
 
-  const banners = data?.data || [];
+  const allBanners = data?.data || [];
+  const banners = allBanners.filter(b =>
+    activeTab === 'web'
+      ? (!b.platform || b.platform === 'web')
+      : b.platform === 'mobile'
+  );
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Banner Management</h1>
-        <Button onClick={() => { setEditingBanner(null); setShowModal(true); }}>
+        <Button onClick={() => { setEditingBanner({ _defaultPlatform: activeTab }); setShowModal(true); }}>
           <Plus className="w-4 h-4 mr-2" /> Add Banner
         </Button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab('web')}
+          className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'web' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          💻 Website Banners
+        </button>
+        <button
+          onClick={() => setActiveTab('mobile')}
+          className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'mobile' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          📱 Mobile App Banners
+        </button>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -252,7 +278,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
     imagePosition: banner?.imagePosition || '50',
     bannerHeight: banner?.bannerHeight || 420,
     imageScale: banner?.imageScale || 100,
-    platform: banner?.platform || 'both',
+    platform: banner?.platform || banner?._defaultPlatform || 'web',
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(banner?.image || '');
@@ -396,7 +422,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Show On</label>
                 <div className="flex gap-2">
-                  {[{ value: 'both', label: '🌐 Both' }, { value: 'web', label: '💻 Web only' }, { value: 'mobile', label: '📱 Mobile only' }].map(opt => (
+                  {[{ value: 'web', label: '💻 Website' }, { value: 'mobile', label: '📱 Mobile App' }].map(opt => (
                     <button
                       key={opt.value}
                       type="button"
