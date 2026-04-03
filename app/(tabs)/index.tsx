@@ -170,10 +170,8 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        {/* Main Banner */}
-        <AnimatedSection delay={0}>
-          <HomeBanner />
-        </AnimatedSection>
+        {/* Main Banner — no fade animation, must be full opacity immediately */}
+        <HomeBanner />
 
         {/* Trust Strip */}
         <AnimatedSection delay={50} style={{ paddingHorizontal: spacing.md, marginBottom: spacing.lg }}>
