@@ -113,15 +113,18 @@ export default function HomeBanner() {
           style={StyleSheet.absoluteFillObject}
         />
       )}
-      <View style={styles.bannerContent}>
-        {item.icon && (
-          <View style={styles.bannerIconCircle}>
-            <Ionicons name={item.icon} size={28} color={colors.white} />
-          </View>
-        )}
-        <Text style={styles.bannerTitle}>{item.title}</Text>
-        <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
-      </View>
+      {/* Only show text overlay for fallback banners (no image) */}
+      {!item.image && (
+        <View style={styles.bannerContent}>
+          {item.icon && (
+            <View style={styles.bannerIconCircle}>
+              <Ionicons name={item.icon} size={28} color={colors.white} />
+            </View>
+          )}
+          <Text style={styles.bannerTitle}>{item.title}</Text>
+          <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
+        </View>
+      )}
       {!item.image && item.icon && (
         <View style={styles.bannerDecoration}>
           <Ionicons name={item.icon} size={120} color="rgba(255,255,255,0.08)" />
