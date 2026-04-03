@@ -44,10 +44,6 @@ exports.getAllBanners = asyncHandler(async (req, res) => {
 exports.createBanner = asyncHandler(async (req, res) => {
   const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition } = req.body;
 
-  if (!title) {
-    throw AppError.badRequest('Title is required');
-  }
-
   let imageUrl = req.body.image;
 
   // Handle file upload
