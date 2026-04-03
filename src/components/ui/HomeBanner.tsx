@@ -104,10 +104,6 @@ export default function HomeBanner() {
             contentFit="cover"
             transition={300}
           />
-          <LinearGradient
-            colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.6)']}
-            style={StyleSheet.absoluteFillObject}
-          />
         </>
       ) : (
         <LinearGradient
