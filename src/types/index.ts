@@ -41,6 +41,7 @@ export interface Product {
   brand?: string;
   stock: number;
   taxable: boolean;
+  taxIncluded?: boolean; // If true, price already includes GST
   rating: number;
   reviewCount: number;
   featured: boolean;

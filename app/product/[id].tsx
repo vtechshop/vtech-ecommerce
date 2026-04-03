@@ -415,12 +415,22 @@ function ProductDetailScreen() {
           )}
           <Text style={styles.taxNote}>Inclusive of all taxes. FREE Delivery.</Text>
 
-          {/* GST Breakdown — Amazon India style (price in DB is excl. GST) */}
+          {/* GST Breakdown — Amazon India style */}
           {product.taxable !== false && (product.price ?? 0) > 0 && (() => {
             const GST_RATE = 0.18;
-            const priceExcl = product.price ?? 0;
-            const gstAmount = Math.round(priceExcl * GST_RATE);
-            const totalInclGst = priceExcl + gstAmount;
+            const rawPrice = product.price ?? 0;
+            let priceExcl: number, gstAmount: number, totalInclGst: number;
+            if (product.taxIncluded) {
+              // Price already includes GST → extract base price
+              priceExcl = Math.round(rawPrice / (1 + GST_RATE));
+              gstAmount = rawPrice - priceExcl;
+              totalInclGst = rawPrice;
+            } else {
+              // Price excludes GST → add GST on top
+              priceExcl = rawPrice;
+              gstAmount = Math.round(rawPrice * GST_RATE);
+              totalInclGst = rawPrice + gstAmount;
+            }
             return (
               <View style={styles.gstBox}>
                 <View style={styles.gstRow}>
