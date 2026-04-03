@@ -586,14 +586,16 @@ function ProductDetailScreen() {
               {/* FAQs (Collapsible) */}
               {(product.faqs ?? []).length > 0 && (
                 <StaggeredView delay={100}>
-                  <CollapsibleSection title="FAQs">
-                    {(product.faqs ?? []).map((faq, i) => (
-                      <View key={i} style={styles.faqCard}>
-                        <View style={styles.faqQRow}><Ionicons name="help-circle" size={18} color={colors.primary} /><Text style={styles.faqQuestion}>{faq.question}</Text></View>
-                        <Text style={styles.faqAnswer}>{faq.answer}</Text>
-                      </View>
-                    ))}
-                  </CollapsibleSection>
+                  <View style={styles.card}>
+                    <CollapsibleSection title="FAQs">
+                      {(product.faqs ?? []).map((faq, i) => (
+                        <View key={i} style={styles.faqCard}>
+                          <View style={styles.faqQRow}><Ionicons name="help-circle" size={18} color={colors.primary} /><Text style={styles.faqQuestion}>{faq.question}</Text></View>
+                          <Text style={styles.faqAnswer}>{faq.answer}</Text>
+                        </View>
+                      ))}
+                    </CollapsibleSection>
+                  </View>
                 </StaggeredView>
               )}
 
