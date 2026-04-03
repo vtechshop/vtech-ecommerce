@@ -103,7 +103,7 @@ exports.createBanner = asyncHandler(async (req, res) => {
     imagePosition: imagePosition || '50',
     bannerHeight: bannerHeight ? Math.min(650, Math.max(250, parseInt(bannerHeight))) : 420,
     imageScale: imageScale ? Math.min(150, Math.max(50, parseInt(imageScale))) : 100,
-    platform: ['web', 'mobile', 'both'].includes(platform) ? platform : 'both',
+    platform: ['web', 'mobile', 'both'].includes(platform) ? platform : 'web',
   });
 
   res.status(201).json({ success: true, data: banner });
