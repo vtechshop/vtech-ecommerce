@@ -7,14 +7,10 @@ import Spinner from '@/components/common/Spinner';
 import toast from 'react-hot-toast';
 import { Eye, Trash2, Edit, Plus, X } from 'lucide-react';
 
-const BannersManagement = ({ platformFilter } = {}) => {
+const BannersManagement = () => {
   const queryClient = useQueryClient();
   const [editingBanner, setEditingBanner] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [activeTab, setActiveTab] = useState(platformFilter || 'web'); // 'web' | 'mobile'
-
-  // When platformFilter is set, always lock to that platform
-  const lockedTab = platformFilter || activeTab;
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-banners'],
@@ -44,43 +40,16 @@ const BannersManagement = ({ platformFilter } = {}) => {
     return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
   }
 
-  const allBanners = data?.data || [];
-  const banners = allBanners.filter(b =>
-    lockedTab === 'web'
-      ? (!b.platform || b.platform === 'web' || b.platform === 'both')
-      : (b.platform === 'mobile' || b.platform === 'both')
-  );
+  const banners = data?.data || [];
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Banner Management</h1>
-        <Button onClick={() => { setEditingBanner({ _defaultPlatform: lockedTab }); setShowModal(true); }}>
+        <Button onClick={() => { setEditingBanner(null); setShowModal(true); }}>
           <Plus className="w-4 h-4 mr-2" /> Add Banner
         </Button>
       </div>
-
-      {/* Tabs — hidden when locked to a specific platform */}
-      {!platformFilter && (
-        <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
-          <button
-            onClick={() => setActiveTab('web')}
-            className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${
-              activeTab === 'web' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            💻 Website Banners
-          </button>
-          <button
-            onClick={() => setActiveTab('mobile')}
-            className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${
-              activeTab === 'mobile' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            📱 Mobile App Banners
-          </button>
-        </div>
-      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
@@ -178,7 +147,7 @@ const LinkUrlInput = ({ value, onChange }) => {
 
   const { data: catData } = useQuery({
     queryKey: ['categories-for-banner-link'],
-    queryFn: async () => (await api.get('/catalog/categories?limit=100')).data,
+    queryFn: async () => (await api.get('/categories?limit=100')).data,
     staleTime: 10 * 60 * 1000,
   });
 
@@ -281,9 +250,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
     startDate: banner?.startDate ? banner.startDate.split('T')[0] : '',
     endDate: banner?.endDate ? banner.endDate.split('T')[0] : '',
     imagePosition: banner?.imagePosition || '50',
-    bannerHeight: banner?.bannerHeight || 420,
-    imageScale: banner?.imageScale || 100,
-    platform: banner?.platform || banner?._defaultPlatform || 'web',
+    platform: banner?.platform || 'website',
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(banner?.image || '');
@@ -297,8 +264,6 @@ const BannerModal = ({ banner, onClose, onSave }) => {
       fd.append('order', data.order);
       fd.append('isActive', data.isActive);
       fd.append('imagePosition', data.imagePosition);
-      fd.append('bannerHeight', data.bannerHeight);
-      fd.append('imageScale', data.imageScale);
       fd.append('platform', data.platform);
       if (data.startDate) fd.append('startDate', data.startDate);
       if (data.endDate) fd.append('endDate', data.endDate);
@@ -334,6 +299,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.title) return toast.error('Title is required');
     if (!imageFile && !banner?.image) return toast.error('Image is required');
     saveMutation.mutate(formData);
   };
@@ -352,42 +318,37 @@ const BannerModal = ({ banner, onClose, onSave }) => {
             <Eye className="w-3.5 h-3.5" /> Live Preview — Homepage Hero
           </p>
           <div
-            className="relative w-full overflow-hidden rounded-lg bg-white"
-            style={{ aspectRatio: '1060/370' }}
+            className="relative w-full overflow-hidden rounded-lg bg-gray-800"
+            style={{ height: '200px' }}
           >
             {imagePreview ? (
               <img
                 src={imagePreview}
                 alt="Banner preview"
-                className="absolute inset-0 w-full h-full object-cover object-center"
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ objectPosition: `center ${formData.imagePosition}%` }}
               />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-blue-400 flex items-center justify-center">
                 <p className="text-white/40 text-sm">Upload an image to see preview</p>
               </div>
             )}
-            {(formData.title || formData.subtitle) && (
-              <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
-            )}
-            {(formData.title || formData.subtitle || formData.link) && (
-              <div className="absolute inset-0 flex items-center px-8">
-                <div className="max-w-xs">
-                  {formData.title && (
-                    <h3 className="text-white font-bold text-lg leading-tight mb-1">
-                      {formData.title}
-                    </h3>
-                  )}
-                  {formData.subtitle && (
-                    <p className="text-white/80 text-xs mb-3 line-clamp-2">{formData.subtitle}</p>
-                  )}
-                  {formData.link && (
-                    <span className="inline-block bg-white text-gray-900 px-3 py-1.5 rounded-md text-xs font-semibold">
-                      Shop Now →
-                    </span>
-                  )}
-                </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
+            <div className="absolute inset-0 flex items-center px-8">
+              <div className="max-w-xs">
+                <h3 className="text-white font-bold text-lg leading-tight mb-1">
+                  {formData.title || 'Your Banner Title'}
+                </h3>
+                {formData.subtitle && (
+                  <p className="text-white/80 text-xs mb-3 line-clamp-2">{formData.subtitle}</p>
+                )}
+                {formData.link && (
+                  <span className="inline-block bg-white text-gray-900 px-3 py-1.5 rounded-md text-xs font-semibold">
+                    Shop Now →
+                  </span>
+                )}
               </div>
-            )}
+            </div>
           </div>
           <p className="text-xs text-gray-400 mt-1.5">Actual size: ~1400×500px. Recommended image ratio: 16:5</p>
         </div>
@@ -397,7 +358,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
             {/* Left column */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                 <input
                   type="text"
                   value={formData.title}
@@ -425,28 +386,29 @@ const BannerModal = ({ banner, onClose, onSave }) => {
             {/* Right column */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Show On</label>
-                <div className="flex gap-2">
-                  {[{ value: 'web', label: '💻 Website' }, { value: 'mobile', label: '📱 Mobile App' }].map(opt => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, platform: opt.value })}
-                      className={`flex-1 py-2 px-2 rounded-md text-xs font-medium border transition-all ${
-                        formData.platform === opt.value
-                          ? 'bg-primary-600 text-white border-primary-600'
-                          : 'bg-white text-gray-600 border-gray-300 hover:border-primary-400'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Banner Image *</label>
                 <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm" />
                 <p className="text-xs text-gray-400 mt-1">Recommended: 1400×500px, JPG/PNG, max 2MB</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Image Position — <span className="text-primary-600 font-semibold">
+                    {formData.imagePosition === '0' ? 'Top' : formData.imagePosition === '100' ? 'Bottom' : formData.imagePosition === '50' ? 'Center' : `${formData.imagePosition}%`}
+                  </span>
+                </label>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-gray-400">Top</span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={formData.imagePosition}
+                    onChange={(e) => setFormData({ ...formData, imagePosition: e.target.value })}
+                    className="flex-1 h-2 accent-primary-600 cursor-pointer"
+                  />
+                  <span className="text-xs text-gray-400">Bottom</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Drag to show which part of image is visible</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -469,6 +431,30 @@ const BannerModal = ({ banner, onClose, onSave }) => {
                     />
                     <span className="text-sm font-medium text-gray-700">Active (visible on site)</span>
                   </label>
+                </div>
+              </div>
+              {/* Show On */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Show On</label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'website', label: '🖥 Website' },
+                    { value: 'mobile', label: '📱 Mobile App' },
+                    { value: 'both', label: '🌐 Both' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, platform: opt.value })}
+                      className={`flex-1 py-2 px-3 text-sm rounded-lg border-2 font-medium transition-all ${
+                        formData.platform === opt.value
+                          ? 'border-primary-600 bg-primary-50 text-primary-700'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">

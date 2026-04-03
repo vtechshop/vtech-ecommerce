@@ -104,7 +104,7 @@ const Home = React.memo(() => {
   const { data: heroBanners } = useQuery({
     queryKey: ['hero-banners'],
     queryFn: async () => {
-      const { data } = await api.get('/banners?platform=web');
+      const { data } = await api.get('/banners?platform=website');
       return data.data;
     },
     staleTime: 10 * 60 * 1000,
@@ -125,7 +125,7 @@ const Home = React.memo(() => {
       {/* Hero Section — dynamic carousel if banners uploaded, else static fallback */}
       {heroBanners && heroBanners.length > 0 ? (
         <Suspense fallback={
-          <div className="bg-gradient-to-r from-primary-600 to-primary-200" style={{ aspectRatio: '1060/370', maxHeight: '370px' }} />
+          <div className="bg-gradient-to-r from-primary-600 to-primary-200" style={{ height: 'clamp(280px, 42vw, 540px)' }} />
         }>
           <HeroCarousel items={heroBanners} fallback={<StaticHero t={t} />} />
         </Suspense>

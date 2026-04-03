@@ -4,13 +4,8 @@ const mongoose = require('mongoose');
 const bannerSchema = new mongoose.Schema({
   title: {
     type: String,
-    default: '',
+    required: [true, 'Banner title is required'],
     trim: true,
-  },
-  platform: {
-    type: String,
-    enum: ['web', 'mobile', 'both'],
-    default: 'both',
   },
   subtitle: {
     type: String,
@@ -42,17 +37,10 @@ const bannerSchema = new mongoose.Schema({
     type: String,
     default: '50',  // vertical % — '0' = top, '50' = center, '100' = bottom
   },
-  bannerHeight: {
-    type: Number,
-    default: 420,
-    min: 250,
-    max: 650,
-  },
-  imageScale: {
-    type: Number,
-    default: 100,   // % — 50=zoomed out (full image), 100=fill container, 150=zoomed in
-    min: 50,
-    max: 150,
+  platform: {
+    type: String,
+    enum: ['website', 'mobile', 'both'],
+    default: 'website', // 'website' = web only, 'mobile' = mobile app only, 'both' = everywhere
   },
 }, { timestamps: true });
 
