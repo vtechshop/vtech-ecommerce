@@ -415,16 +415,17 @@ function ProductDetailScreen() {
           )}
           <Text style={styles.taxNote}>Inclusive of all taxes. FREE Delivery.</Text>
 
-          {/* GST Breakdown — Amazon India style */}
+          {/* GST Breakdown — Amazon India style (price in DB is excl. GST) */}
           {product.taxable !== false && (product.price ?? 0) > 0 && (() => {
             const GST_RATE = 0.18;
-            const priceExclGst = Math.round((product.price ?? 0) / (1 + GST_RATE));
-            const gstAmount = (product.price ?? 0) - priceExclGst;
+            const priceExcl = product.price ?? 0;
+            const gstAmount = Math.round(priceExcl * GST_RATE);
+            const totalInclGst = priceExcl + gstAmount;
             return (
               <View style={styles.gstBox}>
                 <View style={styles.gstRow}>
                   <Text style={styles.gstLabel}>Price (excl. 18% GST)</Text>
-                  <Text style={styles.gstValue}>₹{priceExclGst.toLocaleString()}</Text>
+                  <Text style={styles.gstValue}>₹{priceExcl.toLocaleString()}</Text>
                 </View>
                 <View style={styles.gstRow}>
                   <Text style={styles.gstLabel}>GST (18%)</Text>
@@ -432,7 +433,7 @@ function ProductDetailScreen() {
                 </View>
                 <View style={[styles.gstRow, styles.gstTotal]}>
                   <Text style={styles.gstTotalLabel}>Total (incl. GST)</Text>
-                  <Text style={styles.gstTotalValue}>₹{(product.price ?? 0).toLocaleString()}</Text>
+                  <Text style={styles.gstTotalValue}>₹{totalInclGst.toLocaleString()}</Text>
                 </View>
               </View>
             );
