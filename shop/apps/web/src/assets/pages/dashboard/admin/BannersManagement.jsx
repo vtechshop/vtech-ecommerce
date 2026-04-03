@@ -7,11 +7,14 @@ import Spinner from '@/components/common/Spinner';
 import toast from 'react-hot-toast';
 import { Eye, Trash2, Edit, Plus, X } from 'lucide-react';
 
-const BannersManagement = () => {
+const BannersManagement = ({ platformFilter } = {}) => {
   const queryClient = useQueryClient();
   const [editingBanner, setEditingBanner] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [activeTab, setActiveTab] = useState('web'); // 'web' | 'mobile'
+  const [activeTab, setActiveTab] = useState(platformFilter || 'web'); // 'web' | 'mobile'
+
+  // When platformFilter is set, always lock to that platform
+  const lockedTab = platformFilter || activeTab;
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-banners'],
@@ -43,7 +46,7 @@ const BannersManagement = () => {
 
   const allBanners = data?.data || [];
   const banners = allBanners.filter(b =>
-    activeTab === 'web'
+    lockedTab === 'web'
       ? (!b.platform || b.platform === 'web')
       : b.platform === 'mobile'
   );
@@ -52,30 +55,32 @@ const BannersManagement = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Banner Management</h1>
-        <Button onClick={() => { setEditingBanner({ _defaultPlatform: activeTab }); setShowModal(true); }}>
+        <Button onClick={() => { setEditingBanner({ _defaultPlatform: lockedTab }); setShowModal(true); }}>
           <Plus className="w-4 h-4 mr-2" /> Add Banner
         </Button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
-        <button
-          onClick={() => setActiveTab('web')}
-          className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'web' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          💻 Website Banners
-        </button>
-        <button
-          onClick={() => setActiveTab('mobile')}
-          className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'mobile' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          📱 Mobile App Banners
-        </button>
-      </div>
+      {/* Tabs — hidden when locked to a specific platform */}
+      {!platformFilter && (
+        <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setActiveTab('web')}
+            className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === 'web' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            💻 Website Banners
+          </button>
+          <button
+            onClick={() => setActiveTab('mobile')}
+            className={`px-5 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === 'mobile' ? 'bg-white shadow text-primary-600' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            📱 Mobile App Banners
+          </button>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">

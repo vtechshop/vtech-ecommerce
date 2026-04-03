@@ -394,7 +394,7 @@ function App() {
             <Route path="vendor-commissions" element={<VendorCommissions />} />
             <Route path="crm/customers" element={<CRMCustomers />} />
             <Route path="crm/tickets" element={<CRMTickets />} />
-            <Route path="banners" element={<BannersManagement />} />
+            <Route path="banners" element={<BannersManagement platformFilter="web" />} />
             <Route path="coupons" element={<CouponsManagement />} />
             <Route path="gamification" element={<GamificationManagement />} />
             <Route path="app-config" element={<AppConfigManagement />} />
