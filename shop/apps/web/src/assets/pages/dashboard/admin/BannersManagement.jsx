@@ -47,8 +47,8 @@ const BannersManagement = ({ platformFilter } = {}) => {
   const allBanners = data?.data || [];
   const banners = allBanners.filter(b =>
     lockedTab === 'web'
-      ? (!b.platform || b.platform === 'web')
-      : b.platform === 'mobile'
+      ? (!b.platform || b.platform === 'web' || b.platform === 'both')
+      : (b.platform === 'mobile' || b.platform === 'both')
   );
 
   return (
