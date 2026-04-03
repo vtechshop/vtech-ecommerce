@@ -414,6 +414,29 @@ function ProductDetailScreen() {
             <Text style={styles.price}>₹{(product.price ?? 0).toLocaleString()}</Text>
           )}
           <Text style={styles.taxNote}>Inclusive of all taxes. FREE Delivery.</Text>
+
+          {/* GST Breakdown — Amazon India style */}
+          {product.taxable !== false && (product.price ?? 0) > 0 && (() => {
+            const GST_RATE = 0.18;
+            const priceExclGst = Math.round((product.price ?? 0) / (1 + GST_RATE));
+            const gstAmount = (product.price ?? 0) - priceExclGst;
+            return (
+              <View style={styles.gstBox}>
+                <View style={styles.gstRow}>
+                  <Text style={styles.gstLabel}>Price (excl. 18% GST)</Text>
+                  <Text style={styles.gstValue}>₹{priceExclGst.toLocaleString()}</Text>
+                </View>
+                <View style={styles.gstRow}>
+                  <Text style={styles.gstLabel}>GST (18%)</Text>
+                  <Text style={styles.gstValue}>+ ₹{gstAmount.toLocaleString()}</Text>
+                </View>
+                <View style={[styles.gstRow, styles.gstTotal]}>
+                  <Text style={styles.gstTotalLabel}>Total (incl. GST)</Text>
+                  <Text style={styles.gstTotalValue}>₹{(product.price ?? 0).toLocaleString()}</Text>
+                </View>
+              </View>
+            );
+          })()}
         </View>
 
         {/* ── CARD 3: Delivery + Stock ── */}
@@ -783,6 +806,13 @@ const styles = StyleSheet.create({
   discountText: { color: colors.white, fontSize: 12, fontWeight: '700' },
   saveText: { fontSize: 13, color: '#067D62', fontWeight: '600', marginTop: 2 },
   taxNote: { fontSize: 11, color: colors.textSecondary, marginTop: 4 },
+  gstBox: { marginTop: 10, borderTopWidth: 1, borderTopColor: '#f0f0f0', paddingTop: 8, gap: 4 },
+  gstRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  gstLabel: { fontSize: 12, color: colors.textSecondary },
+  gstValue: { fontSize: 12, color: colors.textSecondary },
+  gstTotal: { borderTopWidth: 1, borderTopColor: '#e0e0e0', marginTop: 4, paddingTop: 4 },
+  gstTotalLabel: { fontSize: 12, fontWeight: '600', color: colors.text },
+  gstTotalValue: { fontSize: 12, fontWeight: '700', color: '#B12704' },
   // Delivery
   inStockText: { fontSize: 16, color: '#067D62', fontWeight: '700' },
   lowStockNote: { fontSize: 12, color: '#e53935', fontWeight: '600' },
