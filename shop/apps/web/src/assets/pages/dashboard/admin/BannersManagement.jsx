@@ -147,7 +147,7 @@ const LinkUrlInput = ({ value, onChange }) => {
 
   const { data: catData } = useQuery({
     queryKey: ['categories-for-banner-link'],
-    queryFn: async () => (await api.get('/categories?limit=100')).data,
+    queryFn: async () => (await api.get('/catalog/categories?limit=100')).data,
     staleTime: 10 * 60 * 1000,
   });
 
@@ -299,7 +299,6 @@ const BannerModal = ({ banner, onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title) return toast.error('Title is required');
     if (!imageFile && !banner?.image) return toast.error('Image is required');
     saveMutation.mutate(formData);
   };
