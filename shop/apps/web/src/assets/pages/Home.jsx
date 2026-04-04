@@ -106,7 +106,11 @@ const Home = React.memo(() => {
     queryFn: async () => {
       const { data } = await api.get('/banners?platform=website');
       const result = data.data;
-      try { localStorage.setItem('vt-hero-banners', JSON.stringify(result)); } catch {}
+      if (result && result.length > 0) {
+        try { localStorage.setItem('vt-hero-banners', JSON.stringify(result)); } catch {}
+      } else {
+        try { localStorage.removeItem('vt-hero-banners'); } catch {}
+      }
       return result;
     },
     initialData: () => {
@@ -115,7 +119,7 @@ const Home = React.memo(() => {
         return cached ? JSON.parse(cached) : undefined;
       } catch { return undefined; }
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 0,
   });
 
   // Carousel items from CMS (used for ThreeDCarousel below)
