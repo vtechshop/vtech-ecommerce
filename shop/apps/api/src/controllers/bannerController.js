@@ -152,7 +152,7 @@ exports.updateBanner = asyncHandler(async (req, res) => {
   if (startDate !== undefined) banner.startDate = startDate || null;
   if (endDate !== undefined) banner.endDate = endDate || null;
   if (imagePosition !== undefined) banner.imagePosition = imagePosition;
-  if (platform !== undefined) banner.platform = platform;
+  if (platform !== undefined) banner.platform = platform === 'web' ? 'website' : platform;
 
   await banner.save();
   res.json({ success: true, data: banner });

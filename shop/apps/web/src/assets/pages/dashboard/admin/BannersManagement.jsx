@@ -57,7 +57,7 @@ const BannersManagement = ({ platformFilter }) => {
   const banners = platformFilter
     ? allBanners.filter(b => {
         if (b.platform === 'both') return true;
-        if (!b.platform) return platformFilter === 'website'; // legacy = website only
+        if (!b.platform || b.platform === 'web') return platformFilter === 'website'; // legacy = website only
         return b.platform === platformFilter;
       })
     : allBanners;
