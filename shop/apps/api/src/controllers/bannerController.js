@@ -25,25 +25,28 @@ exports.getActiveBanners = asyncHandler(async (req, res) => {
     ],
   };
 
-  // Filter by platform if specified
-  // Also match legacy banners that have no platform field (treat as 'website')
-  if (platform) {
-    const isWeb = platform === 'web' || platform === 'website';
-    if (isWeb) {
-      // Old banners with no platform field default to web only
-      query.$and = [{
-        $or: [
-          { platform: 'web' },
-          { platform: 'website' },
-          { platform: 'both' },
-          { platform: { $exists: false } },
-          { platform: null },
-        ],
-      }];
-    } else {
-      // Mobile — never show old no-platform banners
-      query.$and = [{ $or: [{ platform }, { platform: 'both' }] }];
-    }
+  // Platform filter — always required to avoid cross-contamination
+  // Old mobile app (no param) gets ONLY 'both' banners as safe fallback
+  const isWeb = platform === 'web' || platform === 'website';
+  const isMobile = platform === 'mobile';
+
+  if (isWeb) {
+    // Website: show website + both + legacy (no platform field)
+    query.$and = [{
+      $or: [
+        { platform: 'web' },
+        { platform: 'website' },
+        { platform: 'both' },
+        { platform: { $exists: false } },
+        { platform: null },
+      ],
+    }];
+  } else if (isMobile) {
+    // Mobile app (new): show mobile + both only
+    query.$and = [{ $or: [{ platform: 'mobile' }, { platform: 'both' }] }];
+  } else {
+    // No platform param (old mobile app) — safe fallback: only 'both' banners
+    query.$and = [{ $or: [{ platform: 'both' }] }];
   }
 
   const banners = await Banner.find(query).sort({ order: 1 }).lean();
