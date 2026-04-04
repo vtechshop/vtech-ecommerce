@@ -2,40 +2,19 @@
 const Banner = require('../models/Banner');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../middleware/asyncHandler');
-const uploadService = require('../services/uploadService');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const { v2: cloudinary } = require('cloudinary');
 const env = require('../config/env');
 
-async function uploadBannerImage(file) {
-  // Use Cloudinary directly with NO quality transformation — preserve original quality
-  if (env.UPLOAD_DRIVER === 'cloudinary' && env.CLOUDINARY_CLOUD_NAME) {
-    const { v2: cloudinary } = require('cloudinary');
-    cloudinary.config({
-      cloud_name: env.CLOUDINARY_CLOUD_NAME,
-      api_key: env.CLOUDINARY_API_KEY,
-      api_secret: env.CLOUDINARY_API_SECRET,
-    });
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'vtech/banners', resource_type: 'image', quality: 100 },
-        (error, result) => error ? reject(error) : resolve(result)
-      );
-      stream.end(file.buffer);
-    });
-    return result.secure_url;
-  }
-  // Local fallback
-  const adapter = uploadService.getAdapter();
-  const filename = `banners/${uuidv4()}${path.extname(file.originalname)}`;
-  const storedPath = await adapter.upload(file, filename);
-  return adapter.getUrl(storedPath);
-}
+cloudinary.config({
+  cloud_name: env.CLOUDINARY_CLOUD_NAME,
+  api_key: env.CLOUDINARY_API_KEY,
+  api_secret: env.CLOUDINARY_API_SECRET,
+});
 
 // GET /api/banners - Public: Get all active banners
 exports.getActiveBanners = asyncHandler(async (req, res) => {
   const now = new Date();
-  const { platform } = req.query; // 'web' | 'mobile' — if omitted, returns all
+  const { platform } = req.query; // 'website' | 'mobile' | undefined (returns all)
 
   const query = {
     isActive: true,
@@ -46,22 +25,28 @@ exports.getActiveBanners = asyncHandler(async (req, res) => {
     ],
   };
 
+  // Filter by platform if specified
+  // Also match legacy banners that have no platform field (treat as 'website')
   if (platform) {
-    const platformOr = [
-      { platform: platform },
-      { platform: 'both' },
-    ];
-    // Old banners with no platform field default to web only (not mobile)
-    if (platform === 'web') {
-      platformOr.push({ platform: { $exists: false } });
-      platformOr.push({ platform: null });
+    const isWeb = platform === 'web' || platform === 'website';
+    if (isWeb) {
+      // Old banners with no platform field default to web only
+      query.$and = [{
+        $or: [
+          { platform: 'web' },
+          { platform: 'website' },
+          { platform: 'both' },
+          { platform: { $exists: false } },
+          { platform: null },
+        ],
+      }];
+    } else {
+      // Mobile — never show old no-platform banners
+      query.$and = [{ $or: [{ platform }, { platform: 'both' }] }];
     }
-    query.$and = [{ $or: platformOr }];
   }
 
-  const banners = await Banner.find(query)
-    .sort({ order: 1 })
-    .lean();
+  const banners = await Banner.find(query).sort({ order: 1 }).lean();
 
   // Filter out banners whose endDate has passed
   const filtered = banners.filter(b => {
@@ -80,18 +65,30 @@ exports.getAllBanners = asyncHandler(async (req, res) => {
 
 // POST /api/banners - Admin: Create banner
 exports.createBanner = asyncHandler(async (req, res) => {
-  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, bannerHeight, imageScale, platform } = req.body;
+  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition } = req.body;
 
   let imageUrl = req.body.image;
 
+  // Handle file upload
   if (req.file) {
-    imageUrl = await uploadBannerImage(req.file);
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'vtech/banners', resource_type: 'image' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+    imageUrl = result.secure_url;
   }
 
   if (!imageUrl) {
     throw AppError.badRequest('Banner image is required');
   }
 
+  const { platform } = req.body;
   const banner = await Banner.create({
     title,
     subtitle,
@@ -102,8 +99,6 @@ exports.createBanner = asyncHandler(async (req, res) => {
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     imagePosition: imagePosition || '50',
-    bannerHeight: bannerHeight ? Math.min(650, Math.max(250, parseInt(bannerHeight))) : 420,
-    imageScale: imageScale ? Math.min(150, Math.max(50, parseInt(imageScale))) : 100,
     platform: ['web', 'mobile', 'both'].includes(platform) ? platform : 'web',
   });
 
@@ -117,10 +112,21 @@ exports.updateBanner = asyncHandler(async (req, res) => {
     throw AppError.notFound('Banner');
   }
 
-  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, bannerHeight, imageScale, platform } = req.body;
+  const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, platform } = req.body;
 
+  // Handle new image upload
   if (req.file) {
-    banner.image = await uploadBannerImage(req.file);
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'vtech/banners', resource_type: 'image' },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+    banner.image = result.secure_url;
   } else if (req.body.image) {
     banner.image = req.body.image;
   }
@@ -133,9 +139,7 @@ exports.updateBanner = asyncHandler(async (req, res) => {
   if (startDate !== undefined) banner.startDate = startDate || null;
   if (endDate !== undefined) banner.endDate = endDate || null;
   if (imagePosition !== undefined) banner.imagePosition = imagePosition;
-  if (bannerHeight !== undefined) banner.bannerHeight = Math.min(650, Math.max(250, parseInt(bannerHeight) || 420));
-  if (imageScale !== undefined) banner.imageScale = Math.min(150, Math.max(50, parseInt(imageScale) || 100));
-  if (platform !== undefined && ['web', 'mobile', 'both'].includes(platform)) banner.platform = platform;
+  if (platform !== undefined) banner.platform = platform;
 
   await banner.save();
   res.json({ success: true, data: banner });
@@ -146,6 +150,21 @@ exports.deleteBanner = asyncHandler(async (req, res) => {
   const banner = await Banner.findById(req.params.id);
   if (!banner) {
     throw AppError.notFound('Banner');
+  }
+
+  // Try to delete image from Cloudinary
+  if (banner.image && banner.image.includes('cloudinary')) {
+    try {
+      const urlParts = banner.image.split('/');
+      const uploadIdx = urlParts.indexOf('upload');
+      if (uploadIdx !== -1) {
+        const publicIdParts = urlParts.slice(uploadIdx + 2); // skip version
+        const publicId = publicIdParts.join('/').replace(/\.[^.]+$/, '');
+        await cloudinary.uploader.destroy(publicId);
+      }
+    } catch (err) {
+      // Non-critical - continue with deletion
+    }
   }
 
   await Banner.findByIdAndDelete(req.params.id);

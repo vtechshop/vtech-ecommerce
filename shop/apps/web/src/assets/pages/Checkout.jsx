@@ -29,9 +29,11 @@ const Checkout = () => {
   const { user } = useSelector((state) => state.auth);
 
 
-  const [step, setStep] = useState(1); // 1: Address, 2: Payment
- 
+  const [step, setStep] = useState(1); // 1: Address, 2: Shipping, 3: Payment
+
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const [shippingQuotes, setShippingQuotes] = useState([]);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [newAddress, setNewAddress] = useState({
     fullName: '',
     phone: '',
@@ -79,7 +81,29 @@ const Checkout = () => {
     enabled: !!user,
   });
 
-  // Shipping quotes removed - will be added in future
+  const fetchShippingQuotes = async (address) => {
+    setLoadingQuotes(true);
+    try {
+      const response = await api.post('/checkout/shipping-quotes', {
+        address,
+        items: items.map(item => ({
+          productId: typeof item.productId === 'object' ? item.productId._id : item.productId,
+          qty: item.qty || item.quantity,
+        })),
+      });
+      const quotes = response.data.data.quotes || [];
+      setShippingQuotes(quotes);
+      // Auto-select cheapest option
+      if (quotes.length > 0) {
+        setShippingMethod({ id: quotes[0].id, name: quotes[0].name, cost: quotes[0].cost });
+      }
+    } catch (err) {
+      toast.error('Could not fetch shipping rates. Please try again.');
+      setShippingQuotes([]);
+    } finally {
+      setLoadingQuotes(false);
+    }
+  };
 
   // Create order mutation
   // NOTE: onSuccess/onError are handled inline in handlePaymentSubmit for Razorpay flow
@@ -158,12 +182,14 @@ const Checkout = () => {
     }
 
     setSelectedAddress(newAddress);
-    setStep(2); // Go directly to payment
+    await fetchShippingQuotes(newAddress);
+    setStep(2); // Go to shipping selection
   };
 
-  const handleSelectExistingAddress = (address) => {
+  const handleSelectExistingAddress = async (address) => {
     setSelectedAddress(address);
-    setStep(2); // Go directly to payment
+    await fetchShippingQuotes(address);
+    setStep(2); // Go to shipping selection
   };
 
   const handlePaymentSubmit = async (e) => {
@@ -345,7 +371,8 @@ const Checkout = () => {
                 <div className="flex items-center justify-between">
                   {[
                     { num: 1, label: 'Address' },
-                    { num: 2, label: 'Payment' },
+                    { num: 2, label: 'Shipping' },
+                    { num: 3, label: 'Payment' },
                   ].map((s, index) => (
                   <div key={s.num} className="flex items-center flex-1">
                     <div className={`flex items-center ${index > 0 ? 'flex-1' : ''}`}>
@@ -464,16 +491,96 @@ const Checkout = () => {
                     </div>
                   )}
 
-                  <ShinyButton type="submit" variant="primary" size="md" className="mt-6 w-full">
-                    Continue to Payment
+                  <ShinyButton type="submit" variant="primary" size="md" className="mt-6 w-full" disabled={loadingQuotes}>
+                    {loadingQuotes ? 'Fetching shipping rates...' : 'Continue to Shipping'}
                   </ShinyButton>
                 </form>
               </div>
             </AnimatedDiv>
           )}
 
-          {/* Step 2: Payment */}
+          {/* Step 2: Shipping Selection */}
           {step === 2 && (
+            <AnimatedDiv animation="fadeInUp" duration={0.4}>
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+                <h2 className="text-xl md:text-2xl font-bold mb-1">Shipping Method</h2>
+                <p className="text-sm text-gray-500 mb-5">
+                  Delivering to: <span className="font-medium text-gray-700">{selectedAddress?.city}, {selectedAddress?.state} — {selectedAddress?.zipCode}</span>
+                </p>
+
+                {loadingQuotes ? (
+                  <div className="flex flex-col items-center py-10 gap-3">
+                    <Spinner size="md" />
+                    <p className="text-sm text-gray-500">Fetching shipping rates from Delhivery...</p>
+                  </div>
+                ) : shippingQuotes.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No shipping options available. Please go back and verify your pincode.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 mb-6">
+                    {shippingQuotes.map((quote) => (
+                      <button
+                        key={quote.id}
+                        type="button"
+                        onClick={() => setShippingMethod({ id: quote.id, name: quote.name, cost: quote.cost })}
+                        className={`w-full text-left p-4 border-2 rounded-lg transition-all ${
+                          shippingMethod.id === quote.id
+                            ? 'border-primary-600 bg-primary-50'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                              shippingMethod.id === quote.id ? 'border-primary-600' : 'border-gray-400'
+                            }`}>
+                              {shippingMethod.id === quote.id && (
+                                <div className="w-2 h-2 rounded-full bg-primary-600" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-gray-900">
+                                {quote.name}
+                                {quote.carrier && (
+                                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                                    {quote.carrier}
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-sm text-gray-500">{quote.description}</p>
+                            </div>
+                          </div>
+                          <span className="text-lg font-bold text-gray-900">
+                            {quote.cost === 0 ? 'FREE' : `₹${quote.cost.toLocaleString('en-IN')}`}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <Button type="button" onClick={() => setStep(1)} variant="outline">
+                    Back
+                  </Button>
+                  <ShinyButton
+                    type="button"
+                    variant="primary"
+                    size="md"
+                    className="flex-1"
+                    disabled={!shippingMethod.id || shippingQuotes.length === 0}
+                    onClick={() => setStep(3)}
+                  >
+                    Continue to Payment
+                  </ShinyButton>
+                </div>
+              </div>
+            </AnimatedDiv>
+          )}
+
+          {/* Step 3: Payment */}
+          {step === 3 && (
             <AnimatedDiv animation="fadeInUp" duration={0.4}>
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-xl md:text-2xl font-bold mb-4">Payment Method</h2>
@@ -503,7 +610,7 @@ const Checkout = () => {
                   </div>
 
                   <div className="flex gap-3">
-                    <Button type="button" onClick={() => setStep(1)} variant="outline" className="btn-scale">
+                    <Button type="button" onClick={() => setStep(2)} variant="outline" className="btn-scale">
                       Back
                     </Button>
                     <ShinyButton
@@ -566,14 +673,8 @@ const Checkout = () => {
               </div>
               {totals.tax > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-700">Tax:</span>
+                  <span className="text-gray-700">Tax (GST):</span>
                   <span>{formatCurrency(totals.tax)}</span>
-                </div>
-              )}
-              {totals.shipping > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-700">Shipping:</span>
-                  <span>{formatCurrency(totals.shipping)}</span>
                 </div>
               )}
               {totals.discount > 0 && (
@@ -582,10 +683,20 @@ const Checkout = () => {
                   <span>-{formatCurrency(totals.discount)}</span>
                 </div>
               )}
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-700">Shipping:</span>
+                {step < 2 ? (
+                  <span className="text-gray-400 italic">Calculated next</span>
+                ) : shippingMethod.cost === 0 ? (
+                  <span className="text-green-600 font-medium">FREE</span>
+                ) : (
+                  <span>{formatCurrency(shippingMethod.cost)}</span>
+                )}
+              </div>
               <div className="border-t pt-2 flex justify-between font-bold text-lg">
                 <span>Total:</span>
                 <span className="price-highlight">
-                  {formatCurrency(totals.total)}
+                  {formatCurrency(totals.total + (step >= 2 ? (shippingMethod.cost || 0) : 0))}
                 </span>
               </div>
             </div>

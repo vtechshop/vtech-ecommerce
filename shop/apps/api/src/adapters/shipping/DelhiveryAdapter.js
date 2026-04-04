@@ -190,13 +190,13 @@ class DelhiveryAdapter extends ShippingAdapter {
   /**
    * Calculate shipping rate
    */
-  async calculateRate(originPin, destinationPin, weight, paymentMode = 'Prepaid') {
+  async calculateRate(originPin, destinationPin, weight, paymentMode = 'Prepaid', mode = 'S') {
     try {
       const response = await axios.get(
         `${this.apiUrl}/kinko/v1/invoice/charges/.json`,
         {
           params: {
-            md: 'S', // S = Surface, E = Express
+            md: mode, // S = Surface, E = Express
             ss: 'Delivered',
             d_pin: destinationPin,
             o_pin: originPin,
