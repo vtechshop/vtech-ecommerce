@@ -101,7 +101,7 @@ const Home = React.memo(() => {
   });
 
   // Hero banners (admin-uploadable via Banners Management)
-  const { data: heroBanners } = useQuery({
+  const { data: heroBanners, isLoading: bannersLoading } = useQuery({
     queryKey: ['hero-banners'],
     queryFn: async () => {
       const { data } = await api.get('/banners?platform=website');
@@ -123,7 +123,9 @@ const Home = React.memo(() => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section — dynamic carousel if banners uploaded, else static fallback */}
-      {heroBanners && heroBanners.length > 0 ? (
+      {bannersLoading ? (
+        <div className="bg-gradient-to-r from-primary-600 to-primary-200 animate-pulse" style={{ height: 'clamp(280px, 42vw, 540px)' }} />
+      ) : heroBanners && heroBanners.length > 0 ? (
         <Suspense fallback={
           <div className="bg-gradient-to-r from-primary-600 to-primary-200" style={{ height: 'clamp(280px, 42vw, 540px)' }} />
         }>
