@@ -47,15 +47,16 @@ exports.getActiveBanners = asyncHandler(async (req, res) => {
   };
 
   if (platform) {
-    // Also include old banners that have no platform field set (backwards compat)
-    query.$and = [{
-      $or: [
-        { platform: platform },
-        { platform: 'both' },
-        { platform: { $exists: false } },
-        { platform: null },
-      ],
-    }];
+    const platformOr = [
+      { platform: platform },
+      { platform: 'both' },
+    ];
+    // Old banners with no platform field default to web only (not mobile)
+    if (platform === 'web') {
+      platformOr.push({ platform: { $exists: false } });
+      platformOr.push({ platform: null });
+    }
+    query.$and = [{ $or: platformOr }];
   }
 
   const banners = await Banner.find(query)
