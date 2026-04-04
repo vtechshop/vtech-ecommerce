@@ -7,7 +7,7 @@ import Spinner from '@/components/common/Spinner';
 import toast from 'react-hot-toast';
 import { Eye, Trash2, Edit, Plus, X } from 'lucide-react';
 
-const BannersManagement = () => {
+const BannersManagement = ({ platformFilter }) => {
   const queryClient = useQueryClient();
   const [editingBanner, setEditingBanner] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -40,7 +40,15 @@ const BannersManagement = () => {
     return <div className="flex justify-center py-12"><Spinner size="lg" /></div>;
   }
 
-  const banners = data?.data || [];
+  const allBanners = data?.data || [];
+
+  // Filter list by platformFilter: 'website' shows website+both+legacy, 'mobile' shows mobile+both
+  const banners = platformFilter
+    ? allBanners.filter(b => {
+        if (!b.platform || b.platform === 'both') return true;
+        return b.platform === platformFilter;
+      })
+    : allBanners;
 
   return (
     <div>
@@ -127,6 +135,7 @@ const BannersManagement = () => {
       {showModal && (
         <BannerModal
           banner={editingBanner}
+          defaultPlatform={platformFilter || 'website'}
           onClose={() => { setShowModal(false); setEditingBanner(null); }}
           onSave={() => {
             queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
@@ -240,7 +249,7 @@ const LinkUrlInput = ({ value, onChange }) => {
   );
 };
 
-const BannerModal = ({ banner, onClose, onSave }) => {
+const BannerModal = ({ banner, onClose, onSave, defaultPlatform = 'website' }) => {
   const [formData, setFormData] = useState({
     title: banner?.title || '',
     subtitle: banner?.subtitle || '',
@@ -250,7 +259,7 @@ const BannerModal = ({ banner, onClose, onSave }) => {
     startDate: banner?.startDate ? banner.startDate.split('T')[0] : '',
     endDate: banner?.endDate ? banner.endDate.split('T')[0] : '',
     imagePosition: banner?.imagePosition || '50',
-    platform: banner?.platform || 'website',
+    platform: banner?.platform || defaultPlatform,
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(banner?.image || '');
