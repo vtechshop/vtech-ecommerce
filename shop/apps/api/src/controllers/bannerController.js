@@ -19,8 +19,20 @@ exports.getActiveBanners = asyncHandler(async (req, res) => {
   };
 
   // Filter by platform if specified
+  // Also match legacy banners that have no platform field (treat as 'website')
   if (platform) {
-    query.$and = [{ $or: [{ platform }, { platform: 'both' }] }];
+    if (platform === 'website') {
+      query.$and = [{
+        $or: [
+          { platform: 'website' },
+          { platform: 'both' },
+          { platform: { $exists: false } },
+          { platform: null },
+        ],
+      }];
+    } else {
+      query.$and = [{ $or: [{ platform }, { platform: 'both' }] }];
+    }
   }
 
   const banners = await Banner.find(query).sort({ order: 1 }).lean();
