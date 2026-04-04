@@ -105,7 +105,15 @@ const Home = React.memo(() => {
     queryKey: ['hero-banners'],
     queryFn: async () => {
       const { data } = await api.get('/banners?platform=website');
-      return data.data;
+      const result = data.data;
+      try { localStorage.setItem('vt-hero-banners', JSON.stringify(result)); } catch {}
+      return result;
+    },
+    initialData: () => {
+      try {
+        const cached = localStorage.getItem('vt-hero-banners');
+        return cached ? JSON.parse(cached) : undefined;
+      } catch { return undefined; }
     },
     staleTime: 10 * 60 * 1000,
   });
