@@ -3,6 +3,13 @@ const Banner = require('../models/Banner');
 const AppError = require('../utils/AppError');
 const asyncHandler = require('../middleware/asyncHandler');
 const { v2: cloudinary } = require('cloudinary');
+const env = require('../config/env');
+
+cloudinary.config({
+  cloud_name: env.CLOUDINARY_CLOUD_NAME,
+  api_key: env.CLOUDINARY_API_KEY,
+  api_secret: env.CLOUDINARY_API_SECRET,
+});
 
 // GET /api/banners - Public: Get all active banners
 exports.getActiveBanners = asyncHandler(async (req, res) => {
