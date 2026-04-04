@@ -20,6 +20,15 @@ const BannersManagement = ({ platformFilter }) => {
     },
   });
 
+  const fixPlatformMutation = useMutation({
+    mutationFn: () => api.post('/banners/fix-platform'),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+      toast.success(`Fixed ${res.data.fixed} banners → set to Website`);
+    },
+    onError: () => toast.error('Fix failed'),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id) => api.delete(`/banners/${id}`),
     onSuccess: () => {
@@ -57,9 +66,24 @@ const BannersManagement = ({ platformFilter }) => {
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Banner Management</h1>
-        <Button onClick={() => { setEditingBanner(null); setShowModal(true); }}>
-          <Plus className="w-4 h-4 mr-2" /> Add Banner
-        </Button>
+        <div className="flex gap-2">
+          {platformFilter === 'website' && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (confirm('This will set ALL banners with missing/wrong platform to "Website". Continue?')) {
+                  fixPlatformMutation.mutate();
+                }
+              }}
+              disabled={fixPlatformMutation.isPending}
+            >
+              {fixPlatformMutation.isPending ? 'Fixing...' : 'Fix Old Banners'}
+            </Button>
+          )}
+          <Button onClick={() => { setEditingBanner(null); setShowModal(true); }}>
+            <Plus className="w-4 h-4 mr-2" /> Add Banner
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -69,6 +93,7 @@ const BannersManagement = ({ platformFilter }) => {
               <tr>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Image</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Title</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Platform</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Order</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Schedule</th>
@@ -77,7 +102,7 @@ const BannersManagement = ({ platformFilter }) => {
             </thead>
             <tbody>
               {banners.length === 0 && (
-                <tr><td colSpan={6} className="py-8 text-center text-gray-500">No banners yet</td></tr>
+                <tr><td colSpan={7} className="py-8 text-center text-gray-500">No banners yet</td></tr>
               )}
               {banners.map((banner) => (
                 <tr key={banner._id} className="border-b last:border-b-0 hover:bg-blue-50">
@@ -91,6 +116,15 @@ const BannersManagement = ({ platformFilter }) => {
                   <td className="py-3 px-4">
                     <div className="font-medium">{banner.title}</div>
                     {banner.subtitle && <div className="text-sm text-gray-500">{banner.subtitle}</div>}
+                  </td>
+                  <td className="py-3 px-4">
+                    {(() => {
+                      const p = banner.platform;
+                      if (!p || p === 'website') return <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">Website</span>;
+                      if (p === 'mobile') return <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700">Mobile</span>;
+                      if (p === 'both') return <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">Both</span>;
+                      return <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-orange-100 text-orange-700">{p}</span>;
+                    })()}
                   </td>
                   <td className="py-3 px-4">{banner.order}</td>
                   <td className="py-3 px-4">

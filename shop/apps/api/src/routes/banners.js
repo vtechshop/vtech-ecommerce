@@ -12,6 +12,7 @@ router.get('/', bannerController.getActiveBanners);
 
 // Admin only
 router.get('/all', authenticate, authorize(['admin']), bannerController.getAllBanners);
+router.post('/fix-platform', authenticate, authorize(['admin']), bannerController.fixBannerPlatforms);
 router.post('/', authenticate, authorize(['admin']), upload.single('image'), bannerController.createBanner);
 router.put('/:id', authenticate, authorize(['admin']), upload.single('image'), bannerController.updateBanner);
 router.delete('/:id', authenticate, authorize(['admin']), bannerController.deleteBanner);
