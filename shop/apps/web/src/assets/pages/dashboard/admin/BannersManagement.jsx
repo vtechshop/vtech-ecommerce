@@ -42,10 +42,13 @@ const BannersManagement = ({ platformFilter }) => {
 
   const allBanners = data?.data || [];
 
-  // Filter list by platformFilter: 'website' shows website+both+legacy, 'mobile' shows mobile+both
+  // Filter list by platformFilter
+  // 'website' → show website + both + legacy (no platform field)
+  // 'mobile'  → show mobile + both only (NOT legacy)
   const banners = platformFilter
     ? allBanners.filter(b => {
-        if (!b.platform || b.platform === 'both') return true;
+        if (b.platform === 'both') return true;
+        if (!b.platform) return platformFilter === 'website'; // legacy = website only
         return b.platform === platformFilter;
       })
     : allBanners;
