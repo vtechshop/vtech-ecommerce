@@ -45,8 +45,8 @@ exports.getActiveBanners = asyncHandler(async (req, res) => {
     // Mobile app (new): show mobile + both only
     query.$and = [{ $or: [{ platform: 'mobile' }, { platform: 'both' }] }];
   } else {
-    // No platform param (old mobile app) — safe fallback: only 'both' banners
-    query.$and = [{ $or: [{ platform: 'both' }] }];
+    // No platform param = old mobile APK — return mobile + both banners
+    query.$and = [{ $or: [{ platform: 'mobile' }, { platform: 'both' }] }];
   }
 
   const banners = await Banner.find(query).sort({ order: 1 }).lean();

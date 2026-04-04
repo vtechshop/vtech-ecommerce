@@ -296,7 +296,7 @@ const BannerModal = ({ banner, onClose, onSave, defaultPlatform = 'website' }) =
     startDate: banner?.startDate ? banner.startDate.split('T')[0] : '',
     endDate: banner?.endDate ? banner.endDate.split('T')[0] : '',
     imagePosition: banner?.imagePosition || '50',
-    platform: banner?.platform || defaultPlatform,
+    platform: defaultPlatform,
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(banner?.image || '');
@@ -478,28 +478,13 @@ const BannerModal = ({ banner, onClose, onSave, defaultPlatform = 'website' }) =
                   </label>
                 </div>
               </div>
-              {/* Show On */}
+              {/* Platform indicator — auto-set by section, no manual choice */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Show On</label>
-                <div className="flex gap-2">
-                  {[
-                    { value: 'website', label: '🖥 Website' },
-                    { value: 'mobile', label: '📱 Mobile App' },
-                    { value: 'both', label: '🌐 Both' },
-                  ].map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, platform: opt.value })}
-                      className={`flex-1 py-2 px-3 text-sm rounded-lg border-2 font-medium transition-all ${
-                        formData.platform === opt.value
-                          ? 'border-primary-600 bg-primary-50 text-primary-700'
-                          : 'border-gray-200 text-gray-600 hover:border-gray-400'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Show On</label>
+                <div className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
+                  defaultPlatform === 'website' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-green-50 text-green-700 border border-green-200'
+                }`}>
+                  {defaultPlatform === 'website' ? '🖥 Website only' : '📱 Mobile App only'}
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
