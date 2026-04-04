@@ -99,7 +99,7 @@ exports.createBanner = asyncHandler(async (req, res) => {
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     imagePosition: imagePosition || '50',
-    platform: ['web', 'mobile', 'both'].includes(platform) ? platform : 'web',
+    platform: ['website', 'mobile', 'both'].includes(platform) ? platform : 'website',
   });
 
   res.status(201).json({ success: true, data: banner });
