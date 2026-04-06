@@ -100,22 +100,14 @@ const Home = React.memo(() => {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Hero banners — show cached instantly, fetch fresh in background
-  const { data: heroBanners } = useQuery({
+  // Hero banners (admin-uploadable via Banners Management)
+  const { data: heroBanners, isLoading: bannersLoading } = useQuery({
     queryKey: ['hero-banners'],
     queryFn: async () => {
       const { data } = await api.get('/banners?platform=website');
-      const result = data.data || [];
-      try { localStorage.setItem('vt-hero-banners', JSON.stringify(result)); } catch {}
-      return result;
+      return data.data || [];
     },
-    initialData: () => {
-      try {
-        const cached = localStorage.getItem('vt-hero-banners');
-        return cached ? JSON.parse(cached) : undefined;
-      } catch { return undefined; }
-    },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
   // Carousel items from CMS (used for ThreeDCarousel below)
