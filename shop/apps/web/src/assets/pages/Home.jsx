@@ -123,12 +123,8 @@ const Home = React.memo(() => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section — dynamic carousel if banners uploaded, else static fallback */}
-      {bannersLoading ? (
-        <div className="bg-gradient-to-r from-primary-600 to-primary-200 animate-pulse" style={{ height: 'clamp(280px, 42vw, 540px)' }} />
-      ) : heroBanners && heroBanners.length > 0 ? (
-        <Suspense fallback={
-          <div className="bg-gradient-to-r from-primary-600 to-primary-200" style={{ height: 'clamp(280px, 42vw, 540px)' }} />
-        }>
+      {heroBanners && heroBanners.length > 0 ? (
+        <Suspense fallback={<StaticHero t={t} />}>
           <HeroCarousel items={heroBanners} fallback={<StaticHero t={t} />} />
         </Suspense>
       ) : (
