@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { normalizeImageUrl } from '@/utils/placeholders';
 
 const HeroCarousel = ({ items = [], fallback = null }) => {
   const [current, setCurrent] = useState(0);

@@ -296,7 +296,7 @@ const BannerModal = ({ banner, onClose, onSave, defaultPlatform = 'website' }) =
     startDate: banner?.startDate ? banner.startDate.split('T')[0] : '',
     endDate: banner?.endDate ? banner.endDate.split('T')[0] : '',
     imagePosition: banner?.imagePosition || '50',
-    platform: defaultPlatform,
+    platform: banner?.platform || defaultPlatform,
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(banner?.image || '');

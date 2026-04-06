@@ -70,7 +70,7 @@ exports.getAllBanners = asyncHandler(async (req, res) => {
 // Sets platform='website' on any banner that has no platform, 'web', or 'both'
 exports.fixBannerPlatforms = asyncHandler(async (req, res) => {
   const result = await Banner.updateMany(
-    { $or: [{ platform: { $exists: false } }, { platform: null }, { platform: 'both' }, { platform: 'web' }] },
+    { $or: [{ platform: { $exists: false } }, { platform: null }, { platform: 'web' }] },
     { $set: { platform: 'website' } }
   );
   res.json({ success: true, fixed: result.modifiedCount });
