@@ -27,8 +27,8 @@ const ShareCatalog = () => {
     },
   });
 
-  const products = data?.products || [];
-  const totalPages = data?.totalPages || 1;
+  const products = data?.data || [];
+  const totalPages = Math.ceil((data?.meta?.total || 0) / 20) || 1;
 
   const getProductUrl = (slug) => `${BASE_URL}/product/${slug}`;
 
