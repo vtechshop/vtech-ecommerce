@@ -105,21 +105,7 @@ const Home = React.memo(() => {
     queryKey: ['hero-banners'],
     queryFn: async () => {
       const { data } = await api.get('/banners?platform=website');
-      const result = data.data || [];
-      if (result.length > 0) {
-        try { localStorage.setItem('vt-hero-banners', JSON.stringify(result)); } catch {}
-      } else {
-        try { localStorage.removeItem('vt-hero-banners'); } catch {}
-      }
-      return result;
-    },
-    initialData: () => {
-      try {
-        const cached = localStorage.getItem('vt-hero-banners');
-        if (!cached) return undefined;
-        const parsed = JSON.parse(cached);
-        return Array.isArray(parsed) && parsed.length > 0 ? parsed : undefined;
-      } catch { return undefined; }
+      return data.data || [];
     },
     staleTime: 2 * 60 * 1000,
   });
@@ -137,10 +123,8 @@ const Home = React.memo(() => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section — dynamic carousel if banners uploaded, else static fallback */}
-      {bannersLoading ? (
-        <div className="bg-gradient-to-r from-primary-600 to-primary-200 animate-pulse" style={{ height: 'clamp(280px, 42vw, 540px)' }} />
-      ) : heroBanners && heroBanners.length > 0 ? (
-        <Suspense fallback={<div className="bg-gradient-to-r from-primary-600 to-primary-200" style={{ height: 'clamp(280px, 42vw, 540px)' }} />}>
+      {heroBanners && heroBanners.length > 0 ? (
+        <Suspense fallback={<StaticHero t={t} />}>
           <HeroCarousel items={heroBanners} fallback={<StaticHero t={t} />} />
         </Suspense>
       ) : (
