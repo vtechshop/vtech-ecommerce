@@ -21,7 +21,9 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.9.7",
+    "@tanstack/query-sync-storage-persister": "^5.96.2",
     "@tanstack/react-query": "^5.17.0",
+    "@tanstack/react-query-persist-client": "^5.96.2",
     "@vitejs/plugin-react": "^4.2.1",
     "axios": "^1.6.2",
     "clsx": "^2.1.0",

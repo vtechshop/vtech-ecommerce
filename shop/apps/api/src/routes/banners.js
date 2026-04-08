@@ -3,12 +3,13 @@ const express = require('express');
 const router = express.Router();
 const bannerController = require('../controllers/bannerController');
 const { authenticate, authorize } = require('../middleware/auth');
+const { cacheMiddleware } = require('../middleware/cache');
 const multer = require('multer');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 // Public
-router.get('/', bannerController.getActiveBanners);
+router.get('/', cacheMiddleware(300), bannerController.getActiveBanners);
 
 // Admin only
 router.get('/all', authenticate, authorize(['admin']), bannerController.getAllBanners);

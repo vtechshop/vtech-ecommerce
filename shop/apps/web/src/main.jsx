@@ -3,7 +3,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { HelmetProvider } from 'react-helmet-async';
 import axios from 'axios';
 
@@ -24,11 +26,19 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes for better caching
-      gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-      refetchOnMount: false, // Don't refetch on mount if data is fresh
+      staleTime: 5 * 60 * 1000,        // 5 min — data stays fresh, no re-fetch
+      gcTime: 24 * 60 * 60 * 1000,     // 24 hours in-memory (persister handles disk)
+      refetchOnMount: false,
     },
   },
+});
+
+// Persist cache to localStorage — on refresh, stale data shows instantly
+// while fresh data loads in background (amazon-like experience)
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: 'vtech-query-cache',
+  throttleTime: 1000,
 });
 
 const rootElement = document.getElementById('root');
@@ -38,11 +48,25 @@ const AppWrapper = (
     <ErrorBoundary>
       <Provider store={store}>
         <BrowserRouter>
-          <QueryClientProvider client={queryClient}>
+          <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={{
+              persister,
+              maxAge: 24 * 60 * 60 * 1000, // 24 hours cache on disk
+              dehydrateOptions: {
+                shouldDehydrateQuery: (query) => {
+                  // Only persist public/non-sensitive queries
+                  const key = query.queryKey[0];
+                  const skipKeys = ['cart', 'orders', 'user', 'notifications', 'admin', 'vendor', 'affiliate'];
+                  return !skipKeys.some(k => String(key).toLowerCase().includes(k));
+                },
+              },
+            }}
+          >
             <HelmetProvider>
               <App />
             </HelmetProvider>
-          </QueryClientProvider>
+          </PersistQueryClientProvider>
         </BrowserRouter>
       </Provider>
     </ErrorBoundary>

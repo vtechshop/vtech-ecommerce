@@ -6,11 +6,12 @@ const Category = require('../models/Category');
 const recommendationService = require('../services/recommendationService');
 const { authenticate } = require('../middleware/auth');
 const { catalogTrackingLimiter } = require('../middleware/rateLimiter');
+const { cacheMiddleware } = require('../middleware/cache');
 const AppError = require('../utils/AppError');
 const mongoose = require('mongoose');
 
 // GET /catalog/products?featured=true&limit=8&tag=electronics&vendor=demo-electronics
-router.get('/products', async (req, res, next) => {
+router.get('/products', cacheMiddleware(300), async (req, res, next) => {
   try {
     const { featured, q, tag, vendor, page = 1, limit = 20, sort = '-createdAt' } = req.query;
 
@@ -85,7 +86,7 @@ router.get('/products', async (req, res, next) => {
 });
 
 // GET /catalog/products/:slug
-router.get('/products/:slug', async (req, res, next) => {
+router.get('/products/:slug', cacheMiddleware(600), async (req, res, next) => {
   try {
     const { slug } = req.params;
     const product = await Product.findOne({ slug, published: true }).populate('vendorId', 'storeName slug').populate('categoryIds', 'name slug').lean();
@@ -206,7 +207,7 @@ router.get('/search-related', async (req, res, next) => {
 });
 
 // GET /catalog/categories?limit=6
-router.get('/categories', async (req, res, next) => {
+router.get('/categories', cacheMiddleware(1800), async (req, res, next) => {
   try {
     const { limit = 50 } = req.query;
     const categories = await Category.find({ isActive: true })
@@ -221,7 +222,7 @@ router.get('/categories', async (req, res, next) => {
 });
 
 // GET /catalog/categories/:slug
-router.get('/categories/:slug', async (req, res, next) => {
+router.get('/categories/:slug', cacheMiddleware(600), async (req, res, next) => {
   try {
     const { slug } = req.params;
     const category = await Category.findOne({ slug, isActive: true }).lean();
@@ -260,7 +261,7 @@ router.get('/recommendations', authenticate, async (req, res, next) => {
 });
 
 // GET /catalog/recommendations/trending - Trending products (no auth required)
-router.get('/recommendations/trending', async (req, res, next) => {
+router.get('/recommendations/trending', cacheMiddleware(600), async (req, res, next) => {
   try {
     const { limit = 10 } = req.query;
 
@@ -273,7 +274,7 @@ router.get('/recommendations/trending', async (req, res, next) => {
 });
 
 // GET /catalog/recommendations/top-reviewed - Top reviewed products (no auth required)
-router.get('/recommendations/top-reviewed', async (req, res, next) => {
+router.get('/recommendations/top-reviewed', cacheMiddleware(600), async (req, res, next) => {
   try {
     const { limit = 10, minRating = 4.5 } = req.query;
 
@@ -481,7 +482,7 @@ router.post('/track/search-click', catalogTrackingLimiter, async (req, res, next
 });
 
 // GET /catalog/settings - Public settings for frontend
-router.get('/settings', async (req, res, next) => {
+router.get('/settings', cacheMiddleware(1800), async (req, res, next) => {
   try {
     const Setting = require('../models/Setting');
     const { category, keys } = req.query;
