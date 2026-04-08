@@ -20,7 +20,7 @@ const ShareCatalog = () => {
       const params = new URLSearchParams();
       params.append('page', page);
       params.append('limit', '20');
-      params.append('status', 'active');
+      params.append('status', 'published');
       if (searchTerm) params.append('search', searchTerm);
       const response = await api.get(`/admin/products?${params}`);
       return response.data;
