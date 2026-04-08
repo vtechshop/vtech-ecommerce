@@ -129,6 +129,7 @@ const Tickets = lazy(() => import('./assets/pages/dashboard/support/Tickets'));
 const AdminDashboard = lazy(() => import('./assets/pages/dashboard/admin/AdminDashboard'));
 const AdminUsers = lazy(() => import('./assets/pages/dashboard/admin/Users'));
 const AdminProducts = lazy(() => import('./assets/pages/dashboard/admin/Products'));
+const ShareCatalog = lazy(() => import('./assets/pages/dashboard/admin/ShareCatalog'));
 const AdminCategories = lazy(() => import('./assets/pages/dashboard/admin/Categories'));
 const AdminOrders = lazy(() => import('./assets/pages/dashboard/admin/Orders'));
 const AdminOrderDetail = lazy(() => import('./assets/pages/dashboard/admin/OrderDetail'));
@@ -371,6 +372,7 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="products" element={<AdminProducts />} />
+            <Route path="share-catalog" element={<ShareCatalog />} />
             <Route path="inventory" element={<AdminInventory />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="orders" element={<AdminOrders />} />

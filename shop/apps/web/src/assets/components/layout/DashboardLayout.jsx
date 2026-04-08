@@ -42,6 +42,7 @@ const DashboardLayout = () => {
         { path: '/admin-dashboard', label: 'Overview', icon: 'chart' },
         { path: '/admin-dashboard/users', label: 'Users', icon: 'users' },
         { path: '/admin-dashboard/products', label: 'Products', icon: 'package' },
+        { path: '/admin-dashboard/share-catalog', label: 'Share Catalog', icon: 'share-2' },
         { path: '/admin-dashboard/inventory', label: 'Inventory', icon: 'box' },
         { path: '/admin-dashboard/categories', label: 'Categories', icon: 'folder' },
         { path: '/admin-dashboard/orders', label: 'Orders', icon: 'shopping-bag' },
@@ -282,6 +283,9 @@ const DashboardLayout = () => {
       ),
       smartphone: (
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      ),
+      'share-2': (
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
       ),
     };
     return icons[iconName] || icons.chart;
