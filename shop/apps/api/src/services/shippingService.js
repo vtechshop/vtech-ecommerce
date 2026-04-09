@@ -22,7 +22,7 @@ class ShippingService {
    */
   initializeCarriers() {
     // Delhivery
-    if (process.env.DELHIVERY_API_KEY) {
+    if (process.env.DELHIVERY_LIVE_TOKEN || process.env.DELHIVERY_TEST_TOKEN || process.env.DELHIVERY_API_KEY) {
       this.carriers.delhivery = new DelhiveryAdapter();
       logger.info('✅ Delhivery adapter initialized');
     }

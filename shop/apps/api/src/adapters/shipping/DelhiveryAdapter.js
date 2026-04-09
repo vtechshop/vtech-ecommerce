@@ -10,7 +10,7 @@ const logger = require('../../config/logger');
 class DelhiveryAdapter extends ShippingAdapter {
   constructor(apiKey, apiUrl) {
     super();
-    this.apiKey = apiKey || process.env.DELHIVERY_API_KEY;
+    this.apiKey = apiKey || process.env.DELHIVERY_LIVE_TOKEN || process.env.DELHIVERY_TEST_TOKEN || process.env.DELHIVERY_API_KEY;
     this.apiUrl = apiUrl || process.env.DELHIVERY_API_URL || 'https://track.delhivery.com/api';
     this.surfaceApiUrl = process.env.DELHIVERY_SURFACE_API_URL || 'https://api.delhivery.com/v1';
   }
