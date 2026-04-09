@@ -7,7 +7,34 @@ const shippingService = require('../services/shippingService');
 const env = require('../config/env');
 const logger = require('../config/logger');
 
-// Get shipping quotes — uses Delhivery API with pincode + weight
+// MSS Transport rates for Tamil Nadu (weight in kg → ₹)
+function getMSSRate(weightKg) {
+  if (weightKg <= 0.5)       return 50;
+  if (weightKg <= 1)         return 80;
+  if (weightKg <= 2)         return 120;
+  if (weightKg <= 5)         return 180;
+  if (weightKg <= 10)        return 300;
+  if (weightKg <= 20)        return 500;
+  return 500 + Math.ceil((weightKg - 20) / 5) * 80;
+}
+
+// Weight-based fallback rates for other states (when Delhivery API fails)
+function getWeightFallbackRate(weightKg) {
+  if (weightKg <= 0.5)       return 60;
+  if (weightKg <= 1)         return 100;
+  if (weightKg <= 2)         return 150;
+  if (weightKg <= 5)         return 250;
+  if (weightKg <= 10)        return 450;
+  if (weightKg <= 20)        return 800;
+  return 800 + Math.ceil((weightKg - 20) / 5) * 100;
+}
+
+const TN_NAMES = ['tamil nadu', 'tamilnadu', 'tn'];
+function isTamilNadu(state = '') {
+  return TN_NAMES.includes(state.trim().toLowerCase());
+}
+
+// Get shipping quotes — TN uses MSS Transport, other states use Delhivery API
 exports.getShippingQuotes = async (req, res, next) => {
   try {
     const { address, items } = req.body;
@@ -21,29 +48,67 @@ exports.getShippingQuotes = async (req, res, next) => {
       return next(new AppError('Destination pincode is required', 400, 'MISSING_PINCODE'));
     }
 
-    // Calculate total weight in grams from cart items
-    let totalWeight = 500; // default 500g fallback
+    // Fetch products for weight + fixed shipping charge
+    let totalWeightKg = 0.5; // default 500g fallback
+    let fixedChargeOverride = 0;
+
     if (items && items.length > 0) {
       const productIds = items.map(i => i.productId).filter(Boolean);
       if (productIds.length > 0) {
-        const products = await Product.find({ _id: { $in: productIds } }).select('weight');
-        totalWeight = items.reduce((sum, item) => {
+        const products = await Product.find({ _id: { $in: productIds } }).select('weight shippingCharge');
+        totalWeightKg = items.reduce((sum, item) => {
           const product = products.find(p => p._id.toString() === item.productId?.toString());
-          return sum + ((product?.weight || 500) * (item.qty || item.quantity || 1));
+          const weightKg = product?.weight || 0.5; // default 0.5kg if not set
+          return sum + (weightKg * (item.qty || item.quantity || 1));
         }, 0);
+
+        // If any product has a fixed shipping charge, use the highest one
+        const maxFixed = items.reduce((max, item) => {
+          const product = products.find(p => p._id.toString() === item.productId?.toString());
+          return Math.max(max, product?.shippingCharge || 0);
+        }, 0);
+        fixedChargeOverride = maxFixed;
       }
     }
 
-    const originPin = env.DEFAULT_ORIGIN_ZIP || '110001';
     const quotes = [];
 
-    // Try Delhivery live rates
+    // If product has a fixed shipping charge, use it directly
+    if (fixedChargeOverride > 0) {
+      quotes.push({
+        id: 'fixed',
+        name: 'Standard Delivery',
+        description: '3-7 business days',
+        cost: fixedChargeOverride,
+        estimatedDays: 7,
+        carrier: 'Standard',
+      });
+      return res.json({ success: true, data: { quotes, totalWeightKg } });
+    }
+
+    // Tamil Nadu → MSS Transport (local transport, cheaper & faster)
+    if (isTamilNadu(address.state)) {
+      const cost = getMSSRate(totalWeightKg);
+      quotes.push({
+        id: 'mss-standard',
+        name: 'MSS Transport',
+        description: '2-4 business days (Tamil Nadu)',
+        cost,
+        estimatedDays: 4,
+        carrier: 'MSS Transport',
+      });
+      logger.info(`MSS Transport rate ₹${cost} for ${totalWeightKg.toFixed(2)}kg → TN`);
+      return res.json({ success: true, data: { quotes, totalWeightKg } });
+    }
+
+    // Other states → Delhivery API
+    const originPin = env.DEFAULT_ORIGIN_ZIP || '627001';
     try {
       const delhivery = shippingService.getCarrier('delhivery');
+      const totalWeightGrams = Math.round(totalWeightKg * 1000);
 
-      // Surface rate (cheaper, 5-7 days)
       try {
-        const surface = await delhivery.calculateRate(originPin, destinationPin, totalWeight, 'Prepaid', 'S');
+        const surface = await delhivery.calculateRate(originPin, destinationPin, totalWeightGrams, 'Prepaid', 'S');
         if (surface.rate > 0) {
           quotes.push({
             id: 'delhivery-surface',
@@ -55,12 +120,11 @@ exports.getShippingQuotes = async (req, res, next) => {
           });
         }
       } catch (e) {
-        logger.warn('Delhivery Surface rate unavailable:', e.message);
+        logger.warn('Delhivery Surface unavailable:', e.message);
       }
 
-      // Express rate (faster, 2-3 days)
       try {
-        const express = await delhivery.calculateRate(originPin, destinationPin, totalWeight, 'Prepaid', 'E');
+        const express = await delhivery.calculateRate(originPin, destinationPin, totalWeightGrams, 'Prepaid', 'E');
         if (express.rate > 0) {
           quotes.push({
             id: 'delhivery-express',
@@ -72,24 +136,15 @@ exports.getShippingQuotes = async (req, res, next) => {
           });
         }
       } catch (e) {
-        logger.warn('Delhivery Express rate unavailable:', e.message);
+        logger.warn('Delhivery Express unavailable:', e.message);
       }
     } catch (carrierErr) {
       logger.warn('Delhivery carrier not available:', carrierErr.message);
     }
 
-    // Fallback: weight-based fixed rates if Delhivery API fails
+    // Fallback if Delhivery fails
     if (quotes.length === 0) {
-      const weightKg = totalWeight / 1000;
-      let cost;
-      if (weightKg <= 0.5)       cost = 60;
-      else if (weightKg <= 1)    cost = 100;
-      else if (weightKg <= 2)    cost = 150;
-      else if (weightKg <= 5)    cost = 250;
-      else if (weightKg <= 10)   cost = 450;
-      else if (weightKg <= 20)   cost = 800;
-      else cost = 800 + Math.ceil((weightKg - 20) / 5) * 100;
-
+      const cost = getWeightFallbackRate(totalWeightKg);
       quotes.push({
         id: 'standard',
         name: 'Standard Shipping',
@@ -97,11 +152,10 @@ exports.getShippingQuotes = async (req, res, next) => {
         cost,
         estimatedDays: 7,
       });
-
-      logger.warn(`Delhivery unavailable — using weight-based fallback rate ₹${cost} for ${weightKg.toFixed(2)}kg`);
+      logger.warn(`Delhivery unavailable — fallback rate ₹${cost} for ${totalWeightKg.toFixed(2)}kg`);
     }
 
-    res.json({ success: true, data: { quotes, totalWeightGrams: totalWeight } });
+    res.json({ success: true, data: { quotes, totalWeightKg } });
   } catch (error) {
     next(error);
   }

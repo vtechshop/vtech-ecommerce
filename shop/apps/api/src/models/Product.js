@@ -52,7 +52,8 @@ const productSchema = new mongoose.Schema({
   stock: { type: Number, default: 0, min: 0 },
   lowStockThreshold: { type: Number, default: 10 },
   trackInventory: { type: Boolean, default: true },
-  weight: Number,
+  weight: Number, // in kg
+  shippingCharge: { type: Number, default: 0 }, // fixed shipping override (0 = use weight-based calc)
   dimensions: { length: Number, width: Number, height: Number, unit: { type: String, enum: ['in', 'cm'], default: 'in' } },
   rating: { type: Number, default: 0, min: 0, max: 5 },
   reviewCount: { type: Number, default: 0 },

@@ -286,7 +286,7 @@ exports.createOrder = async (req, res, next) => {
     }, 0);
 
     const tax = calculatedTax;
-    const shipping = 0; // Shipping included in product price
+    const shipping = shippingMethod?.cost ? Math.round(parseFloat(shippingMethod.cost)) : 0;
     const discount = cartDiscount;
     const total = subtotal + tax + shipping - discount;
 

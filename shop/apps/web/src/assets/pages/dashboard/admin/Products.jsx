@@ -417,6 +417,8 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     featured: product?.featured || false,
     vendorCommissionPercentage: product?.vendorCommissionPercentage || '',
     affiliateCommissionPercentage: product?.affiliateCommissionPercentage || '',
+    weight: product?.weight || '',
+    shippingCharge: product?.shippingCharge || '',
     hsnCode: product?.hsnCode || '',
     taxable: product?.taxable !== undefined ? product.taxable : true,
     taxRate: product?.taxRate || 0,
@@ -557,6 +559,8 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       stock: formData.stock ? parseInt(formData.stock, 10) : 0,
       vendorCommissionPercentage: formData.vendorCommissionPercentage ? parseFloat(formData.vendorCommissionPercentage) : undefined,
       affiliateCommissionPercentage: formData.affiliateCommissionPercentage ? parseFloat(formData.affiliateCommissionPercentage) : undefined,
+      weight: formData.weight ? parseFloat(formData.weight) : undefined,
+      shippingCharge: formData.shippingCharge ? parseFloat(formData.shippingCharge) : 0,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
       taxIncluded: formData.taxIncluded,
       // Warranty - convert duration from empty string to undefined
@@ -774,6 +778,35 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                 disabled={isViewing}
                 className="input w-full"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="e.g. 2.5"
+                value={formData.weight}
+                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                disabled={isViewing}
+                className="input w-full"
+              />
+              <p className="text-xs text-gray-400 mt-1">Used to calculate shipping cost</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Fixed Shipping Charge (₹)</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="0 = auto calculate"
+                value={formData.shippingCharge}
+                onChange={(e) => setFormData({ ...formData, shippingCharge: e.target.value })}
+                disabled={isViewing}
+                className="input w-full"
+              />
+              <p className="text-xs text-gray-400 mt-1">Set a fixed amount, or leave 0 to auto-calculate by weight</p>
             </div>
 
             <div>
