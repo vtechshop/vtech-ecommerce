@@ -419,6 +419,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     affiliateCommissionPercentage: product?.affiliateCommissionPercentage || '',
     weight: product?.weight || '',
     shippingCharge: product?.shippingCharge || '',
+    delhiveryEnabled: product?.delhiveryEnabled !== undefined ? product.delhiveryEnabled : true,
     hsnCode: product?.hsnCode || '',
     taxable: product?.taxable !== undefined ? product.taxable : true,
     taxRate: product?.taxRate || 0,
@@ -561,6 +562,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       affiliateCommissionPercentage: formData.affiliateCommissionPercentage ? parseFloat(formData.affiliateCommissionPercentage) : undefined,
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
       shippingCharge: formData.shippingCharge ? parseFloat(formData.shippingCharge) : 0,
+      delhiveryEnabled: formData.delhiveryEnabled,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
       taxIncluded: formData.taxIncluded,
       // Warranty - convert duration from empty string to undefined
@@ -807,6 +809,23 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                 className="input w-full"
               />
               <p className="text-xs text-gray-400 mt-1">Set a fixed amount, or leave 0 to auto-calculate by weight</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Delhivery Shipping</label>
+              <div className={`flex items-center gap-3 p-3 rounded-lg border ${formData.delhiveryEnabled ? 'border-green-300 bg-green-50' : 'border-red-300 bg-red-50'}`}>
+                <input
+                  type="checkbox"
+                  checked={formData.delhiveryEnabled}
+                  onChange={(e) => setFormData({ ...formData, delhiveryEnabled: e.target.checked })}
+                  disabled={isViewing}
+                  className="h-4 w-4 text-blue-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <span className={`text-sm font-medium ${formData.delhiveryEnabled ? 'text-green-700' : 'text-red-700'}`}>
+                  {formData.delhiveryEnabled ? '✓ Delhivery Available' : '✗ Delhivery Not Available'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Uncheck if this product cannot be shipped via Delhivery (oversize, fragile, etc.)</p>
             </div>
 
             <div>

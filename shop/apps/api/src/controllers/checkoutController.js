@@ -103,11 +103,12 @@ exports.getShippingQuotes = async (req, res, next) => {
     // Fetch products for weight + fixed shipping charge
     let totalWeightKg = 0.5; // default 500g fallback
     let fixedChargeOverride = 0;
+    let delhiveryBlocked = false; // true if any cart item has delhiveryEnabled=false
 
     if (items && items.length > 0) {
       const productIds = items.map(i => i.productId).filter(Boolean);
       if (productIds.length > 0) {
-        const products = await Product.find({ _id: { $in: productIds } }).select('weight shippingCharge');
+        const products = await Product.find({ _id: { $in: productIds } }).select('weight shippingCharge delhiveryEnabled');
         totalWeightKg = items.reduce((sum, item) => {
           const product = products.find(p => p._id.toString() === item.productId?.toString());
           const weightKg = product?.weight || 0.5; // default 0.5kg if not set
@@ -120,6 +121,9 @@ exports.getShippingQuotes = async (req, res, next) => {
           return Math.max(max, product?.shippingCharge || 0);
         }, 0);
         fixedChargeOverride = maxFixed;
+
+        // If ANY product has delhiveryEnabled=false, block Delhivery for whole cart
+        delhiveryBlocked = products.some(p => p.delhiveryEnabled === false);
       }
     }
 
@@ -158,8 +162,8 @@ exports.getShippingQuotes = async (req, res, next) => {
       logger.info(`MSS Transport Zone ${zone} (${zoneNames[zone]}) ₹${cost} for ${totalWeightKg.toFixed(2)}kg → ${destinationPin}`);
     }
 
-    // All states (including TN) → also try Delhivery API
-    try {
+    // All states (including TN) → also try Delhivery API (unless blocked by product setting)
+    if (!delhiveryBlocked) try {
       const delhivery = shippingService.getCarrier('delhivery');
 
       try {

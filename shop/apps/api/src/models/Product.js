@@ -54,6 +54,7 @@ const productSchema = new mongoose.Schema({
   trackInventory: { type: Boolean, default: true },
   weight: Number, // in kg
   shippingCharge: { type: Number, default: 0 }, // fixed shipping override (0 = use weight-based calc)
+  delhiveryEnabled: { type: Boolean, default: true }, // if false, only MSS Transport / fallback (no Delhivery)
   dimensions: { length: Number, width: Number, height: Number, unit: { type: String, enum: ['in', 'cm'], default: 'in' } },
   rating: { type: Number, default: 0, min: 0, max: 5 },
   reviewCount: { type: Number, default: 0 },
