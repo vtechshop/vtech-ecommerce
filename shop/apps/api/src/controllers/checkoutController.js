@@ -7,15 +7,67 @@ const shippingService = require('../services/shippingService');
 const env = require('../config/env');
 const logger = require('../config/logger');
 
-// MSS Transport rates for Tamil Nadu (weight in kg → ₹)
-function getMSSRate(weightKg) {
-  if (weightKg <= 0.5)       return 50;
-  if (weightKg <= 1)         return 80;
-  if (weightKg <= 2)         return 120;
-  if (weightKg <= 5)         return 180;
-  if (weightKg <= 10)        return 300;
-  if (weightKg <= 20)        return 500;
-  return 500 + Math.ceil((weightKg - 20) / 5) * 80;
+// MSS Transport — pincode-based zone system from Coimbatore origin
+// Zone 0 = Local (Coimbatore/Tiruppur/Erode/Nilgiris) ~0-100km
+// Zone 1 = Nearby (Salem/Namakkal/Karur/Dindigul)     ~100-250km
+// Zone 2 = Medium (Madurai/Trichy/Vellore/Dharmapuri) ~250-400km
+// Zone 3 = Far    (Chennai/Tirunelveli/Thanjavur)      ~400-550km
+// Zone 4 = Remote (Kanyakumari/Nagercoil/far northeast)~550km+
+
+const MSS_PINCODE_ZONES = {
+  // Zone 0 — Local (Coimbatore, Tiruppur, Erode, Nilgiris)
+  641: 0, 642: 0, 643: 0, 638: 0, 644: 0, 645: 0, 646: 0,
+
+  // Zone 1 — Nearby
+  636: 1, 637: 1, // Salem
+  639: 1,         // Karur
+  624: 1,         // Dindigul
+  637: 1,         // Namakkal
+  635: 1,         // Dharmapuri (closer side)
+
+  // Zone 2 — Medium
+  625: 2, 626: 2, // Madurai
+  620: 2, 621: 2, 622: 2, // Tiruchirappalli
+  623: 2,         // Pudukkottai
+  630: 2, 631: 2, // Sivaganga / Ramanathapuram
+  632: 2, 633: 2, 634: 2, // Vellore / Tiruvannamalai
+  560: 2,         // Part of border
+
+  // Zone 3 — Far
+  600: 3, 601: 3, 602: 3, 603: 3, 604: 3, // Chennai
+  605: 3, 606: 3, 607: 3,                  // Chennai suburbs / Tiruvallur
+  608: 3, 609: 3,                           // Kanchipuram
+  617: 3, 618: 3, 619: 3,                  // Thanjavur / Ariyalur
+  627: 3, 628: 3,                           // Tirunelveli / Tuticorin
+
+  // Zone 4 — Remote
+  610: 4, 611: 4, 612: 4, 613: 4, 614: 4, 615: 4, 616: 4, // Nagapattinam/Tiruvarur
+  629: 4,                                                    // Kanyakumari / Nagercoil
+};
+
+// Rate tables per zone [≤0.5kg, ≤1kg, ≤2kg, ≤5kg, ≤10kg, ≤20kg, per5kgAbove20]
+const MSS_ZONE_RATES = {
+  0: [40,  60,  90,  130, 220, 380, 15],  // Local
+  1: [60,  90,  130, 200, 320, 550, 20],  // Nearby
+  2: [80,  120, 170, 270, 430, 720, 25],  // Medium
+  3: [100, 150, 220, 360, 580, 950, 30],  // Far
+  4: [130, 190, 280, 450, 720, 1200, 40], // Remote
+};
+
+function getMSSZone(pincode) {
+  const prefix = parseInt(String(pincode).slice(0, 3));
+  return MSS_PINCODE_ZONES[prefix] !== undefined ? MSS_PINCODE_ZONES[prefix] : 3; // default Zone 3
+}
+
+function getMSSRate(weightKg, zone = 3) {
+  const [r05, r1, r2, r5, r10, r20, perExtra] = MSS_ZONE_RATES[zone] || MSS_ZONE_RATES[3];
+  if (weightKg <= 0.5) return r05;
+  if (weightKg <= 1)   return r1;
+  if (weightKg <= 2)   return r2;
+  if (weightKg <= 5)   return r5;
+  if (weightKg <= 10)  return r10;
+  if (weightKg <= 20)  return r20;
+  return r20 + Math.ceil((weightKg - 20) / 5) * perExtra;
 }
 
 // Weight-based fallback rates for other states (when Delhivery API fails)
@@ -86,23 +138,26 @@ exports.getShippingQuotes = async (req, res, next) => {
       return res.json({ success: true, data: { quotes, totalWeightKg } });
     }
 
-    // Tamil Nadu → MSS Transport (local transport, cheaper & faster)
+    // Tamil Nadu → MSS Transport (pincode-based zone from Coimbatore)
     if (isTamilNadu(address.state)) {
-      const cost = getMSSRate(totalWeightKg);
+      const zone = getMSSZone(destinationPin);
+      const cost = getMSSRate(totalWeightKg, zone);
+      const zoneNames = ['Local', 'Nearby', 'Medium', 'Far', 'Remote'];
+      const days = [1, 2, 3, 4, 5][zone] || 4;
       quotes.push({
         id: 'mss-standard',
         name: 'MSS Transport',
-        description: '2-4 business days (Tamil Nadu)',
+        description: `${days}-${days + 1} business days (Zone: ${zoneNames[zone]})`,
         cost,
-        estimatedDays: 4,
+        estimatedDays: days + 1,
         carrier: 'MSS Transport',
       });
-      logger.info(`MSS Transport rate ₹${cost} for ${totalWeightKg.toFixed(2)}kg → TN`);
+      logger.info(`MSS Transport Zone ${zone} (${zoneNames[zone]}) ₹${cost} for ${totalWeightKg.toFixed(2)}kg → ${destinationPin}`);
       return res.json({ success: true, data: { quotes, totalWeightKg } });
     }
 
     // Other states → Delhivery API
-    const originPin = env.DEFAULT_ORIGIN_ZIP || '627001';
+    const originPin = env.DEFAULT_ORIGIN_ZIP || '641001'; // Coimbatore
     try {
       const delhivery = shippingService.getCarrier('delhivery');
       const totalWeightGrams = Math.round(totalWeightKg * 1000);
