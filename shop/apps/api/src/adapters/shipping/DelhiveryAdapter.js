@@ -32,7 +32,26 @@ class DelhiveryAdapter extends ShippingAdapter {
    */
   async createShipment(orderData) {
     try {
-      // Try to create real shipment with new Delhivery API
+      // Pre-check: verify destination pincode is serviceable by Delhivery
+      const destPin = orderData.shipTo.zipCode;
+      const serviceabilityRes = await axios.get(
+        `${this.apiUrl}/c/api/pin-codes/json/`,
+        {
+          params: { filter_codes: destPin },
+          headers: { 'Authorization': `Token ${this.apiKey}` },
+        }
+      ).catch(() => null); // non-critical — proceed even if check fails
+
+      if (serviceabilityRes) {
+        const codes = serviceabilityRes.data?.delivery_codes || [];
+        const isServiceable = codes.some(c => String(c.postal_code?.pin) === String(destPin));
+        if (!isServiceable) {
+          throw new Error(
+            `Pincode ${destPin} is not serviceable by Delhivery. Please use Manual Entry to assign tracking.`
+          );
+        }
+      }
+
       const payload = {
         shipments: [{
           name: orderData.shipTo.fullName,
