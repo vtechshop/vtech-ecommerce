@@ -10,9 +10,19 @@ const logger = require('../../config/logger');
 class DelhiveryAdapter extends ShippingAdapter {
   constructor(apiKey, apiUrl) {
     super();
+    // Support all env var naming conventions (local: DELHIVERY_API_KEY, Render: DELHIVERY_LIVE_TOKEN)
     this.apiKey = apiKey || process.env.DELHIVERY_LIVE_TOKEN || process.env.DELHIVERY_TEST_TOKEN || process.env.DELHIVERY_API_KEY;
     this.apiUrl = apiUrl || process.env.DELHIVERY_API_URL || 'https://track.delhivery.com/api';
     this.surfaceApiUrl = process.env.DELHIVERY_SURFACE_API_URL || 'https://api.delhivery.com/v1';
+
+    // Warehouse / pickup location — must match name registered in Delhivery dashboard
+    this.pickupLocation = process.env.DELHIVERY_PICKUP_LOCATION || 'Primary';
+    this.storePin      = process.env.STORE_PINCODE  || '';
+    this.storeCity     = process.env.STORE_CITY     || '';
+    this.storeState    = process.env.STORE_STATE    || '';
+    this.storeAddress  = process.env.STORE_ADDRESS  || '';
+    this.storePhone    = process.env.STORE_PHONE    || '';
+    this.storeName     = process.env.STORE_NAME     || 'V-Tech';
   }
 
   /**
@@ -34,29 +44,32 @@ class DelhiveryAdapter extends ShippingAdapter {
           pin: orderData.shipTo.zipCode,
           phone: orderData.shipTo.phone,
           order: orderData.orderId,
-          payment_mode: 'Prepaid', // All orders are prepaid (COD removed)
-          return_pin: orderData.returnPin || '',
-          return_city: orderData.returnCity || '',
-          return_phone: orderData.returnPhone || '',
-          return_add: orderData.returnAddress || '',
-          return_state: orderData.returnState || '',
+          payment_mode: 'Prepaid',
+          // Return / pickup address from store warehouse env vars
+          return_pin: orderData.returnPin || this.storePin,
+          return_city: orderData.returnCity || this.storeCity,
+          return_phone: orderData.returnPhone || this.storePhone,
+          return_add: orderData.returnAddress || this.storeAddress,
+          return_state: orderData.returnState || this.storeState,
           return_country: orderData.returnCountry || 'India',
           products_desc: orderData.items.map(item => item.name).join(', '),
           hsn_code: '',
-          cod_amount: 0, // No COD - all orders prepaid
+          cod_amount: 0,
           order_date: new Date().toISOString(),
           total_amount: orderData.totals.total,
-          seller_add: orderData.sellerAddress || '',
-          seller_name: orderData.sellerName || 'V-Tech',
+          seller_add: orderData.sellerAddress || this.storeAddress,
+          seller_name: orderData.sellerName || this.storeName,
           seller_inv: orderData.orderId,
           quantity: orderData.items.reduce((sum, item) => sum + item.qty, 0),
-          waybill: '', // Delhivery auto-generates if empty
+          waybill: '',
           shipment_width: orderData.dimensions?.width || 10,
           shipment_height: orderData.dimensions?.height || 10,
-          weight: orderData.weight || 500, // in grams
+          weight: orderData.weight || 500,
           seller_gst_tin: orderData.gstNumber || '',
           shipping_mode: orderData.shippingMode || 'Surface',
-          address_type: 'home'
+          address_type: 'home',
+          // Required: name of the pre-registered pickup location in Delhivery dashboard
+          pickup_location: orderData.pickupLocation || this.pickupLocation,
         }]
       };
 
@@ -71,22 +84,22 @@ class DelhiveryAdapter extends ShippingAdapter {
         }
       );
 
-      if (response.data.success) {
-        const waybill = response.data.packages[0].waybill;
-
-        logger.info(`Delhivery shipment created: ${waybill}`);
-
+      const pkg = response.data.packages?.[0];
+      if (response.data.success && pkg?.waybill) {
+        logger.info(`Delhivery shipment created: ${pkg.waybill}`);
         return {
           success: true,
-          awb: waybill,
+          awb: pkg.waybill,
           carrier: 'Delhivery',
-          trackingUrl: `https://www.delhivery.com/track/package/${waybill}`,
-          estimatedDelivery: null, // Delhivery provides this after pickup
-          label: response.data.packages[0].label_url || null
+          trackingUrl: `https://www.delhivery.com/track/package/${pkg.waybill}`,
+          estimatedDelivery: null,
+          label: pkg.label_url || null,
         };
       }
 
-      throw new Error(response.data.error || 'Failed to create Delhivery shipment');
+      // Surface the actual Delhivery error message (remarks field)
+      const remarks = pkg?.remarks || response.data.error || 'Failed to create Delhivery shipment';
+      throw new Error(remarks);
     } catch (error) {
       logger.error('Delhivery createShipment error:', error.response?.data || error.message);
       throw new Error(`Delhivery API Error: ${error.response?.data?.error || error.message}`);

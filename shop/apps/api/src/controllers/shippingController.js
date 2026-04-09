@@ -73,7 +73,7 @@ exports.getShippingQuotesForOrder = async (req, res, next) => {
 
     // Get rates from all available carriers
     const rates = await shippingService.calculateShippingRates(
-      { zipCode: '110001' }, // Your warehouse/store pincode (should come from settings)
+      { zipCode: process.env.STORE_PINCODE || '641006' },
       { zipCode: order.shipTo.zipCode },
       { weight: totalWeight },
       order.totals.total // For COD calculation
@@ -258,7 +258,7 @@ exports.getRecommendedCarrier = async (req, res, next) => {
     );
 
     const recommended = await shippingService.getRecommendedCarrier(
-      { zipCode: '110001' },
+      { zipCode: process.env.STORE_PINCODE || '641006' },
       { zipCode: order.shipTo.zipCode },
       { weight: totalWeight },
       priority
