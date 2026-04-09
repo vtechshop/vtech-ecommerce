@@ -138,7 +138,10 @@ exports.getShippingQuotes = async (req, res, next) => {
       return res.json({ success: true, data: { quotes, totalWeightKg } });
     }
 
-    // Tamil Nadu → MSS Transport (pincode-based zone from Coimbatore)
+    const originPin = env.DEFAULT_ORIGIN_ZIP || '641001'; // Coimbatore
+    const totalWeightGrams = Math.round(totalWeightKg * 1000);
+
+    // Tamil Nadu → MSS Transport (pincode-based zone) + Delhivery options
     if (isTamilNadu(address.state)) {
       const zone = getMSSZone(destinationPin);
       const cost = getMSSRate(totalWeightKg, zone);
@@ -153,14 +156,11 @@ exports.getShippingQuotes = async (req, res, next) => {
         carrier: 'MSS Transport',
       });
       logger.info(`MSS Transport Zone ${zone} (${zoneNames[zone]}) ₹${cost} for ${totalWeightKg.toFixed(2)}kg → ${destinationPin}`);
-      return res.json({ success: true, data: { quotes, totalWeightKg } });
     }
 
-    // Other states → Delhivery API
-    const originPin = env.DEFAULT_ORIGIN_ZIP || '641001'; // Coimbatore
+    // All states (including TN) → also try Delhivery API
     try {
       const delhivery = shippingService.getCarrier('delhivery');
-      const totalWeightGrams = Math.round(totalWeightKg * 1000);
 
       try {
         const surface = await delhivery.calculateRate(originPin, destinationPin, totalWeightGrams, 'Prepaid', 'S');
@@ -197,7 +197,7 @@ exports.getShippingQuotes = async (req, res, next) => {
       logger.warn('Delhivery carrier not available:', carrierErr.message);
     }
 
-    // Fallback if Delhivery fails
+    // Fallback if no quotes at all (non-TN + Delhivery failed)
     if (quotes.length === 0) {
       const cost = getWeightFallbackRate(totalWeightKg);
       quotes.push({
@@ -207,7 +207,7 @@ exports.getShippingQuotes = async (req, res, next) => {
         cost,
         estimatedDays: 7,
       });
-      logger.warn(`Delhivery unavailable — fallback rate ₹${cost} for ${totalWeightKg.toFixed(2)}kg`);
+      logger.warn(`All carriers unavailable — fallback rate ₹${cost} for ${totalWeightKg.toFixed(2)}kg`);
     }
 
     res.json({ success: true, data: { quotes, totalWeightKg } });
