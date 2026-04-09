@@ -22,6 +22,8 @@ const AdminOrderDetail = () => {
   const [showCarrierForm, setShowCarrierForm] = useState(true);
   const [assignMode, setAssignMode] = useState('manual');
   const [downloadingInvoice, setDownloadingInvoice] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressForm, setAddressForm] = useState({});
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['admin-order', id],
@@ -93,6 +95,19 @@ const AdminOrderDetail = () => {
       return response.data.data?.carriers || response.data.data || [];
     },
     enabled: !!order && !order.shipment?.awb,
+  });
+
+  const updateAddressMutation = useMutation({
+    mutationFn: async (addr) => {
+      const response = await api.put(`/admin/orders/${id}/address`, addr);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      toast.success('Shipping address updated');
+      queryClient.setQueryData(['admin-order', id], data.data);
+      setEditingAddress(false);
+    },
+    onError: (err) => toast.error(err.response?.data?.error?.message || 'Failed to update address'),
   });
 
   const updateStatusMutation = useMutation({
@@ -274,8 +289,51 @@ const AdminOrderDetail = () => {
 
           {/* Shipping Address */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold mb-4">Shipping Address</h2>
-            {order.shipTo ? (
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Shipping Address</h2>
+              {!editingAddress && (
+                <button
+                  onClick={() => { setAddressForm({ ...order.shipTo }); setEditingAddress(true); }}
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium border border-blue-200 rounded px-2 py-1"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+            {editingAddress ? (
+              <div className="space-y-2">
+                {[
+                  { key: 'fullName', label: 'Full Name' },
+                  { key: 'phone', label: 'Phone' },
+                  { key: 'addressLine1', label: 'Address Line 1' },
+                  { key: 'addressLine2', label: 'Address Line 2' },
+                  { key: 'city', label: 'City' },
+                  { key: 'state', label: 'State' },
+                  { key: 'zipCode', label: 'Pincode' },
+                  { key: 'country', label: 'Country' },
+                ].map(({ key, label }) => (
+                  <div key={key}>
+                    <label className="block text-xs text-gray-500 mb-0.5">{label}</label>
+                    <input
+                      type="text"
+                      value={addressForm[key] || ''}
+                      onChange={(e) => setAddressForm(f => ({ ...f, [key]: e.target.value }))}
+                      className="w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    />
+                  </div>
+                ))}
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    size="sm"
+                    onClick={() => updateAddressMutation.mutate(addressForm)}
+                    loading={updateAddressMutation.isPending}
+                  >
+                    Save
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setEditingAddress(false)}>Cancel</Button>
+                </div>
+              </div>
+            ) : order.shipTo ? (
               <div className="text-sm text-gray-700">
                 <p className="font-semibold text-gray-900">{order.shipTo.fullName || 'N/A'}</p>
                 <p>{order.shipTo.addressLine1 || ''}</p>

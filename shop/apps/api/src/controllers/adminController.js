@@ -924,6 +924,32 @@ exports.getOrderById = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+exports.updateOrderAddress = async (req, res, next) => {
+  try {
+    const { fullName, addressLine1, addressLine2, city, state, zipCode, country, phone } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } });
+
+    order.shipTo = {
+      ...order.shipTo,
+      ...(fullName    !== undefined && { fullName }),
+      ...(addressLine1 !== undefined && { addressLine1 }),
+      ...(addressLine2 !== undefined && { addressLine2 }),
+      ...(city        !== undefined && { city }),
+      ...(state       !== undefined && { state }),
+      ...(zipCode     !== undefined && { zipCode }),
+      ...(country     !== undefined && { country }),
+      ...(phone       !== undefined && { phone }),
+    };
+
+    order.events.push({ status: order.status, description: 'Shipping address updated by admin', timestamp: new Date() });
+    await order.save();
+
+    logger.info(`Shipping address updated for order: ${order.orderId}`);
+    res.json({ success: true, data: order });
+  } catch (error) { next(error); }
+};
+
 exports.updateOrderStatus = async (req, res, next) => {
   try {
     const { status, description } = req.body;

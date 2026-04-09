@@ -72,6 +72,7 @@ router.get('/orders', admin.getOrders);
 router.get('/orders/:id', validateObjectId('id'), admin.getOrderById);
 router.get('/orders/:id/invoice', validateObjectId('id'), invoiceController.downloadInvoiceAdmin);
 router.put('/orders/:id/status', validateObjectId('id'), admin.updateOrderStatus);
+router.put('/orders/:id/address', validateObjectId('id'), admin.updateOrderAddress);
 
 // Vendors - SECURITY: Added ObjectId validation
 router.get('/vendors', admin.getVendors);
