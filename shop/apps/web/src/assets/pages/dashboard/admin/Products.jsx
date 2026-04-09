@@ -500,14 +500,14 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     onError: (error) => {
       const errData = error.response?.data?.error;
       const fieldErrors = errData?.fields;
+      console.error('Product save error (full):', error.response?.data || error);
       if (fieldErrors && Object.keys(fieldErrors).length > 0) {
-        const firstField = Object.keys(fieldErrors)[0];
-        toast.error(`Validation error — ${firstField}: ${fieldErrors[firstField]}`);
+        const messages = Object.entries(fieldErrors).map(([f, m]) => `${f}: ${m}`).join('\n');
+        toast.error(`Validation errors:\n${messages}`, { duration: 8000 });
       } else {
-        const errorMsg = errData?.message || error.response?.data?.message || error.message;
-        toast.error('Failed to save product: ' + errorMsg);
+        const errorMsg = errData?.message || error.response?.data?.message || error.message || 'Unknown error';
+        toast.error('Failed to save product: ' + errorMsg, { duration: 6000 });
       }
-      console.error('Product save error:', error.response?.data || error);
     },
   });
 
@@ -546,6 +546,27 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // Client-side validation
+    if (!formData.title.trim()) {
+      toast.error('Product title is required');
+      return;
+    }
+    if (!formData.description.trim()) {
+      toast.error('Product description is required');
+      return;
+    }
+    if (!formData.price && formData.price !== 0) {
+      toast.error('Product price is required');
+      return;
+    }
+    const price = parseFloat(formData.price);
+    const compareAt = formData.compareAt ? parseFloat(formData.compareAt) : null;
+    if (compareAt !== null && compareAt < price) {
+      toast.error(`Compare-at price (₹${compareAt}) must be ≥ selling price (₹${price})`);
+      return;
+    }
+
     const dataToSubmit = {
       ...formData,
       vendorId: formData.vendorId || undefined,
@@ -1679,6 +1700,20 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                   <div className="bg-blue-100 p-3 rounded text-xs text-gray-700"><strong>💡 Tip:</strong> Schema markup helps search engines understand your product better. Common properties: Brand, Model, Color, Size, Material, Author, ISBN, etc.</div>
                 </div>
               )}
+            </div>
+          )}
+
+          {saveMutation.isError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-300 rounded-lg text-sm text-red-700">
+              <strong>Save failed:</strong>{' '}
+              {(() => {
+                const errData = saveMutation.error?.response?.data?.error;
+                const fieldErrors = errData?.fields;
+                if (fieldErrors && Object.keys(fieldErrors).length > 0) {
+                  return Object.entries(fieldErrors).map(([f, m]) => `${f}: ${m}`).join(' | ');
+                }
+                return errData?.message || saveMutation.error?.message || 'Unknown error';
+              })()}
             </div>
           )}
 
