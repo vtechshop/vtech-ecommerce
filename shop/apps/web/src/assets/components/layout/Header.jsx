@@ -250,9 +250,9 @@ const Header = ({ onMobileMenuToggle }) => {
             if (to === '/blog') return path.startsWith('/blog');
             return path.startsWith(to);
           };
-          const navClass = (to) => `text-white hover:text-primary-300 transition-colors no-underline ${isActive(to) ? '!text-primary-400 font-semibold' : ''}`;
+          const navClass = (to) => `text-gray-700 dark:text-gray-200 hover:text-primary-600 dark:hover:text-primary-300 transition-colors no-underline ${isActive(to) ? '!text-primary-600 dark:!text-primary-400 font-semibold' : ''}`;
           return (
-          <nav className="hidden md:flex items-center gap-6 mt-4 pt-4 border-t dark:border-gray-700">
+          <nav className="hidden md:flex items-center gap-6 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <Link to="/" className={navClass('/')}>Home</Link>
             <Link to="/products" className={navClass('/products')}>Products</Link>
             <Link to="/products?view=categories" className={navClass('/products?view=categories')}>Categories</Link>
@@ -293,7 +293,7 @@ const Header = ({ onMobileMenuToggle }) => {
             if (to === '/blog') return path.startsWith('/blog');
             return path.startsWith(to);
           };
-          const mobileClass = (to) => `py-2 text-white transition-colors no-underline ${isActive(to) ? '!text-primary-400 font-semibold border-l-4 border-primary-400 pl-3' : 'hover:text-primary-300'}`;
+          const mobileClass = (to) => `py-2 text-gray-700 dark:text-gray-200 transition-colors no-underline ${isActive(to) ? '!text-primary-600 dark:!text-primary-400 font-semibold border-l-4 border-primary-400 pl-3' : 'hover:text-primary-600 dark:hover:text-primary-300'}`;
           return (
         <AnimatedDiv animation="slideLeft" duration={0.3}>
           <div className="md:hidden border-t dark:border-gray-700 bg-white dark:bg-gray-900">
