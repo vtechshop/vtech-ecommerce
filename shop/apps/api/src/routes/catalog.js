@@ -52,17 +52,24 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
     const skip = (parseInt(page) - 1) * cappedLimit;
 
     // When text search is active, project text score for relevance sorting
-    let sortOption = sort;
+    let sortOption;
     let projection = {};
     if (q) {
       projection = { score: { $meta: 'textScore' } };
       // Sort by relevance (text score) by default or when explicitly requested
       if (sort === 'relevance' || sort === '-createdAt') {
         sortOption = { score: { $meta: 'textScore' } };
+      } else {
+        sortOption = sort;
       }
     } else if (sort === 'relevance') {
-      // No text query but relevance sort requested — fall back to newest
-      sortOption = '-createdAt';
+      // No text query but relevance sort requested — fall back to pinned-first then newest
+      sortOption = { displayOrder: -1, createdAt: -1 };
+    } else if (sort === '-createdAt') {
+      // Default "Newest First" — respect pinned products first
+      sortOption = { displayOrder: -1, createdAt: -1 };
+    } else {
+      sortOption = sort;
     }
 
     let [items, total] = await Promise.all([

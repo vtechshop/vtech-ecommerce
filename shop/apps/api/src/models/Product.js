@@ -52,6 +52,7 @@ const productSchema = new mongoose.Schema({
   stock: { type: Number, default: 0, min: 0 },
   lowStockThreshold: { type: Number, default: 10 },
   trackInventory: { type: Boolean, default: true },
+  displayOrder: { type: Number, default: 0 }, // higher = appears earlier in product listing (0 = normal)
   weight: Number, // in kg
   shippingCharge: { type: Number, default: 0 }, // fixed shipping override (0 = use weight-based calc)
   delhiveryEnabled: { type: Boolean, default: true }, // if false, only MSS Transport / fallback (no Delhivery)

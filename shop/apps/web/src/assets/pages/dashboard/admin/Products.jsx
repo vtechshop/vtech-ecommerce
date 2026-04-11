@@ -417,6 +417,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     featured: product?.featured || false,
     vendorCommissionPercentage: product?.vendorCommissionPercentage || '',
     affiliateCommissionPercentage: product?.affiliateCommissionPercentage || '',
+    displayOrder: product?.displayOrder || 0,
     weight: product?.weight || '',
     shippingCharge: product?.shippingCharge || '',
     delhiveryEnabled: product?.delhiveryEnabled !== undefined ? product.delhiveryEnabled : true,
@@ -581,6 +582,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       stock: formData.stock ? parseInt(formData.stock, 10) : 0,
       vendorCommissionPercentage: formData.vendorCommissionPercentage ? parseFloat(formData.vendorCommissionPercentage) : undefined,
       affiliateCommissionPercentage: formData.affiliateCommissionPercentage ? parseFloat(formData.affiliateCommissionPercentage) : undefined,
+      displayOrder: parseInt(formData.displayOrder) || 0,
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
       shippingCharge: formData.shippingCharge ? parseFloat(formData.shippingCharge) : 0,
       delhiveryEnabled: formData.delhiveryEnabled,
@@ -801,6 +803,23 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                 disabled={isViewing}
                 className="input w-full"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Display Order
+                <span className="text-xs text-gray-500 ml-1">(higher = appears first)</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={formData.displayOrder}
+                onChange={(e) => setFormData({ ...formData, displayOrder: e.target.value })}
+                disabled={isViewing}
+                className="input w-full"
+              />
+              <p className="text-xs text-gray-400 mt-1">e.g. set 10 to pin this product to the top, 0 = normal order</p>
             </div>
 
             <div>
