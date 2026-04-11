@@ -37,6 +37,13 @@ exports.getCart = async (req, res, next) => {
 
     if (!cart) {
       cart = { items: [], totals: { subtotal: 0, tax: 0, shipping: 0, total: 0 } };
+    } else {
+      // Remove cart items whose product was deleted or unpublished
+      const validItems = cart.items.filter(item => item.productId && item.productId.published !== false);
+      if (validItems.length !== cart.items.length) {
+        cart.items = validItems;
+        await cart.save();
+      }
     }
 
     res.json({
