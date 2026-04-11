@@ -188,8 +188,8 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
           </button>
         )}
 
-        {/* Title */}
-        <h3 className="font-semibold text-gray-900 text-sm sm:text-base line-clamp-2 mb-2 leading-snug group-hover:text-primary-600 transition-colors">
+        {/* Title — fixed 2-line height so all cards align consistently */}
+        <h3 className="font-semibold text-gray-900 text-sm sm:text-base line-clamp-2 mb-2 leading-snug group-hover:text-primary-600 transition-colors min-h-[2.5rem] sm:min-h-[3rem]">
           {product.title}
         </h3>
 
