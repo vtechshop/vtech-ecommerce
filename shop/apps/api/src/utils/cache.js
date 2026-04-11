@@ -150,14 +150,27 @@ const del = async (key) => {
 };
 
 /**
- * Delete multiple keys matching a pattern
- * @param {string} pattern - Key pattern (e.g., 'user:*')
+ * Delete multiple keys matching a pattern (Redis + in-memory)
+ * @param {string} pattern - Key pattern (e.g., 'cache:/catalog*')
  * @returns {Promise<boolean>} Success status
  */
 const delPattern = async (pattern) => {
+  // Convert glob pattern to regex for memory cache
+  const regexStr = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&') // escape regex special chars
+    .replace(/\*/g, '.*');                  // * → .*
+  const regex = new RegExp(`^${regexStr}$`);
+
+  // Always clear matching keys from memory cache
+  for (const key of memoryCache.keys()) {
+    if (regex.test(key)) {
+      memoryCache.delete(key);
+    }
+  }
+
   try {
     const client = getRedisClient();
-    if (!client) return false;
+    if (!client) return true; // memory cache already cleared
 
     const keys = await client.keys(pattern);
     if (keys.length > 0) {
@@ -167,7 +180,7 @@ const delPattern = async (pattern) => {
     return true;
   } catch (error) {
     logger.error(`Cache delete pattern error for ${pattern}:`, error);
-    return false;
+    return true; // memory cache is cleared, consider partial success
   }
 };
 
