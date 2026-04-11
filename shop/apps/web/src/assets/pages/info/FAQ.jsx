@@ -44,8 +44,8 @@ const FAQ = () => {
           a: 'Items are shipped within 2 days and delivered within 10 days maximum based on location.'
         },
         {
-          q: 'Do you offer free shipping?',
-          a: 'Yes! We offer free standard shipping on all orders above ₹500. Orders below ₹500 have a shipping charge of ₹49.'
+          q: 'What are your delivery charges?',
+          a: 'Delivery charges vary based on your location and the weight of the order. The exact delivery cost will be shown at checkout.'
         },
         {
           q: 'Do you ship internationally?',

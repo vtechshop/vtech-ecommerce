@@ -8,7 +8,7 @@ const Shipping = () => {
   useEffect(() => {
     updateMetaTags({
       title: 'Shipping Information - V-Tech Kitchen',
-      description: 'Free shipping on orders over ₹500 at V-Tech Kitchen. Standard delivery in 2-10 days, express in 2-3 days. Pan-India coverage with real-time order tracking.',
+      description: 'Shipping information for V-Tech Kitchen. Standard delivery in 2-10 days. Delivery charges vary by location. Pan-India coverage with real-time order tracking.',
       canonical: 'https://www.vtechkitchen.com/page/shipping',
     });
   }, []);
@@ -40,8 +40,8 @@ const Shipping = () => {
                   <p className="text-gray-700 text-sm">Shipped in 2 days, Delivered in up to 10 days</p>
                 </div>
               </div>
-              <p className="text-gray-700 mb-2">Free on orders above ₹500</p>
-              <p className="text-2xl font-bold text-gray-900">₹49<span className="text-sm font-normal text-gray-700"> for orders below ₹500</span></p>
+              <p className="text-gray-700 mb-2">Charges vary by location & weight</p>
+              <p className="text-lg font-semibold text-gray-900">Calculated at checkout</p>
             </div>
 
             <div className="border border-gray-200 rounded-lg p-6">
@@ -88,9 +88,9 @@ const Shipping = () => {
           </div>
 
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-6">
-            <h3 className="font-semibold text-gray-900 mb-2">Free Shipping</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">Delivery Charges</h3>
             <p className="text-primary-800">
-              Enjoy FREE standard shipping on all orders above ₹500! Shop now and save on delivery costs.
+              Delivery charges are calculated based on your delivery location and order weight. The exact amount will be shown at checkout.
             </p>
           </div>
         </div>

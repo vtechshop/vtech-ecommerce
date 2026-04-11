@@ -144,7 +144,7 @@ const ProductSnippet = React.memo(({ product, onAddToCart, onViewDetails, onTogg
             )}
           </div>
           {product.shipping && (
-            <p className="text-xs text-green-600 mt-1">Free shipping</p>
+            <p className="text-xs text-gray-500 mt-1">Delivery charges apply</p>
           )}
         </div>
 
