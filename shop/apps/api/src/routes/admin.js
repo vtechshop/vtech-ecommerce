@@ -8,6 +8,7 @@ const sitemapController = require('../controllers/sitemapController');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validate');
 const { getSecurityStats } = require('../middleware/advancedSecurity');
+const { invalidateCache } = require('../middleware/cache');
 
 // secure all admin endpoints
 router.use(authenticate);
@@ -52,11 +53,11 @@ router.post('/users/bulk-update', admin.bulkUpdateUsers);
 // Products - SECURITY: Added ObjectId validation
 router.get('/products', admin.getProducts);
 router.get('/products/:id', validateObjectId('id'), admin.getProductById);
-router.post('/products', admin.createProduct);
-router.put('/products/:id', validateObjectId('id'), admin.updateProduct);
-router.delete('/products/:id', validateObjectId('id'), admin.deleteProduct);
-router.put('/products/:id/approve', validateObjectId('id'), admin.approveProduct);
-router.put('/products/:id/reject', validateObjectId('id'), admin.rejectProduct);
+router.post('/products', invalidateCache('cache:/catalog*'), admin.createProduct);
+router.put('/products/:id', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.updateProduct);
+router.delete('/products/:id', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.deleteProduct);
+router.put('/products/:id/approve', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.approveProduct);
+router.put('/products/:id/reject', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.rejectProduct);
 router.post('/products/reassign', admin.reassignProducts);
 router.put('/products/:id/commission-rules', validateObjectId('id'), admin.updateProductCommissionRules);
 
