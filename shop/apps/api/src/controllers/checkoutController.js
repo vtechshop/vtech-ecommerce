@@ -176,8 +176,9 @@ exports.getShippingQuotes = async (req, res, next) => {
     const originPin = env.DEFAULT_ORIGIN_ZIP || '641001'; // Coimbatore
     const totalWeightGrams = Math.round(totalWeightKg * 1000);
 
-    // Tamil Nadu → Vtech Transport (pincode-based zone) + Delhivery options
+    // Vtech Transport is always available for ALL states
     if (isTamilNadu(address.state)) {
+      // TN → pincode-based zone rates (more accurate local pricing)
       const zone = getVTZone(destinationPin);
       const cost = getVTRate(totalWeightKg, zone);
       const zoneNames = ['Local', 'Nearby', 'Medium', 'Far', 'Remote'];
@@ -191,9 +192,21 @@ exports.getShippingQuotes = async (req, res, next) => {
         carrier: 'Vtech Transport',
       });
       logger.info(`Vtech Transport Zone ${zone} (${zoneNames[zone]}) ₹${cost} for ${totalWeightKg.toFixed(2)}kg → ${destinationPin}`);
+    } else {
+      // Other states → weight-based fallback rate via Vtech Transport
+      const cost = getWeightFallbackRate(totalWeightKg);
+      quotes.push({
+        id: 'vtech-standard',
+        name: 'Vtech Transport',
+        description: '5-7 business days',
+        cost,
+        estimatedDays: 7,
+        carrier: 'Vtech Transport',
+      });
+      logger.info(`Vtech Transport (other state) ₹${cost} for ${totalWeightKg.toFixed(2)}kg → ${destinationPin}`);
     }
 
-    // All states (including TN) → also try Delhivery API (unless blocked by product setting)
+    // All states → also try Delhivery API for additional options (unless blocked by product setting)
     if (!delhiveryBlocked) try {
       const delhivery = shippingService.getCarrier('delhivery');
 
@@ -230,20 +243,6 @@ exports.getShippingQuotes = async (req, res, next) => {
       }
     } catch (carrierErr) {
       logger.warn('Delhivery carrier not available:', carrierErr.message);
-    }
-
-    // Fallback if no quotes at all (non-TN + Delhivery failed)
-    if (quotes.length === 0) {
-      const cost = getWeightFallbackRate(totalWeightKg);
-      quotes.push({
-        id: 'vtech-standard',
-        name: 'Vtech Transport',
-        description: '5-7 business days',
-        cost,
-        estimatedDays: 7,
-        carrier: 'Vtech Transport',
-      });
-      logger.warn(`All carriers unavailable — fallback rate ₹${cost} for ${totalWeightKg.toFixed(2)}kg`);
     }
 
     res.json({ success: true, data: { quotes, totalWeightKg } });
