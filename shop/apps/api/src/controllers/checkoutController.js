@@ -8,14 +8,14 @@ const env = require('../config/env');
 const logger = require('../config/logger');
 const { getZoneShippingCharge, ZONE_LABELS } = require('../utils/shippingZones');
 
-// MSS Transport — pincode-based zone system from Coimbatore origin
+// Vtech Transport — pincode-based zone system from Coimbatore origin
 // Zone 0 = Local (Coimbatore/Tiruppur/Erode/Nilgiris) ~0-100km
 // Zone 1 = Nearby (Salem/Namakkal/Karur/Dindigul)     ~100-250km
 // Zone 2 = Medium (Madurai/Trichy/Vellore/Dharmapuri) ~250-400km
 // Zone 3 = Far    (Chennai/Tirunelveli/Thanjavur)      ~400-550km
 // Zone 4 = Remote (Kanyakumari/Nagercoil/far northeast)~550km+
 
-const MSS_PINCODE_ZONES = {
+const VT_PINCODE_ZONES = {
   // Zone 0 — Local (Coimbatore, Tiruppur, Erode, Nilgiris)
   641: 0, 642: 0, 643: 0, 638: 0, 644: 0, 645: 0, 646: 0,
 
@@ -47,7 +47,7 @@ const MSS_PINCODE_ZONES = {
 };
 
 // Rate tables per zone [≤0.5kg, ≤1kg, ≤2kg, ≤5kg, ≤10kg, ≤20kg, per5kgAbove20]
-const MSS_ZONE_RATES = {
+const VT_ZONE_RATES = {
   0: [40,  60,  90,  130, 220, 380, 15],  // Local
   1: [60,  90,  130, 200, 320, 550, 20],  // Nearby
   2: [80,  120, 170, 270, 430, 720, 25],  // Medium
@@ -55,13 +55,13 @@ const MSS_ZONE_RATES = {
   4: [130, 190, 280, 450, 720, 1200, 40], // Remote
 };
 
-function getMSSZone(pincode) {
+function getVTZone(pincode) {
   const prefix = parseInt(String(pincode).slice(0, 3));
-  return MSS_PINCODE_ZONES[prefix] !== undefined ? MSS_PINCODE_ZONES[prefix] : 3; // default Zone 3
+  return VT_PINCODE_ZONES[prefix] !== undefined ? VT_PINCODE_ZONES[prefix] : 3; // default Zone 3
 }
 
-function getMSSRate(weightKg, zone = 3) {
-  const [r05, r1, r2, r5, r10, r20, perExtra] = MSS_ZONE_RATES[zone] || MSS_ZONE_RATES[3];
+function getVTRate(weightKg, zone = 3) {
+  const [r05, r1, r2, r5, r10, r20, perExtra] = VT_ZONE_RATES[zone] || VT_ZONE_RATES[3];
   if (weightKg <= 0.5) return r05;
   if (weightKg <= 1)   return r1;
   if (weightKg <= 2)   return r2;
@@ -87,7 +87,7 @@ function isTamilNadu(state = '') {
   return TN_NAMES.includes(state.trim().toLowerCase());
 }
 
-// Get shipping quotes — TN uses MSS Transport, other states use Delhivery API
+// Get shipping quotes — TN uses Vtech Transport (pincode-based zones), other states use Delhivery API
 exports.getShippingQuotes = async (req, res, next) => {
   try {
     const { address, items } = req.body;
@@ -176,21 +176,21 @@ exports.getShippingQuotes = async (req, res, next) => {
     const originPin = env.DEFAULT_ORIGIN_ZIP || '641001'; // Coimbatore
     const totalWeightGrams = Math.round(totalWeightKg * 1000);
 
-    // Tamil Nadu → MSS Transport (pincode-based zone) + Delhivery options
+    // Tamil Nadu → Vtech Transport (pincode-based zone) + Delhivery options
     if (isTamilNadu(address.state)) {
-      const zone = getMSSZone(destinationPin);
-      const cost = getMSSRate(totalWeightKg, zone);
+      const zone = getVTZone(destinationPin);
+      const cost = getVTRate(totalWeightKg, zone);
       const zoneNames = ['Local', 'Nearby', 'Medium', 'Far', 'Remote'];
       const days = [1, 2, 3, 4, 5][zone] || 4;
       quotes.push({
-        id: 'mss-standard',
-        name: 'MSS Transport',
+        id: 'vtech-standard',
+        name: 'Vtech Transport',
         description: `${days}-${days + 1} business days (Zone: ${zoneNames[zone]})`,
         cost,
         estimatedDays: days + 1,
-        carrier: 'MSS Transport',
+        carrier: 'Vtech Transport',
       });
-      logger.info(`MSS Transport Zone ${zone} (${zoneNames[zone]}) ₹${cost} for ${totalWeightKg.toFixed(2)}kg → ${destinationPin}`);
+      logger.info(`Vtech Transport Zone ${zone} (${zoneNames[zone]}) ₹${cost} for ${totalWeightKg.toFixed(2)}kg → ${destinationPin}`);
     }
 
     // All states (including TN) → also try Delhivery API (unless blocked by product setting)
@@ -236,11 +236,12 @@ exports.getShippingQuotes = async (req, res, next) => {
     if (quotes.length === 0) {
       const cost = getWeightFallbackRate(totalWeightKg);
       quotes.push({
-        id: 'standard',
-        name: 'Standard Shipping',
+        id: 'vtech-standard',
+        name: 'Vtech Transport',
         description: '5-7 business days',
         cost,
         estimatedDays: 7,
+        carrier: 'Vtech Transport',
       });
       logger.warn(`All carriers unavailable — fallback rate ₹${cost} for ${totalWeightKg.toFixed(2)}kg`);
     }

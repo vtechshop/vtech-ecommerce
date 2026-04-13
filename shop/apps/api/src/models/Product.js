@@ -61,7 +61,7 @@ const productSchema = new mongoose.Schema({
     zone: { type: String, enum: ['tamilnadu', 'south', 'north', 'east', 'west'], required: true },
     charge: { type: Number, min: 0, required: true },
   }],
-  delhiveryEnabled: { type: Boolean, default: true }, // if false, only MSS Transport / fallback (no Delhivery)
+  delhiveryEnabled: { type: Boolean, default: true }, // if false, only Vtech Transport / fallback (no Delhivery)
   dimensions: { length: Number, width: Number, height: Number, unit: { type: String, enum: ['in', 'cm'], default: 'in' } },
   rating: { type: Number, default: 0, min: 0, max: 5 },
   reviewCount: { type: Number, default: 0 },
