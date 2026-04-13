@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   info: { padding: spacing.md - 2 },
-  title: { fontSize: fontSize.sm, color: colors.text, fontWeight: fontWeight.semibold, marginBottom: spacing.xs },
+  title: { fontSize: fontSize.sm, color: colors.text, fontWeight: fontWeight.semibold, marginBottom: spacing.xs, minHeight: 36, lineHeight: 18 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs, gap: 2 },
   rating: { fontSize: fontSize.xs, fontWeight: fontWeight.semibold, color: colors.text },
   reviewCount: { fontSize: fontSize.xs, color: colors.textSecondary },

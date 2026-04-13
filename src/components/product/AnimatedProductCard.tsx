@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
 
   info: { padding: spacing.sm },
-  title: { fontSize: fontSize.sm, color: colors.text, fontWeight: fontWeight.medium, marginBottom: spacing.xs, lineHeight: 18 },
+  title: { fontSize: fontSize.sm, color: colors.text, fontWeight: fontWeight.medium, marginBottom: spacing.xs, lineHeight: 18, minHeight: 36 },
 
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs, gap: 4 },
   ratingPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#388e3c', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4, gap: 2 },
