@@ -72,7 +72,9 @@ export const removeCartItem = createAsyncThunk(
   'cart/remove',
   async (itemId: string, { rejectWithValue }) => {
     try {
-      const { data } = await cartApi.removeItem(itemId);
+      await cartApi.removeItem(itemId);
+      // Backend DELETE may not return updated cart — refetch to get current state
+      const { data } = await cartApi.get();
       return normalizeCart(data.data);
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to remove item');

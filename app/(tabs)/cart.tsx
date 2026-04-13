@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Pressable, Alert } from 'react-native';
+import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -273,8 +273,7 @@ export default function CartScreen() {
   const subtotal = cart.totals?.subtotal ?? 0;
   const discount = cart.totals?.discount ?? 0;
   const tax = cart.totals?.tax ?? 0;
-  const shipping = cart.totals?.shipping ?? 0;
-  const total = subtotal - discount + tax + shipping;
+  const total = subtotal - discount + tax;
 
   return (
     <View style={styles.container}>
@@ -352,12 +351,15 @@ export default function CartScreen() {
         <View style={styles.couponRow}>
           <View style={styles.couponInput}>
             <Ionicons name="pricetag-outline" size={16} color={colors.textSecondary} />
-            <Text
-              style={{ flex: 1, fontSize: fontSize.sm, color: couponCode ? colors.text : colors.textSecondary }}
-              onPress={() => {}}
-            >
-              {couponCode || 'Have a coupon code?'}
-            </Text>
+            <TextInput
+              style={{ flex: 1, fontSize: fontSize.sm, color: colors.text }}
+              placeholder="Have a coupon code?"
+              placeholderTextColor={colors.textSecondary}
+              value={couponCode}
+              onChangeText={setCouponCode}
+              autoCapitalize="characters"
+              editable={!couponApplying}
+            />
           </View>
           <TouchableOpacity
             style={styles.couponBtn}
@@ -382,9 +384,7 @@ export default function CartScreen() {
           )}
           <View style={styles.priceRow2}>
             <Text style={styles.priceLabel}>Delivery</Text>
-            <Text style={[styles.priceVal, shipping === 0 ? { color: colors.success } : {}]}>
-              {shipping === 0 ? 'FREE' : `₹${shipping.toLocaleString()}`}
-            </Text>
+            <Text style={[styles.priceVal, { color: colors.textSecondary, fontStyle: 'italic' }]}>At checkout</Text>
           </View>
           <View style={styles.priceRow2}>
             <Text style={styles.priceLabel}>Tax (GST)</Text>

@@ -20,6 +20,7 @@ import { updateCartItem, removeCartItem } from '../../src/store/slices/cartSlice
 import { userApi } from '../../src/api/user';
 import { paymentApi } from '../../src/api/payment';
 import { ordersApi } from '../../src/api/orders';
+import { checkoutApi, ShippingQuote } from '../../src/api/checkout';
 import { Address } from '../../src/types';
 import Button from '../../src/components/ui/Button';
 import LoadingScreen from '../../src/components/ui/LoadingScreen';
@@ -28,12 +29,6 @@ import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpa
 const emptyAddress: Omit<Address, '_id'> = {
   fullName: '', phone: '', addressLine1: '', addressLine2: '', city: '', state: '', pincode: '', country: 'India',
 };
-
-type DeliveryMethod = 'standard' | 'express';
-
-const DELIVERY_OPTIONS: { key: DeliveryMethod; label: string; desc: string; price: number; days: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'standard', label: 'Standard Delivery', desc: 'Delivered in 5-7 business days', price: 0, days: '5-7 business days', icon: 'bicycle-outline' },
-];
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -100,7 +95,9 @@ export default function CheckoutScreen() {
   const [form, setForm] = useState(emptyAddress);
   const [saving, setSaving] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('standard');
+  const [shippingQuotes, setShippingQuotes] = useState<ShippingQuote[]>([]);
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+  const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [locatingGPS, setLocatingGPS] = useState(false);
   const [pincodeLoading, setPincodeLoading] = useState(false);
   const [showStatePicker, setShowStatePicker] = useState(false);
@@ -112,6 +109,30 @@ export default function CheckoutScreen() {
   const razorpayResolveRef = useRef<((result: any) => void) | null>(null);
   const razorpayRejectRef = useRef<((err: any) => void) | null>(null);
 
+  const fetchShippingQuotes = async (addrId: string, addrList: Address[]) => {
+    const addr = addrList.find((a) => a._id === addrId);
+    if (!addr || !cart) return;
+    setLoadingQuotes(true);
+    try {
+      const items = (cart.items ?? []).map((item) => ({
+        productId: String(item.product?._id || (item as any).productId?._id || (item as any).productId || ''),
+        qty: item.quantity,
+      })).filter((i) => i.productId);
+      const res = await checkoutApi.getShippingQuotes(
+        { zipCode: addr.pincode, state: addr.state, city: addr.city, country: addr.country || 'India' },
+        items,
+      );
+      const quotes: ShippingQuote[] = res.data?.data?.quotes ?? [];
+      setShippingQuotes(quotes);
+      if (quotes.length > 0) setSelectedQuoteId(quotes[0].id);
+    } catch {
+      // Fallback: use a default rate if backend is unreachable
+      setShippingQuotes([{ id: 'standard', name: 'Standard Delivery', description: '5-7 business days', cost: 49, estimatedDays: '5-7', carrier: 'default' }]);
+      setSelectedQuoteId('standard');
+    }
+    setLoadingQuotes(false);
+  };
+
   const loadAddresses = async () => {
     try {
       const res = await userApi.getAddresses();
@@ -119,8 +140,11 @@ export default function CheckoutScreen() {
       setAddresses(data);
       if (!selectedAddress) {
         const defaultAddr = data.find((a: Address) => a.isDefault);
-        if (defaultAddr?._id) setSelectedAddress(defaultAddr._id);
-        else if (data.length > 0) setSelectedAddress(data[0]._id!);
+        const firstId = defaultAddr?._id || (data.length > 0 ? data[0]._id : null);
+        if (firstId) {
+          setSelectedAddress(firstId);
+          fetchShippingQuotes(firstId, data);
+        }
       }
     } catch (e: any) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to load addresses');
@@ -208,13 +232,11 @@ export default function CheckoutScreen() {
     'Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry',
   ];
 
-  const selectedDelivery = DELIVERY_OPTIONS.find((d) => d.key === deliveryMethod)!;
-  const deliveryCharge = selectedDelivery.price;
+  const selectedQuote = shippingQuotes.find((q) => q.id === selectedQuoteId) ?? shippingQuotes[0] ?? null;
   const subtotal = cart?.totals?.subtotal ?? 0;
   const tax = cart?.totals?.tax ?? 0;
   const discount = cart?.totals?.discount ?? 0;
-  const baseShipping = cart?.totals?.shipping ?? 0;
-  const finalShipping = deliveryMethod === 'express' ? deliveryCharge : baseShipping;
+  const finalShipping = selectedQuote?.cost ?? 0;
   const grandTotal = subtotal - discount + tax + finalShipping;
 
   const handlePayment = async () => {
@@ -257,6 +279,7 @@ export default function CheckoutScreen() {
         addressId: selectedAddress,
         shipTo,
         paymentMethod: 'razorpay',
+        shippingMethod: selectedQuote ? { id: selectedQuote.id, name: selectedQuote.name, cost: selectedQuote.cost } : undefined,
         items: orderItems as any,
         notes: orderNotes.trim() || undefined,
       } as any);
@@ -450,7 +473,10 @@ export default function CheckoutScreen() {
           <TouchableOpacity
             key={addr._id}
             style={[styles.addressCard, selectedAddress === addr._id && styles.addressSelected]}
-            onPress={() => setSelectedAddress(addr._id!)}
+            onPress={() => {
+              setSelectedAddress(addr._id!);
+              fetchShippingQuotes(addr._id!, addresses);
+            }}
           >
             <View style={styles.radioOuter}>
               {selectedAddress === addr._id && <View style={styles.radioInner} />}
@@ -613,33 +639,47 @@ export default function CheckoutScreen() {
           <Text style={styles.sectionTitle}>Delivery Method</Text>
         </View>
 
-        {DELIVERY_OPTIONS.map((opt) => (
-          <AnimatedOptionCard
-            key={opt.key}
-            isSelected={deliveryMethod === opt.key}
-            onPress={() => setDeliveryMethod(opt.key)}
-          >
-            <View style={styles.radioOuter}>
-              {deliveryMethod === opt.key && <View style={styles.radioInner} />}
-            </View>
-            <View style={[styles.optionIcon, deliveryMethod === opt.key && styles.optionIconActive]}>
-              <Ionicons name={opt.icon} size={20} color={deliveryMethod === opt.key ? colors.primary : colors.textSecondary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <View style={styles.optionTitleRow}>
-                <Text style={[styles.optionLabel, deliveryMethod === opt.key && styles.optionLabelActive]}>{opt.label}</Text>
-                <Text style={[styles.optionPrice, deliveryMethod === opt.key && styles.optionPriceActive]}>
-                  {opt.price === 0 ? 'FREE' : `₹${opt.price}`}
-                </Text>
-              </View>
-              <Text style={styles.optionDesc}>{opt.desc}</Text>
-              <View style={styles.optionDaysRow}>
-                <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
-                <Text style={styles.optionDays}>{opt.days}</Text>
-              </View>
-            </View>
-          </AnimatedOptionCard>
-        ))}
+        {loadingQuotes ? (
+          <View style={[styles.optionCard, { justifyContent: 'center', alignItems: 'center', paddingVertical: spacing.xl }]}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.optionDesc, { marginTop: spacing.sm }]}>Calculating shipping rates...</Text>
+          </View>
+        ) : shippingQuotes.length === 0 ? (
+          <View style={[styles.optionCard, { paddingVertical: spacing.xl }]}>
+            <Text style={[styles.optionDesc, { textAlign: 'center', color: colors.textSecondary }]}>
+              Select a delivery address to see shipping options
+            </Text>
+          </View>
+        ) : (
+          shippingQuotes.map((quote) => {
+            const isSelected = selectedQuoteId === quote.id;
+            const iconName: keyof typeof Ionicons.glyphMap =
+              quote.carrier === 'Vtech Transport' ? 'car-outline' :
+              quote.id?.includes('express') ? 'flash-outline' :
+              quote.carrier === 'Delhivery' ? 'cube-outline' : 'bicycle-outline';
+            return (
+              <AnimatedOptionCard key={quote.id} isSelected={isSelected} onPress={() => setSelectedQuoteId(quote.id)}>
+                <View style={styles.radioOuter}>
+                  {isSelected && <View style={styles.radioInner} />}
+                </View>
+                <View style={[styles.optionIcon, isSelected && styles.optionIconActive]}>
+                  <Ionicons name={iconName} size={20} color={isSelected ? colors.primary : colors.textSecondary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.optionTitleRow}>
+                    <Text style={[styles.optionLabel, isSelected && styles.optionLabelActive]}>{quote.name}</Text>
+                    <Text style={[styles.optionPrice, isSelected && styles.optionPriceActive]}>₹{quote.cost}</Text>
+                  </View>
+                  <Text style={styles.optionDesc}>{quote.description}</Text>
+                  <View style={styles.optionDaysRow}>
+                    <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
+                    <Text style={styles.optionDays}>{quote.estimatedDays} days</Text>
+                  </View>
+                </View>
+              </AnimatedOptionCard>
+            );
+          })
+        )}
 
         {/* Payment Info */}
         <View style={styles.sectionHeader}>
@@ -752,9 +792,9 @@ export default function CheckoutScreen() {
           {discount > 0 && <View style={styles.summaryRow}><Text style={styles.label}>Discount</Text><Text style={[styles.value, { color: colors.success }]}>-₹{discount.toLocaleString()}</Text></View>}
           <View style={styles.summaryRow}><Text style={styles.label}>Tax (GST)</Text><Text style={styles.value}>₹{tax.toLocaleString()}</Text></View>
           <View style={styles.summaryRow}>
-            <Text style={styles.label}>Shipping ({selectedDelivery.label})</Text>
-            <Text style={[styles.value, finalShipping === 0 ? { color: colors.success } : {}]}>
-              {finalShipping === 0 ? 'FREE' : `₹${finalShipping.toLocaleString()}`}
+            <Text style={styles.label}>Shipping {selectedQuote ? `(${selectedQuote.name})` : ''}</Text>
+            <Text style={styles.value}>
+              {loadingQuotes ? '...' : `₹${finalShipping.toLocaleString()}`}
             </Text>
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
