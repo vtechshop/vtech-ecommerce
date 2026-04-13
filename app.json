@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "scheme": "vtech",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -43,13 +43,6 @@
           "sounds": [],
           "androidMode": "default",
           "androidCollapsedTitle": "V-Tech Kitchen"
-        }
-      ],
-      [
-        "@react-native-voice/voice",
-        {
-          "microphonePermission": "Allow V-Tech Kitchen to use your microphone for voice search",
-          "speechRecognitionPermission": "Allow V-Tech Kitchen to recognize your voice for product search"
         }
       ]
     ],

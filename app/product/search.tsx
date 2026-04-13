@@ -2,7 +2,9 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import Voice from '@react-native-voice/voice';
+// Voice search — native module loaded lazily to avoid crash if unavailable
+let Voice: any = null;
+try { Voice = require('@react-native-voice/voice').default; } catch {}
 import { productsApi } from '../../src/api/products';
 import { Product } from '../../src/types';
 import AnimatedProductCard from '../../src/components/product/AnimatedProductCard';
