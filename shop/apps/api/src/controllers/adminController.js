@@ -21,6 +21,7 @@ const warrantyService = require('../services/warrantyService');
 const notificationHelper = require('../services/notificationHelper');
 const payoutService = require('../services/payoutService');
 const indexNow = require('../services/indexNowService');
+const { sendOrderStatusPush } = require('../services/expoPushService');
 
 // Helper function to activate warranties after payment
 const activateWarrantiesForOrder = async (order) => {
@@ -953,7 +954,7 @@ exports.updateOrderAddress = async (req, res, next) => {
 exports.updateOrderStatus = async (req, res, next) => {
   try {
     const { status, description } = req.body;
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id).populate('userId', 'name email pushTokens');
     if (!order) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } });
 
     order.status = status;
@@ -969,6 +970,11 @@ exports.updateOrderStatus = async (req, res, next) => {
     if (status === 'delivered') {
       await payoutService.autoApproveCommissions(order._id);
       logger.info(`Auto-approved commissions for delivered order: ${order.orderId}`);
+    }
+
+    // Send push notification to customer
+    if (order.userId?.pushTokens?.length) {
+      sendOrderStatusPush(order.userId, status, order._id.toString(), `#${order.orderId}`).catch(() => {});
     }
 
     logger.info(`Order status updated: ${order.orderId} -> ${status}`);

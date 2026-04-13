@@ -88,6 +88,9 @@ const userSchema = new mongoose.Schema(
       promotions: { type: Boolean, default: true },
       newsletter: { type: Boolean, default: true },
     },
+
+    // Mobile push notification tokens (Expo push tokens)
+    pushTokens: [{ type: String }],
   },
   {
     timestamps: true,

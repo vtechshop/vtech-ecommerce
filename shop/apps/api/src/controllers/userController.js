@@ -693,3 +693,39 @@ exports.deleteAPIKey = async (req, res, next) => {
     next(error);
   }
 };
+
+// Register or update Expo push notification token for the authenticated user
+exports.updatePushToken = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_TOKEN', message: 'Push token is required' } });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'User not found' } });
+
+    // Add token if not already stored (max 5 tokens per user)
+    if (!user.pushTokens.includes(token)) {
+      user.pushTokens = [token, ...user.pushTokens].slice(0, 5);
+      await user.save();
+    }
+
+    res.json({ success: true, data: { message: 'Push token registered' } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Remove Expo push token (e.g. on logout)
+exports.removePushToken = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.json({ success: true });
+
+    await User.findByIdAndUpdate(req.user._id, { $pull: { pushTokens: token } });
+    res.json({ success: true, data: { message: 'Push token removed' } });
+  } catch (error) {
+    next(error);
+  }
+};

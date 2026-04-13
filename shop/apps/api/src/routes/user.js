@@ -54,4 +54,8 @@ router.delete('/wishlist/:productId', userController.removeFromWishlist);
 router.get('/email-preferences', userController.getEmailPreferences);
 router.put('/email-preferences', userController.updateEmailPreferences);
 
+// Push notification token registration
+router.put('/push-token', userController.updatePushToken);
+router.delete('/push-token', userController.removePushToken);
+
 module.exports = router;
