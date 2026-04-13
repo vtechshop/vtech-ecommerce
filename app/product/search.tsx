@@ -270,13 +270,14 @@ export default function SearchScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Sort By</Text>
-            {SORT_OPTIONS.map((opt) => (
-              <TouchableOpacity key={opt.value} style={[styles.sortOption, sortBy === opt.value && styles.sortOptionActive]} onPress={() => { setSortBy(opt.value); setShowFilter(false); if (searched && query.trim()) { setPage(1); setHasMore(true); doSearch(query, 1, opt.value); } }}>
-                <Text style={[styles.sortOptionText, sortBy === opt.value && styles.sortOptionTextActive]}>{opt.label}</Text>
-                {sortBy === opt.value && <Ionicons name="checkmark" size={20} color={colors.primary} />}
-              </TouchableOpacity>
-            ))}
+            <Text style={styles.modalTitle}>Filters</Text>
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Ionicons name="options-outline" size={40} color={colors.textSecondary} />
+              <Text style={{ color: colors.textSecondary, marginTop: 12, fontSize: fontSize.sm }}>Filters coming soon</Text>
+            </View>
+            <TouchableOpacity style={[styles.sortOption]} onPress={() => setShowFilter(false)}>
+              <Text style={[styles.sortOptionText, { textAlign: 'center', flex: 1 }]}>Close</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>

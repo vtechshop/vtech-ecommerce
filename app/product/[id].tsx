@@ -21,7 +21,7 @@ import { Product, Review } from '../../src/types';
 import AnimatedProductCard from '../../src/components/product/AnimatedProductCard';
 import ImageThumbnailStrip from '../../src/components/product/ImageThumbnailStrip';
 import RatingBreakdown from '../../src/components/product/RatingBreakdown';
-import { OffersCard, ReturnPolicyBadges } from '../../src/components/product/OffersAndPolicies';
+import { ReturnPolicyBadges } from '../../src/components/product/OffersAndPolicies';
 import CollapsibleSection from '../../src/components/product/CollapsibleSection';
 import FrequentlyBoughtTogether from '../../src/components/product/FrequentlyBoughtTogether';
 import PincodeChecker from '../../src/components/product/PincodeChecker';
@@ -145,9 +145,15 @@ function ProductDetailScreen() {
     setError(null);
     setLoading(true);
     try {
-      const [prodRes, revRes] = await Promise.all([
-        productsApi.getById(id),
-        productsApi.getReviews(id, { limit: 10 }).catch(() => ({ data: { data: [] } })),
+      // MongoDB ObjectId = 24 hex chars. Anything else is a slug.
+      const isObjectId = /^[a-f\d]{24}$/i.test(id);
+      const prodRes = isObjectId
+        ? await productsApi.getById(id)
+        : await productsApi.getBySlug(id);
+      const resolvedId = prodRes.data?.data?._id ?? id;
+      const [, revRes] = await Promise.all([
+        Promise.resolve(prodRes),
+        productsApi.getReviews(resolvedId, { limit: 10 }).catch(() => ({ data: { data: [] } })),
       ]);
       const prod = prodRes.data?.data;
       if (!prod || !prod._id) {
@@ -413,11 +419,14 @@ function ProductDetailScreen() {
           ) : (
             <Text style={styles.price}>₹{(product.price ?? 0).toLocaleString()}</Text>
           )}
-          <Text style={styles.taxNote}>Inclusive of all taxes. FREE Delivery.</Text>
+          <Text style={styles.taxNote}>Inclusive of all taxes.</Text>
 
           {/* GST Breakdown — Amazon India style */}
           {product.taxable !== false && (product.price ?? 0) > 0 && (() => {
-            const GST_RATE = 0.18;
+            // Use product's actual taxRate (5, 12, 18...), fallback 0 if not set
+            const gstPercent = product.taxRate ?? 0;
+            if (gstPercent === 0) return null;
+            const GST_RATE = gstPercent / 100;
             const rawPrice = product.price ?? 0;
             let priceExcl: number, gstAmount: number, totalInclGst: number;
             if (product.taxIncluded) {
@@ -434,11 +443,11 @@ function ProductDetailScreen() {
             return (
               <View style={styles.gstBox}>
                 <View style={styles.gstRow}>
-                  <Text style={styles.gstLabel}>Price (excl. 18% GST)</Text>
+                  <Text style={styles.gstLabel}>Price (excl. {gstPercent}% GST)</Text>
                   <Text style={styles.gstValue}>₹{priceExcl.toLocaleString()}</Text>
                 </View>
                 <View style={styles.gstRow}>
-                  <Text style={styles.gstLabel}>GST (18%)</Text>
+                  <Text style={styles.gstLabel}>GST ({gstPercent}%)</Text>
                   <Text style={styles.gstValue}>+ ₹{gstAmount.toLocaleString()}</Text>
                 </View>
                 <View style={[styles.gstRow, styles.gstTotal]}>
@@ -454,12 +463,7 @@ function ProductDetailScreen() {
         <View style={styles.card}>
           {(product.stock ?? 0) > 0 ? (
             <>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Ionicons name="car-outline" size={18} color={colors.text} />
-                <Text style={styles.deliveryLabel}>
-                  FREE delivery <Text style={{ fontWeight: '700', color: '#0F1111' }}>{deliveryEstimate}</Text>
-                </Text>
-              </View>
+
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <Text style={styles.inStockText}>In stock.</Text>
                 {isLowStock && (
@@ -489,7 +493,6 @@ function ProductDetailScreen() {
             <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} />
             <Text style={{ fontSize: 12, color: colors.textSecondary }}>Secure transaction</Text>
           </View>
-          <OffersCard />
           <ReturnPolicyBadges />
         </View>
 

@@ -274,8 +274,8 @@ export default function FestivalSaleScreen() {
         </View>
         <View style={styles.featureDivider} />
         <View style={styles.featureItem}>
-          <Ionicons name="car" size={18} color={colors.success} />
-          <Text style={styles.featureText}>Free Shipping</Text>
+          <Ionicons name="headset" size={18} color={colors.success} />
+          <Text style={styles.featureText}>24/7 Support</Text>
         </View>
         <View style={styles.featureDivider} />
         <View style={styles.featureItem}>

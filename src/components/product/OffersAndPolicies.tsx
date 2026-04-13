@@ -11,7 +11,7 @@ const OFFERS = [
 
 const POLICIES = [
   { icon: 'refresh-outline' as keyof typeof Ionicons.glyphMap, label: '7 Day\nReturns' },
-  { icon: 'swap-horizontal-outline' as keyof typeof Ionicons.glyphMap, label: 'Free\nReplacement' },
+  { icon: 'headset-outline' as keyof typeof Ionicons.glyphMap, label: 'Customer\nSupport' },
   { icon: 'shield-checkmark-outline' as keyof typeof Ionicons.glyphMap, label: 'Secure\nPayment' },
   { icon: 'cube-outline' as keyof typeof Ionicons.glyphMap, label: 'Genuine\nProducts' },
 ];

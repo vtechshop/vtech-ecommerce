@@ -61,12 +61,7 @@ function mapApiCoupon(c: ApiCoupon): CouponDisplay {
   };
 }
 
-// Fallback coupons shown when API is empty/fails
-const FALLBACK_COUPONS: CouponDisplay[] = [
-  { code: 'SAVE10', title: '10% Off', description: 'Get 10% off on your next purchase. Valid on all products above ₹500.', terms: 'Min. order ₹500. Max discount ₹200. Valid once per user.', category: 'All Users', icon: 'pricetag', color: colors.primary, bgColor: colors.primaryLightest },
-  { code: 'FIRST50', title: '₹50 Off First Order', description: 'Flat ₹50 off on your very first order. Welcome to V-Tech!', terms: 'Valid for new users only. No minimum order value.', category: 'New User', icon: 'gift', color: colors.success, bgColor: colors.successLight },
-  { code: 'FREESHIP', title: 'Free Shipping', description: 'Enjoy free shipping on any order.', terms: 'Valid on standard delivery.', category: 'All Users', icon: 'car', color: colors.secondary, bgColor: colors.secondaryLighter },
-];
+const FALLBACK_COUPONS: CouponDisplay[] = [];
 
 export default function CouponsScreen() {
   const { showToast } = useToast();
@@ -112,6 +107,14 @@ export default function CouponsScreen() {
 
       {loading && (
         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.xl }} />
+      )}
+
+      {!loading && coupons.length === 0 && (
+        <View style={{ alignItems: 'center', paddingVertical: 48, paddingHorizontal: 32 }}>
+          <Ionicons name="pricetag-outline" size={48} color={colors.textSecondary} />
+          <Text style={{ fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.text, marginTop: spacing.md }}>No Coupons Available</Text>
+          <Text style={{ fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm }}>Check back later for exciting offers and discounts.</Text>
+        </View>
       )}
 
       {/* Coupons by Category */}

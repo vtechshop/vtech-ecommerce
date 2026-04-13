@@ -25,7 +25,6 @@ import { useToast } from '../../src/components/ui/Toast';
 import { haptic } from '../../src/utils/haptics';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 
-const FREE_SHIPPING_THRESHOLD = 999;
 const SAVED_KEY = '@vtech_saved_for_later';
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -274,10 +273,8 @@ export default function CartScreen() {
   const subtotal = cart.totals?.subtotal ?? 0;
   const discount = cart.totals?.discount ?? 0;
   const tax = cart.totals?.tax ?? 0;
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : (cart.totals?.shipping ?? 0);
+  const shipping = cart.totals?.shipping ?? 0;
   const total = subtotal - discount + tax + shipping;
-  const amountToFree = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0);
-  const progress = Math.min(subtotal / FREE_SHIPPING_THRESHOLD, 1);
 
   return (
     <View style={styles.container}>
@@ -286,29 +283,7 @@ export default function CartScreen() {
         keyExtractor={(item) => item._id}
         contentContainerStyle={{ padding: spacing.md, paddingBottom: 10 }}
         ListHeaderComponent={
-          <>
-            {/* Shipping progress */}
-            {amountToFree > 0 ? (
-              <View style={styles.shippingBanner}>
-                <Ionicons name="car-outline" size={16} color={colors.info} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.shippingMsg}>
-                    Add <Text style={styles.shippingBold}>₹{amountToFree.toLocaleString()}</Text> more for free shipping
-                  </Text>
-                  <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${progress * 100}%` as any }]} />
-                  </View>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.freeShipBanner}>
-                <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                <Text style={styles.freeShipText}>Free shipping applied!</Text>
-              </View>
-            )}
-
-            <Text style={styles.cartCount}>{cart.items.length} item{cart.items.length !== 1 ? 's' : ''} in cart</Text>
-          </>
+          <Text style={styles.cartCount}>{cart.items.length} item{cart.items.length !== 1 ? 's' : ''} in cart</Text>
         }
         renderItem={({ item }) => (
           <CartItemCard
@@ -443,13 +418,6 @@ const styles = StyleSheet.create({
   shopNowText: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.bold },
 
   // Shipping banner
-  shippingBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#e8f4fd', borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm },
-  shippingMsg: { fontSize: fontSize.sm, color: colors.info },
-  shippingBold: { fontWeight: fontWeight.bold },
-  progressBar: { height: 4, backgroundColor: '#c3d9f0', borderRadius: 2, marginTop: 6, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: colors.info, borderRadius: 2 },
-  freeShipBanner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#e8f7ee', borderRadius: borderRadius.xl, padding: spacing.md, marginBottom: spacing.sm },
-  freeShipText: { fontSize: fontSize.sm, color: colors.success, fontWeight: fontWeight.semibold },
   cartCount: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.sm, fontWeight: fontWeight.medium },
 
   // Cart Item Card

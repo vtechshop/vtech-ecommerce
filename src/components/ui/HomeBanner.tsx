@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { View, FlatList, StyleSheet, Dimensions, Text } from 'react-native';
+import { View, FlatList, StyleSheet, Dimensions, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -21,15 +22,16 @@ interface BannerItem {
   title: string;
   subtitle: string;
   image?: string;
+  link?: string;
   icon?: keyof typeof Ionicons.glyphMap;
   gradient?: readonly [string, string, ...string[]];
 }
 
 // Fallback banners shown when API returns empty or fails
 const FALLBACK_BANNERS: BannerItem[] = [
-  { id: 'f1', title: 'Welcome to V-Tech', subtitle: 'Discover amazing products at best prices', icon: 'sparkles', gradient: gradients.primary },
-  { id: 'f2', title: 'Free Shipping', subtitle: 'On orders above ₹999', icon: 'airplane', gradient: gradients.info },
-  { id: 'f3', title: 'Hot Deals', subtitle: 'Up to 50% off on trending items', icon: 'flame', gradient: gradients.sunset },
+  { id: 'f1', title: 'Welcome to V-Tech Kitchen', subtitle: 'Discover quality kitchen products', icon: 'sparkles', gradient: gradients.primary },
+  { id: 'f2', title: 'Hot Deals', subtitle: 'Best prices on kitchen equipment', icon: 'flame', gradient: gradients.sunset },
+  { id: 'f3', title: 'Genuine Products', subtitle: '100% authentic kitchen appliances', icon: 'shield-checkmark', gradient: gradients.info },
   { id: 'f4', title: 'Earn Rewards', subtitle: 'Collect loyalty points on every purchase', icon: 'star', gradient: gradients.purple },
 ];
 
@@ -39,10 +41,12 @@ function mapApiBanners(apiBanners: Banner[]): BannerItem[] {
     title: b.title,
     subtitle: b.subtitle || '',
     image: b.image,
+    link: b.link,
   }));
 }
 
 export default function HomeBanner() {
+  const router = useRouter();
   const flatListRef = useRef<FlatList>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [banners, setBanners] = useState<BannerItem[]>(FALLBACK_BANNERS);
@@ -94,8 +98,32 @@ export default function HomeBanner() {
     setActiveIndex(index);
   };
 
+  const handleBannerPress = (link?: string) => {
+    if (!link) return;
+    // /product/:slug → product detail
+    const productMatch = link.match(/^\/product\/(.+)/);
+    if (productMatch) {
+      router.push({ pathname: '/product/[id]' as any, params: { id: productMatch[1] } });
+      return;
+    }
+    // /category/:slug → category listing
+    const categoryMatch = link.match(/^\/category\/(.+)/);
+    if (categoryMatch) {
+      router.push({ pathname: '/product/list' as any, params: { category: categoryMatch[1], title: categoryMatch[1] } });
+      return;
+    }
+    // /products → all products
+    if (link === '/products') {
+      router.push('/product/list' as any);
+    }
+  };
+
   const renderBanner = ({ item }: { item: BannerItem }) => (
-    <View style={styles.banner}>
+    <TouchableOpacity
+      style={styles.banner}
+      activeOpacity={item.link ? 0.9 : 1}
+      onPress={() => handleBannerPress(item.link)}
+    >
       {item.image ? (
         <>
           <Image
@@ -130,7 +158,7 @@ export default function HomeBanner() {
           <Ionicons name={item.icon} size={120} color="rgba(255,255,255,0.08)" />
         </View>
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   return (

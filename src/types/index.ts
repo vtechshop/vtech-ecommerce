@@ -40,7 +40,9 @@ export interface Product {
   categoryIds?: string[];
   brand?: string;
   stock: number;
+  published?: boolean;
   taxable: boolean;
+  taxRate?: number;      // GST rate as percentage e.g. 5, 12, 18
   taxIncluded?: boolean; // If true, price already includes GST
   rating: number;
   reviewCount: number;

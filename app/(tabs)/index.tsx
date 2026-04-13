@@ -98,10 +98,10 @@ export default function HomeScreen() {
 
       const allProducts = [...(featuredRes.data.data || []), ...(newRes.data.data || [])];
       const unique = new Map<string, Product>();
-      allProducts.forEach((p) => { if (p.compareAt && p.compareAt > p.price) unique.set(p._id, p); });
+      allProducts.forEach((p) => { if (p.compareAt && p.compareAt > (p.price ?? 0) && (p.price ?? 0) > 0) unique.set(p._id, p); });
       setDeals([...unique.values()].sort((a, b) => {
-        const dA = ((a.compareAt! - a.price) / a.compareAt!) * 100;
-        const dB = ((b.compareAt! - b.price) / b.compareAt!) * 100;
+        const dA = (((a.compareAt ?? 0) - (a.price ?? 0)) / (a.compareAt ?? 1)) * 100;
+        const dB = (((b.compareAt ?? 0) - (b.price ?? 0)) / (b.compareAt ?? 1)) * 100;
         return dB - dA;
       }).slice(0, 8));
 
@@ -177,7 +177,7 @@ export default function HomeScreen() {
         <AnimatedSection delay={50} style={{ paddingHorizontal: spacing.md, marginBottom: spacing.lg }}>
           <View style={styles.trustStrip}>
             {[
-              { icon: 'car-outline' as const, label: 'Free Delivery', sub: 'On orders ₹999+', color: colors.success },
+              { icon: 'headset-outline' as const, label: 'Customer Support', sub: '24/7 assistance', color: colors.success },
               { icon: 'shield-checkmark-outline' as const, label: '100% Genuine', sub: 'Verified products', color: colors.primary },
               { icon: 'arrow-undo-outline' as const, label: 'Easy Returns', sub: '7-day policy', color: colors.warning },
               { icon: 'lock-closed-outline' as const, label: 'Secure Pay', sub: 'Encrypted', color: colors.info },
@@ -202,7 +202,7 @@ export default function HomeScreen() {
                 <Text style={styles.seeAll}>See All</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md, paddingHorizontal: spacing.xs }}>
               {categories.map((cat, i) => (
                 <TouchableOpacity
                   key={cat._id}
@@ -368,9 +368,9 @@ const styles = StyleSheet.create({
   seeAll: { fontSize: fontSize.sm, color: colors.primary, fontWeight: fontWeight.semibold },
 
   // Category
-  catCard: { alignItems: 'center', width: 88 },
-  catImage: { width: 70, height: 70, borderRadius: borderRadius.xl, marginBottom: spacing.xs },
-  catName: { fontSize: fontSize.xs, color: colors.text, textAlign: 'center', fontWeight: fontWeight.medium },
+  catCard: { alignItems: 'center', width: 80 },
+  catImage: { width: 72, height: 72, borderRadius: borderRadius.xl, marginBottom: spacing.xs, backgroundColor: colors.surface },
+  catName: { fontSize: fontSize.xs, color: colors.text, textAlign: 'center', fontWeight: fontWeight.medium, minHeight: 32, lineHeight: 16 },
 
   // Flash Deal section
   dealSection: { marginBottom: spacing.lg, backgroundColor: colors.white, ...shadows.sm },

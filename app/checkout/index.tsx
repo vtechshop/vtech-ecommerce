@@ -32,7 +32,7 @@ const emptyAddress: Omit<Address, '_id'> = {
 type DeliveryMethod = 'standard' | 'express';
 
 const DELIVERY_OPTIONS: { key: DeliveryMethod; label: string; desc: string; price: number; days: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'standard', label: 'Standard Delivery', desc: 'Free shipping on all orders', price: 0, days: '5-7 business days', icon: 'bicycle-outline' },
+  { key: 'standard', label: 'Standard Delivery', desc: 'Delivered in 5-7 business days', price: 0, days: '5-7 business days', icon: 'bicycle-outline' },
 ];
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
