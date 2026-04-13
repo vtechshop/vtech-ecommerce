@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, Platform } from 'react-native';
-import Animated, { useSharedValue, withRepeat, withTiming, useAnimatedStyle, Easing, withSequence } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { productsApi } from '../../src/api/products';
@@ -38,40 +37,14 @@ export default function SearchScreen() {
   const [showFilter, setShowFilter] = useState(false);
   const { searches: recentSearches, addSearch, removeSearch, clearAll: clearRecentSearches } = useRecentSearches();
   const [showCamera, setShowCamera] = useState(false);
-  const [showVoice, setShowVoice] = useState(false);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const { showToast } = useToast();
   const inputRef = useRef<TextInput>(null);
 
-  // Voice modal pulse animation
-  const voicePulse1 = useSharedValue(1);
-  const voicePulse2 = useSharedValue(1);
-  const voicePulse3 = useSharedValue(1);
-
-  useEffect(() => {
-    if (showVoice) {
-      voicePulse1.value = withRepeat(withTiming(1.4, { duration: 900, easing: Easing.out(Easing.ease) }), -1, true);
-      voicePulse2.value = withRepeat(withSequence(withTiming(1, { duration: 300 }), withTiming(1.7, { duration: 900, easing: Easing.out(Easing.ease) })), -1, true);
-      voicePulse3.value = withRepeat(withSequence(withTiming(1, { duration: 600 }), withTiming(2.0, { duration: 900, easing: Easing.out(Easing.ease) })), -1, true);
-    } else {
-      voicePulse1.value = 1;
-      voicePulse2.value = 1;
-      voicePulse3.value = 1;
-    }
-  }, [showVoice]);
-
-  const pulse1Style = useAnimatedStyle(() => ({ transform: [{ scale: voicePulse1.value }], opacity: 2 - voicePulse1.value }));
-  const pulse2Style = useAnimatedStyle(() => ({ transform: [{ scale: voicePulse2.value }], opacity: 2 - voicePulse2.value }));
-  const pulse3Style = useAnimatedStyle(() => ({ transform: [{ scale: voicePulse3.value }], opacity: 2 - voicePulse3.value }));
-
   const handleVoiceSearch = () => {
     haptic.light();
-    setShowVoice(true);
-  };
-
-  const closeVoice = () => {
-    setShowVoice(false);
-    setTimeout(() => inputRef.current?.focus(), 300);
+    // Focus the input — user can tap the mic on their keyboard to speak
+    inputRef.current?.focus();
   };
 
   const handleCameraSearch = async () => {
@@ -191,29 +164,6 @@ export default function SearchScreen() {
             <Text style={styles.cameraHint}>Point camera at a barcode or product</Text>
             <TouchableOpacity style={styles.cameraClose} onPress={() => setShowCamera(false)}>
               <Ionicons name="close-circle" size={40} color={colors.white} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Voice Search Modal */}
-      <Modal visible={showVoice} transparent animationType="fade" onRequestClose={closeVoice}>
-        <View style={styles.voiceOverlay}>
-          <View style={styles.voiceSheet}>
-            <Text style={styles.voiceTitle}>Voice Search</Text>
-            <Text style={styles.voiceHint}>Use your keyboard's 🎤 mic button to speak</Text>
-            <View style={styles.voiceCircleWrap}>
-              <Animated.View style={[styles.voicePulse, styles.voicePulse3, pulse3Style]} />
-              <Animated.View style={[styles.voicePulse, styles.voicePulse2, pulse2Style]} />
-              <Animated.View style={[styles.voicePulse, styles.voicePulse1, pulse1Style]} />
-              <View style={styles.voiceMicCircle}>
-                <Ionicons name="mic" size={36} color={colors.white} />
-              </View>
-            </View>
-            <Text style={styles.voiceListening}>Listening...</Text>
-            <Text style={styles.voiceSubHint}>Tap the mic on your keyboard or type below</Text>
-            <TouchableOpacity style={styles.voiceCloseBtn} onPress={closeVoice}>
-              <Text style={styles.voiceCloseBtnText}>Type Instead</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -394,19 +344,4 @@ const styles = StyleSheet.create({
   cameraOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', paddingBottom: spacing.xxl, paddingTop: spacing.md, backgroundColor: 'rgba(0,0,0,0.4)' },
   cameraHint: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.medium, marginBottom: spacing.md },
   cameraClose: { marginTop: spacing.sm },
-  // Voice search modal
-  voiceOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  voiceSheet: { backgroundColor: colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingTop: spacing.xl, paddingBottom: spacing.xxl + spacing.lg, paddingHorizontal: spacing.xl, alignItems: 'center' },
-  voiceTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs },
-  voiceHint: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.xl, textAlign: 'center' },
-  voiceCircleWrap: { width: 160, height: 160, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.lg },
-  voicePulse: { position: 'absolute', borderRadius: 999, backgroundColor: colors.primary },
-  voicePulse1: { width: 100, height: 100, opacity: 0.3 },
-  voicePulse2: { width: 100, height: 100, opacity: 0.2 },
-  voicePulse3: { width: 100, height: 100, opacity: 0.1 },
-  voiceMicCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', elevation: 8, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12 },
-  voiceListening: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.primary, marginBottom: spacing.xs },
-  voiceSubHint: { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
-  voiceCloseBtn: { paddingHorizontal: spacing.xxl, paddingVertical: spacing.md, borderRadius: borderRadius.full, borderWidth: 1.5, borderColor: colors.primary },
-  voiceCloseBtnText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.primary },
 });
