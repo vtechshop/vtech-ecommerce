@@ -1285,19 +1285,20 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                   { key: 'east',  label: 'East India',  states: 'WB, Bihar, Odisha, Assam, NE States' },
                   { key: 'west',  label: 'West India',  states: 'Maharashtra, Gujarat, Goa, MP' },
                 ].map(({ key, label, states }) => (
-                  <div key={key} className="border border-indigo-200 rounded-lg p-3 bg-white">
+                  <div key={key} className="flex flex-col border border-indigo-200 rounded-lg p-3 bg-white h-full">
                     <p className="text-xs font-semibold text-gray-700 mb-1">{label}</p>
-                    <p className="text-xs text-gray-400 mb-2">{states}</p>
+                    <p className="text-xs text-gray-400 mb-2 flex-1">{states}</p>
                     <input
-                      type="number"
-                      min="0"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       placeholder="₹ amount"
                       value={formData.shippingZones[key]}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        shippingZones: { ...formData.shippingZones, [key]: e.target.value }
-                      })}
-                      className="input w-full text-sm"
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        setFormData({ ...formData, shippingZones: { ...formData.shippingZones, [key]: val } });
+                      }}
+                      className="input w-full text-sm mt-auto"
                     />
                   </div>
                 ))}
