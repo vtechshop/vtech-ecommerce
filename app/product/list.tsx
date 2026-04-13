@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { productsApi } from '../../src/api/products';
 import { Product } from '../../src/types';
 import AnimatedProductCard from '../../src/components/product/AnimatedProductCard';
-import LoadingScreen from '../../src/components/ui/LoadingScreen';
+import { SkeletonProductList } from '../../src/components/ui/SkeletonLoader';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpacing } from '../../src/theme';
 
 const PAGE_LIMIT = 20;
@@ -180,7 +180,7 @@ export default function ProductListScreen() {
       )}
 
       {loading ? (
-        <LoadingScreen />
+        <SkeletonProductList />
       ) : error ? (
         <View style={styles.empty}>
           <Ionicons name="alert-circle-outline" size={48} color={colors.error} />

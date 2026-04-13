@@ -1,16 +1,18 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Provider } from 'react-redux';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Notifications from 'expo-notifications';
 import { store, useAppDispatch, useAppSelector } from '../src/store';
 import { loadUser } from '../src/store/slices/authSlice';
 import { useFirstLaunch } from '../src/hooks/useFirstLaunch';
 import { useKeepAlive } from '../src/hooks/useKeepAlive';
 import { ToastProvider } from '../src/components/ui/Toast';
+import { registerForPushNotificationsAsync, savePushTokenToBackend } from '../src/services/pushNotifications';
 import { colors, fontWeight } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -49,13 +51,37 @@ const ebStyles = StyleSheet.create({
 function RootLayoutInner() {
   const dispatch = useAppDispatch();
   const { isFirstLaunch } = useFirstLaunch();
-  const { isLoading: authLoading } = useAppSelector((s) => s.auth);
+  const { isLoading: authLoading, isAuthenticated } = useAppSelector((s) => s.auth);
+  const notifListener = useRef<any>(null);
+  const responseListener = useRef<any>(null);
 
   useKeepAlive();
 
   useEffect(() => {
     dispatch(loadUser());
   }, []);
+
+  // Register push token after authentication
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    registerForPushNotificationsAsync().then((token) => {
+      if (token) savePushTokenToBackend(token);
+    });
+
+    // Handle notification taps (deep link to order screen)
+    responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as any;
+      if (data?.screen === 'order' && data?.orderId) {
+        router.push(`/orders/${data.orderId}` as any);
+      } else if (data?.screen === 'product' && data?.productId) {
+        router.push(`/product/${data.productId}` as any);
+      }
+    });
+
+    return () => {
+      if (responseListener.current) Notifications.removeNotificationSubscription(responseListener.current);
+    };
+  }, [isAuthenticated]);
 
   // Hide splash screen once both auth check and first launch check are done
   const isReady = isFirstLaunch !== null && !authLoading;

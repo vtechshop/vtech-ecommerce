@@ -37,7 +37,17 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#6366F1",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "V-Tech Kitchen"
+        }
+      ]
     ],
     "extra": {
       "router": {},

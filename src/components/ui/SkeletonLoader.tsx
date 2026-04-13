@@ -76,6 +76,54 @@ export function SkeletonProductGrid() {
   );
 }
 
+export function SkeletonProductList() {
+  const pairs = [0, 1, 2, 3];
+  return (
+    <Animated.View style={{ padding: 16, gap: 16 }}>
+      {pairs.map((i) => (
+        <Animated.View key={i} style={skeletonStyles.productGrid}>
+          {[0, 1].map((j) => (
+            <Animated.View key={j} style={skeletonStyles.productCard}>
+              <SkeletonLoader width="100%" height={160} borderRadius={16} />
+              <SkeletonLoader width="85%" height={12} borderRadius={4} style={{ marginTop: 10 }} />
+              <SkeletonLoader width="55%" height={12} borderRadius={4} style={{ marginTop: 6 }} />
+              <SkeletonLoader width="42%" height={16} borderRadius={4} style={{ marginTop: 8 }} />
+            </Animated.View>
+          ))}
+        </Animated.View>
+      ))}
+    </Animated.View>
+  );
+}
+
+export function SkeletonProductDetail() {
+  return (
+    <Animated.View style={{ flex: 1, backgroundColor: '#f0f2f5' }}>
+      {/* Image */}
+      <SkeletonLoader width="100%" height={320} borderRadius={0} />
+      {/* Content card */}
+      <Animated.View style={{ margin: 16, padding: 16, backgroundColor: '#fff', borderRadius: 20, gap: 12 }}>
+        <SkeletonLoader width="75%" height={14} borderRadius={4} />
+        <SkeletonLoader width="90%" height={20} borderRadius={4} />
+        <SkeletonLoader width="60%" height={20} borderRadius={4} />
+        <Animated.View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+          <SkeletonLoader width={80} height={28} borderRadius={20} />
+          <SkeletonLoader width={100} height={28} borderRadius={20} />
+        </Animated.View>
+        <SkeletonLoader width="100%" height={1} borderRadius={0} style={{ marginVertical: 4 }} />
+        <SkeletonLoader width="40%" height={12} borderRadius={4} />
+        <SkeletonLoader width="95%" height={12} borderRadius={4} />
+        <SkeletonLoader width="80%" height={12} borderRadius={4} />
+        <SkeletonLoader width="65%" height={12} borderRadius={4} />
+      </Animated.View>
+      {/* Add to cart button skeleton */}
+      <Animated.View style={{ marginHorizontal: 16 }}>
+        <SkeletonLoader width="100%" height={52} borderRadius={16} />
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
 const skeletonStyles = StyleSheet.create({
   categoryRow: { flexDirection: 'row', gap: 16, marginBottom: 24 },
   categoryItem: { alignItems: 'center' },

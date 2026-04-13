@@ -24,6 +24,7 @@ const SORT_OPTIONS = [
 export default function SearchScreen() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
+  const [rawResults, setRawResults] = useState<Product[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -36,6 +37,16 @@ export default function SearchScreen() {
   const [sortBy, setSortBy] = useState('');
   const [showSort, setShowSort] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  // Active filters
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [minRating, setMinRating] = useState(0);
+  const [inStockOnly, setInStockOnly] = useState(false);
+  // Staged filters (edited in modal, applied on confirm)
+  const [stagedMinPrice, setStagedMinPrice] = useState('');
+  const [stagedMaxPrice, setStagedMaxPrice] = useState('');
+  const [stagedMinRating, setStagedMinRating] = useState(0);
+  const [stagedInStock, setStagedInStock] = useState(false);
   const { searches: recentSearches, addSearch, removeSearch, clearAll: clearRecentSearches } = useRecentSearches();
   const [showCamera, setShowCamera] = useState(false);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -50,33 +61,35 @@ export default function SearchScreen() {
   const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
-    Voice.onSpeechResults = (e: any) => {
-      const text = e.value?.[0];
-      if (text) {
-        setVoiceText(text);
-        setQuery(text);
+    try {
+      Voice.onSpeechResults = (e: any) => {
+        const text = e.value?.[0];
+        if (text) {
+          setVoiceText(text);
+          setQuery(text);
+          setIsListening(false);
+          setShowVoice(false);
+          pulseLoop.current?.stop();
+          doSearch(text, 1, sortBy);
+        }
+      };
+      Voice.onSpeechPartialResults = (e: any) => {
+        const partial = e.value?.[0];
+        if (partial) setVoiceText(partial);
+      };
+      Voice.onSpeechError = () => {
         setIsListening(false);
-        setShowVoice(false);
         pulseLoop.current?.stop();
-        doSearch(text, 1, sortBy);
-      }
-    };
-    Voice.onSpeechPartialResults = (e: any) => {
-      const partial = e.value?.[0];
-      if (partial) setVoiceText(partial);
-    };
-    Voice.onSpeechError = () => {
-      setIsListening(false);
-      pulseLoop.current?.stop();
-      pulseAnim.setValue(1);
-    };
-    Voice.onSpeechEnd = () => {
-      setIsListening(false);
-      pulseLoop.current?.stop();
-      pulseAnim.setValue(1);
-    };
+        pulseAnim.setValue(1);
+      };
+      Voice.onSpeechEnd = () => {
+        setIsListening(false);
+        pulseLoop.current?.stop();
+        pulseAnim.setValue(1);
+      };
+    } catch {}
     return () => {
-      Voice.destroy().then(Voice.removeAllListeners);
+      try { Voice.destroy().then(Voice.removeAllListeners); } catch {}
     };
   }, []);
 
@@ -93,7 +106,7 @@ export default function SearchScreen() {
   const handleVoiceSearch = async () => {
     haptic.light();
     if (isListening) {
-      await Voice.stop();
+      try { await Voice.stop(); } catch {}
       setIsListening(false);
       setShowVoice(false);
       pulseLoop.current?.stop();
@@ -111,7 +124,7 @@ export default function SearchScreen() {
       setShowVoice(false);
       pulseLoop.current?.stop();
       pulseAnim.setValue(1);
-      showToast('error', 'Voice search unavailable on this device');
+      showToast('info', 'Voice search needs a native build', 'Use the latest APK/AAB for voice search');
     }
   };
 
@@ -146,8 +159,9 @@ export default function SearchScreen() {
       if (sort) params.sort = sort;
       const { data } = await productsApi.getAll(params);
       const items = data.data || [];
-      if (pageNum === 1) { setResults(items); addSearch(q.trim()); }
-      else setResults((prev) => [...prev, ...items]);
+      const allItems = pageNum === 1 ? items : [...rawResults, ...items];
+      if (pageNum === 1) { setRawResults(items); setResults(applyClientFilters(items)); addSearch(q.trim()); }
+      else { setRawResults(allItems); setResults(applyClientFilters(allItems)); }
       setHasMore(items.length >= PAGE_LIMIT);
       setPage(pageNum);
       setSearched(true);
@@ -190,7 +204,50 @@ export default function SearchScreen() {
     if (searched && query.trim()) { setPage(1); setHasMore(true); doSearch(query, 1, value); }
   };
 
-  const activeFilterCount = 0;
+  const activeFilterCount = (minPrice ? 1 : 0) + (maxPrice ? 1 : 0) + (minRating > 0 ? 1 : 0) + (inStockOnly ? 1 : 0);
+
+  const applyClientFilters = (items: Product[]) => {
+    let filtered = items;
+    if (minPrice) filtered = filtered.filter((p) => (p.price ?? 0) >= Number(minPrice));
+    if (maxPrice) filtered = filtered.filter((p) => (p.price ?? 0) <= Number(maxPrice));
+    if (minRating > 0) filtered = filtered.filter((p) => (p.rating ?? 0) >= minRating);
+    if (inStockOnly) filtered = filtered.filter((p) => (p.stock ?? 1) > 0);
+    return filtered;
+  };
+
+  const openFilter = () => {
+    setStagedMinPrice(minPrice);
+    setStagedMaxPrice(maxPrice);
+    setStagedMinRating(minRating);
+    setStagedInStock(inStockOnly);
+    setShowFilter(true);
+  };
+
+  const applyFilters = () => {
+    const newMin = stagedMinPrice;
+    const newMax = stagedMaxPrice;
+    const newRating = stagedMinRating;
+    const newInStock = stagedInStock;
+    setMinPrice(newMin);
+    setMaxPrice(newMax);
+    setMinRating(newRating);
+    setInStockOnly(newInStock);
+    setShowFilter(false);
+    // Re-apply to current raw results immediately
+    let filtered = rawResults;
+    if (newMin) filtered = filtered.filter((p) => (p.price ?? 0) >= Number(newMin));
+    if (newMax) filtered = filtered.filter((p) => (p.price ?? 0) <= Number(newMax));
+    if (newRating > 0) filtered = filtered.filter((p) => (p.rating ?? 0) >= newRating);
+    if (newInStock) filtered = filtered.filter((p) => (p.stock ?? 1) > 0);
+    setResults(filtered);
+  };
+
+  const clearFilters = () => {
+    setStagedMinPrice('');
+    setStagedMaxPrice('');
+    setStagedMinRating(0);
+    setStagedInStock(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -281,7 +338,7 @@ export default function SearchScreen() {
               <Ionicons name="swap-vertical" size={16} color={colors.primary} />
               <Text style={styles.controlBtnText}>Sort</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.controlBtn} onPress={() => setShowFilter(true)}>
+            <TouchableOpacity style={styles.controlBtn} onPress={openFilter}>
               <Ionicons name="options" size={16} color={colors.primary} />
               <Text style={styles.controlBtnText}>Filter</Text>
               {activeFilterCount > 0 && <View style={styles.filterBadge}><Text style={styles.filterBadgeText}>{activeFilterCount}</Text></View>}
@@ -311,14 +368,71 @@ export default function SearchScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Filters</Text>
-            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-              <Ionicons name="options-outline" size={40} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary, marginTop: 12, fontSize: fontSize.sm }}>Filters coming soon</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg }}>
+              <Text style={styles.modalTitle}>Filters</Text>
+              <TouchableOpacity onPress={clearFilters}>
+                <Text style={{ color: colors.primary, fontSize: fontSize.sm, fontWeight: fontWeight.semibold }}>Clear All</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={[styles.sortOption]} onPress={() => setShowFilter(false)}>
-              <Text style={[styles.sortOptionText, { textAlign: 'center', flex: 1 }]}>Close</Text>
+
+            {/* Price Range */}
+            <Text style={styles.filterLabel}>Price Range (₹)</Text>
+            <View style={styles.priceRow}>
+              <TextInput
+                style={styles.priceInput}
+                placeholder="Min"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="numeric"
+                value={stagedMinPrice}
+                onChangeText={setStagedMinPrice}
+              />
+              <Text style={styles.priceDash}>—</Text>
+              <TextInput
+                style={styles.priceInput}
+                placeholder="Max"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="numeric"
+                value={stagedMaxPrice}
+                onChangeText={setStagedMaxPrice}
+              />
+            </View>
+
+            {/* Rating Filter */}
+            <Text style={styles.filterLabel}>Minimum Rating</Text>
+            <View style={styles.ratingRow}>
+              {[0, 3, 4, 4.5].map((r) => (
+                <TouchableOpacity
+                  key={r}
+                  style={[styles.ratingChip, stagedMinRating === r && styles.ratingChipActive]}
+                  onPress={() => setStagedMinRating(r)}
+                >
+                  <Ionicons name="star" size={12} color={stagedMinRating === r ? colors.primary : colors.textSecondary} />
+                  <Text style={[styles.ratingChipText, stagedMinRating === r && styles.ratingChipTextActive]}>
+                    {r === 0 ? 'Any' : `${r}+`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* In Stock Toggle */}
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.surfaceDark }}
+              onPress={() => setStagedInStock(!stagedInStock)}
+            >
+              <Text style={styles.filterLabel}>In Stock Only</Text>
+              <View style={{ width: 44, height: 24, borderRadius: 12, backgroundColor: stagedInStock ? colors.primary : colors.border, justifyContent: 'center', paddingHorizontal: 2 }}>
+                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: colors.white, alignSelf: stagedInStock ? 'flex-end' : 'flex-start' }} />
+              </View>
             </TouchableOpacity>
+
+            <View style={styles.filterActions}>
+              <TouchableOpacity style={styles.clearBtn} onPress={() => setShowFilter(false)}>
+                <Text style={styles.clearBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.applyBtn} onPress={applyFilters}>
+                <Text style={styles.applyBtnText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

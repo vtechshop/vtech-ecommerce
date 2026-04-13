@@ -26,7 +26,7 @@ import CollapsibleSection from '../../src/components/product/CollapsibleSection'
 import FrequentlyBoughtTogether from '../../src/components/product/FrequentlyBoughtTogether';
 import PincodeChecker from '../../src/components/product/PincodeChecker';
 import Button from '../../src/components/ui/Button';
-import LoadingScreen from '../../src/components/ui/LoadingScreen';
+import { SkeletonProductDetail } from '../../src/components/ui/SkeletonLoader';
 import { useToast } from '../../src/components/ui/Toast';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows, letterSpacing } from '../../src/theme';
 
@@ -284,7 +284,7 @@ function ProductDetailScreen() {
     }
   };
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return <SkeletonProductDetail />;
 
   if (error || !product) {
     return (
