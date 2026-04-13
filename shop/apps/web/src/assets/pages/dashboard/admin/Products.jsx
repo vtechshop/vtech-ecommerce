@@ -421,6 +421,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     weight: product?.weight || '',
     shippingCharge: product?.shippingCharge || '',
     shippingZones: {
+      tamilnadu: product?.shippingZones?.find(z => z.zone === 'tamilnadu')?.charge ?? '',
       south: product?.shippingZones?.find(z => z.zone === 'south')?.charge ?? '',
       north: product?.shippingZones?.find(z => z.zone === 'north')?.charge ?? '',
       east:  product?.shippingZones?.find(z => z.zone === 'east')?.charge ?? '',
@@ -592,7 +593,7 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
       shippingCharge: formData.shippingCharge ? parseFloat(formData.shippingCharge) : 0,
       // Zone-based shipping: only include zones with a value set
-      shippingZones: ['south', 'north', 'east', 'west']
+      shippingZones: ['tamilnadu', 'south', 'north', 'east', 'west']
         .filter(z => formData.shippingZones[z] !== '' && formData.shippingZones[z] !== null && formData.shippingZones[z] !== undefined)
         .map(z => ({ zone: z, charge: parseFloat(formData.shippingZones[z]) })),
       delhiveryEnabled: formData.delhiveryEnabled,
@@ -867,9 +868,10 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                 Zone-Based Shipping Charges (₹)
                 <span className="ml-2 text-xs text-blue-600 font-normal">Overrides fixed charge above</span>
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
-                  { key: 'south', label: 'South India', states: 'TN, Kerala, Karnataka, AP, Telangana' },
+                  { key: 'tamilnadu', label: 'Tamil Nadu', states: 'Tamil Nadu only' },
+                  { key: 'south', label: 'South India', states: 'Kerala, Karnataka, AP, Telangana' },
                   { key: 'north', label: 'North India', states: 'Delhi, UP, Punjab, Haryana, Rajasthan' },
                   { key: 'east',  label: 'East India',  states: 'WB, Bihar, Odisha, Assam, NE States' },
                   { key: 'west',  label: 'West India',  states: 'Maharashtra, Gujarat, Goa, MP' },

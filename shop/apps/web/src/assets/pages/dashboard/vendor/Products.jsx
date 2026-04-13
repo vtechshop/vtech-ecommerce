@@ -788,6 +788,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
     warrantyActivationRequired: product?.warranty?.activationRequired || false,
     // Zone-based shipping
     shippingZones: {
+      tamilnadu: product?.shippingZones?.find(z => z.zone === 'tamilnadu')?.charge ?? '',
       south: product?.shippingZones?.find(z => z.zone === 'south')?.charge ?? '',
       north: product?.shippingZones?.find(z => z.zone === 'north')?.charge ?? '',
       east:  product?.shippingZones?.find(z => z.zone === 'east')?.charge ?? '',
@@ -918,7 +919,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
       hasWarranty: formData.hasWarranty,
       warranty: warranty,
       // Zone-based shipping: only include zones with a value set
-      shippingZones: ['south', 'north', 'east', 'west']
+      shippingZones: ['tamilnadu', 'south', 'north', 'east', 'west']
         .filter(z => formData.shippingZones[z] !== '' && formData.shippingZones[z] !== null && formData.shippingZones[z] !== undefined)
         .map(z => ({ zone: z, charge: parseFloat(formData.shippingZones[z]) })),
       structuredData: schemaData, // Fixed: changed from 'schema' to 'structuredData'
@@ -1276,9 +1277,10 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
             <div className="md:col-span-2 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-1">Zone-Based Shipping Charges (₹)</h3>
               <p className="text-xs text-gray-500 mb-3">Set fixed delivery charges per India zone. At checkout, the highest charge across all cart products is used. Leave blank to use weight-based pricing.</p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
-                  { key: 'south', label: 'South India', states: 'TN, Kerala, Karnataka, AP, Telangana' },
+                  { key: 'tamilnadu', label: 'Tamil Nadu', states: 'Tamil Nadu only' },
+                  { key: 'south', label: 'South India', states: 'Kerala, Karnataka, AP, Telangana' },
                   { key: 'north', label: 'North India', states: 'Delhi, UP, Punjab, Haryana, Rajasthan' },
                   { key: 'east',  label: 'East India',  states: 'WB, Bihar, Odisha, Assam, NE States' },
                   { key: 'west',  label: 'West India',  states: 'Maharashtra, Gujarat, Goa, MP' },

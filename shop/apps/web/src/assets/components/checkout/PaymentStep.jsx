@@ -93,7 +93,7 @@ const PaymentStep = ({ order, totals, onBack }) => {
           <div className="flex justify-between">
             <span className="text-gray-700">Shipping</span>
             <span className="font-medium">
-              {totals.shipping === 0 ? 'FREE' : formatCurrency(totals.shipping)}
+              {totals.shipping > 0 ? formatCurrency(totals.shipping) : 'Calculated at checkout'}
             </span>
           </div>
           <div className="flex justify-between">

@@ -1,22 +1,25 @@
 // Zone-based shipping utility for India
-// Four zones: South, North, East, West
+// Five zones: Tamil Nadu (local), South, North, East, West
 // At checkout: state → zone → highest product zone charge across cart
 
-const ZONES = ['south', 'north', 'east', 'west'];
+const ZONES = ['tamilnadu', 'south', 'north', 'east', 'west'];
 
 const ZONE_LABELS = {
-  south: 'South India',
-  north: 'North India',
-  east:  'East India',
-  west:  'West India',
+  tamilnadu: 'Tamil Nadu',
+  south:     'South India',
+  north:     'North India',
+  east:      'East India',
+  west:      'West India',
 };
 
 // State → zone mapping (lowercase for comparison)
 const STATE_TO_ZONE = {
-  // South
-  'tamil nadu':               'south',
-  'tamilnadu':                'south',
-  'tn':                       'south',
+  // Tamil Nadu (separate zone)
+  'tamil nadu':               'tamilnadu',
+  'tamilnadu':                'tamilnadu',
+  'tn':                       'tamilnadu',
+
+  // South (Kerala, Karnataka, AP, Telangana, Puducherry)
   'kerala':                   'south',
   'karnataka':                'south',
   'andhra pradesh':           'south',
@@ -89,7 +92,7 @@ function getZoneForState(stateName = '') {
  * Given an array of product documents (with shippingZones populated)
  * and a destination state name, return the highest zone charge.
  *
- * Returns: { zone: 'south'|'north'|'east'|'west', charge: Number|null }
+ * Returns: { zone: 'tamilnadu'|'south'|'north'|'east'|'west', charge: Number|null }
  * charge is null if no product has shippingZones configured.
  */
 function getZoneShippingCharge(products, stateName) {

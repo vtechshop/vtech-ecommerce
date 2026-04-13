@@ -216,8 +216,8 @@ const CartDrawer = ({ isOpen, onClose, justAdded }) => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Shipping</span>
-                <span className="font-semibold">
-                  {totals.shipping === 0 ? 'FREE' : formatCurrency(totals.shipping)}
+                <span className="font-semibold text-gray-400">
+                  {totals.shipping > 0 ? formatCurrency(totals.shipping) : 'Calculated at checkout'}
                 </span>
               </div>
               <div className="flex justify-between text-lg font-bold pt-2 border-t">

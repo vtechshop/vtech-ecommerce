@@ -58,7 +58,7 @@ const productSchema = new mongoose.Schema({
   // Zone-based shipping: South / North / East / West India fixed charges
   // If configured, these override weight-based calc. Highest charge across cart is used.
   shippingZones: [{
-    zone: { type: String, enum: ['south', 'north', 'east', 'west'], required: true },
+    zone: { type: String, enum: ['tamilnadu', 'south', 'north', 'east', 'west'], required: true },
     charge: { type: Number, min: 0, required: true },
   }],
   delhiveryEnabled: { type: Boolean, default: true }, // if false, only MSS Transport / fallback (no Delhivery)
