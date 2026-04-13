@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import api from '../api/client';
 
@@ -12,12 +13,16 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Detect Expo Go — push notifications not supported in Expo Go SDK 53+
+const isExpoGo = Constants.appOwnership === 'expo';
+
 /**
  * Request notification permissions and return the Expo push token.
- * Returns null if permission denied or not on a physical device.
+ * Returns null in Expo Go, simulators, or if permission denied.
  */
 export async function registerForPushNotificationsAsync(): Promise<string | null> {
-  if (!Device.isDevice) return null; // Simulators/emulators don't support push
+  // Skip in Expo Go (not supported since SDK 53) and simulators
+  if (isExpoGo || !Device.isDevice) return null;
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -41,7 +46,9 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   try {
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    const token = (await Notifications.getExpoPushTokenAsync({
+      projectId: Constants.expoConfig?.extra?.eas?.projectId,
+    })).data;
     return token;
   } catch {
     return null;
