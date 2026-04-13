@@ -1,10 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, Animated } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-// Voice search — native module loaded lazily to avoid crash if unavailable
-let Voice: any = null;
-try { Voice = require('@react-native-voice/voice').default; } catch {}
+import * as IntentLauncher from 'expo-intent-launcher';
 import { productsApi } from '../../src/api/products';
 import { Product } from '../../src/types';
 import AnimatedProductCard from '../../src/components/product/AnimatedProductCard';
@@ -55,79 +53,41 @@ export default function SearchScreen() {
   const { showToast } = useToast();
   const inputRef = useRef<TextInput>(null);
 
-  // Voice search
+  // Voice search — uses Android system speech recognition intent (same as Amazon/Flipkart)
   const [isListening, setIsListening] = useState(false);
-  const [showVoice, setShowVoice] = useState(false);
-  const [voiceText, setVoiceText] = useState('');
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
-
-  useEffect(() => {
-    try {
-      Voice.onSpeechResults = (e: any) => {
-        const text = e.value?.[0];
-        if (text) {
-          setVoiceText(text);
-          setQuery(text);
-          setIsListening(false);
-          setShowVoice(false);
-          pulseLoop.current?.stop();
-          doSearch(text, 1, sortBy);
-        }
-      };
-      Voice.onSpeechPartialResults = (e: any) => {
-        const partial = e.value?.[0];
-        if (partial) setVoiceText(partial);
-      };
-      Voice.onSpeechError = () => {
-        setIsListening(false);
-        pulseLoop.current?.stop();
-        pulseAnim.setValue(1);
-      };
-      Voice.onSpeechEnd = () => {
-        setIsListening(false);
-        pulseLoop.current?.stop();
-        pulseAnim.setValue(1);
-      };
-    } catch {}
-    return () => {
-      try { Voice.destroy().then(Voice.removeAllListeners); } catch {}
-    };
-  }, []);
-
-  const startPulse = () => {
-    pulseLoop.current = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.4, duration: 600, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ])
-    );
-    pulseLoop.current.start();
-  };
 
   const handleVoiceSearch = async () => {
     haptic.light();
-    if (isListening) {
-      try { await Voice.stop(); } catch {}
-      setIsListening(false);
-      setShowVoice(false);
-      pulseLoop.current?.stop();
-      pulseAnim.setValue(1);
+    if (Platform.OS !== 'android') {
+      showToast('info', 'Voice search is available on Android only');
       return;
     }
-    setVoiceText('');
-    setShowVoice(true);
     setIsListening(true);
-    startPulse();
     try {
-      await Voice.start('en-IN');
+      const result = await IntentLauncher.startActivityAsync(
+        'android.speech.action.RECOGNIZE_SPEECH',
+        {
+          extra: {
+            'android.speech.extra.LANGUAGE_MODEL': 'free_form',
+            'android.speech.extra.LANGUAGE': 'en-IN',
+            'android.speech.extra.PROMPT': 'Search V-Tech Kitchen...',
+            'android.speech.extra.MAX_RESULTS': 1,
+          },
+        }
+      );
+      // RESULT_OK = -1 on Android
+      if (result.resultCode === -1) {
+        const recognized = (result.data as any)?.['android.speech.extra.RESULTS']?.[0];
+        if (recognized) {
+          haptic.success();
+          setQuery(recognized);
+          doSearch(recognized, 1, sortBy);
+        }
+      }
     } catch {
-      setIsListening(false);
-      setShowVoice(false);
-      pulseLoop.current?.stop();
-      pulseAnim.setValue(1);
-      showToast('info', 'Voice search needs a native build', 'Use the latest APK/AAB for voice search');
+      showToast('error', 'Voice search unavailable', 'Make sure Google app is installed');
     }
+    setIsListening(false);
   };
 
   const handleCameraSearch = async () => {
@@ -278,29 +238,6 @@ export default function SearchScreen() {
           <Ionicons name="camera-outline" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
-
-      {/* Voice Search Modal */}
-      <Modal visible={showVoice} transparent animationType="fade" onRequestClose={() => { Voice.stop(); setShowVoice(false); setIsListening(false); pulseLoop.current?.stop(); pulseAnim.setValue(1); }}>
-        <View style={styles.voiceOverlay}>
-          <View style={styles.voiceSheet}>
-            <Text style={styles.voiceTitle}>
-              {isListening ? (voiceText ? voiceText : 'Listening...') : 'Voice Search'}
-            </Text>
-            <Text style={styles.voiceHint}>
-              {isListening ? 'Speak now — say a product name' : 'Processing...'}
-            </Text>
-            <View style={styles.voiceMicWrap}>
-              <Animated.View style={[styles.voicePulse, { transform: [{ scale: pulseAnim }] }]} />
-              <View style={[styles.voiceMicBtn, isListening && styles.voiceMicBtnActive]}>
-                <Ionicons name="mic" size={36} color={colors.white} />
-              </View>
-            </View>
-            <TouchableOpacity style={styles.voiceCancelBtn} onPress={() => { Voice.stop(); setShowVoice(false); setIsListening(false); pulseLoop.current?.stop(); pulseAnim.setValue(1); }}>
-              <Text style={styles.voiceCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
       {/* Camera/Barcode Scanner Modal */}
       <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
@@ -551,16 +488,4 @@ const styles = StyleSheet.create({
   cameraOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', paddingBottom: spacing.xxl, paddingTop: spacing.md, backgroundColor: 'rgba(0,0,0,0.4)' },
   cameraHint: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.medium, marginBottom: spacing.md },
   cameraClose: { marginTop: spacing.sm },
-
-  // Voice modal
-  voiceOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  voiceSheet: { backgroundColor: colors.white, borderTopLeftRadius: borderRadius.xxl, borderTopRightRadius: borderRadius.xxl, padding: spacing.xl, paddingBottom: spacing.xxl + spacing.lg, alignItems: 'center' },
-  voiceTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs, textAlign: 'center' },
-  voiceHint: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.xl, textAlign: 'center' },
-  voiceMicWrap: { width: 120, height: 120, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xl },
-  voicePulse: { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(220,53,69,0.18)' },
-  voiceMicBtn: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.textSecondary, justifyContent: 'center', alignItems: 'center', ...shadows.lg },
-  voiceMicBtnActive: { backgroundColor: colors.error },
-  voiceCancelBtn: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
-  voiceCancelText: { fontSize: fontSize.md, color: colors.primary, fontWeight: fontWeight.semibold },
 });
