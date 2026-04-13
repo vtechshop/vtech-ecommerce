@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vtech.mobile"
+      "bundleIdentifier": "com.vtech.mobile",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Allow V-Tech Kitchen to use your microphone for voice search"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +26,10 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.vtech.mobile",
-      "softwareKeyboardLayoutMode": "pan"
+      "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",

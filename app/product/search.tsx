@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import Voice from '@react-native-voice/voice';
 import { productsApi } from '../../src/api/products';
 import { Product } from '../../src/types';
 import AnimatedProductCard from '../../src/components/product/AnimatedProductCard';
@@ -41,10 +42,77 @@ export default function SearchScreen() {
   const { showToast } = useToast();
   const inputRef = useRef<TextInput>(null);
 
-  const handleVoiceSearch = () => {
+  // Voice search
+  const [isListening, setIsListening] = useState(false);
+  const [showVoice, setShowVoice] = useState(false);
+  const [voiceText, setVoiceText] = useState('');
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    Voice.onSpeechResults = (e: any) => {
+      const text = e.value?.[0];
+      if (text) {
+        setVoiceText(text);
+        setQuery(text);
+        setIsListening(false);
+        setShowVoice(false);
+        pulseLoop.current?.stop();
+        doSearch(text, 1, sortBy);
+      }
+    };
+    Voice.onSpeechPartialResults = (e: any) => {
+      const partial = e.value?.[0];
+      if (partial) setVoiceText(partial);
+    };
+    Voice.onSpeechError = () => {
+      setIsListening(false);
+      pulseLoop.current?.stop();
+      pulseAnim.setValue(1);
+    };
+    Voice.onSpeechEnd = () => {
+      setIsListening(false);
+      pulseLoop.current?.stop();
+      pulseAnim.setValue(1);
+    };
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
+
+  const startPulse = () => {
+    pulseLoop.current = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.4, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ])
+    );
+    pulseLoop.current.start();
+  };
+
+  const handleVoiceSearch = async () => {
     haptic.light();
-    // Focus the input — user can tap the mic on their keyboard to speak
-    inputRef.current?.focus();
+    if (isListening) {
+      await Voice.stop();
+      setIsListening(false);
+      setShowVoice(false);
+      pulseLoop.current?.stop();
+      pulseAnim.setValue(1);
+      return;
+    }
+    setVoiceText('');
+    setShowVoice(true);
+    setIsListening(true);
+    startPulse();
+    try {
+      await Voice.start('en-IN');
+    } catch {
+      setIsListening(false);
+      setShowVoice(false);
+      pulseLoop.current?.stop();
+      pulseAnim.setValue(1);
+      showToast('error', 'Voice search unavailable on this device');
+    }
   };
 
   const handleCameraSearch = async () => {
@@ -145,12 +213,35 @@ export default function SearchScreen() {
           </TouchableOpacity>
         )}
         <TouchableOpacity onPress={handleVoiceSearch} style={styles.searchAction}>
-          <Ionicons name="mic-outline" size={20} color={colors.primary} />
+          <Ionicons name={isListening ? 'mic' : 'mic-outline'} size={20} color={isListening ? colors.error : colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity onPress={handleCameraSearch} style={styles.searchAction}>
           <Ionicons name="camera-outline" size={20} color={colors.primary} />
         </TouchableOpacity>
       </View>
+
+      {/* Voice Search Modal */}
+      <Modal visible={showVoice} transparent animationType="fade" onRequestClose={() => { Voice.stop(); setShowVoice(false); setIsListening(false); pulseLoop.current?.stop(); pulseAnim.setValue(1); }}>
+        <View style={styles.voiceOverlay}>
+          <View style={styles.voiceSheet}>
+            <Text style={styles.voiceTitle}>
+              {isListening ? (voiceText ? voiceText : 'Listening...') : 'Voice Search'}
+            </Text>
+            <Text style={styles.voiceHint}>
+              {isListening ? 'Speak now — say a product name' : 'Processing...'}
+            </Text>
+            <View style={styles.voiceMicWrap}>
+              <Animated.View style={[styles.voicePulse, { transform: [{ scale: pulseAnim }] }]} />
+              <View style={[styles.voiceMicBtn, isListening && styles.voiceMicBtnActive]}>
+                <Ionicons name="mic" size={36} color={colors.white} />
+              </View>
+            </View>
+            <TouchableOpacity style={styles.voiceCancelBtn} onPress={() => { Voice.stop(); setShowVoice(false); setIsListening(false); pulseLoop.current?.stop(); pulseAnim.setValue(1); }}>
+              <Text style={styles.voiceCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Camera/Barcode Scanner Modal */}
       <Modal visible={showCamera} animationType="slide" onRequestClose={() => setShowCamera(false)}>
@@ -344,4 +435,16 @@ const styles = StyleSheet.create({
   cameraOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center', paddingBottom: spacing.xxl, paddingTop: spacing.md, backgroundColor: 'rgba(0,0,0,0.4)' },
   cameraHint: { color: colors.white, fontSize: fontSize.md, fontWeight: fontWeight.medium, marginBottom: spacing.md },
   cameraClose: { marginTop: spacing.sm },
+
+  // Voice modal
+  voiceOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  voiceSheet: { backgroundColor: colors.white, borderTopLeftRadius: borderRadius.xxl, borderTopRightRadius: borderRadius.xxl, padding: spacing.xl, paddingBottom: spacing.xxl + spacing.lg, alignItems: 'center' },
+  voiceTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.text, marginBottom: spacing.xs, textAlign: 'center' },
+  voiceHint: { fontSize: fontSize.sm, color: colors.textSecondary, marginBottom: spacing.xl, textAlign: 'center' },
+  voiceMicWrap: { width: 120, height: 120, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.xl },
+  voicePulse: { position: 'absolute', width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(220,53,69,0.18)' },
+  voiceMicBtn: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.textSecondary, justifyContent: 'center', alignItems: 'center', ...shadows.lg },
+  voiceMicBtnActive: { backgroundColor: colors.error },
+  voiceCancelBtn: { paddingHorizontal: spacing.xl, paddingVertical: spacing.md },
+  voiceCancelText: { fontSize: fontSize.md, color: colors.primary, fontWeight: fontWeight.semibold },
 });
