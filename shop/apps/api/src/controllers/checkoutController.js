@@ -6,6 +6,7 @@ const Product = require('../models/Product');
 const shippingService = require('../services/shippingService');
 const env = require('../config/env');
 const logger = require('../config/logger');
+const { getZoneShippingCharge, ZONE_LABELS } = require('../utils/shippingZones');
 
 // MSS Transport — pincode-based zone system from Coimbatore origin
 // Zone 0 = Local (Coimbatore/Tiruppur/Erode/Nilgiris) ~0-100km
@@ -105,22 +106,38 @@ exports.getShippingQuotes = async (req, res, next) => {
     let fixedChargeOverride = 0;
     let delhiveryBlocked = false; // true if any cart item has delhiveryEnabled=false
 
+    let zoneChargeOverride = null; // zone-based charge (highest across cart)
+    let zoneLabel = '';
+
     if (items && items.length > 0) {
       const productIds = items.map(i => i.productId).filter(Boolean);
       if (productIds.length > 0) {
-        const products = await Product.find({ _id: { $in: productIds } }).select('weight shippingCharge delhiveryEnabled');
+        const products = await Product.find({ _id: { $in: productIds } }).select('weight shippingCharge shippingZones delhiveryEnabled');
         totalWeightKg = items.reduce((sum, item) => {
           const product = products.find(p => p._id.toString() === item.productId?.toString());
           const weightKg = product?.weight || 0.5; // default 0.5kg if not set
           return sum + (weightKg * (item.qty || item.quantity || 1));
         }, 0);
 
-        // If any product has a fixed shipping charge, use the highest one
-        const maxFixed = items.reduce((max, item) => {
-          const product = products.find(p => p._id.toString() === item.productId?.toString());
-          return Math.max(max, product?.shippingCharge || 0);
-        }, 0);
-        fixedChargeOverride = maxFixed;
+        // Zone-based shipping: check if any product has shippingZones configured
+        const anyZoneConfigured = products.some(p => p.shippingZones && p.shippingZones.length > 0);
+        if (anyZoneConfigured && address.state) {
+          const { zone, charge } = getZoneShippingCharge(products, address.state);
+          if (charge !== null) {
+            zoneChargeOverride = charge;
+            zoneLabel = ZONE_LABELS[zone] || zone;
+            logger.info(`Zone shipping: ${zone} (${zoneLabel}) → ₹${charge} for state=${address.state}`);
+          }
+        }
+
+        // If no zone override, fall back to single fixed shipping charge (highest across cart)
+        if (zoneChargeOverride === null) {
+          const maxFixed = items.reduce((max, item) => {
+            const product = products.find(p => p._id.toString() === item.productId?.toString());
+            return Math.max(max, product?.shippingCharge || 0);
+          }, 0);
+          fixedChargeOverride = maxFixed;
+        }
 
         // If ANY product has delhiveryEnabled=false, block Delhivery for whole cart
         delhiveryBlocked = products.some(p => p.delhiveryEnabled === false);
@@ -129,7 +146,21 @@ exports.getShippingQuotes = async (req, res, next) => {
 
     const quotes = [];
 
-    // If product has a fixed shipping charge, use it directly
+    // Zone-based shipping takes highest priority
+    if (zoneChargeOverride !== null) {
+      quotes.push({
+        id: 'zone-standard',
+        name: 'Standard Delivery',
+        description: `Delivery to ${zoneLabel} — 3-7 business days`,
+        cost: zoneChargeOverride,
+        estimatedDays: 7,
+        carrier: 'Standard',
+        zone: zoneLabel,
+      });
+      return res.json({ success: true, data: { quotes, totalWeightKg } });
+    }
+
+    // Fallback: single fixed shipping charge per product
     if (fixedChargeOverride > 0) {
       quotes.push({
         id: 'fixed',

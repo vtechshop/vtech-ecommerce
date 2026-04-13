@@ -382,9 +382,9 @@ exports.createOrder = async (req, res, next) => {
         return sum;
       }, 0);
 
-      // Calculate vendor's proportion of discount
+      // Calculate vendor's proportion of discount and shipping
       const vendorProportion = subtotal > 0 ? vendorSubtotal / subtotal : 1;
-      const vendorShipping = 0; // Shipping included in product price
+      const vendorShipping = Math.round(shipping * vendorProportion * 100) / 100;
       const vendorDiscount = Math.round(discount * vendorProportion * 100) / 100;
       const vendorTotal = vendorSubtotal + vendorTax + vendorShipping - vendorDiscount;
 

@@ -55,6 +55,12 @@ const productSchema = new mongoose.Schema({
   displayOrder: { type: Number, default: 0 }, // higher = appears earlier in product listing (0 = normal)
   weight: Number, // in kg
   shippingCharge: { type: Number, default: 0 }, // fixed shipping override (0 = use weight-based calc)
+  // Zone-based shipping: South / North / East / West India fixed charges
+  // If configured, these override weight-based calc. Highest charge across cart is used.
+  shippingZones: [{
+    zone: { type: String, enum: ['south', 'north', 'east', 'west'], required: true },
+    charge: { type: Number, min: 0, required: true },
+  }],
   delhiveryEnabled: { type: Boolean, default: true }, // if false, only MSS Transport / fallback (no Delhivery)
   dimensions: { length: Number, width: Number, height: Number, unit: { type: String, enum: ['in', 'cm'], default: 'in' } },
   rating: { type: Number, default: 0, min: 0, max: 5 },

@@ -227,7 +227,11 @@ const Checkout = () => {
         };
       }),
       shipTo: selectedAddress,
-      shippingMethod: shippingMethod.id,
+      shippingMethod: {
+        id: shippingMethod.id,
+        name: shippingMethod.name,
+        cost: shippingMethod.cost || 0,
+      },
       paymentMethod,
       paymentDetails: {},
       // Include guest email if not logged in

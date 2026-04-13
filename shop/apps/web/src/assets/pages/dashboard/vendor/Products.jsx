@@ -786,6 +786,13 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
     warrantyDescription: product?.warranty?.description || '',
     warrantyTerms: product?.warranty?.terms || '',
     warrantyActivationRequired: product?.warranty?.activationRequired || false,
+    // Zone-based shipping
+    shippingZones: {
+      south: product?.shippingZones?.find(z => z.zone === 'south')?.charge ?? '',
+      north: product?.shippingZones?.find(z => z.zone === 'north')?.charge ?? '',
+      east:  product?.shippingZones?.find(z => z.zone === 'east')?.charge ?? '',
+      west:  product?.shippingZones?.find(z => z.zone === 'west')?.charge ?? '',
+    },
     // SEO Fields
     seoTitle: product?.seo?.title || '',
     seoDescription: product?.seo?.description || '',
@@ -910,6 +917,10 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
       categoryIds: formData.categoryIds,
       hasWarranty: formData.hasWarranty,
       warranty: warranty,
+      // Zone-based shipping: only include zones with a value set
+      shippingZones: ['south', 'north', 'east', 'west']
+        .filter(z => formData.shippingZones[z] !== '' && formData.shippingZones[z] !== null && formData.shippingZones[z] !== undefined)
+        .map(z => ({ zone: z, charge: parseFloat(formData.shippingZones[z]) })),
       structuredData: schemaData, // Fixed: changed from 'schema' to 'structuredData'
       // SEO Data
       seo: {
@@ -1259,6 +1270,36 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                   ? 'Tax will be added at checkout'
                   : 'Product price is considered tax-free'}
               </p>
+            </div>
+
+            {/* Zone-Based Shipping */}
+            <div className="md:col-span-2 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Zone-Based Shipping Charges (₹)</h3>
+              <p className="text-xs text-gray-500 mb-3">Set fixed delivery charges per India zone. At checkout, the highest charge across all cart products is used. Leave blank to use weight-based pricing.</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { key: 'south', label: 'South India', states: 'TN, Kerala, Karnataka, AP, Telangana' },
+                  { key: 'north', label: 'North India', states: 'Delhi, UP, Punjab, Haryana, Rajasthan' },
+                  { key: 'east',  label: 'East India',  states: 'WB, Bihar, Odisha, Assam, NE States' },
+                  { key: 'west',  label: 'West India',  states: 'Maharashtra, Gujarat, Goa, MP' },
+                ].map(({ key, label, states }) => (
+                  <div key={key} className="border border-indigo-200 rounded-lg p-3 bg-white">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">{label}</p>
+                    <p className="text-xs text-gray-400 mb-2">{states}</p>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="₹ amount"
+                      value={formData.shippingZones[key]}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        shippingZones: { ...formData.shippingZones, [key]: e.target.value }
+                      })}
+                      className="input w-full text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="md:col-span-1">

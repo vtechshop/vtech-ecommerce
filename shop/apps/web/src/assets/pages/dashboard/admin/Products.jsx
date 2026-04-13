@@ -420,6 +420,12 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
     displayOrder: product?.displayOrder || 0,
     weight: product?.weight || '',
     shippingCharge: product?.shippingCharge || '',
+    shippingZones: {
+      south: product?.shippingZones?.find(z => z.zone === 'south')?.charge ?? '',
+      north: product?.shippingZones?.find(z => z.zone === 'north')?.charge ?? '',
+      east:  product?.shippingZones?.find(z => z.zone === 'east')?.charge ?? '',
+      west:  product?.shippingZones?.find(z => z.zone === 'west')?.charge ?? '',
+    },
     delhiveryEnabled: product?.delhiveryEnabled !== undefined ? product.delhiveryEnabled : true,
     hsnCode: product?.hsnCode || '',
     taxable: product?.taxable !== undefined ? product.taxable : true,
@@ -585,6 +591,10 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
       displayOrder: parseInt(formData.displayOrder) || 0,
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
       shippingCharge: formData.shippingCharge ? parseFloat(formData.shippingCharge) : 0,
+      // Zone-based shipping: only include zones with a value set
+      shippingZones: ['south', 'north', 'east', 'west']
+        .filter(z => formData.shippingZones[z] !== '' && formData.shippingZones[z] !== null && formData.shippingZones[z] !== undefined)
+        .map(z => ({ zone: z, charge: parseFloat(formData.shippingZones[z]) })),
       delhiveryEnabled: formData.delhiveryEnabled,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
       taxIncluded: formData.taxIncluded,
@@ -848,7 +858,43 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                 disabled={isViewing}
                 className="input w-full"
               />
-              <p className="text-xs text-gray-400 mt-1">Set a fixed amount, or leave 0 to auto-calculate by weight</p>
+              <p className="text-xs text-gray-400 mt-1">Set a flat amount for all zones, or use zone-based pricing below</p>
+            </div>
+
+            {/* Zone-Based Shipping */}
+            <div className="col-span-full">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Zone-Based Shipping Charges (₹)
+                <span className="ml-2 text-xs text-blue-600 font-normal">Overrides fixed charge above</span>
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { key: 'south', label: 'South India', states: 'TN, Kerala, Karnataka, AP, Telangana' },
+                  { key: 'north', label: 'North India', states: 'Delhi, UP, Punjab, Haryana, Rajasthan' },
+                  { key: 'east',  label: 'East India',  states: 'WB, Bihar, Odisha, Assam, NE States' },
+                  { key: 'west',  label: 'West India',  states: 'Maharashtra, Gujarat, Goa, MP' },
+                ].map(({ key, label, states }) => (
+                  <div key={key} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <p className="text-xs font-semibold text-gray-700 mb-1">{label}</p>
+                    <p className="text-xs text-gray-400 mb-2">{states}</p>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="₹ amount"
+                      value={formData.shippingZones[key]}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        shippingZones: { ...formData.shippingZones, [key]: e.target.value }
+                      })}
+                      disabled={isViewing}
+                      className="input w-full text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                At checkout, the highest zone charge across all cart products is used. Leave blank to fall back to weight-based pricing.
+              </p>
             </div>
 
             <div>

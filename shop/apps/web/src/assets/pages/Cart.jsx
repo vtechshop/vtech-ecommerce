@@ -239,13 +239,7 @@ const Cart = () => {
 
                 <div className="flex justify-between text-sm text-gray-700">
                   <span>Shipping</span>
-                  <span className="font-semibold">
-                    {totals.shipping === 0 ? (
-                      <span className="text-green-600">FREE</span>
-                    ) : (
-                      formatCurrency(totals.shipping)
-                    )}
-                  </span>
+                  <span className="font-semibold text-gray-500">Calculated at checkout</span>
                 </div>
 
                 {totals.tax > 0 && (
