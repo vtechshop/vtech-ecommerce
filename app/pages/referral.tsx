@@ -77,6 +77,8 @@ export default function ReferralScreen() {
       }).catch(() => {
         setReferralCode('LOGIN REQUIRED');
       });
+    }).catch(() => {
+      setReferralCode('LOGIN REQUIRED');
     });
   }, []);
 

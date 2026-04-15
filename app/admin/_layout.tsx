@@ -25,6 +25,7 @@ export default function AdminLayout() {
       <Stack.Screen name="orders" options={{ title: 'Orders Management' }} />
       <Stack.Screen name="vendors" options={{ title: 'Vendors Management' }} />
       <Stack.Screen name="affiliates" options={{ title: 'Affiliates Management' }} />
+      <Stack.Screen name="share-catalog" options={{ title: 'Share Catalog' }} />
     </Stack>
   );
 }

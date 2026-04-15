@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Dimensions, Pressable, TextInput } from 'react-native';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -79,7 +79,11 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { items: recentlyViewed } = useRecentlyViewed();
+  const { items: recentlyViewed, refresh: refreshRecentlyViewed } = useRecentlyViewed();
+
+  useFocusEffect(useCallback(() => {
+    refreshRecentlyViewed();
+  }, []));
   const retryCountRef = React.useRef(0);
 
   const loadData = async (isAutoRetry = false) => {

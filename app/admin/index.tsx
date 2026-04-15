@@ -45,6 +45,7 @@ export default function AdminDashboard() {
     { icon: 'bag-outline' as const, label: 'Orders', route: '/admin/orders' },
     { icon: 'storefront-outline' as const, label: 'Vendors', route: '/admin/vendors' },
     { icon: 'link-outline' as const, label: 'Affiliates', route: '/admin/affiliates' },
+    { icon: 'share-social-outline' as const, label: 'Share Catalog', route: '/admin/share-catalog' },
   ];
 
   return (

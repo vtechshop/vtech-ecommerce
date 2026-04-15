@@ -79,7 +79,7 @@ function RootLayoutInner() {
     });
 
     return () => {
-      if (responseListener.current) Notifications.removeNotificationSubscription(responseListener.current);
+      if (responseListener.current) responseListener.current.remove?.();
     };
   }, [isAuthenticated]);
 

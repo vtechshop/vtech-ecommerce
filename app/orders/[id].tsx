@@ -83,7 +83,7 @@ export default function OrderDetailScreen() {
     if (!order) return;
     haptic.medium();
     let added = 0;
-    for (const item of order.items) {
+    for (const item of (order.items || [])) {
       if (item.product?._id) {
         try {
           await dispatch(addToCart({ productId: item.product._id, quantity: item.quantity }));

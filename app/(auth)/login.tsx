@@ -220,7 +220,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.primary,
     fontWeight: fontWeight.semibold,
-    flex: 1,
   },
   trustRow: {
     flexDirection: 'row',

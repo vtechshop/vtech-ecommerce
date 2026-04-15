@@ -6,11 +6,13 @@ export const ordersApi = {
     addressId: string;
     paymentMethod: string;
     items?: any[];
+    shipTo?: object;
+    shippingMethod?: { id: string; name: string; cost: number };
     razorpayPaymentId?: string;
     razorpayOrderId?: string;
     razorpaySignature?: string;
     notes?: string;
-  }) => apiClient.post<ApiResponse<Order>>('/orders', data),
+  }) => apiClient.post<ApiResponse<any>>('/orders', data),
 
   getAll: (params?: { page?: number; limit?: number; status?: string }) =>
     apiClient.get<ApiResponse<Order[]>>('/orders', { params }),

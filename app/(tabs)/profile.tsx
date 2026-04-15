@@ -32,6 +32,18 @@ export default function ProfileScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwSaving, setPwSaving] = useState(false);
 
+  // Reanimated hooks must be called unconditionally — before any early return
+  const scrollY = useSharedValue(0);
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => { scrollY.value = event.contentOffset.y; },
+  });
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const scale = interpolate(scrollY.value, [-100, 0], [1.3, 1], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollY.value, [0, 180], [0, -40], Extrapolation.CLAMP);
+    const opacity = interpolate(scrollY.value, [0, 140], [1, 0.6], Extrapolation.CLAMP);
+    return { transform: [{ scale }, { translateY }], opacity };
+  });
+
   if (!isAuthenticated) {
     return (
       <View style={styles.authPrompt}>
@@ -114,37 +126,6 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const scrollY = useSharedValue(0);
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
-
-  const headerAnimatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
-      scrollY.value,
-      [-100, 0],
-      [1.3, 1],
-      Extrapolation.CLAMP,
-    );
-    const translateY = interpolate(
-      scrollY.value,
-      [0, 180],
-      [0, -40],
-      Extrapolation.CLAMP,
-    );
-    const opacity = interpolate(
-      scrollY.value,
-      [0, 140],
-      [1, 0.6],
-      Extrapolation.CLAMP,
-    );
-    return {
-      transform: [{ scale }, { translateY }],
-      opacity,
-    };
-  });
 
   return (
     <Animated.ScrollView style={styles.container} onScroll={scrollHandler} scrollEventThrottle={16}>
