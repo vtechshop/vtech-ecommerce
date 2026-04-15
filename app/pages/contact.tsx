@@ -43,7 +43,7 @@ export default function ContactScreen() {
   const [contactInfo, setContactInfo] = useState<AppConfig['contactInfo']>({
     email: 'vtechshop.customercare@gmail.com',
     phone: '+91 99445 56683',
-    whatsapp: '+91 99445 56683 / +91 99445 56620',
+    whatsapp: '+91 99445 56683',
     website: 'vtechkitchen.com',
     businessHours: 'Monday - Saturday: 9:00 AM - 6:00 PM',
     address: '',
@@ -126,7 +126,7 @@ export default function ContactScreen() {
         <Text style={styles.label}>Name</Text>
         <TextInput
           style={styles.input}
-          placeholder="Your name"
+          placeholder=""
           placeholderTextColor={colors.textSecondary}
           value={name}
           onChangeText={setName}
@@ -135,7 +135,7 @@ export default function ContactScreen() {
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={styles.input}
-          placeholder="your@email.com"
+          placeholder=""
           placeholderTextColor={colors.textSecondary}
           value={email}
           onChangeText={setEmail}
@@ -146,7 +146,7 @@ export default function ContactScreen() {
         <Text style={styles.label}>Message</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
-          placeholder="How can we help you?"
+          placeholder=""
           placeholderTextColor={colors.textSecondary}
           value={message}
           onChangeText={setMessage}
