@@ -6,7 +6,6 @@ import { login } from '@/store/slices/authSlice';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
 import ShinyButton from '@/components/animations/ShinyButton';
-import ScrollReveal from '@/components/common/ScrollReveal';
 import { NoIndex } from '@/components/common/SEO';
 
 const Login = () => {
@@ -78,7 +77,6 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
       <NoIndex title="Sign In - V-Tech Kitchen" />
       <div className="max-w-md w-full">
-        <ScrollReveal animation="fadeIn" duration={0.5}>
           <div className="text-center mb-8">
             <Link to="/" className="text-3xl font-bold text-blue-600 btn-scale">
               Shop
@@ -91,9 +89,7 @@ const Login = () => {
               </Link>
             </p>
           </div>
-        </ScrollReveal>
 
-        <ScrollReveal animation="fadeUp" delay={0.2}>
           <div className={`bg-white rounded-lg shadow-sm border border-gray-200 p-8 hover-lift ${shake ? 'form-error' : ''}`}>
           <form onSubmit={handleSubmit} className="space-y-6" data-testid="login-form">
             {error && (
@@ -161,7 +157,6 @@ const Login = () => {
             </ShinyButton>
           </form>
         </div>
-        </ScrollReveal>
       </div>
     </div>
   );
