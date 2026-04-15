@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   searchBtnText: { color: colors.white, fontSize: fontSize.sm, fontWeight: fontWeight.bold },
 
-  list: { padding: spacing.md, gap: spacing.md },
+  list: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl + 32 },
 
   card: {
     backgroundColor: colors.white,
