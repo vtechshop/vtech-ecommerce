@@ -380,6 +380,7 @@ const Products = () => {
       {showModal && (
         <ProductModal
           product={editingProduct || viewingProduct}
+          allProducts={data?.data || []}
           isViewing={!!viewingProduct}
           onClose={() => {
             setShowModal(false);
@@ -399,7 +400,7 @@ const Products = () => {
 };
 
 // Product Modal Component
-const ProductModal = ({ product, isViewing, onClose, onSave }) => {
+const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave }) => {
   console.log('ProductModal Debug:', { product: !!product, isViewing, productId: product?._id });
 
   const [formData, setFormData] = useState({
@@ -828,9 +829,18 @@ const ProductModal = ({ product, isViewing, onClose, onSave }) => {
                 value={formData.displayOrder}
                 onChange={(e) => setFormData({ ...formData, displayOrder: e.target.value })}
                 disabled={isViewing}
-                className="input w-full"
+                className={`input w-full ${parseInt(formData.displayOrder) > 0 && allProducts.some(p => p._id !== product?._id && parseInt(p.displayOrder) === parseInt(formData.displayOrder)) ? 'border-yellow-400 focus:border-yellow-500' : ''}`}
               />
-              <p className="text-xs text-gray-400 mt-1">e.g. set 10 to pin this product to the top, 0 = normal order</p>
+              {(() => {
+                const val = parseInt(formData.displayOrder);
+                const conflict = val > 0 && allProducts.find(p => p._id !== product?._id && parseInt(p.displayOrder) === val);
+                if (conflict) return (
+                  <p className="text-xs text-yellow-600 mt-1 font-medium">
+                    ⚠ Same number already used by "{conflict.title}" — use a different number to set a unique position
+                  </p>
+                );
+                return <p className="text-xs text-gray-400 mt-1">e.g. set 10 to pin this product to the top, 0 = normal order</p>;
+              })()}
             </div>
 
             <div>
