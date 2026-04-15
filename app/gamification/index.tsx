@@ -21,7 +21,6 @@ interface GameCard {
   reward: string;
   gradient: readonly [string, string, ...string[]];
   route?: string;
-  comingSoon?: boolean;
 }
 
 const GAME_CARDS: GameCard[] = [
@@ -43,15 +42,6 @@ const GAME_CARDS: GameCard[] = [
     gradient: ['#F59E0B', '#F97316'],
     route: '/gamification/spin',
   },
-  {
-    id: 'scratch',
-    title: 'Scratch Card',
-    description: 'Scratch to reveal hidden discounts and prizes.',
-    icon: 'card',
-    reward: 'Win up to \u20B9200',
-    gradient: ['#10B981', '#059669'],
-    comingSoon: true,
-  },
 ];
 
 export default function GamificationScreen() {
@@ -70,7 +60,6 @@ export default function GamificationScreen() {
   }, []);
 
   const handleCardPress = (card: GameCard) => {
-    if (card.comingSoon) return;
     haptic.medium();
     if (card.route) {
       router.push(card.route as any);
@@ -106,7 +95,7 @@ export default function GamificationScreen() {
         {GAME_CARDS.map((card) => (
           <TouchableOpacity
             key={card.id}
-            activeOpacity={card.comingSoon ? 1 : 0.85}
+            activeOpacity={0.85}
             onPress={() => handleCardPress(card)}
           >
             <LinearGradient
@@ -115,19 +104,11 @@ export default function GamificationScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.card}
             >
-              {card.comingSoon && (
-                <View style={styles.comingSoonBadge}>
-                  <Text style={styles.comingSoonText}>Coming Soon</Text>
-                </View>
-              )}
-
               <View style={styles.cardHeader}>
                 <View style={styles.cardIconContainer}>
                   <Ionicons name={card.icon} size={32} color={colors.white} />
                 </View>
-                {!card.comingSoon && (
-                  <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
-                )}
+                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.7)" />
               </View>
 
               <Text style={styles.cardTitle}>{card.title}</Text>
@@ -282,22 +263,7 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
     color: colors.white,
   },
-  comingSoonBadge: {
-    position: 'absolute',
-    top: spacing.md,
-    right: spacing.md,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-    zIndex: 1,
-  },
-  comingSoonText: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    color: colors.white,
-  },
-  streakCard: {
+streakCard: {
     marginHorizontal: spacing.md,
     marginTop: spacing.lg,
     backgroundColor: colors.white,

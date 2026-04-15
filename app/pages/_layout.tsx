@@ -25,8 +25,7 @@ export default function PagesLayout() {
       <Stack.Screen name="privacy-policy" options={{ title: 'Privacy Policy' }} />
       <Stack.Screen name="terms" options={{ title: 'Terms of Service' }} />
       <Stack.Screen name="return-policy" options={{ title: 'Return Policy' }} />
-<Stack.Screen name="compare" options={{ title: 'Compare Products' }} />
-      <Stack.Screen name="coupons" options={transparentHeader} />
+<Stack.Screen name="coupons" options={transparentHeader} />
       <Stack.Screen name="festival-sale" options={transparentHeader} />
       <Stack.Screen name="referral" options={transparentHeader} />
     </Stack>
