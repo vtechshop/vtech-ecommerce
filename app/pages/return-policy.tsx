@@ -37,7 +37,7 @@ const sections = [
   {
     title: 'Contact Us',
     icon: 'chatbubble-outline',
-    content: 'For any return-related queries, create a support ticket from your profile or email us at support@vtechmobile.com.',
+    content: 'For any return-related queries, create a support ticket from your profile or email us at vtechshop.customercare@gmail.com.',
   },
 ];
 

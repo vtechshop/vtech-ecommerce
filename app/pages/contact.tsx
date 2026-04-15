@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Linking, Alert, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { userApi } from '../../src/api/user';
-import { appConfigApi, AppConfig } from '../../src/api/content';
+import { AppConfig } from '../../src/api/content';
 import Button from '../../src/components/ui/Button';
 import { colors, spacing, fontSize, borderRadius, fontWeight, shadows } from '../../src/theme';
 
@@ -49,15 +49,7 @@ export default function ContactScreen() {
     address: '',
   });
 
-  useEffect(() => {
-    appConfigApi.get()
-      .then((res) => {
-        if (res.data.data?.contactInfo) {
-          setContactInfo(res.data.data.contactInfo);
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // Contact info is hardcoded — do not override from API (backend may have stale data)
 
   const CONTACT_OPTIONS = buildContactOptions(contactInfo);
 
