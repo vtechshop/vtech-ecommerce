@@ -34,7 +34,10 @@ const CartDrawer = ({ isOpen, onClose, justAdded }) => {
   };
 
   const handleUpdateQty = (itemId, newQty) => {
-    if (newQty < 1) return;
+    if (newQty < 1) {
+      handleRemove(itemId);
+      return;
+    }
     dispatch(updateCartItem({ itemId, quantity: newQty }));
   };
 
@@ -163,10 +166,17 @@ const CartDrawer = ({ isOpen, onClose, justAdded }) => {
                         <div className="flex items-center border border-gray-300 rounded">
                           <button
                             onClick={() => handleUpdateQty(item._id, item.qty - 1)}
-                            disabled={item.qty <= 1 || loading}
-                            className="px-1.5 py-0.5 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={loading}
+                            className={`px-1.5 py-0.5 transition-colors ${
+                              item.qty === 1
+                                ? 'hover:bg-red-50 text-red-500'
+                                : 'hover:bg-gray-100 text-gray-700'
+                            }`}
                           >
-                            <Minus className="w-3 h-3" />
+                            {item.qty === 1
+                              ? <Trash2 className="w-3 h-3" />
+                              : <Minus className="w-3 h-3" />
+                            }
                           </button>
                           <span className="px-2 py-0.5 text-xs font-medium min-w-[24px] text-center border-x border-gray-300">
                             {item.qty}

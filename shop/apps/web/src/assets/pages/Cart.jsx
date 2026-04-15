@@ -22,7 +22,11 @@ const Cart = () => {
   }, [dispatch]);
 
   const handleUpdateQuantity = (itemId, newQty) => {
-    if (newQty < 1) return;
+    if (newQty < 1) {
+      // qty goes to 0 → remove the item (Amazon-style)
+      handleRemoveItem(itemId);
+      return;
+    }
     dispatch(updateCartItem({ itemId, quantity: newQty }));
   };
 
@@ -156,10 +160,16 @@ const Cart = () => {
                       <div className="flex items-center border border-gray-300 rounded">
                         <button
                           onClick={() => handleUpdateQuantity(item._id, item.qty - 1)}
-                          className="px-3 py-2 hover:bg-blue-100 min-h-[44px] min-w-[44px] flex items-center justify-center"
-                          disabled={item.qty <= 1}
+                          className={`px-3 py-2 min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors ${
+                            item.qty === 1
+                              ? 'hover:bg-red-50 text-red-500'
+                              : 'hover:bg-blue-100 text-gray-700'
+                          }`}
                         >
-                          <Minus className="w-4 h-4 text-gray-700" />
+                          {item.qty === 1
+                            ? <Trash2 className="w-4 h-4" />
+                            : <Minus className="w-4 h-4" />
+                          }
                         </button>
                         <input
                           type="number"
