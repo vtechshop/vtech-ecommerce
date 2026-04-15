@@ -58,7 +58,7 @@ export default function LoginScreen() {
             render={({ field: { onChange, value } }) => (
               <Input
                 label="Email"
-                placeholder="your@email.com"
+                placeholder=""
                 keyboardType="email-address"
                 autoCapitalize="none"
                 leftIcon="mail-outline"
@@ -76,7 +76,7 @@ export default function LoginScreen() {
             render={({ field: { onChange, value } }) => (
               <Input
                 label="Password"
-                placeholder="Enter password"
+                placeholder=""
                 isPassword
                 leftIcon="lock-closed-outline"
                 value={value}

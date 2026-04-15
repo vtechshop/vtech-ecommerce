@@ -58,7 +58,7 @@ export default function ForgotPasswordScreen() {
 
         <Controller control={control} name="email" rules={{ required: 'Email is required', pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email' } }}
           render={({ field: { onChange, value } }) => (
-            <Input label="Email" placeholder="your@email.com" keyboardType="email-address" autoCapitalize="none" leftIcon="mail-outline" value={value} onChangeText={onChange} error={errors.email?.message} />
+            <Input label="Email" placeholder="" keyboardType="email-address" autoCapitalize="none" leftIcon="mail-outline" value={value} onChangeText={onChange} error={errors.email?.message} />
           )}
         />
         <Button title="Send Reset Link" onPress={handleSubmit(onSubmit)} loading={loading} size="lg" style={{ marginTop: spacing.md }} />
