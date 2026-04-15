@@ -251,6 +251,7 @@ const Products = () => {
                 <th className="text-left py-3 px-4 font-semibold text-sm">Vendor</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Price</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Stock</th>
+                <th className="text-left py-3 px-4 font-semibold text-sm">Order</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Status</th>
                 <th className="text-left py-3 px-4 font-semibold text-sm">Created</th>
                 <th className="text-right py-3 px-4 font-semibold text-sm">Actions</th>
@@ -304,6 +305,15 @@ const Products = () => {
                       {product.stock}
                     </span>
                     <p className="text-xs text-gray-500">units</p>
+                  </td>
+                  <td className="py-3 px-4 text-sm text-center">
+                    {product.displayOrder > 0 ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                        {product.displayOrder}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-xs">—</span>
+                    )}
                   </td>
                   <td className="py-3 px-3 sm:px-4">
                     <span
