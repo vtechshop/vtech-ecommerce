@@ -126,7 +126,7 @@ export const generateProductSchema = (product) => {
         '@type': 'OfferShippingDetails',
         shippingRate: {
           '@type': 'MonetaryAmount',
-          value: 100,
+          minValue: 0,
           currency: 'INR',
         },
         shippingDestination: {
