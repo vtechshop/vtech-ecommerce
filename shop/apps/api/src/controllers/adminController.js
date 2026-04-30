@@ -1060,7 +1060,7 @@ exports.approveVendor = async (req, res, next) => {
   try {
     const vendor = await Vendor.findByIdAndUpdate(
       req.params.id,
-      { status: 'active', 'kyc.status': 'approved', 'kyc.verifiedAt': new Date() },
+      { status: 'active' },
       { new: true }
     ).populate('userId');
     if (!vendor) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Vendor not found' } });
@@ -1086,12 +1086,7 @@ exports.rejectVendor = async (req, res, next) => {
   try {
     const vendor = await Vendor.findByIdAndUpdate(
       req.params.id,
-      {
-        status: 'rejected',
-        'kyc.status': 'rejected',
-        'kyc.rejectionReason': req.body.reason,
-        'kyc.rejectedAt': new Date()
-      },
+      { status: 'rejected' },
       { new: true }
     ).populate('userId');
     if (!vendor) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Vendor not found' } });
