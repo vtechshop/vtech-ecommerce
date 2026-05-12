@@ -530,4 +530,69 @@ router.get('/settings', cacheMiddleware(1800), async (req, res, next) => {
   }
 });
 
+// GET /catalog/meta-feed - Meta (Facebook) product catalog feed in RSS/XML format
+// Register this URL in Meta Commerce Manager → Catalog → Data Sources → Data feed
+router.get('/meta-feed', async (req, res, next) => {
+  try {
+    const products = await Product.find({ published: true })
+      .populate('vendorId', 'storeName')
+      .select('_id title description slug images price compareAtPrice stock brand categoryIds sku')
+      .limit(5000)
+      .lean();
+
+    const BASE_URL = 'https://www.vtechkitchen.com';
+
+    const escapeXml = (str = '') =>
+      String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+
+    const items = products.map(p => {
+      const imageUrl = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : '';
+      const additionalImages = Array.isArray(p.images) && p.images.length > 1
+        ? p.images.slice(1, 4).map(img => `<g:additional_image_link>${escapeXml(img)}</g:additional_image_link>`).join('\n      ')
+        : '';
+      const availability = (p.stock > 0) ? 'in stock' : 'out of stock';
+      const price = `${Number(p.price).toFixed(2)} INR`;
+      const brand = escapeXml(p.brand || p.vendorId?.storeName || 'V-Tech Kitchen');
+      const description = escapeXml(
+        (p.description || p.title || '').substring(0, 5000)
+      );
+
+      return `    <item>
+      <g:id>${escapeXml(String(p._id))}</g:id>
+      <g:title>${escapeXml(p.title)}</g:title>
+      <g:description>${description}</g:description>
+      <g:link>${BASE_URL}/product/${escapeXml(p.slug)}</g:link>
+      <g:image_link>${escapeXml(imageUrl)}</g:image_link>
+      ${additionalImages}
+      <g:availability>${availability}</g:availability>
+      <g:price>${price}</g:price>${p.compareAtPrice && p.compareAtPrice > p.price ? `\n      <g:sale_price>${price}</g:sale_price>` : ''}
+      <g:brand>${brand}</g:brand>
+      <g:condition>new</g:condition>${p.sku ? `\n      <g:mpn>${escapeXml(p.sku)}</g:mpn>` : ''}
+      <g:google_product_category>Kitchen &amp; Dining</g:google_product_category>
+    </item>`;
+    }).join('\n');
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:g="http://base.google.com/ns/1.0" version="2.0">
+  <channel>
+    <title>V-Tech Kitchen</title>
+    <link>${BASE_URL}</link>
+    <description>Premium kitchen appliances and cookware</description>
+${items}
+  </channel>
+</rss>`;
+
+    res.set('Content-Type', 'application/xml; charset=utf-8');
+    res.set('Cache-Control', 'public, max-age=3600'); // Cache 1 hour
+    res.send(xml);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

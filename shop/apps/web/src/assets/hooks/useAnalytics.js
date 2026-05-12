@@ -27,8 +27,11 @@ const useAnalytics = () => {
   useEffect(() => {
     if (preferences.analytics) {
       trackPageView(location.pathname + location.search);
+    } else if (preferences.marketing && window.fbq) {
+      // Fire Meta PageView even when only marketing consent given
+      window.fbq('track', 'PageView');
     }
-  }, [location, preferences.analytics]);
+  }, [location, preferences.analytics, preferences.marketing]);
 };
 
 export default useAnalytics;

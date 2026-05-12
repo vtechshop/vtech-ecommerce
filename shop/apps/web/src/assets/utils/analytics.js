@@ -29,18 +29,20 @@ export const loadMetaPixel = (pixelId) => {
     s.parentNode.insertBefore(t,s);
   })(window, document,'script',
   'https://connect.facebook.net/en_US/fbevents.js');
-  
+
   window.fbq('init', pixelId);
   window.fbq('track', 'PageView');
 };
 
+// GA4 only — Meta standard events use different names, tracked separately below
 export const trackEvent = (eventName, params = {}) => {
-  // GA4 event
   if (window.gtag) {
     window.gtag('event', eventName, params);
   }
+};
 
-  // Meta Pixel event
+// Meta Pixel only — uses PascalCase standard event names
+const fbqTrack = (eventName, params) => {
   if (window.fbq) {
     window.fbq('track', eventName, params);
   }
@@ -52,26 +54,39 @@ export const trackPageView = (path) => {
       page_path: path,
     });
   }
+  fbqTrack('PageView');
 };
 
 export const trackPurchase = (orderData) => {
-  const eventData = {
+  const productIds = orderData.items.map(item =>
+    String(typeof item.productId === 'object' ? item.productId._id : item.productId)
+  ).filter(Boolean);
+
+  // GA4
+  trackEvent('purchase', {
     transaction_id: orderData.orderId,
     value: orderData.total,
     currency: 'INR',
     items: orderData.items.map(item => ({
-      // Handle both populated (object) and non-populated (string) productId
       item_id: typeof item.productId === 'object' ? item.productId._id : item.productId,
       item_name: item.name,
       price: item.price,
       quantity: item.quantity,
     })),
-  };
+  });
 
-  trackEvent('purchase', eventData);
+  // Meta
+  fbqTrack('Purchase', {
+    value: orderData.total,
+    currency: 'INR',
+    content_ids: productIds,
+    content_type: 'product',
+    num_items: orderData.items.reduce((sum, item) => sum + (item.quantity || 1), 0),
+  });
 };
 
 export const trackAddToCart = (product, quantity = 1) => {
+  // GA4
   trackEvent('add_to_cart', {
     currency: 'INR',
     value: product.price * quantity,
@@ -82,23 +97,47 @@ export const trackAddToCart = (product, quantity = 1) => {
       quantity,
     }],
   });
+
+  // Meta
+  fbqTrack('AddToCart', {
+    content_ids: [String(product._id)],
+    content_name: product.title,
+    content_type: 'product',
+    value: product.price * quantity,
+    currency: 'INR',
+    num_items: quantity,
+  });
 };
 
 export const trackBeginCheckout = (cartData) => {
+  const productIds = cartData.items.map(item =>
+    String(typeof item.productId === 'object' ? item.productId._id : item.productId)
+  ).filter(Boolean);
+
+  // GA4
   trackEvent('begin_checkout', {
     currency: 'INR',
     value: cartData.totals.total,
     items: cartData.items.map(item => ({
-      // Handle both populated (object) and non-populated (string) productId
       item_id: typeof item.productId === 'object' ? item.productId._id : item.productId,
       item_name: item.name,
       price: item.priceSnapshot,
       quantity: item.qty,
     })),
   });
+
+  // Meta
+  fbqTrack('InitiateCheckout', {
+    content_ids: productIds,
+    content_type: 'product',
+    num_items: cartData.items.reduce((sum, item) => sum + (item.qty || 1), 0),
+    value: cartData.totals.total,
+    currency: 'INR',
+  });
 };
 
 export const trackRemoveFromCart = (item) => {
+  // GA4 only (no standard Meta event for remove-from-cart)
   trackEvent('remove_from_cart', {
     currency: 'INR',
     value: (item.priceSnapshot || item.price || 0) * (item.qty || item.quantity || 1),
@@ -112,6 +151,7 @@ export const trackRemoveFromCart = (item) => {
 };
 
 export const trackViewItem = (product) => {
+  // GA4
   trackEvent('view_item', {
     currency: 'INR',
     value: product.price,
@@ -121,5 +161,14 @@ export const trackViewItem = (product) => {
       price: product.price,
       item_category: product.categoryIds?.[0] || '',
     }],
+  });
+
+  // Meta
+  fbqTrack('ViewContent', {
+    content_ids: [String(product._id)],
+    content_name: product.title,
+    content_type: 'product',
+    value: product.price,
+    currency: 'INR',
   });
 };
