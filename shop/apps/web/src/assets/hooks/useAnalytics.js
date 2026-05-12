@@ -5,7 +5,7 @@ import { useSelector } from 'react-redux';
 import { loadGA4, loadMetaPixel, trackPageView } from '@/utils/analytics';
 
 const GA4_MEASUREMENT_ID = import.meta.env.VITE_GA4_MEASUREMENT_ID;
-const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID;
+const META_PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID || '1324439793116161';
 
 const useAnalytics = () => {
   const location = useLocation();
