@@ -58,6 +58,7 @@ router.put('/products/:id', validateObjectId('id'), invalidateCache('cache:/cata
 router.delete('/products/:id', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.deleteProduct);
 router.put('/products/:id/approve', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.approveProduct);
 router.put('/products/:id/reject', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.rejectProduct);
+router.post('/products/bulk-price-update', invalidateCache('cache:/catalog*'), admin.bulkPriceUpdate);
 router.post('/products/reassign', admin.reassignProducts);
 router.put('/products/:id/commission-rules', validateObjectId('id'), admin.updateProductCommissionRules);
 

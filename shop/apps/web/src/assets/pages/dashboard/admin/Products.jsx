@@ -7,7 +7,7 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import { formatCurrency } from '@/utils/format';
-import { Plus, Edit, Trash2, Eye, Search, X, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Search, X, RefreshCw, TrendingUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Products = () => {
@@ -19,6 +19,7 @@ const Products = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewingProduct, setViewingProduct] = useState(null);
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [pricePercent, setPricePercent] = useState('');
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['admin-products', page, statusFilter, searchTerm],
@@ -89,6 +90,31 @@ const Products = () => {
     },
   });
 
+  const bulkPriceUpdateMutation = useMutation({
+    mutationFn: async ({ ids, percentage }) => {
+      const res = await api.post('/admin/products/bulk-price-update', { ids, percentage });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      setSelectedProducts([]);
+      setPricePercent('');
+      toast.success(`${data.data.updated} product(s) price updated`);
+    },
+    onError: (error) => {
+      toast.error('Failed to update prices: ' + (error.response?.data?.error?.message || error.message));
+    },
+  });
+
+  const handleBulkPriceUpdate = () => {
+    const pct = parseFloat(pricePercent);
+    if (isNaN(pct) || pct === 0) { toast.error('Enter a valid non-zero percentage'); return; }
+    const action = pct > 0 ? `increase by ${pct}%` : `decrease by ${Math.abs(pct)}%`;
+    if (confirm(`${action} price for ${selectedProducts.length} selected product(s)?`)) {
+      bulkPriceUpdateMutation.mutate({ ids: selectedProducts, percentage: pct });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -154,19 +180,41 @@ const Products = () => {
         </div>
         <div className="flex items-center gap-4">
           {selectedProducts.length > 0 && (
-            <Button
-              variant="outline"
-              disabled={bulkDeleteMutation.isPending}
-              onClick={() => {
-                if (confirm(`Delete ${selectedProducts.length} selected products?`)) {
-                  bulkDeleteMutation.mutate(selectedProducts);
-                }
-              }}
-              className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete Selected
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Bulk price update */}
+              <div className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
+                <TrendingUp className="w-4 h-4 text-blue-600 shrink-0" />
+                <input
+                  type="number"
+                  value={pricePercent}
+                  onChange={(e) => setPricePercent(e.target.value)}
+                  placeholder="e.g. 10 or -5"
+                  className="w-28 text-sm border-0 bg-transparent focus:outline-none"
+                />
+                <span className="text-sm text-gray-600">%</span>
+                <button
+                  onClick={handleBulkPriceUpdate}
+                  disabled={bulkPriceUpdateMutation.isPending}
+                  className="ml-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {bulkPriceUpdateMutation.isPending ? 'Updating...' : 'Apply'}
+                </button>
+              </div>
+              {/* Bulk delete */}
+              <Button
+                variant="outline"
+                disabled={bulkDeleteMutation.isPending}
+                onClick={() => {
+                  if (confirm(`Delete ${selectedProducts.length} selected products?`)) {
+                    bulkDeleteMutation.mutate(selectedProducts);
+                  }
+                }}
+                className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Selected
+              </Button>
+            </div>
           )}
           <button onClick={refetch} className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm">
             <RefreshCw className="w-4 h-4" /> Refresh

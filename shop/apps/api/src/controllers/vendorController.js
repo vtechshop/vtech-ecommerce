@@ -549,6 +549,36 @@ async function bulkDeleteProducts(req, res, next) {
   }
 }
 
+// Bulk price update
+async function bulkPriceUpdate(req, res, next) {
+  try {
+    const { productIds, percentage } = req.body;
+    if (!Array.isArray(productIds) || productIds.length === 0)
+      return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'Product IDs array is required' } });
+    if (productIds.length > 100)
+      return res.status(400).json({ success: false, error: { code: 'LIMIT_EXCEEDED', message: 'Cannot update more than 100 products at once' } });
+
+    const pct = parseFloat(percentage);
+    if (isNaN(pct) || pct === 0)
+      return res.status(400).json({ success: false, error: { code: 'INVALID_INPUT', message: 'Valid non-zero percentage is required' } });
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor)
+      return res.status(403).json({ success: false, error: { code: 'NOT_VENDOR', message: 'Vendor profile required' } });
+
+    const multiplier = 1 + pct / 100;
+    const products = await Product.find({ _id: { $in: productIds }, vendorId: vendor._id }).select('_id price');
+    await Promise.all(products.map(p =>
+      Product.updateOne({ _id: p._id }, { price: Math.max(1, Math.round(p.price * multiplier)) })
+    ));
+
+    logger.info(`Bulk price update: ${products.length} products by vendor ${vendor._id}, ${pct > 0 ? '+' : ''}${pct}%`);
+    res.json({ success: true, data: { updated: products.length } });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // Export products to CSV
 async function exportProducts(req, res, next) {
   try {
@@ -2147,6 +2177,7 @@ module.exports = {
   updateProduct,
   deleteProduct,
   bulkDeleteProducts,
+  bulkPriceUpdate,
   exportProducts,
   importProducts,
   getInventory,

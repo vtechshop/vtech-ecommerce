@@ -26,6 +26,7 @@ router.get('/products/export', authenticate, authorize(['vendor', 'admin']), ven
 router.get('/products', authenticate, authorize(['vendor', 'admin']), vendorController.getVendorProducts);
 router.post('/products', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.createProduct);
 router.post('/products/bulk-delete', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.bulkDeleteProducts);
+router.post('/products/bulk-price-update', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.bulkPriceUpdate);
 router.post('/products/import', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.importProducts);
 router.put('/products/:id', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.updateProduct);
 router.delete('/products/:id', authenticate, authorize(['vendor', 'admin']), requireApprovedKYC, vendorController.deleteProduct);

@@ -719,6 +719,25 @@ exports.deleteProduct = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+exports.bulkPriceUpdate = async (req, res, next) => {
+  try {
+    const { ids, percentage } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0)
+      return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Product IDs are required' } });
+    const pct = parseFloat(percentage);
+    if (isNaN(pct) || pct === 0)
+      return res.status(400).json({ success: false, error: { code: 'BAD_REQUEST', message: 'Valid non-zero percentage is required' } });
+
+    const multiplier = 1 + pct / 100;
+    const products = await Product.find({ _id: { $in: ids } }).select('_id price');
+    await Promise.all(products.map(p =>
+      Product.updateOne({ _id: p._id }, { price: Math.max(1, Math.round(p.price * multiplier)) })
+    ));
+    logger.info(`Bulk price update by admin: ${products.length} products, ${pct > 0 ? '+' : ''}${pct}%`);
+    res.json({ success: true, data: { updated: products.length } });
+  } catch (error) { next(error); }
+};
+
 exports.reassignProducts = async (req, res, next) => {
   try {
     const { toVendorId, fromVendorId, productIds } = req.body;

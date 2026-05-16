@@ -46,6 +46,7 @@ const Products = () => {
   const [sortField, setSortField] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [pricePercent, setPricePercent] = useState('');
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showActionsDropdown, setShowActionsDropdown] = useState(null);
 
@@ -126,6 +127,35 @@ const Products = () => {
     if (selectedProducts.length === 0) return;
     if (confirm(`Delete ${selectedProducts.length} selected product(s)?`)) {
       bulkDeleteMutation.mutate(selectedProducts);
+    }
+  };
+
+  const bulkPriceUpdateMutation = useMutation({
+    mutationFn: async ({ productIds, percentage }) => {
+      const res = await api.post('/vendors/products/bulk-price-update', { productIds, percentage });
+      return res.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['vendor-products'] });
+      setSelectedProducts([]);
+      setPricePercent('');
+      setToastMessage(`${data.data.updated} product(s) price updated`);
+      setToastType('success');
+      setShowToast(true);
+    },
+    onError: (error) => {
+      setToastMessage(error.response?.data?.error?.message || 'Failed to update prices');
+      setToastType('error');
+      setShowToast(true);
+    },
+  });
+
+  const handleBulkPriceUpdate = () => {
+    const pct = parseFloat(pricePercent);
+    if (isNaN(pct) || pct === 0) { alert('Enter a valid non-zero percentage'); return; }
+    const action = pct > 0 ? `increase by ${pct}%` : `decrease by ${Math.abs(pct)}%`;
+    if (confirm(`${action} price for ${selectedProducts.length} selected product(s)?`)) {
+      bulkPriceUpdateMutation.mutate({ productIds: selectedProducts, percentage: pct });
     }
   };
 
@@ -504,10 +534,29 @@ const Products = () => {
 
         {/* Bulk Actions Bar */}
         {selectedProducts.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-3">
-            <span className="text-sm text-gray-600">
+          <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-3 flex-wrap">
+            <span className="text-sm font-medium text-gray-700">
               {selectedProducts.length} selected
             </span>
+            {/* Bulk price update */}
+            <div className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
+              <TrendingUp className="w-4 h-4 text-blue-600 shrink-0" />
+              <input
+                type="number"
+                value={pricePercent}
+                onChange={(e) => setPricePercent(e.target.value)}
+                placeholder="e.g. 10 or -5"
+                className="w-28 text-sm border-0 bg-transparent focus:outline-none"
+              />
+              <span className="text-sm text-gray-600">%</span>
+              <button
+                onClick={handleBulkPriceUpdate}
+                disabled={bulkPriceUpdateMutation.isPending}
+                className="ml-1 px-2 py-0.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {bulkPriceUpdateMutation.isPending ? 'Updating...' : 'Apply'}
+              </button>
+            </div>
             <button
               onClick={handleBulkDelete}
               disabled={bulkDeleteMutation.isPending}
@@ -519,7 +568,7 @@ const Products = () => {
               onClick={() => setSelectedProducts([])}
               className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 font-medium"
             >
-              Clear Selection
+              Clear
             </button>
           </div>
         )}
