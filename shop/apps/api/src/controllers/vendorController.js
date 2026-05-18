@@ -434,11 +434,12 @@ async function updateProduct(req, res, next) {
       'title', 'description', 'price', 'compareAt', 'cost', 'stock',
       'sku', 'barcode', 'brand', 'images', 'imageAlts', 'categoryIds', 'tags',
       'variants', 'specifications', 'shippingInfo', 'published',
-      'featured', 'taxable', 'taxRate', 'taxIncluded', 'hsnCode', 'seo', 'hasWarranty', 'warranty', 'faqs', 'structuredData', 'youtubeLink'
+      'featured', 'taxable', 'taxRate', 'taxIncluded', 'hsnCode', 'seo', 'hasWarranty', 'warranty', 'faqs', 'structuredData', 'youtubeLink',
+      'weight', 'shippingCharge', 'delhiveryEnabled', 'shippingZones', 'videoUrl',
     ];
 
     // Fields that are nested objects and need markModified
-    const nestedObjectFields = ['seo', 'warranty', 'shippingInfo', 'specifications', 'structuredData'];
+    const nestedObjectFields = ['seo', 'warranty', 'shippingInfo', 'specifications', 'structuredData', 'shippingZones'];
 
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
