@@ -835,6 +835,9 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
     warrantyDescription: product?.warranty?.description || '',
     warrantyTerms: product?.warranty?.terms || '',
     warrantyActivationRequired: product?.warranty?.activationRequired || false,
+    weight: product?.weight || '',
+    shippingCharge: product?.shippingCharge || '',
+    delhiveryEnabled: product?.delhiveryEnabled !== undefined ? product.delhiveryEnabled : true,
     // Zone-based shipping
     shippingZones: {
       tamilnadu: product?.shippingZones?.find(z => z.zone === 'tamilnadu')?.charge ?? '',
@@ -971,6 +974,9 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
       shippingZones: ['tamilnadu', 'south', 'north', 'east', 'west']
         .filter(z => formData.shippingZones[z] !== '' && formData.shippingZones[z] !== null && formData.shippingZones[z] !== undefined)
         .map(z => ({ zone: z, charge: parseFloat(formData.shippingZones[z]) })),
+      weight: formData.weight ? parseFloat(formData.weight) : undefined,
+      shippingCharge: formData.shippingCharge ? parseFloat(formData.shippingCharge) : 0,
+      delhiveryEnabled: formData.delhiveryEnabled,
       structuredData: schemaData, // Fixed: changed from 'schema' to 'structuredData'
       // SEO Data
       seo: {
@@ -1352,6 +1358,48 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Weight & Shipping Charge */}
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={formData.weight}
+                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                className="input w-full"
+                placeholder="e.g. 0.5"
+              />
+            </div>
+
+            <div className="md:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Shipping Charge (₹)</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.shippingCharge}
+                onChange={(e) => setFormData({ ...formData, shippingCharge: e.target.value })}
+                className="input w-full"
+                placeholder="e.g. 50"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="flex items-center justify-between cursor-pointer bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Delhivery Shipping</span>
+                  <p className="text-xs text-gray-500 mt-0.5">Enable Delhivery courier for this product</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, delhiveryEnabled: !formData.delhiveryEnabled })}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${formData.delhiveryEnabled ? 'bg-green-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${formData.delhiveryEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </label>
             </div>
 
             <div className="md:col-span-1">
