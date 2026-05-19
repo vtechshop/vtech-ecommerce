@@ -738,6 +738,19 @@ exports.bulkPriceUpdate = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+exports.assignProductsToCategory = async (req, res, next) => {
+  try {
+    const { categoryId, productIds } = req.body;
+    if (!categoryId || !Array.isArray(productIds) || productIds.length === 0)
+      return res.status(400).json({ success: false, error: { message: 'categoryId and productIds are required' } });
+    const result = await Product.updateMany(
+      { _id: { $in: productIds } },
+      { $addToSet: { categoryIds: categoryId } }
+    );
+    res.json({ success: true, data: { updated: result.modifiedCount } });
+  } catch (error) { next(error); }
+};
+
 exports.reassignProducts = async (req, res, next) => {
   try {
     const { toVendorId, fromVendorId, productIds } = req.body;

@@ -580,6 +580,27 @@ async function bulkPriceUpdate(req, res, next) {
   }
 }
 
+// Assign existing products to a category
+async function assignProductsToCategory(req, res, next) {
+  try {
+    const { categoryId, productIds } = req.body;
+    if (!categoryId || !Array.isArray(productIds) || productIds.length === 0)
+      return res.status(400).json({ success: false, error: { message: 'categoryId and productIds are required' } });
+
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (!vendor)
+      return res.status(403).json({ success: false, error: { code: 'NOT_VENDOR', message: 'Vendor profile required' } });
+
+    const result = await Product.updateMany(
+      { _id: { $in: productIds }, vendorId: vendor._id },
+      { $addToSet: { categoryIds: categoryId } }
+    );
+    res.json({ success: true, data: { updated: result.modifiedCount } });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // Export products to CSV
 async function exportProducts(req, res, next) {
   try {
@@ -2179,6 +2200,7 @@ module.exports = {
   deleteProduct,
   bulkDeleteProducts,
   bulkPriceUpdate,
+  assignProductsToCategory,
   exportProducts,
   importProducts,
   getInventory,

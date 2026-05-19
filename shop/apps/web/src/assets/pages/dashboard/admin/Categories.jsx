@@ -5,13 +5,14 @@ import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
 import { useToast } from '@/components/common/ToastContainer';
-import { Plus, Edit, Trash2, X, Save, FolderTree, Folder, ZoomIn, Upload, Clock, CheckCircle, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Save, FolderTree, Folder, ZoomIn, Upload, Clock, CheckCircle, RefreshCw, PackagePlus, Search, Package } from 'lucide-react';
 
 const Categories = () => {
   const queryClient = useQueryClient();
   const toast = useToast();
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [assigningCategory, setAssigningCategory] = useState(null); // {_id, name}
 
   const { data: categories, isLoading, refetch } = useQuery({
     queryKey: ['admin-categories'],
@@ -164,6 +165,9 @@ const Categories = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
+                      <button onClick={() => setAssigningCategory(parent)} className="text-green-600 hover:text-green-800 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 bg-green-50 rounded" title="Add Products to this category">
+                        <PackagePlus className="w-3.5 h-3.5" /> Add Products
+                      </button>
                       <button onClick={() => handleEdit(parent)} className="text-blue-600 hover:text-primary-800" title="Edit">
                         <Edit className="w-4 h-4" />
                       </button>
@@ -213,6 +217,9 @@ const Categories = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
+                        <button onClick={() => setAssigningCategory(child)} className="text-green-600 hover:text-green-800 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 bg-green-50 rounded" title="Add Products to this category">
+                          <PackagePlus className="w-3.5 h-3.5" /> Add Products
+                        </button>
                         <button onClick={() => handleEdit(child)} className="text-blue-600 hover:text-primary-800" title="Edit">
                           <Edit className="w-4 h-4" />
                         </button>
@@ -257,6 +264,20 @@ const Categories = () => {
             }
           }}
           isLoading={createMutation.isPending || updateMutation.isPending}
+        />
+      )}
+
+      {/* Assign Products Modal */}
+      {assigningCategory && (
+        <AssignProductsModal
+          category={assigningCategory}
+          apiBase="/admin/products"
+          onClose={() => setAssigningCategory(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+            toast.success('Products assigned successfully!');
+            setAssigningCategory(null);
+          }}
         />
       )}
     </div>
@@ -492,6 +513,188 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
             </Button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+};
+
+// Assign Products to Category Modal
+const AssignProductsModal = ({ category, apiBase, onClose, onSuccess }) => {
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState(new Set());
+  const [saving, setSaving] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['assign-products-list', apiBase],
+    queryFn: async () => {
+      const res = await api.get(`${apiBase}?limit=500`);
+      return res.data.data || [];
+    },
+    staleTime: 30000,
+  });
+
+  // Pre-select products already in this category
+  React.useEffect(() => {
+    if (data) {
+      const preSelected = new Set(
+        data.filter(p => p.categoryIds?.map(String).includes(String(category._id))).map(p => p._id)
+      );
+      setSelected(preSelected);
+    }
+  }, [data, category._id]);
+
+  const filtered = (data || []).filter(p =>
+    p.title?.toLowerCase().includes(search.toLowerCase()) ||
+    p.sku?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const toggleProduct = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (filtered.every(p => selected.has(p._id))) {
+      setSelected(prev => {
+        const next = new Set(prev);
+        filtered.forEach(p => next.delete(p._id));
+        return next;
+      });
+    } else {
+      setSelected(prev => {
+        const next = new Set(prev);
+        filtered.forEach(p => next.add(p._id));
+        return next;
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    if (selected.size === 0) return;
+    setSaving(true);
+    try {
+      await api.post(`${apiBase}/assign-category`, {
+        categoryId: category._id,
+        productIds: [...selected],
+      });
+      onSuccess();
+    } catch (e) {
+      alert(e.response?.data?.error?.message || 'Failed to assign products');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const allFilteredSelected = filtered.length > 0 && filtered.every(p => selected.has(p._id));
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50 rounded-t-xl">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Add Products to Category</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              <span className="font-medium text-blue-700">{category.name}</span>
+              {selected.size > 0 && <span className="ml-2 text-green-700 font-medium">· {selected.size} selected</span>}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-200 rounded-lg">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Search */}
+        <div className="px-6 py-3 border-b">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search products by name or SKU..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="input pl-9 w-full text-sm"
+              autoFocus
+            />
+          </div>
+        </div>
+
+        {/* Select all row */}
+        {!isLoading && filtered.length > 0 && (
+          <div className="px-6 py-2 border-b bg-gray-50 flex items-center gap-3">
+            <input
+              type="checkbox"
+              checked={allFilteredSelected}
+              onChange={toggleAll}
+              className="w-4 h-4 rounded text-blue-600"
+            />
+            <span className="text-xs font-medium text-gray-600">
+              {allFilteredSelected ? 'Deselect all' : `Select all ${filtered.length} shown`}
+            </span>
+          </div>
+        )}
+
+        {/* Product list */}
+        <div className="flex-1 overflow-y-auto px-6 py-3 space-y-1.5">
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">No products found</p>
+            </div>
+          ) : (
+            filtered.map(product => {
+              const isSelected = selected.has(product._id);
+              const alreadyIn = product.categoryIds?.map(String).includes(String(category._id));
+              return (
+                <label
+                  key={product._id}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-colors ${
+                    isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleProduct(product._id)}
+                    className="w-4 h-4 rounded text-blue-600 flex-shrink-0"
+                  />
+                  {product.images?.[0] ? (
+                    <img src={product.images[0]} alt={product.title} className="w-10 h-10 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Package className="w-5 h-5 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 text-sm truncate">{product.title}</div>
+                    <div className="text-xs text-gray-500">₹{product.price?.toLocaleString('en-IN')} {product.sku && `· ${product.sku}`}</div>
+                  </div>
+                  {alreadyIn && (
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">In category</span>
+                  )}
+                </label>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50 rounded-b-xl">
+          <span className="text-sm text-gray-500">{selected.size} product{selected.size !== 1 ? 's' : ''} selected</span>
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="button" onClick={handleSave} disabled={saving || selected.size === 0}>
+              {saving ? 'Assigning...' : `Assign ${selected.size > 0 ? selected.size : ''} Product${selected.size !== 1 ? 's' : ''}`}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
