@@ -13,7 +13,7 @@ const Categories = () => {
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [assigningCategory, setAssigningCategory] = useState(null);
+  const [managingCategory, setManagingCategory] = useState(null); // { category, initialTab }
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState('success');
@@ -298,12 +298,15 @@ const Categories = () => {
                     )}
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <code className="text-xs bg-blue-100 px-1.5 py-0.5 rounded">{parent.slug}</code>
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${
-                        parent.productCount > 0 ? 'text-green-700' : 'text-gray-400'
-                      }`}>
+                      <button
+                        onClick={() => setManagingCategory({ category: parent, initialTab: 'view' })}
+                        className={`inline-flex items-center gap-1 text-xs font-medium hover:underline cursor-pointer ${
+                          parent.productCount > 0 ? 'text-green-700' : 'text-gray-400'
+                        }`}
+                      >
                         <Package className="w-3 h-3" />
                         {parent.productCount || 0} products
-                      </span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -332,7 +335,7 @@ const Categories = () => {
                       </button>
                     )}
                     <button
-                      onClick={() => setAssigningCategory(parent)}
+                      onClick={() => setManagingCategory({ category: parent, initialTab: 'add' })}
                       className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
                       title="Add Products to Category"
                     >
@@ -388,17 +391,20 @@ const Categories = () => {
                           </div>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <code className="text-xs bg-blue-100 px-1.5 py-0.5 rounded">{child.slug}</code>
-                            <span className={`inline-flex items-center gap-1 text-xs ${
-                              child.productCount > 0 ? 'text-green-700' : 'text-gray-400'
-                            }`}>
+                            <button
+                              onClick={() => setManagingCategory({ category: child, initialTab: 'view' })}
+                              className={`inline-flex items-center gap-1 text-xs hover:underline cursor-pointer ${
+                                child.productCount > 0 ? 'text-green-700' : 'text-gray-400'
+                              }`}
+                            >
                               <Package className="w-3 h-3" />
                               {child.productCount || 0}
-                            </span>
+                            </button>
                           </div>
                         </div>
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <button
-                            onClick={() => setAssigningCategory(child)}
+                            onClick={() => setManagingCategory({ category: child, initialTab: 'add' })}
                             className="p-1.5 text-green-600 hover:bg-green-50 rounded"
                             title="Add Products to Category"
                           >
@@ -505,12 +511,16 @@ const Categories = () => {
                         <code className="text-sm bg-blue-100 px-2 py-1 rounded">{parent.slug}</code>
                       </td>
                       <td className="px-4 xl:px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 text-sm font-medium ${
-                          parent.productCount > 0 ? 'text-green-700' : 'text-gray-400'
-                        }`}>
+                        <button
+                          onClick={() => setManagingCategory({ category: parent, initialTab: 'view' })}
+                          className={`inline-flex items-center gap-1 text-sm font-medium hover:underline cursor-pointer ${
+                            parent.productCount > 0 ? 'text-green-700' : 'text-gray-400'
+                          }`}
+                          title="View products in category"
+                        >
                           <Package className="w-4 h-4" />
                           {parent.productCount || 0}
-                        </span>
+                        </button>
                       </td>
                       <td className="px-4 xl:px-6 py-4 text-sm text-gray-700">{parent.sortOrder || 0}</td>
                       <td className="px-4 xl:px-6 py-4">
@@ -530,7 +540,7 @@ const Categories = () => {
                       <td className="px-4 xl:px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setAssigningCategory(parent)}
+                            onClick={() => setManagingCategory({ category: parent, initialTab: 'add' })}
                             className="text-green-600 hover:text-green-800 p-1.5 hover:bg-green-50 rounded inline-flex items-center gap-1 text-xs font-medium"
                             title="Assign existing products to this category"
                           >
@@ -594,12 +604,16 @@ const Categories = () => {
                           <code className="text-xs bg-blue-100 px-2 py-1 rounded">{child.slug}</code>
                         </td>
                         <td className="px-4 xl:px-6 py-4">
-                          <span className={`inline-flex items-center gap-1 text-sm font-medium ${
-                            child.productCount > 0 ? 'text-green-700' : 'text-gray-400'
-                          }`}>
+                          <button
+                            onClick={() => setManagingCategory({ category: child, initialTab: 'view' })}
+                            className={`inline-flex items-center gap-1 text-sm font-medium hover:underline cursor-pointer ${
+                              child.productCount > 0 ? 'text-green-700' : 'text-gray-400'
+                            }`}
+                            title="View products in category"
+                          >
                             <Package className="w-3.5 h-3.5" />
                             {child.productCount || 0}
-                          </span>
+                          </button>
                         </td>
                         <td className="px-4 xl:px-6 py-4 text-sm text-gray-700">{child.sortOrder || 0}</td>
                         <td className="px-4 xl:px-6 py-4">
@@ -619,7 +633,7 @@ const Categories = () => {
                         <td className="px-4 xl:px-6 py-4">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => setAssigningCategory(child)}
+                              onClick={() => setManagingCategory({ category: child, initialTab: 'add' })}
                               className="text-green-600 hover:text-green-800 p-1.5 hover:bg-green-50 rounded inline-flex items-center gap-1 text-xs font-medium"
                               title="Assign existing products to this category"
                             >
@@ -707,180 +721,226 @@ const Categories = () => {
         />
       )}
 
-      {/* Assign Products Modal */}
-      {assigningCategory && (
-        <AssignProductsModal
-          category={assigningCategory}
-          onClose={() => setAssigningCategory(null)}
-          onSuccess={() => {
+      {/* Manage Category Products Modal */}
+      {managingCategory && (
+        <ManageCategoryProductsModal
+          category={managingCategory.category}
+          initialTab={managingCategory.initialTab}
+          onClose={() => setManagingCategory(null)}
+          onRefresh={() => {
             queryClient.invalidateQueries({ queryKey: ['vendor-categories'] });
             queryClient.invalidateQueries({ queryKey: ['vendor-category-stats'] });
-            showToastMsg('Products assigned to category successfully!', 'success');
-            setAssigningCategory(null);
           }}
+          onToast={(msg) => showToastMsg(msg, 'success')}
         />
       )}
     </div>
   );
 };
 
-// Assign Products to Category Modal
-const AssignProductsModal = ({ category, onClose, onSuccess }) => {
+// Amazon-style Manage Category Products Modal
+const ManageCategoryProductsModal = ({ category, initialTab = 'view', onClose, onRefresh, onToast }) => {
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(new Set());
   const [saving, setSaving] = useState(false);
+  const [removingId, setRemovingId] = useState(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['vendor-assign-products-list'],
+  const { data: allProducts, isLoading, refetch } = useQuery({
+    queryKey: ['vendor-manage-cat-products', category._id],
     queryFn: async () => {
       const res = await api.get('/vendors/products?limit=500');
       return res.data.data || [];
     },
-    staleTime: 30000,
+    staleTime: 0,
   });
 
-  React.useEffect(() => {
-    if (data) {
-      const preSelected = new Set(
-        data.filter(p => p.categoryIds?.map(String).includes(String(category._id))).map(p => p._id)
-      );
-      setSelected(preSelected);
-    }
-  }, [data, category._id]);
-
-  const filtered = (data || []).filter(p =>
-    p.title?.toLowerCase().includes(search.toLowerCase()) ||
-    p.sku?.toLowerCase().includes(search.toLowerCase())
+  const inCategory = useMemo(() =>
+    (allProducts || []).filter(p => (p.categoryIds || []).some(id => String(id) === String(category._id))),
+    [allProducts, category._id]
+  );
+  const notInCategory = useMemo(() =>
+    (allProducts || []).filter(p => !(p.categoryIds || []).some(id => String(id) === String(category._id))),
+    [allProducts, category._id]
   );
 
-  const toggleProduct = (id) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  const q = search.toLowerCase();
+  const filteredIn = inCategory.filter(p => !q || p.title?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q));
+  const filteredAdd = notInCategory.filter(p => !q || p.title?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q));
+  const allAddSelected = filteredAdd.length > 0 && filteredAdd.every(p => selected.has(p._id));
 
+  const toggleProduct = (id) => setSelected(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
   const toggleAll = () => {
-    if (filtered.every(p => selected.has(p._id))) {
-      setSelected(prev => { const next = new Set(prev); filtered.forEach(p => next.delete(p._id)); return next; });
-    } else {
-      setSelected(prev => { const next = new Set(prev); filtered.forEach(p => next.add(p._id)); return next; });
-    }
+    if (allAddSelected) { setSelected(prev => { const n = new Set(prev); filteredAdd.forEach(p => n.delete(p._id)); return n; }); }
+    else { setSelected(prev => { const n = new Set(prev); filteredAdd.forEach(p => n.add(p._id)); return n; }); }
+  };
+  const switchTab = (tab) => { setActiveTab(tab); setSearch(''); setSelected(new Set()); };
+
+  const handleRemove = async (productId) => {
+    setRemovingId(productId);
+    try {
+      await api.post('/vendors/products/remove-from-category', { categoryId: category._id, productIds: [productId] });
+      await refetch();
+      onRefresh?.();
+    } catch { alert('Failed to remove'); }
+    finally { setRemovingId(null); }
   };
 
-  const handleSave = async () => {
-    if (selected.size === 0) return;
+  const handleAdd = async () => {
+    if (!selected.size) return;
     setSaving(true);
     try {
-      await api.post('/vendors/products/assign-category', {
-        categoryId: category._id,
-        productIds: [...selected],
-      });
-      onSuccess();
-    } catch (e) {
-      alert(e.response?.data?.error?.message || 'Failed to assign products');
-    } finally {
-      setSaving(false);
-    }
+      const count = selected.size;
+      await api.post('/vendors/products/assign-category', { categoryId: category._id, productIds: [...selected] });
+      setSelected(new Set());
+      setSearch('');
+      setActiveTab('view');
+      await refetch();
+      onRefresh?.();
+      onToast?.(`${count} product${count !== 1 ? 's' : ''} added to ${category.name}`);
+    } catch (e) { alert(e.response?.data?.error?.message || 'Failed to assign'); }
+    finally { setSaving(false); }
   };
 
-  const allFilteredSelected = filtered.length > 0 && filtered.every(p => selected.has(p._id));
+  const ProductRow = ({ product, mode }) => {
+    const isSelected = selected.has(product._id);
+    const removing = removingId === product._id;
+    const img = product.images?.[0];
+    const publishedBadge = (
+      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${product.published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+        {product.published ? 'Live' : 'Draft'}
+      </span>
+    );
+    const thumb = img
+      ? <img src={img} alt="" className="w-11 h-11 object-cover rounded-lg border flex-shrink-0" />
+      : <div className="w-11 h-11 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0"><Package className="w-5 h-5 text-gray-400" /></div>;
+    const info = (
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-sm text-gray-900 truncate">{product.title}</div>
+        <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+          <span>₹{product.price?.toLocaleString('en-IN')}</span>
+          {product.sku && <span className="text-gray-400">· {product.sku}</span>}
+          {mode === 'view' && product.stock !== undefined && (
+            <span className={product.stock === 0 ? 'text-red-600' : product.stock < 10 ? 'text-orange-600' : 'text-green-700'}>· Stock: {product.stock}</span>
+          )}
+        </div>
+      </div>
+    );
+
+    if (mode === 'view') return (
+      <div className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-lg hover:border-gray-200">
+        {thumb}{info}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {publishedBadge}
+          <button onClick={() => handleRemove(product._id)} disabled={removing}
+            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-40 transition-colors" title="Remove from category">
+            {removing ? <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" /> : <Trash2 className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+    );
+
+    return (
+      <label className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-green-50 border-green-300' : 'bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`}>
+        <input type="checkbox" checked={isSelected} onChange={() => toggleProduct(product._id)} className="w-4 h-4 rounded accent-green-600 flex-shrink-0" />
+        {thumb}{info}{publishedBadge}
+      </label>
+    );
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[88vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b bg-gray-50 rounded-t-2xl sm:rounded-t-xl">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Add Products to Category</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              <span className="font-medium text-blue-700">{category.name}</span>
-              {selected.size > 0 && <span className="ml-2 text-green-700 font-medium">· {selected.size} selected</span>}
-            </p>
+            <h2 className="text-lg font-bold text-gray-900">Manage Products</h2>
+            <p className="text-sm text-gray-500">Category: <span className="font-semibold text-blue-700">{category.name}</span></p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-lg">
-            <X className="w-5 h-5 text-gray-500" />
-          </button>
+          <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b bg-white">
+          {[['view', 'In Category', inCategory.length, 'border-blue-600 text-blue-700 bg-blue-50/40', 'bg-blue-100 text-blue-700'],
+            ['add', 'Add Products', notInCategory.length, 'border-green-600 text-green-700 bg-green-50/40', 'bg-green-100 text-green-700']
+          ].map(([tab, label, count, activeClass, badgeClass]) => (
+            <button key={tab} onClick={() => switchTab(tab)}
+              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab ? activeClass : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              {label}
+              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === tab ? badgeClass : 'bg-gray-100 text-gray-600'}`}>
+                {isLoading ? '…' : count}
+              </span>
+            </button>
+          ))}
         </div>
 
         {/* Search */}
         <div className="px-4 sm:px-6 py-3 border-b">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="input pl-9 w-full text-sm"
-              autoFocus
-            />
+            <input type="text" placeholder={activeTab === 'view' ? 'Search in category…' : 'Search products to add…'}
+              value={search} onChange={e => setSearch(e.target.value)} className="input pl-9 w-full text-sm" autoFocus />
+            {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
           </div>
         </div>
 
-        {/* Select all */}
-        {!isLoading && filtered.length > 0 && (
+        {/* Select all (add tab only) */}
+        {activeTab === 'add' && !isLoading && filteredAdd.length > 0 && (
           <div className="px-4 sm:px-6 py-2 border-b bg-gray-50 flex items-center gap-3">
-            <input type="checkbox" checked={allFilteredSelected} onChange={toggleAll} className="w-4 h-4 rounded text-blue-600" />
-            <span className="text-xs font-medium text-gray-600">
-              {allFilteredSelected ? 'Deselect all' : `Select all ${filtered.length} shown`}
-            </span>
+            <input type="checkbox" checked={allAddSelected} onChange={toggleAll} className="w-4 h-4 rounded accent-green-600" />
+            <span className="text-xs font-medium text-gray-600 flex-1">{allAddSelected ? 'Deselect all' : `Select all ${filteredAdd.length} shown`}</span>
+            {selected.size > 0 && <span className="text-xs font-semibold text-green-700">{selected.size} selected</span>}
           </div>
         )}
 
-        {/* Product list */}
+        {/* List */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-3 space-y-1.5">
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No products found</p>
-            </div>
+            <div className="flex justify-center items-center py-16"><div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
+          ) : activeTab === 'view' ? (
+            filteredIn.length === 0 ? (
+              <div className="text-center py-14">
+                <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 font-medium">{inCategory.length === 0 ? 'No products in this category yet' : 'No products match your search'}</p>
+                {inCategory.length === 0 && <button onClick={() => switchTab('add')} className="mt-3 text-sm text-blue-600 hover:underline font-medium">Add products →</button>}
+              </div>
+            ) : filteredIn.map(p => <ProductRow key={p._id} product={p} mode="view" />)
           ) : (
-            filtered.map(product => {
-              const isSelected = selected.has(product._id);
-              const alreadyIn = product.categoryIds?.map(String).includes(String(category._id));
-              return (
-                <label
-                  key={product._id}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-colors ${
-                    isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  <input type="checkbox" checked={isSelected} onChange={() => toggleProduct(product._id)} className="w-4 h-4 rounded text-blue-600 flex-shrink-0" />
-                  {product.images?.[0] ? (
-                    <img src={product.images[0]} alt={product.title} className="w-10 h-10 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Package className="w-5 h-5 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 text-sm truncate">{product.title}</div>
-                    <div className="text-xs text-gray-500">₹{product.price?.toLocaleString('en-IN')} {product.sku && `· ${product.sku}`}</div>
-                  </div>
-                  {alreadyIn && (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">In category</span>
-                  )}
-                </label>
-              );
-            })
+            filteredAdd.length === 0 ? (
+              <div className="text-center py-14">
+                <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 font-medium">{notInCategory.length === 0 ? 'All your products are in this category' : 'No products match your search'}</p>
+              </div>
+            ) : filteredAdd.map(p => <ProductRow key={p._id} product={p} mode="add" />)
           )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t bg-gray-50 rounded-b-2xl sm:rounded-b-xl">
-          <span className="text-sm text-gray-500">{selected.size} product{selected.size !== 1 ? 's' : ''} selected</span>
-          <div className="flex items-center gap-3">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 sm:flex-none">Cancel</Button>
-            <Button type="button" onClick={handleSave} disabled={saving || selected.size === 0} className="flex-1 sm:flex-none">
-              {saving ? 'Assigning...' : `Assign ${selected.size > 0 ? selected.size : ''} Product${selected.size !== 1 ? 's' : ''}`}
-            </Button>
-          </div>
+          {activeTab === 'view' ? (
+            <>
+              <span className="text-sm text-gray-500">{inCategory.length} product{inCategory.length !== 1 ? 's' : ''} in category</span>
+              <div className="flex gap-2 sm:gap-3">
+                <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">Close</Button>
+                <Button onClick={() => switchTab('add')} className="flex-1 sm:flex-none">
+                  <PackagePlus className="w-4 h-4 mr-1" />Add Products
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-sm text-gray-500">{selected.size} product{selected.size !== 1 ? 's' : ''} selected</span>
+              <div className="flex gap-2 sm:gap-3">
+                <Button variant="outline" onClick={() => switchTab('view')} className="flex-1 sm:flex-none">← Back</Button>
+                <Button onClick={handleAdd} disabled={saving || !selected.size} className="flex-1 sm:flex-none">
+                  {saving ? 'Adding…' : `Add ${selected.size || ''} Product${selected.size !== 1 ? 's' : ''}`}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

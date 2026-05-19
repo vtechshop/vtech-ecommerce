@@ -1,5 +1,5 @@
 // FILE: apps/web/src/pages/dashboard/admin/Categories.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
@@ -12,7 +12,8 @@ const Categories = () => {
   const toast = useToast();
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [assigningCategory, setAssigningCategory] = useState(null); // {_id, name}
+  const [managingCategory, setManagingCategory] = useState(null); // {category, initialTab}
+
 
   const { data: categories, isLoading, refetch } = useQuery({
     queryKey: ['admin-categories'],
@@ -165,7 +166,7 @@ const Categories = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setAssigningCategory(parent)} className="text-green-600 hover:text-green-800 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 bg-green-50 rounded" title="Add Products to this category">
+                      <button onClick={() => setManagingCategory({ category: parent, initialTab: 'add' })} className="text-green-600 hover:text-green-800 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 bg-green-50 rounded" title="Add Products to this category">
                         <PackagePlus className="w-3.5 h-3.5" /> Add Products
                       </button>
                       <button onClick={() => handleEdit(parent)} className="text-blue-600 hover:text-primary-800" title="Edit">
@@ -217,7 +218,7 @@ const Categories = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setAssigningCategory(child)} className="text-green-600 hover:text-green-800 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 bg-green-50 rounded" title="Add Products to this category">
+                        <button onClick={() => setManagingCategory({ category: child, initialTab: 'add' })} className="text-green-600 hover:text-green-800 inline-flex items-center gap-1 text-xs font-medium px-2 py-1 bg-green-50 rounded" title="Add Products to this category">
                           <PackagePlus className="w-3.5 h-3.5" /> Add Products
                         </button>
                         <button onClick={() => handleEdit(child)} className="text-blue-600 hover:text-primary-800" title="Edit">
@@ -267,17 +268,15 @@ const Categories = () => {
         />
       )}
 
-      {/* Assign Products Modal */}
-      {assigningCategory && (
-        <AssignProductsModal
-          category={assigningCategory}
+      {/* Manage Category Products Modal */}
+      {managingCategory && (
+        <ManageCategoryProductsModal
+          category={managingCategory.category}
+          initialTab={managingCategory.initialTab}
           apiBase="/admin/products"
-          onClose={() => setAssigningCategory(null)}
-          onSuccess={() => {
-            queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
-            toast.success('Products assigned successfully!');
-            setAssigningCategory(null);
-          }}
+          onClose={() => setManagingCategory(null)}
+          onRefresh={() => queryClient.invalidateQueries({ queryKey: ['admin-categories'] })}
+          onToast={(msg) => toast.success(msg)}
         />
       )}
     </div>
@@ -518,69 +517,77 @@ const CategoryModal = ({ category, categories, onClose, onSave, isLoading }) => 
   );
 };
 
-// Assign Products to Category Modal
-const AssignProductsModal = ({ category, apiBase, onClose, onSuccess }) => {
+// Amazon-style Manage Category Products Modal (2-tab: view in-category + add products)
+const ManageCategoryProductsModal = ({ category, initialTab = 'view', apiBase, onClose, onRefresh, onToast }) => {
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState(new Set());
   const [saving, setSaving] = useState(false);
+  const [removingId, setRemovingId] = useState(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['assign-products-list', apiBase],
+  const { data: allProducts, isLoading, refetch } = useQuery({
+    queryKey: ['manage-cat-products', apiBase, category._id],
     queryFn: async () => {
       const res = await api.get(`${apiBase}?limit=500`);
       return res.data.data || [];
     },
-    staleTime: 30000,
+    staleTime: 0,
   });
 
-  // Pre-select products already in this category
-  React.useEffect(() => {
-    if (data) {
-      const preSelected = new Set(
-        data.filter(p => p.categoryIds?.map(String).includes(String(category._id))).map(p => p._id)
-      );
-      setSelected(preSelected);
-    }
-  }, [data, category._id]);
-
-  const filtered = (data || []).filter(p =>
-    p.title?.toLowerCase().includes(search.toLowerCase()) ||
-    p.sku?.toLowerCase().includes(search.toLowerCase())
+  const inCategory = useMemo(() =>
+    (allProducts || []).filter(p => (p.categoryIds || []).some(id => String(id) === String(category._id))),
+    [allProducts, category._id]
   );
 
-  const toggleProduct = (id) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  const notInCategory = useMemo(() =>
+    (allProducts || []).filter(p => !(p.categoryIds || []).some(id => String(id) === String(category._id))),
+    [allProducts, category._id]
+  );
+
+  const q = search.toLowerCase();
+  const filteredIn = inCategory.filter(p => !q || p.title?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q));
+  const filteredAdd = notInCategory.filter(p => !q || p.title?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q));
+
+  const allAddSelected = filteredAdd.length > 0 && filteredAdd.every(p => selected.has(p._id));
+
+  const toggleProduct = (id) => setSelected(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   const toggleAll = () => {
-    if (filtered.every(p => selected.has(p._id))) {
-      setSelected(prev => {
-        const next = new Set(prev);
-        filtered.forEach(p => next.delete(p._id));
-        return next;
-      });
+    if (allAddSelected) {
+      setSelected(prev => { const n = new Set(prev); filteredAdd.forEach(p => n.delete(p._id)); return n; });
     } else {
-      setSelected(prev => {
-        const next = new Set(prev);
-        filtered.forEach(p => next.add(p._id));
-        return next;
-      });
+      setSelected(prev => { const n = new Set(prev); filteredAdd.forEach(p => n.add(p._id)); return n; });
     }
   };
 
-  const handleSave = async () => {
-    if (selected.size === 0) return;
+  const handleRemove = async (productId) => {
+    setRemovingId(productId);
+    try {
+      await api.post(`${apiBase}/remove-from-category`, { categoryId: category._id, productIds: [productId] });
+      await refetch();
+      onRefresh?.();
+    } catch {
+      alert('Failed to remove product from category');
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!selected.size) return;
     setSaving(true);
     try {
-      await api.post(`${apiBase}/assign-category`, {
-        categoryId: category._id,
-        productIds: [...selected],
-      });
-      onSuccess();
+      await api.post(`${apiBase}/assign-category`, { categoryId: category._id, productIds: [...selected] });
+      setSelected(new Set());
+      setSearch('');
+      setActiveTab('view');
+      await refetch();
+      onRefresh?.();
+      onToast?.(`${selected.size} product${selected.size !== 1 ? 's' : ''} added to ${category.name}`);
     } catch (e) {
       alert(e.response?.data?.error?.message || 'Failed to assign products');
     } finally {
@@ -588,22 +595,107 @@ const AssignProductsModal = ({ category, apiBase, onClose, onSuccess }) => {
     }
   };
 
-  const allFilteredSelected = filtered.length > 0 && filtered.every(p => selected.has(p._id));
+  const switchTab = (tab) => { setActiveTab(tab); setSearch(''); setSelected(new Set()); };
+
+  const ProductRow = ({ product, mode }) => {
+    const isSelected = selected.has(product._id);
+    const removing = removingId === product._id;
+    const img = product.images?.[0];
+
+    if (mode === 'view') return (
+      <div className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-lg hover:border-gray-200 group">
+        {img
+          ? <img src={img} alt="" className="w-11 h-11 object-cover rounded-lg border flex-shrink-0" />
+          : <div className="w-11 h-11 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0"><Package className="w-5 h-5 text-gray-400" /></div>
+        }
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm text-gray-900 truncate">{product.title}</div>
+          <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+            <span>₹{product.price?.toLocaleString('en-IN')}</span>
+            {product.sku && <span className="text-gray-400">· {product.sku}</span>}
+            {product.stock !== undefined && (
+              <span className={product.stock === 0 ? 'text-red-600' : product.stock < 10 ? 'text-orange-600' : 'text-green-700'}>
+                · Stock: {product.stock}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${product.published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+            {product.published ? 'Live' : 'Draft'}
+          </span>
+          <button
+            onClick={() => handleRemove(product._id)}
+            disabled={removing}
+            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-40 transition-colors"
+            title="Remove from category"
+          >
+            {removing
+              ? <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+              : <Trash2 className="w-4 h-4" />
+            }
+          </button>
+        </div>
+      </div>
+    );
+
+    return (
+      <label className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-colors ${isSelected ? 'bg-green-50 border-green-300' : 'bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`}>
+        <input type="checkbox" checked={isSelected} onChange={() => toggleProduct(product._id)} className="w-4 h-4 rounded text-green-600 accent-green-600 flex-shrink-0" />
+        {img
+          ? <img src={img} alt="" className="w-11 h-11 object-cover rounded-lg border flex-shrink-0" />
+          : <div className="w-11 h-11 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0"><Package className="w-5 h-5 text-gray-400" /></div>
+        }
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm text-gray-900 truncate">{product.title}</div>
+          <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+            <span>₹{product.price?.toLocaleString('en-IN')}</span>
+            {product.sku && <span className="text-gray-400">· {product.sku}</span>}
+          </div>
+        </div>
+        <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${product.published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+          {product.published ? 'Live' : 'Draft'}
+        </span>
+      </label>
+    );
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col">
+
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50 rounded-t-xl">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Add Products to Category</h2>
+            <h2 className="text-lg font-bold text-gray-900">Manage Products</h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              <span className="font-medium text-blue-700">{category.name}</span>
-              {selected.size > 0 && <span className="ml-2 text-green-700 font-medium">· {selected.size} selected</span>}
+              Category: <span className="font-semibold text-blue-700">{category.name}</span>
             </p>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-200 rounded-lg">
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors">
             <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b bg-white">
+          <button
+            onClick={() => switchTab('view')}
+            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'view' ? 'border-blue-600 text-blue-700 bg-blue-50/40' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            In Category
+            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === 'view' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+              {isLoading ? '…' : inCategory.length}
+            </span>
+          </button>
+          <button
+            onClick={() => switchTab('add')}
+            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'add' ? 'border-green-600 text-green-700 bg-green-50/40' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            Add Products
+            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold ${activeTab === 'add' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+              {isLoading ? '…' : notInCategory.length}
+            </span>
           </button>
         </div>
 
@@ -613,87 +705,80 @@ const AssignProductsModal = ({ category, apiBase, onClose, onSuccess }) => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search products by name or SKU..."
+              placeholder={activeTab === 'view' ? 'Search in category…' : 'Search products to add…'}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="input pl-9 w-full text-sm"
               autoFocus
             />
+            {search && <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>}
           </div>
         </div>
 
-        {/* Select all row */}
-        {!isLoading && filtered.length > 0 && (
+        {/* Select All bar (add tab only) */}
+        {activeTab === 'add' && !isLoading && filteredAdd.length > 0 && (
           <div className="px-6 py-2 border-b bg-gray-50 flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={allFilteredSelected}
-              onChange={toggleAll}
-              className="w-4 h-4 rounded text-blue-600"
-            />
-            <span className="text-xs font-medium text-gray-600">
-              {allFilteredSelected ? 'Deselect all' : `Select all ${filtered.length} shown`}
+            <input type="checkbox" checked={allAddSelected} onChange={toggleAll} className="w-4 h-4 rounded accent-green-600" />
+            <span className="text-xs font-medium text-gray-600 flex-1">
+              {allAddSelected ? 'Deselect all' : `Select all ${filteredAdd.length} shown`}
             </span>
+            {selected.size > 0 && <span className="text-xs font-semibold text-green-700">{selected.size} selected</span>}
           </div>
         )}
 
         {/* Product list */}
         <div className="flex-1 overflow-y-auto px-6 py-3 space-y-1.5">
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex justify-center items-center py-16">
+              <div className="w-7 h-7 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No products found</p>
-            </div>
+          ) : activeTab === 'view' ? (
+            filteredIn.length === 0 ? (
+              <div className="text-center py-14">
+                <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 font-medium">
+                  {inCategory.length === 0 ? 'No products in this category yet' : 'No products match your search'}
+                </p>
+                {inCategory.length === 0 && (
+                  <button onClick={() => switchTab('add')} className="mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline">
+                    Add products →
+                  </button>
+                )}
+              </div>
+            ) : filteredIn.map(p => <ProductRow key={p._id} product={p} mode="view" />)
           ) : (
-            filtered.map(product => {
-              const isSelected = selected.has(product._id);
-              const alreadyIn = product.categoryIds?.map(String).includes(String(category._id));
-              return (
-                <label
-                  key={product._id}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-colors ${
-                    isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-100 hover:border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleProduct(product._id)}
-                    className="w-4 h-4 rounded text-blue-600 flex-shrink-0"
-                  />
-                  {product.images?.[0] ? (
-                    <img src={product.images[0]} alt={product.title} className="w-10 h-10 object-cover rounded-lg border border-gray-200 flex-shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Package className="w-5 h-5 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 text-sm truncate">{product.title}</div>
-                    <div className="text-xs text-gray-500">₹{product.price?.toLocaleString('en-IN')} {product.sku && `· ${product.sku}`}</div>
-                  </div>
-                  {alreadyIn && (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium flex-shrink-0">In category</span>
-                  )}
-                </label>
-              );
-            })
+            filteredAdd.length === 0 ? (
+              <div className="text-center py-14">
+                <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 font-medium">
+                  {notInCategory.length === 0 ? 'All products are already in this category' : 'No products match your search'}
+                </p>
+              </div>
+            ) : filteredAdd.map(p => <ProductRow key={p._id} product={p} mode="add" />)
           )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t bg-gray-50 rounded-b-xl">
-          <span className="text-sm text-gray-500">{selected.size} product{selected.size !== 1 ? 's' : ''} selected</span>
-          <div className="flex items-center gap-3">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-            <Button type="button" onClick={handleSave} disabled={saving || selected.size === 0}>
-              {saving ? 'Assigning...' : `Assign ${selected.size > 0 ? selected.size : ''} Product${selected.size !== 1 ? 's' : ''}`}
-            </Button>
-          </div>
+          {activeTab === 'view' ? (
+            <>
+              <span className="text-sm text-gray-500">{inCategory.length} product{inCategory.length !== 1 ? 's' : ''} in category</span>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={onClose}>Close</Button>
+                <Button onClick={() => switchTab('add')}><Plus className="w-4 h-4 mr-1" />Add Products</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <span className="text-sm text-gray-500">{selected.size} product{selected.size !== 1 ? 's' : ''} selected</span>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => switchTab('view')}>← Back</Button>
+                <Button onClick={handleAdd} disabled={saving || !selected.size}>
+                  {saving ? 'Adding…' : `Add ${selected.size || ''} Product${selected.size !== 1 ? 's' : ''}`}
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
