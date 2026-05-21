@@ -62,7 +62,7 @@ const FAQ = () => {
       questions: [
         {
           q: 'What is your return policy?',
-          a: 'We offer a 15-day return policy. Products must be unused, in original packaging with tags intact. We provide free pickup for returns.'
+          a: 'We offer a 7-day return policy. Products must be unused, in original packaging with tags intact. We provide free pickup for returns.'
         },
         {
           q: 'How long does it take to get a refund?',

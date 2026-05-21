@@ -453,7 +453,7 @@ const AdminQuickReference = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
                 <h3 className="font-semibold text-blue-900 mb-3">Return & Refund Policy</h3>
                 <ul className="space-y-2 text-sm text-blue-800">
-                  <li>• 30-day return window for most products</li>
+                  <li>• 7-day return window for most products</li>
                   <li>• Free return pickup for defective items</li>
                   <li>• Refunds processed within 5-7 business days</li>
                   <li>• Vendors responsible for return shipping costs on defects</li>

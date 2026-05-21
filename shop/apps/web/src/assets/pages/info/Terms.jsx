@@ -84,7 +84,7 @@ const Terms = () => {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">6. Returns and Refunds</h2>
               <p className="text-gray-700 leading-relaxed">
-                We offer a 15-day return policy for eligible products. Please review our <Link to="/page/returns" className="text-blue-600 hover:underline">Returns & Refunds Policy</Link> for complete details.
+                We offer a 7-day return policy for eligible products. Please review our <Link to="/page/returns" className="text-blue-600 hover:underline">Returns & Refunds Policy</Link> for complete details.
               </p>
             </section>
 

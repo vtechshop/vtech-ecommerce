@@ -451,7 +451,7 @@ const Product = () => {
         "@type": "MerchantReturnPolicy",
         "applicableCountry": "IN",
         "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
-        "merchantReturnDays": 15,
+        "merchantReturnDays": 7,
         "returnMethod": "https://schema.org/ReturnByMail",
         "returnFees": "https://schema.org/FreeReturn",
         "merchantReturnLink": "https://www.vtechkitchen.com/page/returns"
