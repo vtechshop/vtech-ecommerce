@@ -105,16 +105,25 @@ const Terms = () => {
                 </p>
               </div>
 
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">7.3 Warranty Service Process</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">7.3 Transport Charges — We Cover Both Ways</h3>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-5 mb-4">
+                <p className="text-green-900 font-semibold mb-2">Free Pickup &amp; Drop for Warranty Service</p>
+                <p className="text-green-800 text-sm leading-relaxed">
+                  For customers located <strong>outside Coimbatore</strong>, V-Tech Kitchen will bear the full transport charges for sending the product to our service centre <strong>and</strong> returning it back to you after repair or replacement — at <strong>no cost to you</strong>. Simply initiate a warranty claim and we will coordinate the courier pickup from your doorstep.
+                </p>
+              </div>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">7.4 Warranty Service Process</h3>
               <p className="text-gray-700 leading-relaxed mb-3">
-                For warranty claims, products must be sent to the service centre of the respective vendor who sold the product. The vendor's service centre address will be communicated at the time of the warranty claim. In cases where the vendor's service centre is located in a different city, the customer is responsible for shipping the product to that location.
+                For warranty claims, products must be sent to our service centre in Coimbatore. Contact our support team to initiate the process — we will arrange courier pickup from your location and cover the transport costs both ways.
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
                 <li>Contact our support team to initiate a warranty claim</li>
-                <li>You will be provided with the relevant vendor's service centre address</li>
-                <li>Pack the product securely and ship it to the service centre at your cost</li>
-                <li>Return shipping after repair/replacement will be arranged by the vendor</li>
-                <li>Estimated repair/replacement turnaround is 7–15 business days from receipt</li>
+                <li>We will schedule a courier pickup from your address at no charge</li>
+                <li>Pack the product securely with all original accessories</li>
+                <li>Product will be inspected and repaired/replaced at our Coimbatore centre</li>
+                <li>We will deliver the repaired/replaced product back to your address, transport-free</li>
+                <li>Estimated turnaround is 7–15 business days from receipt at the service centre</li>
               </ul>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
