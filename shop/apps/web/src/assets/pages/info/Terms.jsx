@@ -89,7 +89,45 @@ const Terms = () => {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. User Conduct</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">7. Warranty & Service Centre</h2>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">7.1 Warranty Coverage</h3>
+              <p className="text-gray-700 leading-relaxed mb-4">
+                Warranty terms vary by product and vendor. The warranty period, if applicable, will be mentioned on the product listing page.
+                Warranty covers manufacturing defects under normal use conditions and does not cover damage caused by misuse, accidents, or unauthorised modifications.
+              </p>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">7.2 Service Centre Availability</h3>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-4">
+                <p className="text-amber-900 font-semibold mb-2">Important Notice — Limited Service Centre Coverage</p>
+                <p className="text-amber-800 text-sm leading-relaxed">
+                  V-Tech Kitchen does <strong>not</strong> operate service stations across all of India. We currently have our authorised service centre only in <strong>Coimbatore, Tamil Nadu</strong>. Customers outside Coimbatore are advised to be aware of this before purchasing products that may require in-person servicing.
+                </p>
+              </div>
+
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">7.3 Warranty Service Process</h3>
+              <p className="text-gray-700 leading-relaxed mb-3">
+                For warranty claims, products must be sent to the service centre of the respective vendor who sold the product. The vendor's service centre address will be communicated at the time of the warranty claim. In cases where the vendor's service centre is located in a different city, the customer is responsible for shipping the product to that location.
+              </p>
+              <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
+                <li>Contact our support team to initiate a warranty claim</li>
+                <li>You will be provided with the relevant vendor's service centre address</li>
+                <li>Pack the product securely and ship it to the service centre at your cost</li>
+                <li>Return shipping after repair/replacement will be arranged by the vendor</li>
+                <li>Estimated repair/replacement turnaround is 7–15 business days from receipt</li>
+              </ul>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
+                <p className="text-blue-900 font-semibold mb-1">Our Coimbatore Service Centre</p>
+                <p className="text-blue-800 text-sm">
+                  V-Tech, 9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore – 641006, Tamil Nadu<br />
+                  Phone: +91 99445 56683 &nbsp;|&nbsp; Email: vtechshop.customercare@gmail.com
+                </p>
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. User Conduct</h2>
               <p className="text-gray-700 leading-relaxed mb-3">You agree not to:</p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
                 <li>Violate any laws or regulations</li>
@@ -102,35 +140,35 @@ const Terms = () => {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">8. Intellectual Property</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Intellectual Property</h2>
               <p className="text-gray-700 leading-relaxed">
                 All content on this platform, including text, graphics, logos, images, and software, is the property of Vtech or its content suppliers and is protected by intellectual property laws.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">9. Limitation of Liability</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Limitation of Liability</h2>
               <p className="text-gray-700 leading-relaxed">
                 Vtech shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the service. Our total liability shall not exceed the amount you paid for the products purchased.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">10. Indemnification</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">11. Indemnification</h2>
               <p className="text-gray-700 leading-relaxed">
                 You agree to indemnify and hold Vtech harmless from any claims, damages, or expenses arising from your use of our platform or violation of these terms.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">11. Termination</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">12. Termination</h2>
               <p className="text-gray-700 leading-relaxed">
                 We reserve the right to terminate or suspend your account at any time for violations of these terms or for any other reason at our discretion.
               </p>
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">12. Governing Law</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">13. Governing Law</h2>
               <p className="text-gray-700 leading-relaxed">
                 These Terms of Service shall be governed by and construed in accordance with the laws of India.
                 Any disputes shall be subject to the exclusive jurisdiction of the courts in Coimbatore, Tamil Nadu, India.
@@ -138,7 +176,7 @@ const Terms = () => {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">13. Changes to Terms</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">14. Changes to Terms</h2>
               <p className="text-gray-700 leading-relaxed">
                 We reserve the right to modify these terms at any time. Changes will be effective immediately upon posting.
                 Your continued use of the platform constitutes acceptance of the modified terms.
@@ -146,7 +184,7 @@ const Terms = () => {
             </section>
 
             <section>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">14. Contact Information</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">15. Contact Information</h2>
               <p className="text-gray-700 leading-relaxed">
                 For questions about these Terms of Service, please contact us:
               </p>
