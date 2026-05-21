@@ -24,15 +24,14 @@ const Terms = () => {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h2>
               <p className="text-gray-700 leading-relaxed">
-                By accessing and using Vtech's e-commerce platform, you accept and agree to be bound by these Terms of Service.
+                By accessing and using V-Tech Kitchen's e-commerce platform, you accept and agree to be bound by these Terms of Service.
                 If you do not agree to these terms, please do not use our services.
               </p>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">2.1 Eligibility</h3>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                You must be at least 18 years old to use our services. By using our platform, you represent that you are of legal age to form a binding contract.
-              </p>
+            </section>
 
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">2.2 Account Registration</h3>
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">2. Account Requirements</h2>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">2.1 Account Registration</h3>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
                 <li>You must provide accurate and complete information</li>
                 <li>You are responsible for maintaining account security</li>
