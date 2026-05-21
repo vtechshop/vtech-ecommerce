@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X, CheckCircle, DollarSign, Target, Package, TrendingUp } from 'lucide-react';
 import Modal from '@/components/common/Modal';
@@ -8,12 +8,12 @@ const WelcomeModal = ({ isOpen, onClose }) => {
 
   const steps = [
     {
-      title: 'Welcome to V-Tech!',
+      title: 'Welcome to VTech!',
       icon: <CheckCircle className="w-12 h-12 text-green-600" />,
       content: (
         <div className="text-center">
           <p className="text-lg text-gray-700 mb-4">
-            Congratulations on becoming a V-Tech vendor! You're now part of a thriving marketplace with thousands of customers.
+            Congratulations on becoming a VTech vendor! You're now part of a thriving marketplace with thousands of customers.
           </p>
           <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4">
             <p className="font-semibold text-primary-900 mb-2">What's Next?</p>
@@ -31,7 +31,7 @@ const WelcomeModal = ({ isOpen, onClose }) => {
         <div>
           <div className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-5 mb-4">
             <p className="font-bold text-green-900 text-xl mb-2">You keep 85% of every sale!</p>
-            <p className="text-green-800">V-Tech platform commission: 15%</p>
+            <p className="text-green-800">VTech platform commission: 15%</p>
           </div>
           <div className="space-y-3 mb-4">
             <div className="flex items-start gap-3">

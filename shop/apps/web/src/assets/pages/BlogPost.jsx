@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/BlogPost.jsx
+﻿// FILE: apps/web/src/pages/BlogPost.jsx
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -300,7 +300,7 @@ const BlogPost = () => {
   return (
     <div className="min-h-screen bg-white">
       <SEO
-        title={`${data.title} - V-Tech Kitchen Blog`}
+        title={`${data.title} - VTech Kitchen Blog`}
         description={data.excerpt || data.title}
         image={data.featuredImage}
         type="article"

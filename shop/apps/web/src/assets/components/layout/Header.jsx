@@ -1,4 +1,4 @@
-// FILE: apps/web/src/components/layout/Header.jsx
+﻿// FILE: apps/web/src/components/layout/Header.jsx
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -86,7 +86,7 @@ const Header = ({ onMobileMenuToggle }) => {
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 ml-4">
-            <img src="/cropped-vtech-logo.webp" alt="V-Tech Kitchen" className="h-14 w-auto object-contain" />
+            <img src="/cropped-vtech-logo.webp" alt="VTech Kitchen" className="h-14 w-auto object-contain" />
           </Link>
 
           {/* Search with Autocomplete */}

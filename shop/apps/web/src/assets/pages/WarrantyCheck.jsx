@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/WarrantyCheck.jsx
+﻿// FILE: apps/web/src/pages/WarrantyCheck.jsx
 // Amazon-style warranty display - Only shows delivered orders with support options
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -74,9 +74,9 @@ const WarrantyCheck = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <SEO
-        title="Warranty Check - V-Tech Kitchen"
-        description="Check your product warranty status at V-Tech Kitchen. View warranty coverage, expiry dates, and claim support for your purchases."
-        keywords="warranty check, product warranty, warranty status, V-Tech Kitchen"
+        title="Warranty Check - VTech Kitchen"
+        description="Check your product warranty status at VTech Kitchen. View warranty coverage, expiry dates, and claim support for your purchases."
+        keywords="warranty check, product warranty, warranty status, VTech Kitchen"
       />
       {/* Hero - Compact */}
       <div className="bg-gradient-to-r from-primary-700 to-primary-900 text-white py-8">

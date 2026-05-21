@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/OrderConfirmation.jsx
+﻿// FILE: apps/web/src/pages/OrderConfirmation.jsx
 import { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -109,7 +109,7 @@ const OrderConfirmation = () => {
 
   return (
     <div className="min-h-screen bg-blue-50 py-8 relative overflow-hidden">
-      <NoIndex title="Order Confirmation - V-Tech Kitchen" />
+      <NoIndex title="Order Confirmation - VTech Kitchen" />
       {/* Crackers Blast - After successful payment */}
       {/* Check for both 'paid' and 'captured' - Razorpay uses 'captured' for successful payments */}
       {(order.payment?.status === 'paid' || order.payment?.status === 'captured') && (

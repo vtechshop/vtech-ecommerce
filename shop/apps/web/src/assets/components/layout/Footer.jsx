@@ -1,4 +1,4 @@
-// FILE: apps/web/src/components/layout/Footer.jsx
+﻿// FILE: apps/web/src/components/layout/Footer.jsx
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -21,7 +21,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 lg:gap-8 xl:gap-12">
           {/* Company info */}
           <div>
-            <h3 className="text-white text-lg font-bold mb-4">V-Tech</h3>
+            <h3 className="text-white text-lg font-bold mb-4">VTech</h3>
             <p className="text-sm mb-4">
               Your trusted multi-vendor marketplace for quality products at great prices.
             </p>
@@ -126,7 +126,7 @@ const Footer = () => {
         {/* Bottom bar */}
         <div className="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row items-center justify-center gap-4">
           <p className="text-sm">
-            © {currentYear} V-Tech. All rights reserved.
+            © {currentYear} VTech. All rights reserved.
           </p>
          
         </div>

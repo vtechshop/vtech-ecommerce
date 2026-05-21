@@ -1,6 +1,6 @@
-// FILE: apps/web/src/constants/theme.js
+﻿// FILE: apps/web/src/constants/theme.js
 /**
- * V-Tech E-commerce Platform - Theme Constants
+ * VTech E-commerce Platform - Theme Constants
  *
  * Centralized theme configuration for consistent UI across the platform.
  * Use these constants to maintain design consistency.

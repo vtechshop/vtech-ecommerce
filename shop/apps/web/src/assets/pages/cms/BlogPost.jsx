@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/cms/BlogPost.jsx
+﻿// FILE: apps/web/src/pages/cms/BlogPost.jsx
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -222,7 +222,7 @@ const BlogPost = () => {
   useEffect(() => {
     if (post) {
       updateMetaTags({
-        title: `${post.title} - V-Tech Blog`,
+        title: `${post.title} - VTech Blog`,
         description: post.excerpt || post.content?.substring(0, 160),
         canonical: `https://www.vtechkitchen.com/blog/${slug}`,
         ogTitle: post.title,
@@ -241,11 +241,11 @@ const BlogPost = () => {
         'dateModified': post.updatedAt,
         'author': {
           '@type': 'Person',
-          'name': post.author?.name || 'V-Tech Kitchen',
+          'name': post.author?.name || 'VTech Kitchen',
         },
         'publisher': {
           '@type': 'Organization',
-          'name': 'V-Tech Kitchen',
+          'name': 'VTech Kitchen',
           'logo': {
             '@type': 'ImageObject',
             'url': 'https://www.vtechkitchen.com/logo.png',

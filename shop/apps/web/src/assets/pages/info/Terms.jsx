@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
 import ScrollReveal from '@/components/common/ScrollReveal';
@@ -6,8 +6,8 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const Terms = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Terms of Service - V-Tech Kitchen',
-      description: 'Read V-Tech Kitchen terms of service covering account usage, orders, payments, shipping, returns, intellectual property, and user responsibilities on our platform.',
+      title: 'Terms of Service - VTech Kitchen',
+      description: 'Read VTech Kitchen terms of service covering account usage, orders, payments, shipping, returns, intellectual property, and user responsibilities on our platform.',
       canonical: 'https://www.vtechkitchen.com/page/terms',
     });
   }, []);
@@ -24,7 +24,7 @@ const Terms = () => {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">1. Acceptance of Terms</h2>
               <p className="text-gray-700 leading-relaxed">
-                By accessing and using V-Tech Kitchen's e-commerce platform, you accept and agree to be bound by these Terms of Service.
+                By accessing and using VTech Kitchen's e-commerce platform, you accept and agree to be bound by these Terms of Service.
                 If you do not agree to these terms, please do not use our services.
               </p>
             </section>
@@ -100,7 +100,7 @@ const Terms = () => {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-4">
                 <p className="text-amber-900 font-semibold mb-2">Important Notice — Limited Service Centre Coverage</p>
                 <p className="text-amber-800 text-sm leading-relaxed">
-                  V-Tech Kitchen does <strong>not</strong> operate service stations across all of India. We currently have our authorised service centre only in <strong>Coimbatore, Tamil Nadu</strong>. All warranty service requires products to be sent to Coimbatore — however, we cover the full transport charges both ways for all customers across India at no cost to you.
+                  VTech Kitchen does <strong>not</strong> operate service stations across all of India. We currently have our authorised service centre only in <strong>Coimbatore, Tamil Nadu</strong>. All warranty service requires products to be sent to Coimbatore — however, we cover the full transport charges both ways for all customers across India at no cost to you.
                 </p>
               </div>
 
@@ -108,7 +108,7 @@ const Terms = () => {
               <div className="bg-green-50 border border-green-200 rounded-lg p-5 mb-4">
                 <p className="text-green-900 font-semibold mb-2">Free Pickup &amp; Drop for Warranty Service — Anywhere in India</p>
                 <p className="text-green-800 text-sm leading-relaxed">
-                  V-Tech Kitchen will bear the full transport charges for sending the product to our service centre <strong>and</strong> returning it back to you after repair or replacement — at <strong>no cost to you</strong>, regardless of your location across India. Simply initiate a warranty claim and we will coordinate the courier pickup from your doorstep.
+                  VTech Kitchen will bear the full transport charges for sending the product to our service centre <strong>and</strong> returning it back to you after repair or replacement — at <strong>no cost to you</strong>, regardless of your location across India. Simply initiate a warranty claim and we will coordinate the courier pickup from your doorstep.
                 </p>
               </div>
 
@@ -128,7 +128,7 @@ const Terms = () => {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
                 <p className="text-blue-900 font-semibold mb-1">Our Coimbatore Service Centre</p>
                 <p className="text-blue-800 text-sm">
-                  V-Tech, 9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore – 641006, Tamil Nadu<br />
+                  VTech, 9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore – 641006, Tamil Nadu<br />
                   Phone: +91 99445 56683 &nbsp;|&nbsp; Email: vtechshop.customercare@gmail.com
                 </p>
               </div>
@@ -199,7 +199,7 @@ const Terms = () => {
               <div className="mt-4 bg-blue-100 rounded-lg p-6">
                 <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
-                <p className="text-gray-700"><strong>Address:</strong> V-Tech, 9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore - 641006, Tamil Nadu</p>
+                <p className="text-gray-700"><strong>Address:</strong> VTech, 9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore - 641006, Tamil Nadu</p>
               </div>
             </section>
           </div>

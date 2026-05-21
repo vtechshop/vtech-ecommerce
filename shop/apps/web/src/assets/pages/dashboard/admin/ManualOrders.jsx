@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/dashboard/admin/ManualOrders.jsx
+﻿// FILE: apps/web/src/pages/dashboard/admin/ManualOrders.jsx
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -48,7 +48,7 @@ const ManualOrders = () => {
       ? `\n\n*Warranty Info:*\n${warrantyItems.map(i => `- ${i.name}: ${i.warranty.duration} ${i.warranty.durationType}${i.warranty.expiresAt ? ` (expires ${new Date(i.warranty.expiresAt).toLocaleDateString('en-IN')})` : ''}`).join('\n')}`
       : '';
     const message = encodeURIComponent(
-      `*V-Tech Kitchen - Purchase Receipt*\n\nOrder: ${order.orderId}\nDate: ${new Date(order.createdAt).toLocaleDateString('en-IN')}\nCustomer: ${order.shipTo?.fullName}\n\n*Items:*\n${itemsList}\n\n*Total: ${formatCurrency(order.totals?.total)}*\nPayment: ${order.payment?.method}${warrantyInfo}\n\nThank you for your purchase! Check warranty anytime at: ${window.location.origin}/warranty-check`
+      `*VTech Kitchen - Purchase Receipt*\n\nOrder: ${order.orderId}\nDate: ${new Date(order.createdAt).toLocaleDateString('en-IN')}\nCustomer: ${order.shipTo?.fullName}\n\n*Items:*\n${itemsList}\n\n*Total: ${formatCurrency(order.totals?.total)}*\nPayment: ${order.payment?.method}${warrantyInfo}\n\nThank you for your purchase! Check warranty anytime at: ${window.location.origin}/warranty-check`
     );
     window.open(`https://wa.me/91${phone}?text=${message}`, '_blank');
   };

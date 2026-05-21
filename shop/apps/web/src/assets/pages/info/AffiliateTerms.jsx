@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { updateMetaTags } from '@/utils/seo';
 import ScrollReveal from '@/components/common/ScrollReveal';
 
 const AffiliateTerms = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Affiliate Program Terms & Conditions - V-Tech Kitchen',
-      description: 'Terms and conditions for V-Tech Kitchen affiliate program. Learn about commission rates, payment terms, promotional guidelines, and partner responsibilities.',
+      title: 'Affiliate Program Terms & Conditions - VTech Kitchen',
+      description: 'Terms and conditions for VTech Kitchen affiliate program. Learn about commission rates, payment terms, promotional guidelines, and partner responsibilities.',
       canonical: 'https://www.vtechkitchen.com/page/affiliate-terms',
     });
   }, []);
@@ -74,7 +74,7 @@ const AffiliateTerms = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">4. Payment Terms</h2>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">4.1 Payment Flow (Razorpay Route)</h3>
               <p className="text-gray-700 leading-relaxed mb-4">
-                V-Tech uses Razorpay Route to automatically split payments. When a customer purchases through your affiliate link, your commission share is held securely on Razorpay.
+                VTech uses Razorpay Route to automatically split payments. When a customer purchases through your affiliate link, your commission share is held securely on Razorpay.
               </p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                 <ol className="list-decimal pl-6 text-blue-800 space-y-2">

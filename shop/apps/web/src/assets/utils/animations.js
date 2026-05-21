@@ -1,6 +1,6 @@
-// FILE: apps/web/src/assets/utils/animations.js
+﻿// FILE: apps/web/src/assets/utils/animations.js
 /**
- * Custom Animation Utilities Library for V-Tech E-Commerce
+ * Custom Animation Utilities Library for VTech E-Commerce
  * Provides reusable animation configurations and helper functions
  */
 

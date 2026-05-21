@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/Product.jsx
+﻿// FILE: apps/web/src/pages/Product.jsx
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -417,7 +417,7 @@ const Product = () => {
   }
 
   // SEO metadata for Google indexing
-  const seoTitle = product.seo?.title || `${product.title} - V-Tech Kitchen`;
+  const seoTitle = product.seo?.title || `${product.title} - VTech Kitchen`;
   const seoDescription = (product.seo?.description || product.description?.substring(0, 155) || `Buy ${product.title} at the best price. ${product.brand ? `${product.brand} ` : ''}High-quality kitchen products with fast shipping.`).substring(0, 155);
   const seoKeywords = product.seo?.keywords?.join(', ') || product.tags?.join(', ') || product.title;
   const productImage = normalizedImages[0] || 'https://www.vtechkitchen.com/og-image.jpg';
@@ -445,7 +445,7 @@ const Product = () => {
       "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       "seller": {
         "@type": "Organization",
-        "name": product.vendorId?.storeName || "V-Tech Kitchen"
+        "name": product.vendorId?.storeName || "VTech Kitchen"
       },
       "hasMerchantReturnPolicy": {
         "@type": "MerchantReturnPolicy",

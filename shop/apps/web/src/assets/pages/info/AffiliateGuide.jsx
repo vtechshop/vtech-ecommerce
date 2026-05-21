@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { DollarSign, TrendingUp, Link2, Share2, BarChart3, CheckCircle, AlertCircle, Award, Users, Clock, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
@@ -7,8 +7,8 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const AffiliateGuide = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Affiliate Guide - V-Tech Kitchen',
-      description: 'Complete guide to V-Tech Kitchen affiliate program. Learn how to earn 5-8% commissions by promoting products and maximize your earnings.',
+      title: 'Affiliate Guide - VTech Kitchen',
+      description: 'Complete guide to VTech Kitchen affiliate program. Learn how to earn 5-8% commissions by promoting products and maximize your earnings.',
       canonical: 'https://www.vtechkitchen.com/page/affiliate-guide',
     });
   }, []);
@@ -20,7 +20,7 @@ const AffiliateGuide = () => {
         <div className="text-center mb-12">
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Affiliate Guide</h1>
           <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-            Everything you need to know about earning commissions as a V-Tech affiliate partner
+            Everything you need to know about earning commissions as a VTech affiliate partner
           </p>
         </div>
 
@@ -377,12 +377,12 @@ const AffiliateGuide = () => {
                 <ul className="space-y-2">
                   <li>❌ Spamming or unsolicited messaging</li>
                   <li>❌ False or misleading product claims</li>
-                  <li>❌ Impersonating V-Tech or employees</li>
+                  <li>❌ Impersonating VTech or employees</li>
                   <li>❌ Cookie stuffing or click fraud</li>
                 </ul>
                 <ul className="space-y-2">
                   <li>❌ Self-referrals or fake purchases</li>
-                  <li>❌ Bidding on V-Tech branded keywords (PPC)</li>
+                  <li>❌ Bidding on VTech branded keywords (PPC)</li>
                   <li>❌ Using copyrighted content without permission</li>
                   <li>❌ Violating platform terms of service</li>
                 </ul>
@@ -471,7 +471,7 @@ const AffiliateGuide = () => {
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-3">How You Get Paid (Razorpay Route)</h3>
                 <p className="text-gray-700 mb-4">
-                  V-Tech uses Razorpay Route to automatically split payments. Your commission share is held on Razorpay and released after the order is delivered and the return window expires.
+                  VTech uses Razorpay Route to automatically split payments. Your commission share is held on Razorpay and released after the order is delivered and the return window expires.
                 </p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <ol className="list-decimal pl-6 text-blue-800 space-y-2 text-sm">
@@ -548,7 +548,7 @@ const AffiliateGuide = () => {
             <Award className="w-16 h-16 text-blue-600 mx-auto mb-4" />
             <h2 className="text-3xl font-bold text-gray-900 mb-3">Ready to Start Earning?</h2>
             <p className="text-lg text-gray-700 mb-6 max-w-2xl mx-auto">
-              Join thousands of affiliates already earning commissions by promoting V-Tech products!
+              Join thousands of affiliates already earning commissions by promoting VTech products!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a

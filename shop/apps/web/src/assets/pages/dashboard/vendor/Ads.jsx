@@ -258,7 +258,7 @@ const Ads = () => {
         key: orderData.keyId,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: 'V-Tech Ad Wallet',
+        name: 'VTech Ad Wallet',
         description: `Recharge Ad Wallet - ₹${amount}`,
         image: '/logo.png',
         order_id: orderData.orderId,
@@ -418,7 +418,7 @@ const Ads = () => {
           <div className="flex-1">
             <h3 className="font-bold text-purple-900 mb-2">What are Sponsored Ads?</h3>
             <p className="text-sm text-purple-800 mb-3">
-              Promote your products in premium positions across V-Tech - homepage banners, category pages, and search results. Choose from CPC (pay per click), CPM (pay per 1000 views), or CPA (pay per sale) models.
+              Promote your products in premium positions across VTech - homepage banners, category pages, and search results. Choose from CPC (pay per click), CPM (pay per 1000 views), or CPA (pay per sale) models.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
               <div className="bg-white border border-purple-200 rounded p-3">

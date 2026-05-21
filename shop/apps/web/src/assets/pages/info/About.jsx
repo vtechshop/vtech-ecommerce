@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { Users, Target, Eye, Shield, Heart, Lightbulb, MapPin, Mail, Phone, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
@@ -7,8 +7,8 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const About = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'About V-Tech Kitchen | Equipment Manufacturer, Coimbatore',
-      description: 'V-Tech Kitchen is a leading manufacturer of commercial kitchen equipment in Coimbatore. Premium blenders, grinders, cutting machines, and cookware.',
+      title: 'About VTech Kitchen | Equipment Manufacturer, Coimbatore',
+      description: 'VTech Kitchen is a leading manufacturer of commercial kitchen equipment in Coimbatore. Premium blenders, grinders, cutting machines, and cookware.',
       canonical: 'https://www.vtechkitchen.com/page/about',
     });
   }, []);
@@ -557,7 +557,7 @@ const About = () => {
                 <div>
                   <h3 className="font-bold text-gray-900 mb-2">Address</h3>
                   <p className="text-gray-700 leading-relaxed">
-                    V-Tech<br />
+                    VTech<br />
                     9/83, E, 4th Street, T.Balan Nagar<br />
                     Ganapathipudur, Coimbatore - 641006, Tamil Nadu<br />
                     India

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -34,7 +34,7 @@ const Search = () => {
 
   useEffect(() => {
     updateMetaTags({
-      title: view === 'categories' ? 'Shop by Category - V-Tech' : query ? `Search results for "${query}" - V-Tech` : 'Search Products - V-Tech',
+      title: view === 'categories' ? 'Shop by Category - VTech' : query ? `Search results for "${query}" - VTech` : 'Search Products - VTech',
       description: 'Search for products from thousands of trusted vendors',
     });
   }, [query, view]);

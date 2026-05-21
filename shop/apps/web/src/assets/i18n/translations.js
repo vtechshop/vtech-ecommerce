@@ -1,4 +1,4 @@
-// FILE: apps/web/src/i18n/translations.js
+﻿// FILE: apps/web/src/i18n/translations.js
 
 export const translations = {
   en: {
@@ -28,7 +28,7 @@ export const translations = {
     'nav.signOut': 'Sign Out',
 
     // Header
-    'header.shopName': 'V-Tech',
+    'header.shopName': 'VTech',
 
     // Home Page
     'home.heroTitle': 'Discover Amazing Products',

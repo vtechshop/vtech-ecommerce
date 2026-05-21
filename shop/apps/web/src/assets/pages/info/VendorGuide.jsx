@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BookOpen, DollarSign, TrendingUp, Package, ShoppingCart,
@@ -11,8 +11,8 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const VendorGuide = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Vendor Guide - V-Tech Kitchen',
-      description: 'Step-by-step guide to selling on V-Tech Kitchen marketplace. Set up your store, list products, manage orders, and grow your business.',
+      title: 'Vendor Guide - VTech Kitchen',
+      description: 'Step-by-step guide to selling on VTech Kitchen marketplace. Set up your store, list products, manage orders, and grow your business.',
       canonical: 'https://www.vtechkitchen.com/page/vendor-guide',
     });
   }, []);
@@ -32,7 +32,7 @@ const VendorGuide = () => {
           </div>
           <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Vendor Guide</h1>
           <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-            Everything you need to know about selling on V-Tech, earning commissions, and growing your business with sponsored ads.
+            Everything you need to know about selling on VTech, earning commissions, and growing your business with sponsored ads.
           </p>
         </div>
 
@@ -77,7 +77,7 @@ const VendorGuide = () => {
                 <DollarSign className="w-8 h-8" />
                 <div>
                   <h2 className="text-2xl font-bold">Commission System</h2>
-                  <p className="text-green-100">Understand how you earn money on V-Tech</p>
+                  <p className="text-green-100">Understand how you earn money on VTech</p>
                 </div>
               </div>
             </div>
@@ -91,7 +91,7 @@ const VendorGuide = () => {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                   <p className="text-blue-900 font-semibold mb-2">Default Commission Rate: 15%</p>
                   <p className="text-blue-800 text-sm">
-                    You keep 85% of the sale price. V-Tech takes 15% as platform commission.
+                    You keep 85% of the sale price. VTech takes 15% as platform commission.
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -263,7 +263,7 @@ const VendorGuide = () => {
               <div>
                 <h3 className="text-xl font-semibold mb-4">What are Sponsored Ads?</h3>
                 <p className="text-gray-700 mb-4">
-                  Sponsored Ads allow you to promote your products in premium positions across the V-Tech platform.
+                  Sponsored Ads allow you to promote your products in premium positions across the VTech platform.
                   Your products appear at the top of search results, category pages, and homepage, increasing visibility and sales.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -509,7 +509,7 @@ const VendorGuide = () => {
                 <Package className="w-8 h-8" />
                 <div>
                   <h2 className="text-2xl font-bold">Getting Started</h2>
-                  <p className="text-blue-100">Your journey as a V-Tech vendor</p>
+                  <p className="text-blue-100">Your journey as a VTech vendor</p>
                 </div>
               </div>
             </div>
@@ -554,7 +554,7 @@ const VendorGuide = () => {
               <div>
                 <h3 className="text-xl font-semibold mb-4">Razorpay Route – Automatic Splits</h3>
                 <p className="text-gray-700 mb-4">
-                  V-Tech uses Razorpay Route to automatically split every payment. When a customer purchases your product, the platform commission is deducted and your share is transferred to your Razorpay linked account — all automatically.
+                  VTech uses Razorpay Route to automatically split every payment. When a customer purchases your product, the platform commission is deducted and your share is transferred to your Razorpay linked account — all automatically.
                 </p>
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                   <h4 className="font-semibold text-emerald-900 mb-2">Setup Steps:</h4>

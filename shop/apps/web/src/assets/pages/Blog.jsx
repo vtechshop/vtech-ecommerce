@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/Blog.jsx
+﻿// FILE: apps/web/src/pages/Blog.jsx
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -58,8 +58,8 @@ const Blog = () => {
   return (
     <div className="min-h-screen bg-white">
       <SEO
-        title="Blog - V-Tech Kitchen | Tips, Recipes & Kitchen Guides"
-        description="Read the latest kitchen tips, recipes, product guides, and cooking advice from V-Tech Kitchen. Expert insights for your modern kitchen."
+        title="Blog - VTech Kitchen | Tips, Recipes & Kitchen Guides"
+        description="Read the latest kitchen tips, recipes, product guides, and cooking advice from VTech Kitchen. Expert insights for your modern kitchen."
         keywords="kitchen blog, cooking tips, kitchen guides, recipes, kitchen appliance reviews"
       />
       {/* Hero Section */}

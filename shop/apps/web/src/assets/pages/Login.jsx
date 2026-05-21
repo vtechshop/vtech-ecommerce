@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/Login.jsx
+﻿// FILE: apps/web/src/pages/Login.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -75,7 +75,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
-      <NoIndex title="Sign In - V-Tech Kitchen" />
+      <NoIndex title="Sign In - VTech Kitchen" />
       <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <Link to="/" className="text-3xl font-bold text-blue-600 btn-scale">

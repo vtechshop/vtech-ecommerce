@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/Register.jsx
+﻿// FILE: apps/web/src/pages/Register.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -94,7 +94,7 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white py-12 px-4">
-      <NoIndex title="Create Account - V-Tech Kitchen" />
+      <NoIndex title="Create Account - VTech Kitchen" />
       <div className="max-w-md w-full">
         <ScrollReveal animation="fadeIn" duration={0.5}>
           <div className="text-center mb-8">

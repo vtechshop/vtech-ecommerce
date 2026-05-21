@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/cms/Page.jsx
+﻿// FILE: apps/web/src/pages/cms/Page.jsx
 import { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -21,7 +21,7 @@ const Page = () => {
   useEffect(() => {
     if (page) {
       updateMetaTags({
-        title: `${page.title} - V-Tech`,
+        title: `${page.title} - VTech`,
         description: page.excerpt || page.content?.substring(0, 160),
         canonical: `https://www.vtechkitchen.com/page/${slug}`,
       });

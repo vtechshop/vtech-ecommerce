@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -131,8 +131,8 @@ const Category = () => {
   }
 
   // SEO metadata for category pages
-  const seoTitle = category.seo?.title || `${category.name} - V-Tech Kitchen`;
-  const seoDescription = (category.seo?.description || category.description || `Shop ${category.name} at V-Tech Kitchen. Browse our selection of premium kitchen products.`).substring(0, 155);
+  const seoTitle = category.seo?.title || `${category.name} - VTech Kitchen`;
+  const seoDescription = (category.seo?.description || category.description || `Shop ${category.name} at VTech Kitchen. Browse our selection of premium kitchen products.`).substring(0, 155);
   const seoKeywords = category.seo?.keywords?.join(', ') || `${category.name}, kitchen, appliances`;
   const categoryUrl = `https://www.vtechkitchen.com/category/${category.slug}`;
 

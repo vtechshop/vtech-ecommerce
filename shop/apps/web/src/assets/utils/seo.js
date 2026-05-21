@@ -1,4 +1,4 @@
-// FILE: apps/web/src/utils/seo.js
+﻿// FILE: apps/web/src/utils/seo.js
 // SEO utilities for client-side
 export const updateMetaTags = (data) => {
   // Title
@@ -111,7 +111,7 @@ export const generateProductSchema = (product) => {
       itemCondition: 'https://schema.org/NewCondition',
       seller: {
         '@type': 'Organization',
-        name: product.vendorId?.storeName || 'V-Tech Kitchen',
+        name: product.vendorId?.storeName || 'VTech Kitchen',
       },
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',

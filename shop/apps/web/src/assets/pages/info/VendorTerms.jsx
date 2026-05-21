@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
 import ScrollReveal from '@/components/common/ScrollReveal';
@@ -6,8 +6,8 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const VendorTerms = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Vendor Terms & Conditions - V-Tech Kitchen',
-      description: 'Terms and conditions for selling on V-Tech Kitchen marketplace. Commission structure, product listing guidelines, payment terms, and vendor responsibilities.',
+      title: 'Vendor Terms & Conditions - VTech Kitchen',
+      description: 'Terms and conditions for selling on VTech Kitchen marketplace. Commission structure, product listing guidelines, payment terms, and vendor responsibilities.',
       canonical: 'https://www.vtechkitchen.com/page/vendor-terms',
     });
   }, []);
@@ -59,7 +59,7 @@ const VendorTerms = () => {
               <h2 className="text-2xl font-bold text-gray-900 mb-4">3. Commission & Fees</h2>
               <div className="mb-4 p-4 bg-gradient-to-r from-primary-50 to-primary-100 border-2 border-blue-500 rounded-lg">
                 <p className="font-bold text-blue-700 text-xl mb-2">Default Commission Rate: 15%</p>
-                <p className="text-gray-900">You keep <strong>85% of each sale</strong>, V-Tech platform takes 15% commission.</p>
+                <p className="text-gray-900">You keep <strong>85% of each sale</strong>, VTech platform takes 15% commission.</p>
                 <p className="text-sm text-gray-700 mt-2"><strong>Example:</strong> Sell for ₹1,000 → You earn ₹850, Commission ₹150</p>
               </div>
               <div className="bg-primary-50 border border-primary-200 rounded-lg p-6 mb-4">
@@ -105,7 +105,7 @@ const VendorTerms = () => {
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">5.1 Razorpay Route – Automatic Payment Splits</h3>
               <p className="text-gray-700 leading-relaxed mb-4">
-                V-Tech uses <strong>Razorpay Route</strong> to automatically split payments at the time of purchase. When a customer pays for your product, the platform commission is deducted and your share is held securely with Razorpay.
+                VTech uses <strong>Razorpay Route</strong> to automatically split payments at the time of purchase. When a customer pays for your product, the platform commission is deducted and your share is held securely with Razorpay.
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
                 <li>You must connect your Razorpay Linked Account via the <strong>Settlements</strong> page in your vendor dashboard</li>

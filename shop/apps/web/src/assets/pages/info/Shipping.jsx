@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { Truck, Package, Clock, MapPin, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
@@ -7,8 +7,8 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const Shipping = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Shipping Information - V-Tech Kitchen',
-      description: 'Shipping information for V-Tech Kitchen. Standard delivery in 2-10 days. Delivery charges vary by location. Pan-India coverage with real-time order tracking.',
+      title: 'Shipping Information - VTech Kitchen',
+      description: 'Shipping information for VTech Kitchen. Standard delivery in 2-10 days. Delivery charges vary by location. Pan-India coverage with real-time order tracking.',
       canonical: 'https://www.vtechkitchen.com/page/shipping',
     });
   }, []);

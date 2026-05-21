@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Package, Truck, CheckCircle, MapPin, Clock, Box, CircleDot } from 'lucide-react';
 import api from '../../utils/api';
@@ -7,8 +7,8 @@ import { updateMetaTags } from '@/utils/seo';
 const TrackOrder = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Track Your Order - V-Tech Kitchen',
-      description: 'Track your V-Tech Kitchen order in real-time using your order number or AWB tracking number. Get live delivery status updates and estimated delivery dates.',
+      title: 'Track Your Order - VTech Kitchen',
+      description: 'Track your VTech Kitchen order in real-time using your order number or AWB tracking number. Get live delivery status updates and estimated delivery dates.',
       canonical: 'https://www.vtechkitchen.com/track-order',
     });
   }, []);

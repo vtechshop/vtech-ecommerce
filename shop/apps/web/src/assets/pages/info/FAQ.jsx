@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
 import { updateMetaTags } from '@/utils/seo';
 import ScrollReveal from '@/components/common/ScrollReveal';
@@ -6,8 +6,8 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const FAQ = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Frequently Asked Questions - V-Tech Kitchen',
-      description: 'Find answers about orders, payments, shipping, returns, vendor program & affiliate commissions at V-Tech Kitchen. Quick help for all queries.',
+      title: 'Frequently Asked Questions - VTech Kitchen',
+      description: 'Find answers about orders, payments, shipping, returns, vendor program & affiliate commissions at VTech Kitchen. Quick help for all queries.',
       canonical: 'https://www.vtechkitchen.com/page/faq',
     });
   }, []);
@@ -108,7 +108,7 @@ const FAQ = () => {
         },
         {
           q: 'What are the vendor commission rates?',
-          a: 'V-Tech charges a default commission of 15%, meaning you keep 85% of each sale. For example, if you sell a product for ₹1,000, you earn ₹850 and V-Tech takes ₹150. Commission rates may vary slightly by category (12-20% range).'
+          a: 'VTech charges a default commission of 15%, meaning you keep 85% of each sale. For example, if you sell a product for ₹1,000, you earn ₹850 and VTech takes ₹150. Commission rates may vary slightly by category (12-20% range).'
         },
         {
           q: 'How and when do I get paid as a vendor?',
@@ -135,12 +135,12 @@ const FAQ = () => {
           a: '30 days. When someone clicks your affiliate link, we track their activity for 30 days. If they make a purchase within that time, you earn commission on that sale.'
         },
         {
-          q: 'Can I promote V-Tech products on social media?',
+          q: 'Can I promote VTech products on social media?',
           a: 'Yes! You can share your affiliate links on Instagram, Facebook, Twitter, YouTube, WhatsApp, and blogs. Always disclose your affiliate relationship as required by law.'
         },
         {
           q: 'What promotion methods are prohibited for affiliates?',
-          a: 'You cannot spam, make false claims, impersonate V-Tech, bid on branded keywords in PPC campaigns, stuff cookies, or make self-referrals. See Affiliate Terms for the complete list of prohibited activities.'
+          a: 'You cannot spam, make false claims, impersonate VTech, bid on branded keywords in PPC campaigns, stuff cookies, or make self-referrals. See Affiliate Terms for the complete list of prohibited activities.'
         },
         {
           q: 'How do I track my affiliate performance?',

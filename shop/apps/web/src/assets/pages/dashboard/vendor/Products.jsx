@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/dashboard/vendor/Products.jsx
+﻿// FILE: apps/web/src/pages/dashboard/vendor/Products.jsx
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
@@ -1739,7 +1739,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                     type="text"
                     value={formData.seoTitle}
                     onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })}
-                    placeholder={`${formData.title || 'Product title'} - V-Tech Kitchen`}
+                    placeholder={`${formData.title || 'Product title'} - VTech Kitchen`}
                     className="input w-full"
                     maxLength={60}
                   />
@@ -1797,7 +1797,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                     <p className="text-xs text-gray-500 mb-2 font-medium">Google Search Preview:</p>
                     <div className="space-y-1">
                       <div className="text-lg text-blue-700 hover:underline cursor-pointer font-medium">
-                        {formData.seoTitle || formData.title} - V-Tech Kitchen
+                        {formData.seoTitle || formData.title} - VTech Kitchen
                       </div>
                       <div className="text-xs text-green-700">
                         https://vtechkitchen.com/products/{formData.title?.toLowerCase().replace(/\s+/g, '-')}

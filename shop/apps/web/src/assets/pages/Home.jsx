@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense, lazy } from 'react';
+﻿import React, { useEffect, Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
@@ -28,7 +28,7 @@ const StaticHero = ({ t }) => (
           <Link to="/products" className="inline-block bg-white text-primary-600 px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-blue-100 transition-all duration-300 shadow-lg btn-scale">
             {t('home.startShopping')}
           </Link>
-          <Link to="/page/about" className="inline-block bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-all duration-300 shadow-lg btn-scale" aria-label="Learn more about V-Tech Kitchen">
+          <Link to="/page/about" className="inline-block bg-secondary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-secondary-700 transition-all duration-300 shadow-lg btn-scale" aria-label="Learn more about VTech Kitchen">
             {t('home.learnMore')}
           </Link>
         </div>
@@ -64,11 +64,11 @@ const Home = React.memo(() => {
 
   useEffect(() => {
     updateMetaTags({
-      title: 'V-Tech Kitchen - Premium Kitchen Appliances',
-      description: 'Shop premium kitchen appliances, commercial equipment & cookware at V-Tech Kitchen. Cast iron tawa, cutting machines & more. Delivery charges vary by location.',
+      title: 'VTech Kitchen - Premium Kitchen Appliances',
+      description: 'Shop premium kitchen appliances, commercial equipment & cookware at VTech Kitchen. Cast iron tawa, cutting machines & more. Delivery charges vary by location.',
       canonical: 'https://www.vtechkitchen.com',
-      ogTitle: 'V-Tech Kitchen - Premium Kitchen Appliances',
-      ogDescription: 'Shop premium kitchen appliances, commercial equipment, and cookware at V-Tech Kitchen. Delivery charges vary based on location.',
+      ogTitle: 'VTech Kitchen - Premium Kitchen Appliances',
+      ogDescription: 'Shop premium kitchen appliances, commercial equipment, and cookware at VTech Kitchen. Delivery charges vary based on location.',
       ogUrl: 'https://www.vtechkitchen.com',
     });
   }, []);

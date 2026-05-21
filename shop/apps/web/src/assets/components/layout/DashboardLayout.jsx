@@ -1,4 +1,4 @@
-// FILE: apps/web/src/components/layout/DashboardLayout.jsx
+﻿// FILE: apps/web/src/components/layout/DashboardLayout.jsx
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
@@ -293,7 +293,7 @@ const DashboardLayout = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <NoIndex title="Dashboard - V-Tech Kitchen" />
+      <NoIndex title="Dashboard - VTech Kitchen" />
       <Header onMobileMenuToggle={() => setMobileSidebarOpen(!mobileSidebarOpen)} />
 
       <div className="flex flex-1">

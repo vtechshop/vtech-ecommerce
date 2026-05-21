@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { RotateCcw, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { updateMetaTags } from '@/utils/seo';
 import ScrollReveal from '@/components/common/ScrollReveal';
@@ -6,8 +6,8 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const Returns = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Returns & Refunds Policy - V-Tech Kitchen',
-      description: 'Easy returns and refunds at V-Tech Kitchen. 7-day return policy with free pickup, quick refund processing, and hassle-free exchange options for all products.',
+      title: 'Returns & Refunds Policy - VTech Kitchen',
+      description: 'Easy returns and refunds at VTech Kitchen. 7-day return policy with free pickup, quick refund processing, and hassle-free exchange options for all products.',
       canonical: 'https://www.vtechkitchen.com/page/returns',
     });
   }, []);

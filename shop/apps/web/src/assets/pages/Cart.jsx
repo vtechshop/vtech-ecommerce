@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/Cart.jsx
+﻿// FILE: apps/web/src/pages/Cart.jsx
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -103,7 +103,7 @@ const Cart = () => {
 
   return (
     <div className="bg-white min-h-screen">
-      <NoIndex title="Shopping Cart - V-Tech Kitchen" />
+      <NoIndex title="Shopping Cart - VTech Kitchen" />
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
         {/* Ad Banner - Top of Cart */}
         <AdBanner placement="cart_top" position="top" className="mb-6 md:mb-8 fade-in" />

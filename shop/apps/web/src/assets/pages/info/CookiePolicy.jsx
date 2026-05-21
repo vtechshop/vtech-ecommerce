@@ -1,12 +1,12 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { updateMetaTags } from '@/utils/seo';
 import ScrollReveal from '@/components/common/ScrollReveal';
 
 const CookiePolicy = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Cookie Policy - V-Tech Kitchen',
-      description: 'Learn how V-Tech Kitchen uses cookies to improve your shopping experience. Understand cookie types, your choices, and how to manage browser cookie settings.',
+      title: 'Cookie Policy - VTech Kitchen',
+      description: 'Learn how VTech Kitchen uses cookies to improve your shopping experience. Understand cookie types, your choices, and how to manage browser cookie settings.',
       canonical: 'https://www.vtechkitchen.com/cookie-policy',
     });
   }, []);

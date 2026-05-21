@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { updateMetaTags } from '@/utils/seo';
 import ScrollReveal from '@/components/common/ScrollReveal';
@@ -6,8 +6,8 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 const Privacy = () => {
   useEffect(() => {
     updateMetaTags({
-      title: 'Privacy Policy - V-Tech Kitchen',
-      description: 'V-Tech Kitchen privacy policy explains how we collect, use, and protect your personal information when you shop with us. Your data security matters.',
+      title: 'Privacy Policy - VTech Kitchen',
+      description: 'VTech Kitchen privacy policy explains how we collect, use, and protect your personal information when you shop with us. Your data security matters.',
       canonical: 'https://www.vtechkitchen.com/page/privacy',
     });
   }, []);
@@ -157,7 +157,7 @@ const Privacy = () => {
               <div className="bg-blue-100 rounded-lg p-6">
                 <p className="text-gray-700"><strong>Email:</strong> vtechshop.customercare@gmail.com</p>
                 <p className="text-gray-700"><strong>Phone:</strong> +91 99445 56683</p>
-                <p className="text-gray-700"><strong>Address:</strong> V-Tech, 9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore - 641006, Tamil Nadu</p>
+                <p className="text-gray-700"><strong>Address:</strong> VTech, 9/83, E, 4th Street, T.Balan Nagar, Ganapathipudur, Coimbatore - 641006, Tamil Nadu</p>
               </div>
             </section>
           </div>

@@ -1,4 +1,4 @@
-// FILE: apps/web/src/pages/TrackOrder.jsx
+﻿// FILE: apps/web/src/pages/TrackOrder.jsx
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -36,9 +36,9 @@ const TrackOrder = () => {
   return (
     <div className="min-h-screen bg-blue-50 px-[10%] py-[50px]">
       <SEO
-        title="Track Your Order - V-Tech Kitchen"
-        description="Track your V-Tech Kitchen order status in real-time. Enter your order ID and email to get the latest delivery updates."
-        keywords="track order, order status, delivery tracking, V-Tech Kitchen"
+        title="Track Your Order - VTech Kitchen"
+        description="Track your VTech Kitchen order status in real-time. Enter your order ID and email to get the latest delivery updates."
+        keywords="track order, order status, delivery tracking, VTech Kitchen"
       />
       <div className="container mx-auto px-3 sm:px-4 md:px-6">
       <ScrollReveal animation="fadeUp">

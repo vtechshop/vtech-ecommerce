@@ -1,10 +1,10 @@
-import { Helmet } from 'react-helmet-async';
+﻿import { Helmet } from 'react-helmet-async';
 
 const BASE_URL = 'https://www.vtechkitchen.com';
 
 const SEO = ({
-  title = 'V-Tech Kitchen - Premium Kitchen Appliances & Utensils',
-  description = 'Shop premium kitchen appliances and utensils at V-Tech Kitchen. Discover quality cookware, gadgets, and tools for your modern kitchen. Fast shipping, great prices.',
+  title = 'VTech Kitchen - Premium Kitchen Appliances & Utensils',
+  description = 'Shop premium kitchen appliances and utensils at VTech Kitchen. Discover quality cookware, gadgets, and tools for your modern kitchen. Fast shipping, great prices.',
   keywords = 'kitchen appliances, cookware, kitchen utensils, kitchen gadgets, cooking tools, premium kitchenware',
   image = `${BASE_URL}/og-image.jpg`,
   url,
@@ -36,7 +36,7 @@ const SEO = ({
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
-      <meta property="og:site_name" content="V-Tech Kitchen" />
+      <meta property="og:site_name" content="VTech Kitchen" />
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
