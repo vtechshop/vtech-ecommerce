@@ -101,15 +101,15 @@ const Terms = () => {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-4">
                 <p className="text-amber-900 font-semibold mb-2">Important Notice — Limited Service Centre Coverage</p>
                 <p className="text-amber-800 text-sm leading-relaxed">
-                  V-Tech Kitchen does <strong>not</strong> operate service stations across all of India. We currently have our authorised service centre only in <strong>Coimbatore, Tamil Nadu</strong>. Customers outside Coimbatore are advised to be aware of this before purchasing products that may require in-person servicing.
+                  V-Tech Kitchen does <strong>not</strong> operate service stations across all of India. We currently have our authorised service centre only in <strong>Coimbatore, Tamil Nadu</strong>. All warranty service requires products to be sent to Coimbatore — however, we cover the full transport charges both ways for all customers across India at no cost to you.
                 </p>
               </div>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">7.3 Transport Charges — We Cover Both Ways</h3>
               <div className="bg-green-50 border border-green-200 rounded-lg p-5 mb-4">
-                <p className="text-green-900 font-semibold mb-2">Free Pickup &amp; Drop for Warranty Service</p>
+                <p className="text-green-900 font-semibold mb-2">Free Pickup &amp; Drop for Warranty Service — Anywhere in India</p>
                 <p className="text-green-800 text-sm leading-relaxed">
-                  For customers located <strong>outside Coimbatore</strong>, V-Tech Kitchen will bear the full transport charges for sending the product to our service centre <strong>and</strong> returning it back to you after repair or replacement — at <strong>no cost to you</strong>. Simply initiate a warranty claim and we will coordinate the courier pickup from your doorstep.
+                  V-Tech Kitchen will bear the full transport charges for sending the product to our service centre <strong>and</strong> returning it back to you after repair or replacement — at <strong>no cost to you</strong>, regardless of your location across India. Simply initiate a warranty claim and we will coordinate the courier pickup from your doorstep.
                 </p>
               </div>
 
