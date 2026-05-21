@@ -85,8 +85,8 @@ const Header = ({ onMobileMenuToggle }) => {
       <div className="container mx-auto px-3 sm:px-4 md:px-6">
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
-          <Link to="/" className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-            V-Tech
+          <Link to="/" className="flex-shrink-0">
+            <img src="/cropped-vtech-logo.webp" alt="V-Tech Kitchen" className="h-10 w-auto object-contain" />
           </Link>
 
           {/* Search with Autocomplete */}
