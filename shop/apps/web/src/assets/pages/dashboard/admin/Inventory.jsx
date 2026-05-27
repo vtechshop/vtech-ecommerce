@@ -8,10 +8,11 @@ import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import { formatCurrency } from '@/utils/format';
 import { Package, AlertTriangle, XCircle, TrendingUp, Search, X, Download, Mail, Edit2, Check, RefreshCw, CheckCircle, ChevronRight, Warehouse } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useToast } from '@/components/common/ToastContainer';
 
 const Inventory = () => {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [page, setPage] = useState(1);
   const [stockFilter, setStockFilter] = useState('');
   const [vendorFilter, setVendorFilter] = useState('');
