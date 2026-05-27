@@ -4802,29 +4802,34 @@ exports.sendRestockReminder = async (req, res, next) => {
       });
     }
 
-    const vendor = await Vendor.findById(vendorId).populate('userId', 'email name');
-    if (!vendor || !vendor.userId?.email) {
+    const vendor = await Vendor.findById(vendorId).populate('userId', 'email name _id');
+    if (!vendor || !vendor.userId) {
       return res.status(404).json({
         success: false,
-        error: { code: 'NOT_FOUND', message: 'Vendor email not found' },
+        error: { code: 'NOT_FOUND', message: 'Vendor not found' },
       });
     }
 
-    // Send notification to vendor
-    await notificationHelper.send({
-      type: 'restock_reminder',
-      recipientEmail: vendor.userId.email,
-      subject: `Low Stock Alert: ${product.title}`,
+    const threshold = product.lowStockThreshold || 10;
+    const vendorName = vendor.storeName || vendor.userId.name || 'Vendor';
+
+    // Send in-app notification to vendor
+    await notificationHelper.createNotification({
+      userId: vendor.userId._id,
+      type: 'product',
+      title: `Low Stock Alert: ${product.title}`,
+      message: `Your product "${product.title}" (SKU: ${product.sku || 'N/A'}) has only ${product.stock} unit(s) left in stock. Threshold is ${threshold}. Please restock soon.`,
       data: {
-        vendorName: vendor.storeName || vendor.userId.name,
+        productId: product._id,
         productName: product.title,
-        currentStock: product.stock,
-        threshold: product.lowStockThreshold || 10,
         sku: product.sku || 'N/A',
+        currentStock: product.stock,
+        threshold,
       },
+      link: `/vendor-dashboard/products`,
     });
 
-    logger.info(`Restock reminder sent to vendor ${vendor.storeName} for product ${product.title}`);
+    logger.info(`Restock reminder sent to vendor ${vendorName} for product ${product.title}`);
 
     res.json({
       success: true,
