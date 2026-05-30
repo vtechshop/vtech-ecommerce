@@ -128,18 +128,46 @@ const Vendors = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
-
-      // Update the viewing vendor with new data
       if (data.data && viewingVendor) {
         setViewingVendor(data.data);
       }
-
-      // Show success toast
       const message = data.message || 'Commission updated successfully';
       toast.success(message);
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to update commission');
+    },
+  });
+
+  const approveKYCMutation = useMutation({
+    mutationFn: async (id) => {
+      const response = await api.put(`/admin/kyc/vendors/${id}/approve`);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-stats'] });
+      if (data.data) setViewingVendor(data.data);
+      toast.success('Vendor KYC approved successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to approve KYC');
+    },
+  });
+
+  const rejectKYCMutation = useMutation({
+    mutationFn: async ({ id, reason }) => {
+      const response = await api.put(`/admin/kyc/vendors/${id}/reject`, { reason });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-vendor-stats'] });
+      if (data.data) setViewingVendor(data.data);
+      toast.success('Vendor KYC rejected');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to reject KYC');
     },
   });
 
@@ -611,6 +639,9 @@ const Vendors = () => {
             setViewingVendor(null);
           }}
           onUpdateCommission={(commission) => updateCommissionMutation.mutate({ id: viewingVendor._id, commission })}
+          onApproveKYC={() => approveKYCMutation.mutate(viewingVendor._id)}
+          onRejectKYC={(reason) => rejectKYCMutation.mutate({ id: viewingVendor._id, reason })}
+          kycActionLoading={approveKYCMutation.isPending || rejectKYCMutation.isPending}
         />
       )}
     </div>
@@ -618,9 +649,11 @@ const Vendors = () => {
 };
 
 // Vendor Details Modal Component
-const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, onDelete, onUpdateCommission }) => {
+const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, onDelete, onUpdateCommission, onApproveKYC, onRejectKYC, kycActionLoading }) => {
   const [commissionValue, setCommissionValue] = useState(vendor.defaultCommissionPercentage || 15);
   const [isEditingCommission, setIsEditingCommission] = useState(false);
+  const [showKYCReject, setShowKYCReject] = useState(false);
+  const [kycRejectionReason, setKycRejectionReason] = useState('');
 
   const handleCommissionSave = () => {
     if (commissionValue < 0 || commissionValue > 100) {
@@ -768,7 +801,124 @@ const VendorDetailsModal = ({ vendor, onClose, onApprove, onReject, onSuspend, o
                     <span className="text-sm">{new Date(vendor.kyc.verifiedAt).toLocaleDateString()}</span>
                   </div>
                 )}
+                {vendor.kyc?.rejectionReason && (
+                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                    <strong>Rejection reason:</strong> {vendor.kyc.rejectionReason}
+                  </div>
+                )}
               </div>
+
+              {/* KYC Actions — only when pending */}
+              {vendor.kyc?.status === 'pending' && (
+                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertCircle className="w-4 h-4 text-yellow-600" />
+                    <p className="text-sm font-semibold text-yellow-800">KYC Pending — Review & Approve</p>
+                  </div>
+
+                  {/* Checklist */}
+                  <div className="space-y-1 mb-4 text-xs text-gray-600">
+                    <div className={`flex items-center gap-1.5 ${vendor.kyc?.businessName ? 'text-green-700' : 'text-red-600'}`}>
+                      {vendor.kyc?.businessName ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      Business Name: {vendor.kyc?.businessName || 'Missing'}
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${vendor.kyc?.gstVerified ? 'text-green-700' : 'text-red-600'}`}>
+                      {vendor.kyc?.gstVerified ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      GST Verified: {vendor.kyc?.gstVerified ? `Yes (${vendor.kyc?.taxId || ''})` : 'Not verified'}
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${vendor.kyc?.documents?.some(d => d.type === 'id_proof') ? 'text-green-700' : 'text-red-600'}`}>
+                      {vendor.kyc?.documents?.some(d => d.type === 'id_proof') ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      ID Proof uploaded
+                    </div>
+                    <div className={`flex items-center gap-1.5 ${vendor.kyc?.documents?.some(d => d.type === 'address_proof') ? 'text-green-700' : 'text-red-600'}`}>
+                      {vendor.kyc?.documents?.some(d => d.type === 'address_proof') ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      Address Proof uploaded
+                    </div>
+                  </div>
+
+                  {/* Documents list */}
+                  {vendor.kyc?.documents?.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-xs font-medium text-gray-700 mb-1">Uploaded Documents:</p>
+                      <div className="space-y-1">
+                        {vendor.kyc.documents.map((doc, idx) => (
+                          <a key={idx} href={doc.url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-xs text-blue-600 hover:text-blue-800 bg-white px-2 py-1 rounded border border-blue-200">
+                            <ExternalLink className="w-3 h-3" />
+                            {doc.filename} ({doc.type?.replace(/_/g, ' ')})
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Reject reason input */}
+                  {showKYCReject && (
+                    <div className="mb-3">
+                      <select
+                        value={kycRejectionReason}
+                        onChange={(e) => setKycRejectionReason(e.target.value)}
+                        className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 mb-2"
+                      >
+                        <option value="">Select rejection reason...</option>
+                        <option value="Invalid or unclear documents">Invalid or unclear documents</option>
+                        <option value="Incomplete information provided">Incomplete information provided</option>
+                        <option value="GST details do not match business name">GST details do not match business name</option>
+                        <option value="Documents appear to be fraudulent">Documents appear to be fraudulent</option>
+                        <option value="Address does not match documents">Address does not match documents</option>
+                        <option value="ID document has expired">ID document has expired</option>
+                        <option value="Business could not be verified">Business could not be verified</option>
+                      </select>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => { setShowKYCReject(false); setKycRejectionReason(''); }}>
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-red-300 text-red-600 hover:bg-red-50"
+                          disabled={!kycRejectionReason || kycActionLoading}
+                          onClick={() => { onRejectKYC(kycRejectionReason); setShowKYCReject(false); setKycRejectionReason(''); }}
+                        >
+                          Confirm Reject
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Approve / Reject buttons */}
+                  {!showKYCReject && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 flex-1"
+                        disabled={kycActionLoading || !vendor.kyc?.gstVerified || !vendor.kyc?.businessName || !vendor.kyc?.documents?.some(d => d.type === 'id_proof') || !vendor.kyc?.documents?.some(d => d.type === 'address_proof')}
+                        onClick={onApproveKYC}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        {kycActionLoading ? 'Processing...' : 'Approve KYC'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-red-300 text-red-600 hover:bg-red-50 flex-1"
+                        disabled={kycActionLoading}
+                        onClick={() => setShowKYCReject(true)}
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Reject KYC
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Disabled reason tooltip */}
+                  {(!vendor.kyc?.gstVerified || !vendor.kyc?.businessName || !vendor.kyc?.documents?.some(d => d.type === 'id_proof')) && !showKYCReject && (
+                    <p className="text-xs text-red-600 mt-2">
+                      ⚠️ Approve button disabled — {!vendor.kyc?.gstVerified ? 'GST not verified' : !vendor.kyc?.businessName ? 'Business name missing' : 'Required documents missing'}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
