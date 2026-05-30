@@ -65,12 +65,21 @@ const Vendors = () => {
 
   const approveMutation = useMutation({
     mutationFn: async (id) => {
-      await api.put(`/admin/vendors/${id}/approve`);
+      const res = await api.put(`/admin/vendors/${id}/approve`);
+      return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-vendors'] });
       queryClient.invalidateQueries({ queryKey: ['admin-vendor-stats'] });
-      toast.success('Vendor approved successfully');
+      if (data.kycAutoApproved) {
+        toast.success('✅ Vendor approved + KYC auto-approved! Full access granted.');
+      } else {
+        toast.success('Vendor approved. Vendor needs to complete KYC verification for full access.');
+      }
+      // Update modal if open
+      if (data.data && viewingVendor) {
+        setViewingVendor(data.data);
+      }
     },
     onError: (error) => {
       toast.error(error.response?.data?.error?.message || 'Failed to approve vendor');

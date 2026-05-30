@@ -1103,13 +1103,35 @@ exports.getVendors = async (req, res, next) => {
 
 exports.approveVendor = async (req, res, next) => {
   try {
+    const vendorDoc = await Vendor.findById(req.params.id);
+    if (!vendorDoc) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Vendor not found' } });
+
+    // Check if KYC is fully complete — if so, approve both account AND KYC in one step (Amazon-style)
+    const kyc = vendorDoc.kyc || {};
+    const kycComplete =
+      kyc.gstVerified &&
+      kyc.businessName?.trim() &&
+      kyc.businessType &&
+      kyc.businessAddress?.trim() &&
+      kyc.phoneNumber?.trim() &&
+      (kyc.documents || []).some(d => d.type === 'id_proof') &&
+      (kyc.documents || []).some(d => d.type === 'address_proof');
+
+    const updateData = { status: 'active' };
+    if (kycComplete) {
+      // Auto-approve KYC too — single approval like Amazon
+      updateData['kyc.status'] = 'approved';
+      updateData['kyc.verifiedAt'] = new Date();
+      updateData['kyc.verifiedBy'] = req.user._id;
+    }
+
     const vendor = await Vendor.findByIdAndUpdate(
       req.params.id,
-      { status: 'active' },
+      updateData,
       { new: true }
     ).populate('userId');
-    if (!vendor) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Vendor not found' } });
-    logger.info(`Vendor approved: ${vendor.storeName}`);
+
+    logger.info(`Vendor approved: ${vendor.storeName} | KYC auto-approved: ${kycComplete}`);
 
     // Notify vendor of approval
     try {
@@ -1118,12 +1140,15 @@ exports.approveVendor = async (req, res, next) => {
         vendor,
         status: 'approved',
       });
-      logger.info(`Vendor notified of approval: ${vendor.storeName}`);
     } catch (notifError) {
       logger.error('Failed to notify vendor of approval:', notifError);
     }
 
-    res.json({ success: true, data: vendor });
+    res.json({
+      success: true,
+      data: vendor,
+      kycAutoApproved: kycComplete,
+    });
   } catch (error) { next(error); }
 };
 
