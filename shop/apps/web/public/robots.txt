@@ -4,9 +4,12 @@
 User-agent: *
 Allow: /
 Allow: /products
+Allow: /products?view=categories
 Allow: /product/
 Allow: /category/
 Allow: /search
+Allow: /search?view=categories
+Allow: /blog/
 Allow: /blog/
 Allow: /vendor/
 Allow: /page/
@@ -35,6 +38,7 @@ Disallow: /order-confirmation
 Disallow: /api/
 
 # Disallow query parameter variations that create duplicate content
+# Note: Allow rules above take precedence over these for specific paths
 Disallow: /*?page=
 Disallow: /*?sort=
 Disallow: /*?ref=

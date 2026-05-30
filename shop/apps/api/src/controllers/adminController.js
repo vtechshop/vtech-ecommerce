@@ -1383,10 +1383,39 @@ exports.approveVendorKYC = async (req, res, next) => {
       });
     }
 
-    if (!vendorCheck.kyc.gstVerified) {
+    // Validate kyc subdoc exists
+    if (!vendorCheck.kyc) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'KYC_NOT_SUBMITTED', message: 'Vendor has not submitted KYC information yet.' }
+      });
+    }
+
+    // Validate required business info
+    const kyc = vendorCheck.kyc;
+    if (!kyc.businessName?.trim() || !kyc.businessType || !kyc.businessAddress?.trim() || !kyc.phoneNumber?.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'INCOMPLETE_KYC', message: 'Vendor must fill business name, type, address, and phone number before KYC can be approved.' }
+      });
+    }
+
+    // Validate GST verification (mandatory)
+    if (!kyc.gstVerified) {
       return res.status(400).json({
         success: false,
         error: { code: 'GST_NOT_VERIFIED', message: 'Cannot approve vendor KYC without GST verification. Vendor must verify their GST number first.' }
+      });
+    }
+
+    // Validate required documents
+    const docs = kyc.documents || [];
+    const hasIdProof = docs.some(d => d.type === 'id_proof');
+    const hasAddressProof = docs.some(d => d.type === 'address_proof');
+    if (!hasIdProof || !hasAddressProof) {
+      return res.status(400).json({
+        success: false,
+        error: { code: 'MISSING_DOCUMENTS', message: 'Vendor must upload ID proof and address proof documents before KYC can be approved.' }
       });
     }
 

@@ -864,7 +864,15 @@ const KYCReview = () => {
                   disabled={
                     approveVendorMutation.isPending ||
                     approveAffiliateMutation.isPending ||
-                    (selectedKYC.type === 'vendor' && !selectedKYC.kyc?.gstVerified)
+                    (selectedKYC.type === 'vendor' && (
+                      !selectedKYC.kyc?.gstVerified ||
+                      !selectedKYC.kyc?.businessName?.trim() ||
+                      !selectedKYC.kyc?.businessType ||
+                      !selectedKYC.kyc?.businessAddress?.trim() ||
+                      !selectedKYC.kyc?.phoneNumber?.trim() ||
+                      !selectedKYC.kyc?.documents?.some(d => d.type === 'id_proof') ||
+                      !selectedKYC.kyc?.documents?.some(d => d.type === 'address_proof')
+                    ))
                   }
                   className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
