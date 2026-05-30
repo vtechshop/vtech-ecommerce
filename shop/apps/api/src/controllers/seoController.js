@@ -370,6 +370,13 @@ exports.renderPage = async (req, res, next) => {
         .populate('categoryIds', 'name slug')
         .lean();
 
+      // Product not found or unpublished — tell Google to not index this URL
+      if (!product) {
+        pageData.title = 'Product Not Found - VTech Kitchen';
+        pageData.description = 'This product is no longer available.';
+        pageData.noindex = true;
+      }
+
       if (product) {
         // Fetch approved reviews for this product
         const productReviews = await Review.find({ productId: product._id, status: 'approved' })
@@ -706,7 +713,7 @@ exports.renderPage = async (req, res, next) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${pageData.title}</title>
   <meta name="description" content="${pageData.description}">
-  <meta name="robots" content="index, follow">
+  <meta name="robots" content="${pageData.noindex ? 'noindex, nofollow' : 'index, follow'}">
   <link rel="canonical" href="${fullUrl}">
 
   <!-- Open Graph -->

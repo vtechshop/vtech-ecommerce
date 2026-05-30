@@ -23,7 +23,7 @@ import AdBanner from '@/components/common/AdBanner';
 import { closeCartDrawer } from '@/store/slices/cartSlice';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { useStaggerAnimation, useHoverAnimation } from '@/hooks/useAnimations';
-import SEO from '@/components/common/SEO';
+import SEO, { NoIndex } from '@/components/common/SEO';
 import { playWishlistAdd, playAddToCart, playError } from '@/utils/sounds';
 import ScrollReveal from '@/components/common/ScrollReveal';
 import Breadcrumb from '@/components/common/Breadcrumb';
@@ -402,17 +402,20 @@ const Product = () => {
     );
   }
 
-  // Product not found
+  // Product not found (deleted, unpublished, or invalid slug)
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl md:text-5xl lg:text-6xl mb-4">📦</div>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
-          <p className="text-gray-700 mb-6">The product you're looking for doesn't exist or has been removed.</p>
-          <Link to="/" className="btn btn-primary">Back to Home</Link>
+      <>
+        <NoIndex title="Product Not Found - VTech Kitchen" />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-4xl md:text-5xl lg:text-6xl mb-4">📦</div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
+            <p className="text-gray-700 mb-6">The product you're looking for doesn't exist or has been removed.</p>
+            <Link to="/" className="btn btn-primary">Back to Home</Link>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
