@@ -58,12 +58,14 @@ const AffiliateDashboard = () => {
     setTimeout(() => setCopiedLink(null), 2000);
   };
 
-  // Only show blocking error for non-404 errors (404 should auto-create profile)
+  // Only show blocking error for non-404 and non-403 errors
+  // 404 = profile not found (auto-create), 403 = KYC not approved (show banner instead of crash)
   if (statsError || linksError) {
-    const is404 = statsError?.response?.status === 404 || linksError?.response?.status === 404;
+    const statsStatus = statsError?.response?.status;
+    const linksStatus = linksError?.response?.status;
+    const isSafeError = [404, 403].includes(statsStatus) || [404, 403].includes(linksStatus);
 
-    // For non-404 errors, show error page
-    if (!is404) {
+    if (!isSafeError) {
       return (
         <div className="min-h-[600px] flex items-center justify-center">
           <div className="max-w-md text-center bg-white rounded-xl shadow-lg p-8 border border-gray-200">
@@ -86,12 +88,13 @@ const AffiliateDashboard = () => {
     }
   }
 
-  // Check KYC status for showing banner (not blocking)
-  const kycStatus = stats?.kycStatus || 'pending';
-  const needsKYC = kycStatus !== 'approved';
+  // Check KYC status — 403 on links means KYC not approved
+  const kycNotApproved = linksError?.response?.status === 403 || statsError?.response?.status === 403;
+  const kycStatus = kycNotApproved ? (linksError?.response?.data?.error?.kycStatus || 'pending') : (stats?.kycStatus || 'pending');
+  const needsKYC = kycNotApproved || kycStatus !== 'approved';
 
   // Show loading only if no errors and still loading
-  if (statsLoading || linksLoading) {
+  if ((statsLoading && !statsError) || (linksLoading && !linksError)) {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
         <div className="text-center">
@@ -190,7 +193,7 @@ const AffiliateDashboard = () => {
             <div>
               <p className="text-sm text-purple-600 font-medium mb-1">Your Affiliate Code</p>
               <code className="text-2xl font-bold text-purple-900 tracking-wider">
-                {linksData?.code || 'LOADING...'}
+                {linksData?.code || (kycNotApproved ? 'PENDING KYC' : '—')}
               </code>
             </div>
           </div>
