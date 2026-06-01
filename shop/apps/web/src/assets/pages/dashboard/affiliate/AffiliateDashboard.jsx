@@ -184,35 +184,48 @@ const AffiliateDashboard = () => {
       </div>
 
       {/* Affiliate Code Card */}
-      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-6 fade-in hover-lift">
+      <div className={`bg-gradient-to-br rounded-xl p-6 fade-in hover-lift border-2 ${kycNotApproved ? 'from-gray-50 to-gray-100 border-gray-200' : 'from-purple-50 to-pink-50 border-purple-200'}`}>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
-            <div className="bg-purple-600 p-3 rounded-lg">
+            <div className={`p-3 rounded-lg ${kycNotApproved ? 'bg-gray-400' : 'bg-purple-600'}`}>
               <Award className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-sm text-purple-600 font-medium mb-1">Your Affiliate Code</p>
-              <code className="text-2xl font-bold text-purple-900 tracking-wider">
-                {linksData?.code || (kycNotApproved ? 'PENDING KYC' : '—')}
+              <p className={`text-sm font-medium mb-1 ${kycNotApproved ? 'text-gray-500' : 'text-purple-600'}`}>Your Affiliate Code</p>
+              <code className={`text-2xl font-bold tracking-wider ${kycNotApproved ? 'text-gray-400' : 'text-purple-900'}`}>
+                {linksData?.code || (kycNotApproved ? '— — — —' : '—')}
               </code>
+              {kycNotApproved && (
+                <p className="text-xs text-amber-600 mt-1 font-medium">Complete KYC to unlock your code</p>
+              )}
             </div>
           </div>
-          <button
-            onClick={() => handleCopyCode(linksData?.code)}
-            className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
-          >
-            {copiedLink === 'code' ? (
-              <>
-                <Check className="w-5 h-5" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="w-5 h-5" />
-                Copy Code
-              </>
-            )}
-          </button>
+          {!kycNotApproved && (
+            <button
+              onClick={() => handleCopyCode(linksData?.code)}
+              className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+            >
+              {copiedLink === 'code' ? (
+                <>
+                  <Check className="w-5 h-5" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-5 h-5" />
+                  Copy Code
+                </>
+              )}
+            </button>
+          )}
+          {kycNotApproved && (
+            <a
+              href="/affiliate-dashboard/kyc"
+              className="bg-amber-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-amber-600 transition-all shadow-md flex items-center gap-2 text-sm"
+            >
+              Complete KYC →
+            </a>
+          )}
         </div>
       </div>
 
