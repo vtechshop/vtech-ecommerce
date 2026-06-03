@@ -22,7 +22,30 @@
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <meta name="description" content="Shop premium kitchen appliances, commercial equipment, and cookware at V-Tech Kitchen. Cast iron tawa, cutting machines, and more from trusted vendors. Free shipping on orders over ₹500.">
     <meta name="keywords" content="kitchen appliances, cookware, kitchen utensils, kitchen gadgets, cooking tools, premium kitchenware">
-    <link rel="canonical" href="https://www.vtechkitchen.com" />
+    <!-- Dynamic canonical: set per-page BEFORE React loads so Googlebot sees correct URL immediately -->
+    <link rel="canonical" href="https://www.vtechkitchen.com" id="canonical-tag" />
+    <script>
+      (function() {
+        try {
+          var tag = document.getElementById('canonical-tag');
+          if (!tag) return;
+          var path = window.location.pathname.replace(/\/$/, '') || '/';
+          var base = 'https://www.vtechkitchen.com';
+          // Noindex pages — set noindex meta and keep homepage canonical
+          var noindexPaths = ['/login','/register','/forgot-password','/reset-password','/verify-email','/checkout','/cart','/dashboard','/vendor-dashboard','/affiliate-dashboard','/admin-dashboard','/support-dashboard'];
+          var isNoindex = noindexPaths.some(function(p){ return path === p || path.startsWith(p + '/'); });
+          if (isNoindex) {
+            var meta = document.createElement('meta');
+            meta.name = 'robots';
+            meta.content = 'noindex, nofollow';
+            document.head.insertBefore(meta, tag);
+            tag.href = base;
+          } else {
+            tag.href = base + path;
+          }
+        } catch(e) {}
+      })();
+    </script>
 
     <!-- Open Graph Meta Tags (Facebook, LinkedIn) -->
     <meta property="og:type" content="website" />
