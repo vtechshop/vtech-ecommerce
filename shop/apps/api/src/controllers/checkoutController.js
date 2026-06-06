@@ -112,31 +112,50 @@ exports.getShippingQuotes = async (req, res, next) => {
     if (items && items.length > 0) {
       const productIds = items.map(i => i.productId).filter(Boolean);
       if (productIds.length > 0) {
-        const products = await Product.find({ _id: { $in: productIds } }).select('weight shippingCharge shippingZones delhiveryEnabled');
+        const products = await Product.find({ _id: { $in: productIds } }).select('vendorId weight shippingCharge shippingZones delhiveryEnabled');
         totalWeightKg = items.reduce((sum, item) => {
           const product = products.find(p => p._id.toString() === item.productId?.toString());
           const weightKg = product?.weight || 0.5; // default 0.5kg if not set
           return sum + (weightKg * (item.qty || item.quantity || 1));
         }, 0);
 
-        // Zone-based shipping: check if any product has shippingZones configured
+        // Group products by vendor — each vendor ships separately, so charges sum across vendors
+        const vendorGroups = {};
+        for (const item of items) {
+          const product = products.find(p => p._id.toString() === item.productId?.toString());
+          if (!product) continue;
+          const vid = product.vendorId?.toString() || 'default';
+          if (!vendorGroups[vid]) vendorGroups[vid] = [];
+          if (!vendorGroups[vid].includes(product)) vendorGroups[vid].push(product);
+        }
+
+        // Zone-based shipping: sum highest zone charge per vendor (each vendor ships separately)
         const anyZoneConfigured = products.some(p => p.shippingZones && p.shippingZones.length > 0);
         if (anyZoneConfigured && address.state) {
-          const { zone, charge } = getZoneShippingCharge(products, address.state);
-          if (charge !== null) {
-            zoneChargeOverride = charge;
-            zoneLabel = ZONE_LABELS[zone] || zone;
-            logger.info(`Zone shipping: ${zone} (${zoneLabel}) → ₹${charge} for state=${address.state}`);
+          let totalZoneCharge = 0;
+          let hasZoneCharge = false;
+          for (const vProducts of Object.values(vendorGroups)) {
+            const { zone, charge } = getZoneShippingCharge(vProducts, address.state);
+            if (charge !== null) {
+              totalZoneCharge += charge;
+              hasZoneCharge = true;
+              zoneLabel = ZONE_LABELS[zone] || zone;
+            }
+          }
+          if (hasZoneCharge) {
+            zoneChargeOverride = totalZoneCharge;
+            logger.info(`Zone shipping (per-vendor sum): ₹${zoneChargeOverride} for state=${address.state}`);
           }
         }
 
-        // If no zone override, fall back to single fixed shipping charge (highest across cart)
+        // If no zone override, sum highest fixed charge per vendor
         if (zoneChargeOverride === null) {
-          const maxFixed = items.reduce((max, item) => {
-            const product = products.find(p => p._id.toString() === item.productId?.toString());
-            return Math.max(max, product?.shippingCharge || 0);
-          }, 0);
-          fixedChargeOverride = maxFixed;
+          let totalFixed = 0;
+          for (const vProducts of Object.values(vendorGroups)) {
+            const maxVendorFixed = vProducts.reduce((max, p) => Math.max(max, p.shippingCharge || 0), 0);
+            totalFixed += maxVendorFixed;
+          }
+          fixedChargeOverride = totalFixed;
         }
 
         // If ANY product has delhiveryEnabled=false, block Delhivery for whole cart
