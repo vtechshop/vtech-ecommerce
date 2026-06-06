@@ -119,30 +119,34 @@ exports.getShippingQuotes = async (req, res, next) => {
           return sum + (weightKg * (item.qty || item.quantity || 1));
         }, 0);
 
-        // Zone-based shipping: sum zone charge for each product in cart
+        // Zone-based shipping: sum zone charge per item × qty
         const anyZoneConfigured = products.some(p => p.shippingZones && p.shippingZones.length > 0);
         if (anyZoneConfigured && address.state) {
           const zone = require('../utils/shippingZones').getZoneForState(address.state);
           let totalZoneCharge = 0;
           let hasZoneCharge = false;
-          for (const product of products) {
-            if (!product.shippingZones || product.shippingZones.length === 0) continue;
+          for (const item of items) {
+            const product = products.find(p => p._id.toString() === item.productId?.toString());
+            if (!product?.shippingZones?.length) continue;
             const entry = product.shippingZones.find(z => z.zone === zone);
             if (entry && entry.charge != null) {
-              totalZoneCharge += entry.charge;
+              totalZoneCharge += entry.charge * (item.qty || item.quantity || 1);
               hasZoneCharge = true;
               zoneLabel = ZONE_LABELS[zone] || zone;
             }
           }
           if (hasZoneCharge) {
             zoneChargeOverride = totalZoneCharge;
-            logger.info(`Zone shipping (per-product sum): ₹${zoneChargeOverride} for state=${address.state}`);
+            logger.info(`Zone shipping (per-item×qty): ₹${zoneChargeOverride} for state=${address.state}`);
           }
         }
 
-        // If no zone override, sum fixed charge per product
+        // If no zone override, sum fixed charge per item × qty
         if (zoneChargeOverride === null) {
-          fixedChargeOverride = products.reduce((sum, p) => sum + (p.shippingCharge || 0), 0);
+          fixedChargeOverride = items.reduce((sum, item) => {
+            const product = products.find(p => p._id.toString() === item.productId?.toString());
+            return sum + ((product?.shippingCharge || 0) * (item.qty || item.quantity || 1));
+          }, 0);
         }
 
         // If ANY product has delhiveryEnabled=false, block Delhivery for whole cart
