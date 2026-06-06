@@ -119,34 +119,48 @@ exports.getShippingQuotes = async (req, res, next) => {
           return sum + (weightKg * (item.qty || item.quantity || 1));
         }, 0);
 
-        // Zone-based shipping: sum zone charge per item × qty
+        // Sum shipping per item × qty — each product uses zone charge if configured, else flat shippingCharge
         const anyZoneConfigured = products.some(p => p.shippingZones && p.shippingZones.length > 0);
-        if (anyZoneConfigured && address.state) {
-          const zone = require('../utils/shippingZones').getZoneForState(address.state);
-          let totalZoneCharge = 0;
-          let hasZoneCharge = false;
-          for (const item of items) {
-            const product = products.find(p => p._id.toString() === item.productId?.toString());
-            if (!product?.shippingZones?.length) continue;
+        const zone = anyZoneConfigured && address.state
+          ? require('../utils/shippingZones').getZoneForState(address.state)
+          : null;
+
+        let totalOverride = 0;
+        let hasOverride = false;
+
+        for (const item of items) {
+          const product = products.find(p => p._id.toString() === item.productId?.toString());
+          if (!product) continue;
+          const qty = item.qty || item.quantity || 1;
+
+          // Try zone charge first (if product has shippingZones configured)
+          let charge = null;
+          if (zone && product.shippingZones?.length) {
             const entry = product.shippingZones.find(z => z.zone === zone);
             if (entry && entry.charge != null) {
-              totalZoneCharge += entry.charge * (item.qty || item.quantity || 1);
-              hasZoneCharge = true;
+              charge = entry.charge;
               zoneLabel = ZONE_LABELS[zone] || zone;
             }
           }
-          if (hasZoneCharge) {
-            zoneChargeOverride = totalZoneCharge;
-            logger.info(`Zone shipping (per-item×qty): ₹${zoneChargeOverride} for state=${address.state}`);
+
+          // Fallback to flat shippingCharge if no zone entry
+          if (charge === null && product.shippingCharge > 0) {
+            charge = product.shippingCharge;
+          }
+
+          if (charge !== null) {
+            totalOverride += charge * qty;
+            hasOverride = true;
           }
         }
 
-        // If no zone override, sum fixed charge per item × qty
-        if (zoneChargeOverride === null) {
-          fixedChargeOverride = items.reduce((sum, item) => {
-            const product = products.find(p => p._id.toString() === item.productId?.toString());
-            return sum + ((product?.shippingCharge || 0) * (item.qty || item.quantity || 1));
-          }, 0);
+        if (hasOverride) {
+          if (zone) {
+            zoneChargeOverride = totalOverride;
+            logger.info(`Shipping (zone/flat mix, per-item×qty): ₹${totalOverride} for state=${address.state}`);
+          } else {
+            fixedChargeOverride = totalOverride;
+          }
         }
 
         // If ANY product has delhiveryEnabled=false, block Delhivery for whole cart
