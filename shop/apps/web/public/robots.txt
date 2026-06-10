@@ -38,11 +38,10 @@ Disallow: /order-confirmation
 Disallow: /api/
 
 # Disallow query parameter variations that create duplicate content
-# Note: Allow rules above take precedence over these for specific paths
-Disallow: /*?page=
-Disallow: /*?sort=
+# Allow rules above take precedence for /product/ /category/ /products paths
+Disallow: /search?page=
+Disallow: /products?sort=
 Disallow: /*?ref=
-Disallow: /*?tab=
 
 # Crawl-delay for polite crawling
 Crawl-delay: 1
