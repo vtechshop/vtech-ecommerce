@@ -208,7 +208,7 @@ const WarrantyCard = ({ item, getWarrantyStatus }) => {
   // Generate WhatsApp support message
   const getWhatsAppLink = () => {
     const message = `Hi, I need warranty support for my order.\n\nOrder ID: ${item.orderId}\nProduct: ${item.productName}\n${item.warranty.warrantyCode ? `Serial/Code: ${item.warranty.warrantyCode}\n` : ''}Warranty Status: ${status.label}`;
-    return `https://wa.me/919876543210?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/919944556683?text=${encodeURIComponent(message)}`;
   };
 
   return (
@@ -352,7 +352,7 @@ const WarrantyCard = ({ item, getWarrantyStatus }) => {
                       Activate via WhatsApp
                     </a>
                     <a
-                      href="tel:+919876543210"
+                      href="tel:+919944556683"
                       className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                     >
                       <Phone className="w-4 h-4" />
@@ -372,7 +372,7 @@ const WarrantyCard = ({ item, getWarrantyStatus }) => {
                     WhatsApp Support
                   </a>
                   <a
-                    href="tel:+919876543210"
+                    href="tel:+919944556683"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
                   >
                     <Phone className="w-4 h-4" />

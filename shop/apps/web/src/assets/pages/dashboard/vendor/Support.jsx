@@ -591,7 +591,7 @@ const Support = () => {
               <span className="xs:hidden">Email</span>
             </a>
             <a
-              href="tel:+911234567890"
+              href="tel:+919944556683"
               className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
               <Phone className="w-4 h-4" />
