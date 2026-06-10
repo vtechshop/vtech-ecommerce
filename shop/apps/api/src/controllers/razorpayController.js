@@ -14,6 +14,8 @@ const logger = require('../config/logger');
 const notificationHelper = require('../services/notificationHelper');
 const notificationService = require('../services/notificationService');
 const { activateWarrantiesForOrder } = require('./adminController');
+const socketService = require('../services/socketService');
+const whatsappService = require('../services/whatsappService');
 
 /**
  * Send order confirmation + vendor/admin notifications after payment
@@ -106,9 +108,55 @@ async function sendPostPaymentNotifications(order) {
       order.vendorNotificationSentAt = new Date();
       await order.save();
       logger.info(`Vendor/admin notifications sent for order ${order.orderId}`);
+
+      // Real-time socket notifications to vendors
+      try {
+        for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
+          const vendor = await Vendor.findById(vendorIdStr).select('userId storeName').lean();
+          if (vendor?.userId) {
+            socketService.emitToUser(vendor.userId.toString(), 'new_order', {
+              orderId: order._id,
+              orderNumber: order.orderId,
+              itemCount: vendorItems.length,
+              total: order.totals?.total,
+            });
+          }
+        }
+      } catch (socketErr) {
+        logger.error('Failed to emit vendor socket notification:', socketErr);
+      }
     } catch (notifError) {
       logger.error('Failed to send vendor/admin notifications:', notifError);
     }
+  }
+
+  // WhatsApp order confirmation to customer (fire-and-forget)
+  try {
+    const customerPhone = order.shipTo?.phone;
+    const customerName = order.shipTo?.fullName || 'Customer';
+    if (customerPhone) {
+      whatsappService.sendOrderConfirmation(
+        customerPhone,
+        customerName,
+        order.orderId,
+        order.totals?.total
+      );
+    }
+  } catch (waErr) {
+    logger.error('Failed to send WhatsApp order confirmation:', waErr);
+  }
+
+  // Real-time socket notification to customer
+  try {
+    if (order.userId) {
+      socketService.emitToUser(order.userId.toString(), 'order_confirmed', {
+        orderId: order._id,
+        orderNumber: order.orderId,
+        total: order.totals?.total,
+      });
+    }
+  } catch (socketErr) {
+    logger.error('Failed to emit customer socket notification:', socketErr);
   }
 }
 

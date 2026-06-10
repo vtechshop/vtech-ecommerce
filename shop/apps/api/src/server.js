@@ -222,7 +222,11 @@ function setupCronJobs() {
     }
 
     const PORT = Number(process.env.PORT) || 3000;
-    const server = app.listen(PORT, () => logger.info(`API listening on port ${PORT}`));
+    const http = require('http');
+    const socketService = require('./services/socketService');
+    const server = http.createServer(app);
+    socketService.init(server);
+    server.listen(PORT, () => logger.info(`API listening on port ${PORT}`));
 
     // Set server-level request timeout (30 seconds) to kill hung requests
     server.timeout = 30000;

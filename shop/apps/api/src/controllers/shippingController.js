@@ -6,6 +6,8 @@ const logger = require('../config/logger');
 const shippingService = require('../services/shippingService');
 const delhiveryService = require('../services/delhiveryService');
 const trackingSyncService = require('../services/trackingSyncService');
+const socketService = require('../services/socketService');
+const whatsappService = require('../services/whatsappService');
 
 // ============================================
 // ADMIN: Get Available Shipping Carriers
@@ -437,6 +439,29 @@ exports.markAsShipped = async (req, res, next) => {
     await order.save();
 
     logger.info(`Order marked as shipped: ${orderId}`);
+
+    // Socket + WhatsApp notifications (fire-and-forget)
+    try {
+      const awb = order.shipment?.awb || 'N/A';
+      if (order.userId) {
+        socketService.emitToUser(order.userId.toString(), 'order_shipped', {
+          orderId: order._id,
+          orderNumber: order.orderId,
+          awb,
+        });
+      }
+      const customerPhone = order.shipTo?.phone;
+      if (customerPhone) {
+        whatsappService.sendOrderShipped(
+          customerPhone,
+          order.shipTo?.fullName || 'Customer',
+          order.orderId,
+          awb
+        );
+      }
+    } catch (notifErr) {
+      logger.error('Failed to send shipped notifications:', notifErr);
+    }
 
     res.json({
       success: true,

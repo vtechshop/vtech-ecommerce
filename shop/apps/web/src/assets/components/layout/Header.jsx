@@ -6,6 +6,7 @@ import { logout } from '@/store/slices/authSlice';
 import useAuth from '@/hooks/useAuth';
 import SearchAutocomplete from '@/components/common/SearchAutocomplete';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
+import NotificationBell from '@/components/common/NotificationBell';
 
 const Header = ({ onMobileMenuToggle }) => {
   const navigate = useNavigate();
@@ -181,6 +182,9 @@ const Header = ({ onMobileMenuToggle }) => {
                 </svg>
               </Link>
             )}
+
+            {/* Notification Bell */}
+            {isAuthenticated && <NotificationBell />}
 
             {/* Cart */}
             <Link
