@@ -27,7 +27,7 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
     if (q) {
       searchWords = q.trim().split(/\s+/)
         .map(w => w.replace(/^[+\-"]+/, '')) // sanitize operators
-        .filter(w => w.length >= 2);
+        .filter(w => w.length >= 2 || /^\d+$/.test(w)); // keep numbers like "3", "6", "9"
 
       if (searchWords.length > 1) {
         // Require ALL words — "+chapati +pressing +machine" = AND with stemming
@@ -84,6 +84,19 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
         Product.find(query, projection).populate('vendorId', 'storeName slug').sort(sortOption).skip(skip).limit(cappedLimit).lean(),
         Product.countDocuments(query),
       ]);
+    }
+
+    // Re-rank by exact word match count so "3MM" ranks above "9MM" when searching "3mm"
+    if (q && searchWords.length > 0 && (sort === 'relevance' || sort === '-createdAt')) {
+      const lcWords = searchWords.map(w => w.toLowerCase());
+      items.sort((a, b) => {
+        const aTitle = (a.title || '').toLowerCase();
+        const bTitle = (b.title || '').toLowerCase();
+        const aHits = lcWords.filter(w => aTitle.includes(w)).length;
+        const bHits = lcWords.filter(w => bTitle.includes(w)).length;
+        if (bHits !== aHits) return bHits - aHits;
+        return (b.score || 0) - (a.score || 0);
+      });
     }
 
     res.json({ success: true, data: items, meta: { total, page: Number(page), limit: cappedLimit } });
