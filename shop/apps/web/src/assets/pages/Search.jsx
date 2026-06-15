@@ -15,6 +15,43 @@ import { ProductGridSkeleton } from '@/components/product/ProductCardSkeleton';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
 import ScrollReveal from '@/components/common/ScrollReveal';
 
+// Emoji fallback for category cards when no image is uploaded
+function getCategoryEmoji(slug = '', name = '') {
+  const s = (slug + ' ' + name).toLowerCase();
+  if (s.includes('chapathi') || s.includes('roti') || s.includes('pressing')) return '🫓';
+  if (s.includes('mixer') || s.includes('grinder') || s.includes('blender')) return '🌀';
+  if (s.includes('blade') || s.includes('cutter') || s.includes('cutting') || s.includes('slicer')) return '🔪';
+  if (s.includes('grater') || s.includes('grating')) return '🧀';
+  if (s.includes('sugarcane') || s.includes('juice')) return '🍹';
+  if (s.includes('coconut')) return '🥥';
+  if (s.includes('mango')) return '🥭';
+  if (s.includes('vegetable') || s.includes('veg')) return '🥦';
+  if (s.includes('machine') || s.includes('machinery')) return '⚙️';
+  if (s.includes('cookware') || s.includes('pan') || s.includes('tawa')) return '🍳';
+  if (s.includes('pressure') || s.includes('cooker')) return '🫕';
+  if (s.includes('wet') || s.includes('grind')) return '🏺';
+  if (s.includes('wooden') || s.includes('wood')) return '🪵';
+  return '🍽️';
+}
+
+// Gradient background for category cards when no image
+function getCategoryGradient(slug = '') {
+  const colors = [
+    'linear-gradient(135deg, #fef3c7, #fde68a)',
+    'linear-gradient(135deg, #dbeafe, #bfdbfe)',
+    'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+    'linear-gradient(135deg, #fce7f3, #fbcfe8)',
+    'linear-gradient(135deg, #ede9fe, #ddd6fe)',
+    'linear-gradient(135deg, #ffedd5, #fed7aa)',
+    'linear-gradient(135deg, #cffafe, #a5f3fc)',
+    'linear-gradient(135deg, #f0fdf4, #bbf7d0)',
+  ];
+  // Pick a consistent color per slug
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) hash = slug.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
 const Search = () => {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -223,13 +260,13 @@ const Search = () => {
                 className="group block"
               >
                 <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 hover:-translate-y-1">
-                  <div className="aspect-square overflow-hidden bg-gray-50 flex items-center justify-center p-4">
+                  <div className="aspect-square overflow-hidden flex items-center justify-center p-4" style={{ background: getCategoryGradient(cat.slug) }}>
                     {cat.image ? (
                       <img src={cat.image} alt={cat.name} className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" loading="lazy" />
                     ) : (
-                      <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                      </svg>
+                      <span className="text-5xl select-none group-hover:scale-110 transition-transform duration-300">
+                        {getCategoryEmoji(cat.slug, cat.name)}
+                      </span>
                     )}
                   </div>
                   <div className="p-3 text-center">
