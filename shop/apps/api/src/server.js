@@ -180,6 +180,10 @@ function setupCronJobs() {
         await typoCategory.deleteOne();
         logger.info('✅ Deleted duplicate "Kitchen Machinary" category (typo)');
       }
+      // Always clear categories Redis cache so the public page reflects current DB state
+      const cache = require('./utils/cache');
+      await cache.delPattern('cache:/api/catalog/categories*');
+      logger.info('✅ Cleared categories Redis cache');
     } catch (cleanupErr) {
       logger.error('Category cleanup failed:', cleanupErr.message);
     }
