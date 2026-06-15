@@ -121,13 +121,17 @@ router.get('/products/:slug', cacheMiddleware(600), async (req, res, next) => {
 router.get('/autocomplete', async (req, res, next) => {
   try {
     const { q } = req.query;
-    if (!q || q.trim().length < 2) {
+    if (!q || q.trim().length < 1) {
       return res.json({ success: true, data: { suggestions: [], products: [], categories: [] } });
     }
 
     const searchTerm = q.trim();
     const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(escapedTerm, 'i');
+    // Allow optional whitespace between digit-letter transitions so "9mm" matches "9 MM"
+    const flexPattern = escapedTerm
+      .replace(/(\d)([a-zA-Z])/g, '$1\\s*$2')
+      .replace(/([a-zA-Z])(\d)/g, '$1\\s*$2');
+    const regex = new RegExp(flexPattern, 'i');
 
     // Run all queries in parallel
     const [products, categories, textSuggestions] = await Promise.all([

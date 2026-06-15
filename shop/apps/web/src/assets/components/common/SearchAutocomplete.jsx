@@ -194,11 +194,11 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
   const { data: autocomplete, isLoading } = useQuery({
     queryKey: ['autocomplete', debouncedQuery],
     queryFn: async () => {
-      if (!debouncedQuery.trim() || debouncedQuery.length < 2) return null;
+      if (!debouncedQuery.trim() || debouncedQuery.length < 1) return null;
       const response = await api.get(`/catalog/autocomplete?q=${encodeURIComponent(debouncedQuery)}`);
       return response.data.data;
     },
-    enabled: debouncedQuery.length >= 2,
+    enabled: debouncedQuery.length >= 1,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
@@ -230,7 +230,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
   // Build flat list of all selectable items for keyboard navigation
   const allItems = useMemo(() => {
-    if (debouncedQuery.length < 2) return [];
+    if (debouncedQuery.length < 1) return [];
     const items = [];
     // Text suggestions
     (autocomplete?.suggestions || []).forEach(s => items.push({ type: 'suggestion', text: s }));
@@ -254,7 +254,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
   // Handle keyboard navigation
   const handleKeyDown = (e) => {
-    const hasAutocomplete = debouncedQuery.length >= 2 && allItems.length > 0;
+    const hasAutocomplete = debouncedQuery.length >= 1 && allItems.length > 0;
     const itemCount = hasAutocomplete ? allItems.length : (recentSearches.length + (trending?.length || 0));
 
     switch (e.key) {
@@ -365,7 +365,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
   };
 
   const shouldShowDropdown = useMemo(() =>
-    isOpen && (query.length >= 2 || recentSearches.length > 0 || trending?.length > 0),
+    isOpen && (query.length >= 1 || recentSearches.length > 0 || trending?.length > 0),
     [isOpen, query.length, recentSearches.length, trending?.length]
   );
 
@@ -534,17 +534,17 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
 
       {/* Dropdown - Always light background for visibility */}
       {shouldShowDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 max-h-[480px] overflow-y-auto z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 max-h-[480px] overflow-y-auto z-50 min-w-[280px]">
 
           {/* Loading */}
-          {isLoading && debouncedQuery.length >= 2 && (
+          {isLoading && debouncedQuery.length >= 1 && (
             <div className="p-3 text-center">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600 mx-auto"></div>
             </div>
           )}
 
           {/* === AUTOCOMPLETE RESULTS (when typing) === */}
-          {debouncedQuery.length >= 2 && autocomplete && (
+          {debouncedQuery.length >= 1 && autocomplete && (
             <>
               {/* Text Suggestions - Amazon style keyword hints */}
               {autocomplete.suggestions?.length > 0 && (
@@ -655,7 +655,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
               )}
 
               {/* No Results */}
-              {!isLoading && autocomplete.products?.length === 0 && autocomplete.suggestions?.length === 0 && (
+              {!isLoading && autocomplete.products?.length === 0 && autocomplete.suggestions?.length === 0 && autocomplete.categories?.length === 0 && (
                 <div className="p-6 text-center">
                   <p className="text-gray-600 text-sm">No results for "{debouncedQuery}"</p>
                   <p className="text-xs text-gray-500 mt-1">Try different keywords</p>
@@ -665,7 +665,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
           )}
 
           {/* === IDLE STATE (before typing) === */}
-          {debouncedQuery.length < 2 && (
+          {debouncedQuery.length < 1 && (
             <>
               {/* Recent Searches */}
               {recentSearches.length > 0 && (
