@@ -133,35 +133,47 @@ router.get('/autocomplete', async (req, res, next) => {
       .replace(/([a-zA-Z])(\d)/g, '$1\\s*$2');
     const regex = new RegExp(flexPattern, 'i');
 
-    // Run all queries in parallel
-    const [products, categories, textSuggestions] = await Promise.all([
-      // Top 5 matching products with images and prices
+    // Run regex queries + category in parallel
+    const [regexProducts, categories] = await Promise.all([
       Product.find({ published: true, title: regex })
         .sort({ sold: -1 })
-        .limit(5)
+        .limit(8)
         .select('title slug price images')
         .lean(),
 
-      // Matching categories
       Category.find({ isActive: true, name: regex })
         .limit(4)
         .select('name slug image')
         .lean(),
-
-      // Text-based keyword suggestions from product titles
-      Product.aggregate([
-        { $match: { published: true, title: regex } },
-        { $group: { _id: null, titles: { $addToSet: '$title' } } },
-        { $project: { _id: 0, titles: { $slice: ['$titles', 8] } } },
-      ]),
     ]);
 
-    // Build keyword suggestions from product titles
-    const titles = textSuggestions[0]?.titles || [];
-    const suggestions = titles
-      .map(t => t.toLowerCase())
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .slice(0, 5);
+    // If regex found fewer than 3 products, supplement with $text search
+    let products = regexProducts;
+    if (regexProducts.length < 3 && searchTerm.length >= 2) {
+      try {
+        const textProducts = await Product.find(
+          { published: true, $text: { $search: searchTerm } },
+          { score: { $meta: 'textScore' } }
+        )
+          .sort({ score: { $meta: 'textScore' } })
+          .limit(8)
+          .select('title slug price images')
+          .lean();
+
+        // Merge: regex first, then text results not already included
+        const existingIds = new Set(regexProducts.map(p => p._id.toString()));
+        const extra = textProducts.filter(p => !existingIds.has(p._id.toString()));
+        products = [...regexProducts, ...extra].slice(0, 5);
+      } catch {
+        // $text search failed (no text index or error) — use regex results only
+        products = regexProducts.slice(0, 5);
+      }
+    } else {
+      products = regexProducts.slice(0, 5);
+    }
+
+    // Build keyword suggestions from matched titles
+    const suggestions = [...new Set(products.map(p => p.title.toLowerCase()))].slice(0, 5);
 
     res.json({
       success: true,

@@ -191,7 +191,7 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
   }, []);
 
   // Fetch autocomplete from dedicated endpoint
-  const { data: autocomplete, isLoading } = useQuery({
+  const { data: autocomplete, isLoading, isError } = useQuery({
     queryKey: ['autocomplete', debouncedQuery],
     queryFn: async () => {
       if (!debouncedQuery.trim() || debouncedQuery.length < 1) return null;
@@ -199,8 +199,9 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
       return response.data.data;
     },
     enabled: debouncedQuery.length >= 1,
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   // Voice autocomplete - live suggestions while speaking
@@ -543,8 +544,15 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
             </div>
           )}
 
+          {/* API error fallback */}
+          {debouncedQuery.length >= 1 && isError && !isLoading && (
+            <div className="p-4 text-center text-sm text-gray-500">
+              Search unavailable. Press Enter to search.
+            </div>
+          )}
+
           {/* === AUTOCOMPLETE RESULTS (when typing) === */}
-          {debouncedQuery.length >= 1 && autocomplete && (
+          {debouncedQuery.length >= 1 && autocomplete && !isError && (
             <>
               {/* Text Suggestions - Amazon style keyword hints */}
               {autocomplete.suggestions?.length > 0 && (
