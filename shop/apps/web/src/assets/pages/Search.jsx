@@ -84,6 +84,8 @@ const Search = () => {
       return response.data.data;
     },
     enabled: view === 'categories',
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   // ✅ Adapted for mock API: /catalog/products? filters
