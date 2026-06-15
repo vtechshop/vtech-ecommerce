@@ -17,6 +17,17 @@ router.use(authorize(['admin']));
 // Dashboard
 router.get('/dashboard/stats', admin.getDashboardStats);
 
+// Cache management
+router.post('/cache/clear-categories', async (req, res) => {
+  try {
+    const cache = require('../utils/cache');
+    await cache.delPattern('cache:/api/catalog/categories*');
+    res.json({ success: true, message: 'Categories cache cleared' });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Security Monitoring Dashboard (Amazon-Level)
 router.get('/security/stats', (req, res) => {
   try {
@@ -66,9 +77,9 @@ router.put('/products/:id/commission-rules', validateObjectId('id'), admin.updat
 
 // Categories - SECURITY: Added ObjectId validation
 router.get('/categories', admin.getCategories);
-router.post('/categories', admin.createCategory);
-router.put('/categories/:id', validateObjectId('id'), admin.updateCategory);
-router.delete('/categories/:id', validateObjectId('id'), admin.deleteCategory);
+router.post('/categories', invalidateCache('cache:/api/catalog/categories*'), admin.createCategory);
+router.put('/categories/:id', validateObjectId('id'), invalidateCache('cache:/api/catalog/categories*'), admin.updateCategory);
+router.delete('/categories/:id', validateObjectId('id'), invalidateCache('cache:/api/catalog/categories*'), admin.deleteCategory);
 
 // Orders - SECURITY: Added ObjectId validation
 router.get('/orders/counts', admin.getOrderCounts);
