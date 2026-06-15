@@ -1,7 +1,7 @@
 // FILE: apps/web/src/components/common/SearchAutocomplete.jsx
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, TrendingUp, Clock, X, ChevronRight, Mic } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
@@ -20,6 +20,7 @@ function useDebounce(value, delay) {
 
 const SearchAutocomplete = React.memo(({ className = '' }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 250);
   const [isOpen, setIsOpen] = useState(false);
@@ -178,6 +179,20 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
     return () => window.removeEventListener('scroll', dismiss);
   }, [isListening, stopVoiceSearch]);
 
+  // Sync search box with URL query when on the products/search results page
+  // This makes the search box show the current query (like Amazon/Flipkart)
+  useEffect(() => {
+    if (location.pathname === '/products') {
+      const params = new URLSearchParams(location.search);
+      const q = params.get('q') || '';
+      setQuery(q);
+      setIsOpen(false);
+    } else {
+      setQuery('');
+      setIsOpen(false);
+    }
+  }, [location.pathname, location.search]);
+
   // Load recent searches from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('recentSearches');
@@ -299,7 +314,6 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
     if (!searchQuery.trim()) return;
     saveRecentSearch(searchQuery);
     navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
-    setQuery('');
     setIsOpen(false);
     inputRef.current?.blur();
   };
@@ -307,7 +321,6 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
   const handleSelectProduct = (product) => {
     saveRecentSearch(product.title);
     navigate(`/product/${product.slug}`);
-    setQuery('');
     setIsOpen(false);
     inputRef.current?.blur();
   };
