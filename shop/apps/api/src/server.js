@@ -163,6 +163,27 @@ function setupCronJobs() {
     // Set up automated cron jobs for platform features
     setupCronJobs();
 
+    // One-time cleanup: delete "Kitchen Machinary" (typo duplicate of "Kitchen Machinery")
+    try {
+      const Category = require('./models/Category');
+      const Product = require('./models/Product');
+      const typoCategory = await Category.findOne({ name: 'Kitchen Machinary' });
+      if (typoCategory) {
+        const correctCategory = await Category.findOne({ name: 'Kitchen Machinery' });
+        if (correctCategory) {
+          // Reassign any products from typo category to correct category
+          await Product.updateMany(
+            { categoryIds: typoCategory._id },
+            { $addToSet: { categoryIds: correctCategory._id }, $pull: { categoryIds: typoCategory._id } }
+          );
+        }
+        await typoCategory.deleteOne();
+        logger.info('✅ Deleted duplicate "Kitchen Machinary" category (typo)');
+      }
+    } catch (cleanupErr) {
+      logger.error('Category cleanup failed:', cleanupErr.message);
+    }
+
     // One-time admin password reset/create if ADMIN_EMAIL and ADMIN_PASSWORD are set
     if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
       try {
