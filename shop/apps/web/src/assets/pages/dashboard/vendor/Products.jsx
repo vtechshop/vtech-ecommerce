@@ -1334,11 +1334,11 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
               <p className="text-xs text-gray-500 mb-3">Set fixed delivery charges per India zone. At checkout, the highest charge across all cart products is used. Leave blank to use weight-based pricing.</p>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {[
-                  { key: 'tamilnadu', label: 'Tamil Nadu', states: 'Tamil Nadu only' },
-                  { key: 'south', label: 'South India', states: 'Kerala, Karnataka, AP, Telangana' },
-                  { key: 'north', label: 'North India', states: 'Delhi, UP, Punjab, Haryana, Rajasthan' },
-                  { key: 'east',  label: 'East India',  states: 'WB, Bihar, Odisha, Assam, NE States' },
-                  { key: 'west',  label: 'West India',  states: 'Maharashtra, Gujarat, Goa, MP' },
+                  { key: 'tamilnadu', label: 'Tamil Nadu',   states: 'Tamil Nadu only' },
+                  { key: 'south',     label: 'South India',  states: 'Karnataka, Kerala, MH, AP, TG, Goa, Pondi, DNH&DD' },
+                  { key: 'north',     label: 'North India',  states: 'DL, UP, PB, HR, RJ, GJ, MP, CG, WB, Bihar, JH, OD, CH' },
+                  { key: 'west',      label: 'West India',   states: 'J&K, HP, Uttarakhand, Ladakh' },
+                  { key: 'east',      label: 'East India',   states: 'Assam, Sikkim, Meghalaya, Arunachal, NL, MN, TR, MZ' },
                 ].map(({ key, label, states }) => (
                   <div key={key} className="flex flex-col border border-indigo-200 rounded-lg p-3 bg-white h-full">
                     <p className="text-xs font-semibold text-gray-700 mb-1">{label}</p>

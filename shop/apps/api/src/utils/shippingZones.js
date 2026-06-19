@@ -19,19 +19,24 @@ const STATE_TO_ZONE = {
   'tamilnadu':                'tamilnadu',
   'tn':                       'tamilnadu',
 
-  // South (Kerala, Karnataka, AP, Telangana, Puducherry)
+  // South India: Karnataka, Kerala, Puducherry, Maharashtra, AP, Telangana, Goa, DNH&DD
   'kerala':                   'south',
   'karnataka':                'south',
   'andhra pradesh':           'south',
   'telangana':                'south',
   'puducherry':               'south',
   'pondicherry':              'south',
-  'andaman and nicobar':      'south',
-  'andaman & nicobar':        'south',
-  'andaman and nicobar islands': 'south',
-  'lakshadweep':              'south',
+  'maharashtra':              'south',
+  'goa':                      'south',
+  'dadra and nagar haveli':           'south',
+  'dadra & nagar haveli':             'south',
+  'daman and diu':                    'south',
+  'daman & diu':                      'south',
+  'dadra and nagar haveli and daman and diu': 'south',
+  'dadra & nagar haveli and daman & diu':     'south',
 
-  // North
+  // North India: Bihar, Jharkhand, WB, Chandigarh, Punjab, Haryana, Delhi, Rajasthan,
+  //              Gujarat, UP, MP, Chhattisgarh, Odisha
   'delhi':                    'north',
   'new delhi':                'north',
   'uttar pradesh':            'north',
@@ -39,23 +44,29 @@ const STATE_TO_ZONE = {
   'punjab':                   'north',
   'haryana':                  'north',
   'rajasthan':                'north',
-  'himachal pradesh':         'north',
-  'hp':                       'north',
-  'jammu and kashmir':        'north',
-  'jammu & kashmir':          'north',
-  'j&k':                      'north',
-  'ladakh':                   'north',
-  'uttarakhand':              'north',
-  'uttaranchal':              'north',
   'chandigarh':               'north',
+  'gujarat':                  'north',
+  'madhya pradesh':           'north',
+  'mp':                       'north',
+  'chhattisgarh':             'north',
+  'west bengal':              'north',
+  'wb':                       'north',
+  'bihar':                    'north',
+  'jharkhand':                'north',
+  'odisha':                   'north',
+  'orissa':                   'north',
 
-  // East
-  'west bengal':              'east',
-  'wb':                       'east',
-  'bihar':                    'east',
-  'jharkhand':                'east',
-  'odisha':                   'east',
-  'orissa':                   'east',
+  // West India: J&K, Uttarakhand, Himachal Pradesh, Ladakh
+  'jammu and kashmir':        'west',
+  'jammu & kashmir':          'west',
+  'j&k':                      'west',
+  'ladakh':                   'west',
+  'uttarakhand':              'west',
+  'uttaranchal':              'west',
+  'himachal pradesh':         'west',
+  'hp':                       'west',
+
+  // East India: Sikkim, Meghalaya, Assam, Arunachal Pradesh, Nagaland, Manipur, Tripura, Mizoram
   'assam':                    'east',
   'meghalaya':                'east',
   'manipur':                  'east',
@@ -65,18 +76,11 @@ const STATE_TO_ZONE = {
   'arunachal pradesh':        'east',
   'sikkim':                   'east',
 
-  // West
-  'maharashtra':              'west',
-  'gujarat':                  'west',
-  'goa':                      'west',
-  'madhya pradesh':           'west',
-  'mp':                       'west',
-  'chhattisgarh':             'west',
-  'daman and diu':            'west',
-  'daman & diu':              'west',
-  'dadra and nagar haveli':   'west',
-  'dadra & nagar haveli':     'west',
-  'dadra and nagar haveli and daman and diu': 'west',
+  // Island territories
+  'andaman and nicobar':          'east',
+  'andaman & nicobar':            'east',
+  'andaman and nicobar islands':  'east',
+  'lakshadweep':                  'south',
 };
 
 /**
