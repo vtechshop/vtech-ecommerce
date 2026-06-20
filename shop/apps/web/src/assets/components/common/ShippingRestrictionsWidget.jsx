@@ -1,31 +1,138 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import { Trash2, Plus, ChevronDown, ChevronUp, Edit2, X, Loader2 } from 'lucide-react';
+import { STATES, DISTRICTS } from './indiaGeoData';
 
-const INDIAN_STATES = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
-  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
-  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
-  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-  'Andaman and Nicobar Islands', 'Chandigarh',
-  'Dadra and Nagar Haveli and Daman and Diu', 'Delhi',
-  'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
-];
+// ─── Searchable dropdown (portal-based — works inside overflow:hidden/auto modals) ───
+function SearchableDropdown({ options, value, onChange, placeholder, disabled }) {
+  const [open, setOpen]     = useState(false);
+  const [query, setQuery]   = useState('');
+  const [rect, setRect]     = useState(null);
+  const inputRef            = useRef(null);
+  const listRef             = useRef(null);
 
+  const filtered = options.filter(o => o.toLowerCase().includes(query.toLowerCase()));
+
+  const openDropdown = () => {
+    if (disabled) return;
+    const r = inputRef.current?.getBoundingClientRect();
+    if (r) setRect(r);
+    setQuery('');
+    setOpen(true);
+  };
+
+  const pick = (opt) => {
+    onChange(opt);
+    setOpen(false);
+    setQuery('');
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e) => {
+      if (!inputRef.current?.contains(e.target) && !listRef.current?.contains(e.target)) {
+        setOpen(false);
+        setQuery('');
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [open]);
+
+  // Recompute position on scroll/resize while open
+  useEffect(() => {
+    if (!open) return;
+    const update = () => {
+      const r = inputRef.current?.getBoundingClientRect();
+      if (r) setRect(r);
+    };
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open]);
+
+  const dropStyle = rect ? {
+    position: 'fixed',
+    top:   rect.bottom + 4,
+    left:  rect.left,
+    width: rect.width,
+    zIndex: 99999,
+  } : {};
+
+  return (
+    <div className="flex-1 min-w-24 relative">
+      <div
+        ref={inputRef}
+        onClick={openDropdown}
+        className={`flex items-center justify-between px-3 py-1.5 text-xs border rounded-lg cursor-pointer bg-white select-none ${
+          disabled ? 'opacity-50 cursor-not-allowed' : 'border-gray-300 hover:border-red-400'
+        } ${open ? 'border-red-400 ring-1 ring-red-300' : ''}`}
+      >
+        <span className={value ? 'text-gray-800' : 'text-gray-400'}>
+          {value || placeholder}
+        </span>
+        <ChevronDown className="w-3 h-3 text-gray-400 shrink-0 ml-1" />
+      </div>
+
+      {open && rect && createPortal(
+        <div ref={listRef} style={dropStyle}
+          className="bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden">
+          {/* Search inside dropdown */}
+          <div className="p-1.5 border-b border-gray-100">
+            <input
+              autoFocus
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search..."
+              onClick={e => e.stopPropagation()}
+              className="w-full px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:border-red-400"
+            />
+          </div>
+          <div className="max-h-44 overflow-y-auto">
+            {value && (
+              <button type="button" onClick={() => pick('')}
+                className="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-50 italic">
+                — Clear selection
+              </button>
+            )}
+            {filtered.length === 0
+              ? <p className="px-3 py-2 text-xs text-gray-400">No results</p>
+              : filtered.map(o => (
+                <button key={o} type="button" onClick={() => pick(o)}
+                  className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                    value === o
+                      ? 'bg-red-50 text-red-700 font-semibold'
+                      : 'text-gray-700 hover:bg-red-50'
+                  }`}>
+                  {o}
+                </button>
+              ))
+            }
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+// ─── Main widget ─────────────────────────────────────────────────────────────
 const TABS = [
   { key: 'state',    label: 'State' },
   { key: 'district', label: 'District' },
   { key: 'pincode',  label: 'Pincode' },
 ];
-
 const EMPTY = { stateName: '', districtName: '', pincode: '' };
-const INPUT_CLS = 'flex-1 min-w-24 px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-400 focus:outline-none bg-white';
 
 export default function ShippingRestrictionsWidget() {
-  const qc          = useQueryClient();
-  const contentRef  = useRef(null);
+  const qc         = useQueryClient();
+  const contentRef = useRef(null);
+
   const [open, setOpen]           = useState(false);
   const [tab, setTab]             = useState('state');
   const [form, setForm]           = useState(EMPTY);
@@ -33,7 +140,7 @@ export default function ShippingRestrictionsWidget() {
   const [err, setErr]             = useState('');
   const [pinLookup, setPinLookup] = useState(false);
 
-  // Scroll expanded content into view within the modal
+  // Scroll expanded panel into view inside the modal
   useEffect(() => {
     if (open && contentRef.current) {
       setTimeout(() => contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
@@ -73,35 +180,33 @@ export default function ShippingRestrictionsWidget() {
     qc.invalidateQueries({ queryKey: ['shipping-restrictions'] });
   };
 
-  const addMut = useMutation({
+  const addMut  = useMutation({
     mutationFn: (body) => api.post(BASE, body),
     onSuccess: () => { setForm(EMPTY); setErr(''); invalidate(); },
     onError:   (e)  => setErr(e.response?.data?.error || 'Failed to add'),
   });
-
   const editMut = useMutation({
     mutationFn: ({ id, body }) => api.put(`${BASE}/${id}`, body),
     onSuccess: () => { setForm(EMPTY); setEditId(null); setErr(''); invalidate(); },
     onError:   (e) => setErr(e.response?.data?.error || 'Failed to update'),
   });
-
-  const delMut = useMutation({
+  const delMut  = useMutation({
     mutationFn: (id) => api.delete(`${BASE}/${id}`),
     onSuccess: () => invalidate(),
   });
-
   const toggleMut = useMutation({
     mutationFn: ({ id, isActive }) => api.put(`${BASE}/${id}`, { isActive }),
     onSuccess: () => invalidate(),
   });
 
   const handleAdd = () => {
-    if (!form.stateName.trim()) { setErr('State name required'); return; }
-    if (tab === 'district' && !form.districtName.trim()) { setErr('District name required'); return; }
-    if (tab === 'pincode'  && !form.pincode.trim())      { setErr('Pincode required'); return; }
+    if (!form.stateName.trim()) { setErr('Select a state'); return; }
+    if (tab === 'district' && !form.districtName.trim()) { setErr('Select a district'); return; }
+    if (tab === 'pincode'  && !form.pincode.trim())      { setErr('Enter pincode'); return; }
     setErr('');
-    if (editId) editMut.mutate({ id: editId, body: { type: tab, ...form } });
-    else        addMut.mutate({ type: tab, ...form });
+    const body = { type: tab, ...form };
+    if (editId) editMut.mutate({ id: editId, body });
+    else        addMut.mutate(body);
   };
 
   const startEdit = (item) => {
@@ -113,17 +218,13 @@ export default function ShippingRestrictionsWidget() {
   const cancelEdit = () => { setEditId(null); setForm(EMPTY); setErr(''); };
   const switchTab  = (key) => { setTab(key); setForm(EMPTY); setEditId(null); setErr(''); };
 
-  const items     = data || [];
-  const isPending = addMut.isPending || editMut.isPending;
+  const items      = data || [];
+  const isPending  = addMut.isPending || editMut.isPending;
+  const districtOptions = (form.stateName && DISTRICTS[form.stateName]) || [];
 
   return (
     <div className="md:col-span-2 border border-red-200 bg-red-50 rounded-lg mt-1">
-      {/* Datalist for state autocomplete (rendered outside overflow container) */}
-      <datalist id="srw-states">
-        {INDIAN_STATES.map(s => <option key={s} value={s} />)}
-      </datalist>
-
-      {/* Header toggle */}
+      {/* Toggle header */}
       <button
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(o => !o); }}
@@ -134,7 +235,7 @@ export default function ShippingRestrictionsWidget() {
           <p className="text-xs text-red-600 mt-0.5">Block delivery to specific states, districts, or pincodes</p>
         </div>
         {open
-          ? <ChevronUp  className="w-4 h-4 text-red-500 shrink-0" />
+          ? <ChevronUp   className="w-4 h-4 text-red-500 shrink-0" />
           : <ChevronDown className="w-4 h-4 text-red-500 shrink-0" />
         }
       </button>
@@ -153,9 +254,9 @@ export default function ShippingRestrictionsWidget() {
             ))}
           </div>
 
-          {/* Add / Edit form */}
-          <div className="flex flex-wrap gap-2 mb-2">
-            {/* Pincode first (so lookup happens before state is shown) */}
+          {/* Form row */}
+          <div className="flex flex-wrap gap-2 mb-2 items-stretch">
+            {/* Pincode (first, triggers auto-lookup) */}
             {tab === 'pincode' && (
               <div className="relative">
                 <input
@@ -168,25 +269,26 @@ export default function ShippingRestrictionsWidget() {
               </div>
             )}
 
-            {/* State — input+datalist so it works inside overflow:auto modals */}
-            <input
-              list="srw-states"
+            {/* State dropdown */}
+            <SearchableDropdown
+              options={STATES}
               value={form.stateName}
-              onChange={e => setForm(p => ({ ...p, stateName: e.target.value }))}
-              placeholder="State *"
-              className={INPUT_CLS}
+              onChange={v => setForm(p => ({ ...p, stateName: v, districtName: '' }))}
+              placeholder="Select state *"
             />
 
-            {/* District */}
+            {/* District dropdown (only shown if tab needs it) */}
             {(tab === 'district' || tab === 'pincode') && (
-              <input
+              <SearchableDropdown
+                options={districtOptions}
                 value={form.districtName}
-                onChange={e => setForm(p => ({ ...p, districtName: e.target.value }))}
-                placeholder={tab === 'district' ? 'District *' : 'District (auto-filled)'}
-                className={INPUT_CLS}
+                onChange={v => setForm(p => ({ ...p, districtName: v }))}
+                placeholder={districtOptions.length ? 'Select district *' : 'Select state first'}
+                disabled={!form.stateName}
               />
             )}
 
+            {/* Action buttons */}
             <div className="flex gap-1 shrink-0">
               <button type="button" onClick={handleAdd} disabled={isPending}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-60 whitespace-nowrap">
@@ -203,7 +305,7 @@ export default function ShippingRestrictionsWidget() {
 
           {err && <p className="text-xs text-red-600 mb-2">{err}</p>}
 
-          {/* List */}
+          {/* Restrictions list */}
           {items.length === 0 ? (
             <p className="text-xs text-gray-400 text-center py-3">No restrictions added</p>
           ) : (
