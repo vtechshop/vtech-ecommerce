@@ -31,6 +31,7 @@ const Checkout = () => {
 
   const [step, setStep] = useState(1); // 1: Address, 2: Shipping, 3: Payment
   const [showRestrictedModal, setShowRestrictedModal] = useState(false);
+  const [restrictionMessage, setRestrictionMessage]   = useState('');
 
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [shippingQuotes, setShippingQuotes] = useState([]);
@@ -182,9 +183,18 @@ const Checkout = () => {
       }
     }
 
-    if (isRestrictedArea(newAddress.state, newAddress.zipCode)) {
-      setShowRestrictedModal(true);
-      return;
+    // Check restriction via API (covers DB rules + hardcoded A&N / Lakshadweep)
+    try {
+      const { data } = await api.post('/catalog/shipping/check-restriction', {
+        state: newAddress.state, district: newAddress.district, pincode: newAddress.zipCode,
+      });
+      if (data.restricted) { setRestrictionMessage(data.message); setShowRestrictedModal(true); return; }
+    } catch {
+      // Fallback to hardcoded check if API fails
+      if (isRestrictedArea(newAddress.state, newAddress.zipCode)) {
+        setRestrictionMessage('Delivery is currently unavailable for your location. Please contact our office.');
+        setShowRestrictedModal(true); return;
+      }
     }
     setSelectedAddress(newAddress);
     await fetchShippingQuotes(newAddress);
@@ -192,9 +202,16 @@ const Checkout = () => {
   };
 
   const handleSelectExistingAddress = async (address) => {
-    if (isRestrictedArea(address.state, address.zipCode)) {
-      setShowRestrictedModal(true);
-      return;
+    try {
+      const { data } = await api.post('/catalog/shipping/check-restriction', {
+        state: address.state, district: address.district, pincode: address.zipCode,
+      });
+      if (data.restricted) { setRestrictionMessage(data.message); setShowRestrictedModal(true); return; }
+    } catch {
+      if (isRestrictedArea(address.state, address.zipCode)) {
+        setRestrictionMessage('Delivery is currently unavailable for your location. Please contact our office.');
+        setShowRestrictedModal(true); return;
+      }
     }
     setSelectedAddress(address);
     await fetchShippingQuotes(address);
@@ -372,8 +389,7 @@ const Checkout = () => {
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Delivery Not Available</h2>
             <p className="text-gray-600 text-sm mb-6">
-              Currently, online delivery is not available for your location (Andaman &amp; Nicobar Islands / Lakshadweep).
-              Please contact our office for assistance with shipping arrangements.
+              {restrictionMessage || 'Currently, online delivery is not available for your location. Please contact our office for assistance with shipping arrangements.'}
             </p>
             <div className="flex flex-col gap-3">
               <a

@@ -48,6 +48,7 @@ const DashboardLayout = () => {
         { path: '/admin-dashboard/orders', label: 'Orders', icon: 'shopping-bag' },
         { path: '/admin-dashboard/manual-orders', label: 'Manual Orders', icon: 'store' },
         { path: '/admin-dashboard/payments', label: 'Payments', icon: 'credit-card' },
+        { path: '/admin-dashboard/shipping-restrictions', label: 'Shipping Restrictions', icon: 'map-pin' },
         { path: '/admin-dashboard/vendors', label: 'Vendors', icon: 'store' },
         { path: '/admin-dashboard/vendor-commissions', label: 'Vendor Commissions', icon: 'dollar-sign' },
         { path: '/admin-dashboard/affiliates', label: 'Affiliates', icon: 'link' },

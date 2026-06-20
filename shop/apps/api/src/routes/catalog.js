@@ -242,6 +242,54 @@ router.get('/search-related', async (req, res, next) => {
   }
 });
 
+// POST /catalog/shipping/check-restriction — validate state/district/pincode against DB
+router.post('/shipping/check-restriction', async (req, res, next) => {
+  try {
+    const { state = '', district = '', pincode = '' } = req.body;
+    const ShippingRestriction = require('../models/ShippingRestriction');
+
+    // Hardcoded: Andaman & Nicobar, Lakshadweep always blocked
+    const ALWAYS_BLOCKED = [
+      'andaman and nicobar islands', 'andaman and nicobar',
+      'andaman & nicobar islands',   'andaman & nicobar', 'lakshadweep',
+    ];
+    if (state && ALWAYS_BLOCKED.includes(state.trim().toLowerCase())) {
+      return res.json({ restricted: true, type: 'state',
+        message: `Delivery is currently unavailable for ${state}. Please contact our office.` });
+    }
+
+    // 1. State restriction
+    if (state) {
+      const sr = await ShippingRestriction.findOne({
+        type: 'state', stateName: new RegExp(`^${state.trim()}$`, 'i'), isActive: true,
+      });
+      if (sr) return res.json({ restricted: true, type: 'state',
+        message: `Delivery is currently unavailable for ${state}. Please contact our office.` });
+    }
+
+    // 2. District restriction
+    if (state && district) {
+      const dr = await ShippingRestriction.findOne({
+        type: 'district',
+        stateName:    new RegExp(`^${state.trim()}$`,    'i'),
+        districtName: new RegExp(`^${district.trim()}$`, 'i'),
+        isActive: true,
+      });
+      if (dr) return res.json({ restricted: true, type: 'district',
+        message: `Delivery is currently unavailable for ${district} district. Please contact our office.` });
+    }
+
+    // 3. Pincode restriction
+    if (pincode) {
+      const pr = await ShippingRestriction.findOne({ type: 'pincode', pincode: pincode.trim(), isActive: true });
+      if (pr) return res.json({ restricted: true, type: 'pincode',
+        message: `Delivery is currently unavailable for pincode ${pincode}. Please contact our office.` });
+    }
+
+    res.json({ restricted: false });
+  } catch (err) { next(err); }
+});
+
 // GET /catalog/categories?limit=6
 router.get('/categories', cacheMiddleware(1800), async (req, res, next) => {
   try {

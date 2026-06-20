@@ -14,6 +14,9 @@ const { invalidateCache } = require('../middleware/cache');
 router.use(authenticate);
 router.use(authorize(['admin']));
 
+// Shipping restrictions management
+router.use('/shipping-restrictions', require('./shippingRestrictions'));
+
 // Dashboard
 router.get('/dashboard/stats', admin.getDashboardStats);
 
