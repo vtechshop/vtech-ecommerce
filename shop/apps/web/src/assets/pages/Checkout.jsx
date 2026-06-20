@@ -13,7 +13,7 @@ import ShinyButton from '@/components/animations/ShinyButton';
 import { formatCurrency } from '@/utils/format';
 import { trackBeginCheckout } from '@/utils/analytics';
 import { DEFAULT_COUNTRY } from '@/utils/locationData';
-import SmartAddressForm from '@/components/checkout/SmartAddressForm';
+import SmartAddressForm, { isRestrictedArea } from '@/components/checkout/SmartAddressForm';
 import { useToast } from '@/components/common/ToastContainer';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
@@ -30,6 +30,7 @@ const Checkout = () => {
 
 
   const [step, setStep] = useState(1); // 1: Address, 2: Shipping, 3: Payment
+  const [showRestrictedModal, setShowRestrictedModal] = useState(false);
 
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [shippingQuotes, setShippingQuotes] = useState([]);
@@ -181,12 +182,20 @@ const Checkout = () => {
       }
     }
 
+    if (isRestrictedArea(newAddress.state, newAddress.zipCode)) {
+      setShowRestrictedModal(true);
+      return;
+    }
     setSelectedAddress(newAddress);
     await fetchShippingQuotes(newAddress);
     setStep(2); // Go to shipping selection
   };
 
   const handleSelectExistingAddress = async (address) => {
+    if (isRestrictedArea(address.state, address.zipCode)) {
+      setShowRestrictedModal(true);
+      return;
+    }
     setSelectedAddress(address);
     await fetchShippingQuotes(address);
     setStep(2); // Go to shipping selection
@@ -353,6 +362,38 @@ const Checkout = () => {
   return (
     <div className="bg-white min-h-screen">
       <NoIndex title="Checkout - VTech Kitchen" />
+
+      {/* Restricted Area Modal */}
+      {showRestrictedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">🚫</span>
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Delivery Not Available</h2>
+            <p className="text-gray-600 text-sm mb-6">
+              Currently, online delivery is not available for your location (Andaman &amp; Nicobar Islands / Lakshadweep).
+              Please contact our office for assistance with shipping arrangements.
+            </p>
+            <div className="flex flex-col gap-3">
+              <a
+                href="https://wa.me/919944556683"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <span>💬</span> Contact Our Office
+              </a>
+              <button
+                onClick={() => setShowRestrictedModal(false)}
+                className="w-full border border-gray-300 text-gray-700 font-semibold py-3 px-4 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <ScrollReveal animation="fadeUp">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-6 max-w-screen-2xl">
         {/* Header */}

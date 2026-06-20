@@ -5,6 +5,20 @@ import Input from '@/components/common/Input';
 
 const INDIA_CODE = 'IN';
 
+// States with restricted delivery — customer must contact office
+const RESTRICTED_STATES = [
+  'andaman and nicobar islands',
+  'andaman and nicobar',
+  'andaman & nicobar islands',
+  'andaman & nicobar',
+  'lakshadweep',
+];
+// Pincode prefixes: 744xxx = A&N Islands, 68255x = Lakshadweep
+const isRestrictedPincode = (pin = '') => /^744\d{3}$/.test(pin) || /^68255[5-9]$/.test(pin);
+const isRestrictedState = (state = '') => RESTRICTED_STATES.includes(state.trim().toLowerCase());
+export const isRestrictedArea = (state = '', pincode = '') =>
+  isRestrictedState(state) || isRestrictedPincode(pincode);
+
 // Tiny spinner for inline loading
 const InlineSpinner = () => (
   <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
@@ -20,6 +34,7 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
   const [pincodeError, setPincodeError] = useState('');
   const [pincodeSuccess, setPincodeSuccess] = useState('');
   const [postOffices, setPostOffices] = useState([]); // Multiple areas from pincode
+  const [restrictedArea, setRestrictedArea] = useState(false);
 
   // GPS location detection
   const [locationLoading, setLocationLoading] = useState(false);
@@ -99,6 +114,7 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
           district: first.District,
           area: first.Name, // First post office name as area
         });
+        setRestrictedArea(isRestrictedArea(first.State, pincode));
       } else {
         setPincodeError('Invalid pincode. Please check and try again.');
       }
@@ -402,10 +418,22 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
             {pincodeError && (
               <p className="text-sm text-red-600 mt-1">{pincodeError}</p>
             )}
-            {pincodeSuccess && (
+            {pincodeSuccess && !restrictedArea && (
               <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5" /> {pincodeSuccess}
               </p>
+            )}
+            {restrictedArea && (
+              <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                <p className="text-sm text-red-700">
+                  Delivery not available for <strong>{address.state || 'this area'}</strong>. Please{' '}
+                  <a href="https://wa.me/919944556683" target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                    contact our office
+                  </a>{' '}
+                  for shipping arrangements.
+                </p>
+              </div>
             )}
           </div>
 
