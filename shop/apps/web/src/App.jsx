@@ -158,7 +158,6 @@ const GamificationManagement = lazy(() => import('./assets/pages/dashboard/admin
 const AppConfigManagement = lazy(() => import('./assets/pages/dashboard/admin/AppConfigManagement'));
 const MobileDevModules = lazy(() => import('./assets/pages/dashboard/admin/MobileDevModules'));
 const AdminInventory = lazy(() => import('./assets/pages/dashboard/admin/Inventory'));
-const ShippingRestrictions = lazy(() => import('./assets/pages/dashboard/admin/ShippingRestrictions'));
 const VendorKYC = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
 const AffiliateKYC = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateKYC'));
 
@@ -402,7 +401,6 @@ function App() {
             <Route path="gamification" element={<GamificationManagement />} />
             <Route path="app-config" element={<AppConfigManagement />} />
             <Route path="mobile-modules" element={<MobileDevModules />} />
-            <Route path="shipping-restrictions" element={<ShippingRestrictions />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 
