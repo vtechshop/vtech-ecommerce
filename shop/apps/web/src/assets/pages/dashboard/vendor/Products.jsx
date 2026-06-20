@@ -8,6 +8,7 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
 import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, ZoomIn, Upload, Search, Filter, ChevronUp, ChevronDown, Package, AlertTriangle, CheckCircle, MoreVertical, Copy, Archive, TrendingUp, Download, RefreshCw } from 'lucide-react';
+import ShippingRestrictionsWidget from '@/components/common/ShippingRestrictionsWidget';
 
 // Stock level thresholds
 const STOCK_THRESHOLDS = {
@@ -1359,6 +1360,9 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                 ))}
               </div>
             </div>
+
+            {/* Delivery Restrictions */}
+            <ShippingRestrictionsWidget />
 
             {/* Weight & Shipping Charge */}
             <div className="md:col-span-1">

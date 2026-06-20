@@ -8,6 +8,7 @@ import Spinner from '@/components/common/Spinner';
 import CustomSelect from '@/components/common/CustomSelect';
 import { formatCurrency } from '@/utils/format';
 import { Plus, Edit, Trash2, Eye, Search, X, RefreshCw, TrendingUp } from 'lucide-react';
+import ShippingRestrictionsWidget from '@/components/common/ShippingRestrictionsWidget';
 import toast from 'react-hot-toast';
 
 const Products = () => {
@@ -967,6 +968,9 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 At checkout, the highest zone charge across all cart products is used. Leave blank to fall back to weight-based pricing.
               </p>
             </div>
+
+            {/* Delivery Restrictions */}
+            <ShippingRestrictionsWidget />
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Delhivery Shipping</label>
