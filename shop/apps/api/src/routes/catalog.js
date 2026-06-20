@@ -255,7 +255,7 @@ router.post('/shipping/check-restriction', async (req, res, next) => {
     ];
     if (state && ALWAYS_BLOCKED.includes(state.trim().toLowerCase())) {
       return res.json({ restricted: true, type: 'state',
-        message: `Delivery is currently unavailable for ${state}. Please contact our office.` });
+        message: `We currently don't deliver to ${state} through our standard shipping — but we can arrange it for you!` });
     }
 
     // 1. State restriction
@@ -264,7 +264,7 @@ router.post('/shipping/check-restriction', async (req, res, next) => {
         type: 'state', stateName: new RegExp(`^${state.trim()}$`, 'i'), isActive: true,
       });
       if (sr) return res.json({ restricted: true, type: 'state',
-        message: `Delivery is currently unavailable for ${state}. Please contact our office.` });
+        message: `We currently don't deliver to ${state} through our standard shipping — but we can arrange it for you!` });
     }
 
     // 2. District restriction
@@ -276,14 +276,14 @@ router.post('/shipping/check-restriction', async (req, res, next) => {
         isActive: true,
       });
       if (dr) return res.json({ restricted: true, type: 'district',
-        message: `Delivery is currently unavailable for ${district} district. Please contact our office.` });
+        message: `We currently don't deliver to ${district}, ${state} through our standard shipping — but we can arrange it for you!` });
     }
 
     // 3. Pincode restriction
     if (pincode) {
       const pr = await ShippingRestriction.findOne({ type: 'pincode', pincode: pincode.trim(), isActive: true });
       if (pr) return res.json({ restricted: true, type: 'pincode',
-        message: `Delivery is currently unavailable for pincode ${pincode}. Please contact our office.` });
+        message: `We currently don't deliver to pincode ${pincode} through our standard shipping — but we can arrange it for you!` });
     }
 
     res.json({ restricted: false });

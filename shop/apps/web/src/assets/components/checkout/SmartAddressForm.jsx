@@ -424,15 +424,22 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
               </p>
             )}
             {restrictedArea && (
-              <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <div className="mt-2 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
                 <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                <p className="text-sm text-red-700">
-                  Delivery not available for <strong>{address.state || 'this area'}</strong>. Please{' '}
-                  <a href="https://wa.me/919944556683" target="_blank" rel="noopener noreferrer" className="underline font-medium">
-                    contact our office
-                  </a>{' '}
-                  for shipping arrangements.
-                </p>
+                <div className="text-sm text-red-700">
+                  <p>We don't deliver to <strong>{address.state || 'this area'}</strong> via standard shipping — but we can arrange it!</p>
+                  <div className="flex flex-wrap gap-2 mt-1.5">
+                    <a href="https://wa.me/919944556683" target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold bg-green-500 text-white px-2.5 py-1 rounded-lg hover:bg-green-600">
+                      💬 WhatsApp Us
+                    </a>
+                    <a href="tel:+919944556683"
+                      className="inline-flex items-center gap-1 text-xs font-semibold bg-blue-500 text-white px-2.5 py-1 rounded-lg hover:bg-blue-600">
+                      📞 Call Us
+                    </a>
+                    <span className="text-xs text-red-600 self-center">+91 99445 56683</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>

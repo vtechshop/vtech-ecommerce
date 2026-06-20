@@ -388,8 +388,12 @@ const Checkout = () => {
               <span className="text-3xl">🚫</span>
             </div>
             <h2 className="text-xl font-bold text-gray-900 mb-2">Delivery Not Available</h2>
-            <p className="text-gray-600 text-sm mb-6">
-              {restrictionMessage || 'Currently, online delivery is not available for your location. Please contact our office for assistance with shipping arrangements.'}
+            <p className="text-gray-600 text-sm mb-3">
+              {restrictionMessage || 'We currently don\'t deliver to your location through our standard shipping — but we can arrange it for you!'}
+            </p>
+            <p className="text-gray-700 text-sm font-medium mb-5">
+              Contact us on WhatsApp or give us a call and we'll sort it out.<br />
+              <span className="text-gray-900 font-semibold">📞 +91 99445 56683</span>
             </p>
             <div className="flex flex-col gap-3">
               <a
@@ -398,7 +402,13 @@ const Checkout = () => {
                 rel="noopener noreferrer"
                 className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
               >
-                <span>💬</span> Contact Our Office
+                <span>💬</span> WhatsApp Us
+              </a>
+              <a
+                href="tel:+919944556683"
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <span>📞</span> Call Us
               </a>
               <button
                 onClick={() => setShowRestrictedModal(false)}
