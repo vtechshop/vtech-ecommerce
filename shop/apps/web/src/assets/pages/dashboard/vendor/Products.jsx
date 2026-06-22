@@ -8,7 +8,6 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
 import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, ZoomIn, Upload, Search, Filter, ChevronUp, ChevronDown, Package, AlertTriangle, CheckCircle, MoreVertical, Copy, Archive, TrendingUp, Download, RefreshCw } from 'lucide-react';
-import ShippingRestrictionsWidget from '@/components/common/ShippingRestrictionsWidget';
 
 // Stock level thresholds
 const STOCK_THRESHOLDS = {
@@ -1361,9 +1360,6 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
               </div>
             </div>
 
-            {/* Delivery Restrictions */}
-            <ShippingRestrictionsWidget />
-
             {/* Weight & Shipping Charge */}
             <div className="md:col-span-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
@@ -1415,18 +1411,6 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                   className="mr-2 h-4 w-4 text-blue-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
                 <span className="text-sm font-medium text-gray-700">Published</span>
-              </label>
-            </div>
-
-            <div className="md:col-span-1">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.featured}
-                  onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                  className="mr-2 h-4 w-4 text-blue-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-                <span className="text-sm font-medium text-gray-700">Featured</span>
               </label>
             </div>
 
