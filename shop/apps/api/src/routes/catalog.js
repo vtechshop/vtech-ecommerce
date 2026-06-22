@@ -242,10 +242,10 @@ router.get('/search-related', async (req, res, next) => {
   }
 });
 
-// POST /catalog/shipping/check-restriction — validate state/district/pincode against DB
+// POST /catalog/shipping/check-restriction — validate state/district/pincode against DB + product-level restrictions
 router.post('/shipping/check-restriction', async (req, res, next) => {
   try {
-    const { state = '', district = '', pincode = '' } = req.body;
+    const { state = '', district = '', pincode = '', productIds = [] } = req.body;
     const ShippingRestriction = require('../models/ShippingRestriction');
 
     // Hardcoded: Andaman & Nicobar, Lakshadweep always blocked
@@ -279,11 +279,34 @@ router.post('/shipping/check-restriction', async (req, res, next) => {
         message: `We currently don't deliver to ${district}, ${state} through our standard shipping — but we can arrange it for you!` });
     }
 
-    // 3. Pincode restriction
+    // 3. Pincode restriction (global)
     if (pincode) {
       const pr = await ShippingRestriction.findOne({ type: 'pincode', pincode: pincode.trim(), isActive: true });
       if (pr) return res.json({ restricted: true, type: 'pincode',
         message: `We currently don't deliver to pincode ${pincode} through our standard shipping — but we can arrange it for you!` });
+    }
+
+    // 4. Product-level restrictions (per vendor/product)
+    if (productIds.length > 0) {
+      const products = await Product.find(
+        { _id: { $in: productIds }, 'restrictedAreas.0': { $exists: true } },
+        { title: 1, restrictedAreas: 1 }
+      ).lean();
+
+      for (const product of products) {
+        for (const r of product.restrictedAreas) {
+          const sMatch = state    && r.stateName    && new RegExp(`^${r.stateName.trim()}$`,    'i').test(state.trim());
+          const dMatch = district && r.districtName && new RegExp(`^${r.districtName.trim()}$`, 'i').test(district.trim());
+          const pMatch = pincode  && r.pincode      && r.pincode.trim() === pincode.trim();
+
+          if (r.type === 'state'    && sMatch) return res.json({ restricted: true, type: 'product-state',
+            message: `"${product.title}" cannot be delivered to ${state}. Please contact us to arrange shipping.` });
+          if (r.type === 'district' && sMatch && dMatch) return res.json({ restricted: true, type: 'product-district',
+            message: `"${product.title}" cannot be delivered to ${district}, ${state}. Please contact us to arrange shipping.` });
+          if (r.type === 'pincode'  && pMatch) return res.json({ restricted: true, type: 'product-pincode',
+            message: `"${product.title}" cannot be delivered to pincode ${pincode}. Please contact us to arrange shipping.` });
+        }
+      }
     }
 
     res.json({ restricted: false });

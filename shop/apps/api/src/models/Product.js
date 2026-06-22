@@ -62,6 +62,12 @@ const productSchema = new mongoose.Schema({
     charge: { type: Number, min: 0, required: true },
   }],
   delhiveryEnabled: { type: Boolean, default: true }, // if false, only Vtech Transport / fallback (no Delhivery)
+  restrictedAreas: [{
+    type:         { type: String, enum: ['state', 'district', 'pincode'], required: true },
+    stateName:    { type: String, trim: true, default: '' },
+    districtName: { type: String, trim: true, default: '' },
+    pincode:      { type: String, trim: true, default: '' },
+  }],
   dimensions: { length: Number, width: Number, height: Number, unit: { type: String, enum: ['in', 'cm'], default: 'in' } },
   rating: { type: Number, default: 0, min: 0, max: 5 },
   reviewCount: { type: Number, default: 0 },
