@@ -29,14 +29,16 @@ const Products = () => {
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [pricePercent, setPricePercent] = useState('');
 
+  const cleanSearch = debouncedSearch.replace(/[^a-zA-Z0-9\s\-.]/g, ' ').replace(/\s+/g, ' ').trim();
+
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-products', page, statusFilter, debouncedSearch],
+    queryKey: ['admin-products', page, statusFilter, cleanSearch],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('page', page);
       params.append('limit', '20');
       if (statusFilter) params.append('status', statusFilter);
-      if (debouncedSearch) params.append('search', debouncedSearch);
+      if (cleanSearch) params.append('search', cleanSearch);
 
       const response = await api.get(`/admin/products?${params}`);
       return response.data;

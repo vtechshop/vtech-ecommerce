@@ -18,6 +18,13 @@ function useDebounce(value, delay) {
   return debounced;
 }
 
+// Returns true only if query has at least one letter or digit (blocks pure-symbol queries)
+const hasAlphanumeric = (q) => /[a-zA-Z0-9ऀ-ॿ஀-௿]/.test(q);
+
+// Strip symbols that don't belong in product searches; keep letters, digits, spaces, hyphens, dots
+const sanitizeQuery = (q) =>
+  q.replace(/[^a-zA-Z0-9ऀ-ॿ஀-௿\s\-.]/g, ' ').replace(/\s+/g, ' ').trim();
+
 const SearchAutocomplete = React.memo(({ className = '' }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -205,15 +212,17 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
     }
   }, []);
 
+  const cleanQuery = sanitizeQuery(debouncedQuery);
+
   // Fetch autocomplete from dedicated endpoint
   const { data: autocomplete, isLoading, isError } = useQuery({
-    queryKey: ['autocomplete', debouncedQuery],
+    queryKey: ['autocomplete', cleanQuery],
     queryFn: async () => {
-      if (!debouncedQuery.trim() || debouncedQuery.length < 1) return null;
-      const response = await api.get(`/catalog/autocomplete?q=${encodeURIComponent(debouncedQuery)}`);
+      if (!cleanQuery) return null;
+      const response = await api.get(`/catalog/autocomplete?q=${encodeURIComponent(cleanQuery)}`);
       return response.data.data;
     },
-    enabled: debouncedQuery.length >= 1,
+    enabled: cleanQuery.length >= 1 && hasAlphanumeric(cleanQuery),
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     retry: 1,
@@ -311,9 +320,10 @@ const SearchAutocomplete = React.memo(({ className = '' }) => {
   };
 
   const handleSearch = (searchQuery) => {
-    if (!searchQuery.trim()) return;
-    saveRecentSearch(searchQuery);
-    navigate(`/products?q=${encodeURIComponent(searchQuery)}`);
+    const clean = sanitizeQuery(searchQuery);
+    if (!clean || !hasAlphanumeric(clean)) return;
+    saveRecentSearch(clean);
+    navigate(`/products?q=${encodeURIComponent(clean)}`);
     setIsOpen(false);
     inputRef.current?.blur();
   };

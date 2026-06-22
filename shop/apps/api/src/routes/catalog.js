@@ -10,6 +10,12 @@ const { cacheMiddleware } = require('../middleware/cache');
 const AppError = require('../utils/AppError');
 const mongoose = require('mongoose');
 
+// Strip symbols that break $text search; keep letters, digits, spaces, hyphens, dots
+function sanitizeSearch(q) {
+  if (!q) return '';
+  return q.replace(/[^a-zA-Z0-9ऀ-ॿ஀-௿\s\-.]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 // GET /catalog/products?featured=true&limit=8&tag=electronics&vendor=demo-electronics
 router.get('/products', cacheMiddleware(300), async (req, res, next) => {
   try {
@@ -24,8 +30,9 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
 
     // Text search: multi-word uses AND logic (like Amazon) so only relevant products show
     let searchWords = [];
-    if (q) {
-      searchWords = q.trim().split(/\s+/)
+    const cleanQ = sanitizeSearch(q);
+    if (cleanQ) {
+      searchWords = cleanQ.split(/\s+/)
         .map(w => w.replace(/^[+\-"]+/, '')) // sanitize operators
         .filter(w => w.length >= 2 || /^\d+$/.test(w)); // keep numbers like "3", "6", "9"
 
@@ -33,7 +40,7 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
         // Require ALL words — "+chapati +pressing +machine" = AND with stemming
         query.$text = { $search: searchWords.map(w => `+${w}`).join(' ') };
       } else {
-        query.$text = { $search: q };
+        query.$text = { $search: cleanQ };
       }
     }
 
@@ -54,7 +61,7 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
     // When text search is active, project text score for relevance sorting
     let sortOption;
     let projection = {};
-    if (q) {
+    if (cleanQ) {
       projection = { score: { $meta: 'textScore' } };
       // Sort by relevance (text score) by default or when explicitly requested
       if (sort === 'relevance' || sort === '-createdAt') {
@@ -78,8 +85,8 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
     ]);
 
     // Fallback: if strict AND search returns 0 results, try broader OR search
-    if (q && total === 0 && searchWords.length > 1) {
-      query.$text = { $search: q };
+    if (cleanQ && total === 0 && searchWords.length > 1) {
+      query.$text = { $search: cleanQ };
       [items, total] = await Promise.all([
         Product.find(query, projection).populate('vendorId', 'storeName slug').sort(sortOption).skip(skip).limit(cappedLimit).lean(),
         Product.countDocuments(query),
@@ -87,7 +94,7 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
     }
 
     // Re-rank by exact word match count so "3MM" ranks above "9MM" when searching "3mm"
-    if (q && searchWords.length > 0 && (sort === 'relevance' || sort === '-createdAt')) {
+    if (cleanQ && searchWords.length > 0 && (sort === 'relevance' || sort === '-createdAt')) {
       const lcWords = searchWords.map(w => w.toLowerCase());
       items.sort((a, b) => {
         const aTitle = (a.title || '').toLowerCase();
@@ -121,11 +128,11 @@ router.get('/products/:slug', cacheMiddleware(600), async (req, res, next) => {
 router.get('/autocomplete', async (req, res, next) => {
   try {
     const { q } = req.query;
-    if (!q || q.trim().length < 1) {
+    const searchTerm = sanitizeSearch(q);
+    if (!searchTerm || searchTerm.length < 1) {
       return res.json({ success: true, data: { suggestions: [], products: [], categories: [] } });
     }
 
-    const searchTerm = q.trim();
     const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     // Allow optional whitespace between digit-letter transitions so "9mm" matches "9 MM"
     const flexPattern = escapedTerm
@@ -189,14 +196,15 @@ router.get('/autocomplete', async (req, res, next) => {
 router.get('/search-related', async (req, res, next) => {
   try {
     const { q, limit = 8, exclude = '' } = req.query;
-    if (!q || q.trim().length < 2) {
+    const cleanRelQ = sanitizeSearch(q);
+    if (!cleanRelQ || cleanRelQ.length < 2) {
       return res.json({ success: true, data: [] });
     }
     const cappedLimit = Math.min(parseInt(limit), 20);
 
     // Step 1: Find products matching the query to identify relevant categories
     const matched = await Product.find(
-      { published: true, $text: { $search: q } },
+      { published: true, $text: { $search: cleanRelQ } },
       { score: { $meta: 'textScore' } }
     ).sort({ score: { $meta: 'textScore' } }).limit(10).select('_id categoryIds').lean();
 
