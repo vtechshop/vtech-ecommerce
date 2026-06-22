@@ -390,15 +390,25 @@ const Product = () => {
     }
   };
 
-  // Loading state
+  // Loading state — include basic SEO so Googlebot sees meta tags even before JS renders
   if (isLoading) {
+    const titleFromSlug = slug
+      ? slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      : 'Product';
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-700">Loading product...</p>
+      <>
+        <SEO
+          title={`${titleFromSlug} - VTech Kitchen`}
+          description={`Buy ${titleFromSlug} at VTech Kitchen. Premium kitchen equipment with fast shipping across India.`}
+          url={`https://www.vtechkitchen.com/product/${slug}`}
+        />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <p className="text-gray-700">Loading product...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
