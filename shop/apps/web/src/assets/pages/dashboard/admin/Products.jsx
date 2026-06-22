@@ -1,5 +1,5 @@
 ﻿// FILE: apps/web/src/pages/dashboard/admin/Products.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
@@ -16,6 +16,13 @@ const Products = () => {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // Debounce search — only fire API after 400ms of no typing
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [viewingProduct, setViewingProduct] = useState(null);
@@ -23,13 +30,13 @@ const Products = () => {
   const [pricePercent, setPricePercent] = useState('');
 
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-products', page, statusFilter, searchTerm],
+    queryKey: ['admin-products', page, statusFilter, debouncedSearch],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('page', page);
       params.append('limit', '20');
       if (statusFilter) params.append('status', statusFilter);
-      if (searchTerm) params.append('search', searchTerm);
+      if (debouncedSearch) params.append('search', debouncedSearch);
 
       const response = await api.get(`/admin/products?${params}`);
       return response.data;
@@ -115,14 +122,6 @@ const Products = () => {
       bulkPriceUpdateMutation.mutate({ ids: selectedProducts, percentage: pct });
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-12">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
 
   const products = data?.data || [];
   const totalProducts = data?.meta?.total || 0;
@@ -244,7 +243,7 @@ const Products = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setPage(1);
+                setPage(1); // reset page when search changes
               }}
               className="input pl-10 w-full"
             />
@@ -307,7 +306,18 @@ const Products = () => {
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={9} className="py-16 text-center">
+                    <Spinner size="lg" />
+                  </td>
+                </tr>
+              ) : products.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="py-12 text-center text-gray-500">No products found</td>
+                </tr>
+              ) : null}
+              {!isLoading && products.map((product) => (
                 <tr key={product._id} className={`border-b last:border-b-0 hover:bg-blue-100 ${selectedProducts.includes(product._id) ? 'bg-blue-50' : ''}`}>
                   <td className="py-3 px-4">
                     <input
