@@ -8,7 +8,6 @@ import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency } from '@/utils/format';
 import { X, AlertCircle, ExternalLink, Plus, Edit, Trash2, ZoomIn, Upload, Search, Filter, ChevronUp, ChevronDown, Package, AlertTriangle, CheckCircle, MoreVertical, Copy, Archive, TrendingUp, Download, RefreshCw } from 'lucide-react';
-import ProductRestrictionsWidget from '@/components/common/ProductRestrictionsWidget';
 
 // Stock level thresholds
 const STOCK_THRESHOLDS = {
@@ -839,7 +838,6 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
     weight: product?.weight || '',
     shippingCharge: product?.shippingCharge || '',
     delhiveryEnabled: product?.delhiveryEnabled !== undefined ? product.delhiveryEnabled : true,
-    restrictedAreas: product?.restrictedAreas || [],
     // Zone-based shipping
     shippingZones: {
       tamilnadu: product?.shippingZones?.find(z => z.zone === 'tamilnadu')?.charge ?? '',
@@ -979,7 +977,6 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
       weight: formData.weight ? parseFloat(formData.weight) : undefined,
       shippingCharge: formData.shippingCharge ? parseFloat(formData.shippingCharge) : 0,
       delhiveryEnabled: formData.delhiveryEnabled,
-      restrictedAreas: formData.restrictedAreas,
       structuredData: schemaData, // Fixed: changed from 'schema' to 'structuredData'
       // SEO Data
       seo: {
@@ -1362,12 +1359,6 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                 ))}
               </div>
             </div>
-
-            {/* Product-level Delivery Restrictions */}
-            <ProductRestrictionsWidget
-              value={formData.restrictedAreas}
-              onChange={(areas) => setFormData({ ...formData, restrictedAreas: areas })}
-            />
 
             {/* Weight & Shipping Charge */}
             <div className="md:col-span-1">

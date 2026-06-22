@@ -187,7 +187,6 @@ const Checkout = () => {
     try {
       const { data } = await api.post('/catalog/shipping/check-restriction', {
         state: newAddress.state, district: newAddress.district, pincode: newAddress.zipCode,
-        productIds: items.map(i => i.productId || i._id).filter(Boolean),
       });
       if (data.restricted) { setRestrictionMessage(data.message); setShowRestrictedModal(true); return; }
     } catch {

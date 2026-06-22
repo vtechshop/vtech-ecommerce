@@ -9,7 +9,6 @@ import CustomSelect from '@/components/common/CustomSelect';
 import { formatCurrency } from '@/utils/format';
 import { Plus, Edit, Trash2, Eye, Search, X, RefreshCw, TrendingUp } from 'lucide-react';
 import ShippingRestrictionsWidget from '@/components/common/ShippingRestrictionsWidget';
-import ProductRestrictionsWidget from '@/components/common/ProductRestrictionsWidget';
 import toast from 'react-hot-toast';
 
 const Products = () => {
@@ -489,7 +488,6 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
       west:  product?.shippingZones?.find(z => z.zone === 'west')?.charge ?? '',
     },
     delhiveryEnabled: product?.delhiveryEnabled !== undefined ? product.delhiveryEnabled : true,
-    restrictedAreas: product?.restrictedAreas || [],
     hsnCode: product?.hsnCode || '',
     taxable: product?.taxable !== undefined ? product.taxable : true,
     taxRate: product?.taxRate || 0,
@@ -659,7 +657,6 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
         .filter(z => formData.shippingZones[z] !== '' && formData.shippingZones[z] !== null && formData.shippingZones[z] !== undefined)
         .map(z => ({ zone: z, charge: parseFloat(formData.shippingZones[z]) })),
       delhiveryEnabled: formData.delhiveryEnabled,
-      restrictedAreas: formData.restrictedAreas,
       taxRate: formData.taxRate ? parseFloat(formData.taxRate) : 0,
       taxIncluded: formData.taxIncluded,
       // Warranty - convert duration from empty string to undefined
@@ -972,14 +969,8 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
               </p>
             </div>
 
-            {/* Global Delivery Restrictions (admin only) */}
+            {/* Delivery Restrictions */}
             <ShippingRestrictionsWidget />
-
-            {/* Product-level Delivery Restrictions */}
-            <ProductRestrictionsWidget
-              value={formData.restrictedAreas}
-              onChange={(areas) => setFormData({ ...formData, restrictedAreas: areas })}
-            />
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Delhivery Shipping</label>
