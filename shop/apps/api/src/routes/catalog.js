@@ -133,9 +133,12 @@ router.get('/autocomplete', async (req, res, next) => {
       return res.json({ success: true, data: { suggestions: [], products: [], categories: [] } });
     }
 
-    const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Allow optional whitespace between digit-letter transitions so "9mm" matches "9 MM"
+    // Normalize: collapse hyphens/spaces so "pre p" and "pre-p" both match "Pre-Programmed"
+    const normalizedTerm = searchTerm.replace(/[-\s]+/g, ' ').trim();
+    const escapedTerm = normalizedTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Allow space/hyphen interchangeably, and optional whitespace between digit-letter transitions
     const flexPattern = escapedTerm
+      .replace(/\s+/g, '[\\s\\-]+')
       .replace(/(\d)([a-zA-Z])/g, '$1\\s*$2')
       .replace(/([a-zA-Z])(\d)/g, '$1\\s*$2');
     const regex = new RegExp(flexPattern, 'i');

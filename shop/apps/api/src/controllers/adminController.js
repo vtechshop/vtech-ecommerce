@@ -601,9 +601,14 @@ exports.getProducts = async (req, res, next) => {
     if (status === 'unpublished') query.published = false;
     if (vendorId) query.vendorId = vendorId;
     if (search) {
+      // Treat hyphens and spaces as interchangeable ("pre p" finds "Pre-Programmed")
+      const normalized = search.replace(/[-\s]+/g, ' ').trim();
+      const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const flexPattern = escaped.replace(/\s+/g, '[\\s\\-]+');
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { sku: { $regex: search, $options: 'i' } }
+        { title: { $regex: flexPattern, $options: 'i' } },
+        { sku: { $regex: flexPattern, $options: 'i' } },
+        { brand: { $regex: flexPattern, $options: 'i' } },
       ];
     }
 
