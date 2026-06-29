@@ -10,12 +10,14 @@ import useTranslation from '@/hooks/useTranslation';
 import ScrollReveal from '@/components/common/ScrollReveal';
 import { normalizeImageUrl } from '@/utils/placeholders';
 
+// HeroCarousel is above-fold LCP — import eagerly so it doesn't add a lazy-load waterfall
+import HeroCarousel from '@/components/home/HeroCarousel';
+
 // Lazy load below-fold components for better initial load
 const FlashSaleBanner = lazy(() => import('@/components/flash-sale/FlashSaleBanner'));
 const ProductRecommendations = lazy(() => import('@/components/product/ProductRecommendations'));
 const SponsorAd = lazy(() => import('@/components/ads/SponsorAd'));
 const ThreeDCarousel = lazy(() => import('@/components/home/ThreeDCarousel'));
-const HeroCarousel = lazy(() => import('@/components/home/HeroCarousel'));
 
 // Static fallback hero shown when no carousel items are configured
 const StaticHero = ({ t }) => (
@@ -128,9 +130,7 @@ const Home = React.memo(() => {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section — dynamic carousel if banners uploaded, else static fallback */}
       {heroBanners && heroBanners.length > 0 ? (
-        <Suspense fallback={<StaticHero t={t} />}>
-          <HeroCarousel items={heroBanners} fallback={<StaticHero t={t} />} />
-        </Suspense>
+        <HeroCarousel items={heroBanners} fallback={<StaticHero t={t} />} />
       ) : (
         <StaticHero t={t} />
       )}

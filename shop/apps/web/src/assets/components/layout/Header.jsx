@@ -1,12 +1,14 @@
 ﻿// FILE: apps/web/src/components/layout/Header.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '@/store/slices/authSlice';
 import useAuth from '@/hooks/useAuth';
 import SearchAutocomplete from '@/components/common/SearchAutocomplete';
 import AnimatedDiv from '@/components/common/AnimatedDiv';
-import NotificationBell from '@/components/common/NotificationBell';
+
+// Lazy-load NotificationBell — it imports socket.io-client (100KB+) which guests never need
+const NotificationBell = lazy(() => import('@/components/common/NotificationBell'));
 
 const Header = ({ onMobileMenuToggle }) => {
   const navigate = useNavigate();
@@ -184,7 +186,11 @@ const Header = ({ onMobileMenuToggle }) => {
             )}
 
             {/* Notification Bell */}
-            {isAuthenticated && <NotificationBell />}
+            {isAuthenticated && (
+              <Suspense fallback={null}>
+                <NotificationBell />
+              </Suspense>
+            )}
 
             {/* Cart */}
             <Link
