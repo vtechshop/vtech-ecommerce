@@ -77,31 +77,36 @@ export default defineConfig({
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
         // Split vendor chunks for better caching
         manualChunks: (id) => {
-          if (!id.includes('node_modules')) return;
-
-          // React core — keep together, loaded on every page
-          if (id.includes('react-dom') || id.includes('scheduler') ||
-              (id.includes('/react/') && !id.includes('react-router') && !id.includes('react-redux') && !id.includes('react-helmet') && !id.includes('react-hot') && !id.includes('react-player'))) {
-            return 'react-vendor';
+          if (id.includes('node_modules')) {
+            // React core - keep together
+            if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+              return 'react-vendor';
+            }
+            // Router
+            if (id.includes('react-router')) {
+              return 'router';
+            }
+            // State management
+            if (id.includes('redux') || id.includes('@reduxjs')) {
+              return 'redux';
+            }
+            // React Query
+            if (id.includes('@tanstack')) {
+              return 'query';
+            }
+            // Icons (used in Header/SearchAutocomplete - initial bundle)
+            if (id.includes('lucide')) {
+              return 'icons';
+            }
+            // Animation library (lazy-loaded - not needed for initial render)
+            if (id.includes('framer-motion')) {
+              return 'motion';
+            }
+            // Socket.io — lazy via NotificationBell (only for logged-in users)
+            if (id.includes('socket.io') || id.includes('engine.io') || id.includes('@socket.io')) {
+              return 'socket';
+            }
           }
-          // Router
-          if (id.includes('react-router')) return 'router';
-          // State management
-          if (id.includes('redux') || id.includes('@reduxjs')) return 'redux';
-          // React Query
-          if (id.includes('@tanstack')) return 'query';
-          // Icons
-          if (id.includes('lucide-react')) return 'icons';
-          // Animation — lazy pages only
-          if (id.includes('framer-motion')) return 'motion';
-          // Socket.io — lazy (only loaded when user is logged in via NotificationBell)
-          if (id.includes('socket.io') || id.includes('engine.io') || id.includes('@socket.io')) return 'socket';
-          // Charts — only in dashboard pages (lazy)
-          if (id.includes('recharts') || id.includes('d3-') || id.includes('d3/')) return 'charts';
-          // GSAP — only in ThreeDCarousel (lazy)
-          if (id.includes('gsap')) return 'gsap';
-          // Video player — only in BlogPost (lazy)
-          if (id.includes('react-player') || id.includes('hls.js')) return 'player';
         },
       },
     },
