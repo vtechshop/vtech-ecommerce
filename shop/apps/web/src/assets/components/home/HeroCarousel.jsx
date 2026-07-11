@@ -46,11 +46,6 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
           }`}
           aria-hidden={index !== current}
         >
-          {/* Clickable link over entire slide */}
-          {item.link && (
-            <Link to={item.link} className="absolute inset-0 z-10" aria-label={item.title || 'View product'} />
-          )}
-
           {/* Image — natural width/height, no cropping */}
           <img
             src={item.image || item.imageUrl}
@@ -60,27 +55,46 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             fetchPriority={index === 0 ? 'high' : 'auto'}
           />
 
-          {/* Gradient + text only when title/subtitle exists */}
-          {(item.title || item.subtitle || item.description) && (
+          {/* Gradient + text + CTA */}
+          {(item.title || item.subtitle || item.description || item.link) && (
             <>
-              <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
-              <div className="absolute inset-0 z-10 flex items-center pointer-events-none">
+              <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 z-10 flex items-center">
                 <div className="container mx-auto px-6 sm:px-10 md:px-16 max-w-screen-2xl">
                   <div className="max-w-lg">
                     {item.title && (
-                      <h2 className="hidden sm:block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight">
+                      <h2 className="hidden sm:block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 leading-tight pointer-events-none">
                         {item.title}
                       </h2>
                     )}
                     {(item.subtitle || item.description) && (
-                      <p className="hidden sm:block text-white/80 text-sm md:text-base line-clamp-2 leading-relaxed">
+                      <p className="hidden sm:block text-white/80 text-sm md:text-base line-clamp-2 leading-relaxed mb-4 pointer-events-none">
                         {item.subtitle || item.description}
                       </p>
+                    )}
+                    {item.link && (
+                      <Link
+                        to={item.link}
+                        className="inline-flex items-center gap-2 bg-white text-gray-900 font-semibold text-sm px-5 py-2.5 rounded-full shadow-lg hover:bg-primary-50 hover:text-primary-700 transition-all duration-200 group"
+                        aria-label={item.title || 'View product'}
+                      >
+                        Shop Now
+                        <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
+                      </Link>
                     )}
                   </div>
                 </div>
               </div>
             </>
+          )}
+
+          {/* Invisible full-slide clickable overlay when no text (image-only banners) */}
+          {item.link && !item.title && !item.subtitle && !item.description && (
+            <Link
+              to={item.link}
+              className="absolute inset-0 z-10 cursor-pointer"
+              aria-label="View product"
+            />
           )}
         </div>
       ))}
