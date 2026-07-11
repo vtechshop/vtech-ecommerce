@@ -355,13 +355,11 @@ exports.toggleWishlist = async (req, res, next) => {
 
     const user = await User.findById(req.user._id);
 
-    const index = user.wishlist.indexOf(productId);
+    const isInWishlist = user.wishlist.some(id => id.toString() === productId);
 
-    if (index > -1) {
-      // Product is in wishlist, remove it
-      user.wishlist.splice(index, 1);
+    if (isInWishlist) {
+      user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
     } else {
-      // Product is not in wishlist, add it
       user.wishlist.push(productId);
     }
 
@@ -371,7 +369,7 @@ exports.toggleWishlist = async (req, res, next) => {
       success: true,
       data: {
         wishlist: user.wishlist,
-        isInWishlist: index === -1, // true if we just added it
+        isInWishlist: !isInWishlist,
       },
     });
   } catch (error) {
@@ -395,7 +393,7 @@ exports.addToWishlist = async (req, res, next) => {
 
     const user = await User.findById(req.user._id);
 
-    if (!user.wishlist.includes(productId)) {
+    if (!user.wishlist.some(id => id.toString() === productId)) {
       user.wishlist.push(productId);
       await user.save();
     }
@@ -425,9 +423,9 @@ exports.removeFromWishlist = async (req, res, next) => {
 
     const user = await User.findById(req.user._id);
 
-    const index = user.wishlist.indexOf(productId);
-    if (index > -1) {
-      user.wishlist.splice(index, 1);
+    const sizeBefore = user.wishlist.length;
+    user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
+    if (user.wishlist.length < sizeBefore) {
       await user.save();
     }
 

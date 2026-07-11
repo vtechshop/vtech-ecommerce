@@ -61,11 +61,13 @@ const QuickView = ({ product, isOpen, onClose }) => {
 
   const toggleWishlistMutation = useMutation({
     mutationFn: async (productId) => {
-      await api.post(`/user/wishlist/toggle/${productId}`);
+      const res = await api.post(`/user/wishlist/toggle/${productId}`);
+      return res.data.data;
     },
-    onSuccess: () => {
-      setIsWishlisted(!isWishlisted);
-      toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
+    onSuccess: (data) => {
+      const nowInWishlist = data?.isInWishlist ?? !isWishlisted;
+      setIsWishlisted(nowInWishlist);
+      toast.success(nowInWishlist ? 'Added to wishlist' : 'Removed from wishlist');
     },
     onError: (error) => {
       if (error.response?.status === 401) {

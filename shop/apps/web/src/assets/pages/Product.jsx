@@ -1,7 +1,7 @@
 ﻿// FILE: apps/web/src/pages/Product.jsx
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
 import { useToast } from '@/components/common/ToastContainer';
@@ -162,6 +162,7 @@ const Product = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const toast = useToast();
+  const queryClient = useQueryClient();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const cartLoading = useSelector((state) => state.cart.loading);
   const [searchParams] = useSearchParams();
@@ -202,6 +203,24 @@ const Product = () => {
     gcTime: 10 * 60 * 1000, // Keep in garbage collection for 10 minutes
   });
 
+  // Fetch user wishlist to initialise heart state
+  const { data: wishlistItems } = useQuery({
+    queryKey: ['wishlist'],
+    queryFn: async () => {
+      const res = await api.get('/user/wishlist');
+      return res.data.data;
+    },
+    enabled: isAuthenticated,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Sync heart icon when product + wishlist both loaded
+  useEffect(() => {
+    if (product && wishlistItems) {
+      setIsWishlisted(wishlistItems.some(p => p._id === product._id));
+    }
+  }, [product?._id, wishlistItems]);
+
   // Fetch reviews for this product
   const { data: reviewsData, refetch: refetchReviews } = useQuery({
     queryKey: ['product-reviews', product?._id],
@@ -220,13 +239,15 @@ const Product = () => {
 
   const toggleWishlistMutation = useMutation({
     mutationFn: async (productId) => {
-      await api.post(`/user/wishlist/toggle/${productId}`);
+      const res = await api.post(`/user/wishlist/toggle/${productId}`);
+      return res.data.data;
     },
-    onSuccess: () => {
-      setIsWishlisted(!isWishlisted);
-      // Play sound only when adding to wishlist
-      if (!isWishlisted) playWishlistAdd();
-      toast.success(isWishlisted ? 'Removed from wishlist' : 'Added to wishlist');
+    onSuccess: (data) => {
+      const nowInWishlist = data?.isInWishlist ?? !isWishlisted;
+      setIsWishlisted(nowInWishlist);
+      if (nowInWishlist) playWishlistAdd();
+      toast.success(nowInWishlist ? 'Added to wishlist' : 'Removed from wishlist');
+      queryClient.invalidateQueries({ queryKey: ['wishlist'] });
     },
     onError: (error) => {
       playError();
