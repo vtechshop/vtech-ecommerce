@@ -29,9 +29,15 @@ export default function NotificationBell() {
   };
 
   const typeIcon = (type) => {
-    if (type === 'new_order') return '🛒';
-    if (type === 'order_confirmed') return '✅';
-    if (type === 'order_shipped') return '🚚';
+    if (type === 'order' || type === 'new_order' || type === 'order_confirmed') return '🛒';
+    if (type === 'shipping' || type === 'order_shipped') return '🚚';
+    if (type === 'payment') return '💳';
+    if (type === 'ticket') return '🎫';
+    if (type === 'commission') return '💰';
+    if (type === 'ad') return '📢';
+    if (type === 'vendor_approval' || type === 'affiliate_approval') return '✅';
+    if (type === 'product') return '📦';
+    if (type === 'kyc') return '🪪';
     return '🔔';
   };
 

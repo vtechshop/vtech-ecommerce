@@ -30,6 +30,21 @@ async function createNotification({ userId, type, title, message, data = {}, lin
       link,
     });
 
+    // Emit real-time socket event so the bell updates instantly
+    try {
+      const socketService = require('./socketService');
+      socketService.emitToUser(userId.toString(), 'notification', {
+        id: notification._id,
+        type: notification.type,
+        title: notification.title,
+        message: notification.message,
+        link: notification.link || null,
+        at: notification.createdAt,
+      });
+    } catch {
+      // Socket not initialized (e.g. during tests) — safe to ignore
+    }
+
     logger.info(`Notification created for user ${userId}: ${type} - ${title}`);
     return notification;
   } catch (error) {

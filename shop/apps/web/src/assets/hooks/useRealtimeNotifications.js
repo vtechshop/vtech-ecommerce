@@ -1,5 +1,4 @@
 // FILE: apps/web/src/hooks/useRealtimeNotifications.js
-// Manages real-time notifications via Socket.io
 import { useState, useEffect, useCallback } from 'react';
 import { getSocket, disconnectSocket } from '@/utils/socket';
 import useAuth from '@/hooks/useAuth';
@@ -11,59 +10,54 @@ export default function useRealtimeNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Fetch existing unread notifications from REST API on login
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    fetch('/api/notifications?limit=20', { credentials: 'include' })
+      .then((r) => r.ok ? r.json() : null)
+      .then((res) => {
+        if (!res?.data) return;
+        const items = res.data.map((n) => ({
+          id: n._id,
+          type: n.type,
+          title: n.title,
+          message: n.message,
+          link: n.link || null,
+          at: n.createdAt,
+          read: n.read,
+        }));
+        setNotifications(items.slice(0, MAX_NOTIFICATIONS));
+        setUnreadCount(items.filter((n) => !n.read).length);
+      })
+      .catch(() => {});
+  }, [isAuthenticated]);
+
   const addNotification = useCallback((notification) => {
-    setNotifications((prev) => {
-      const updated = [notification, ...prev].slice(0, MAX_NOTIFICATIONS);
-      return updated;
-    });
+    setNotifications((prev) => [notification, ...prev].slice(0, MAX_NOTIFICATIONS));
     setUnreadCount((n) => n + 1);
   }, []);
 
+  // Listen for real-time socket events
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const socket = getSocket();
 
-    // Order confirmed (customer)
-    socket.on('order_confirmed', (data) => {
+    socket.on('notification', (data) => {
       addNotification({
-        id: Date.now(),
-        type: 'order_confirmed',
-        title: 'Order Confirmed',
-        message: `Your order #${data.orderNumber} has been placed successfully.`,
-        link: '/dashboard/orders',
-        at: new Date(),
-      });
-    });
-
-    // Order shipped (customer)
-    socket.on('order_shipped', (data) => {
-      addNotification({
-        id: Date.now(),
-        type: 'order_shipped',
-        title: 'Order Shipped',
-        message: `Order #${data.orderNumber} is on its way! AWB: ${data.awb}`,
-        link: '/dashboard/orders',
-        at: new Date(),
-      });
-    });
-
-    // New order alert (vendor)
-    socket.on('new_order', (data) => {
-      addNotification({
-        id: Date.now(),
-        type: 'new_order',
-        title: 'New Order',
-        message: `You have a new order #${data.orderNumber} (${data.itemCount} item${data.itemCount !== 1 ? 's' : ''}).`,
-        link: '/vendor-dashboard/orders',
-        at: new Date(),
+        id: data.id || Date.now(),
+        type: data.type,
+        title: data.title,
+        message: data.message,
+        link: data.link || null,
+        at: data.at || new Date(),
+        read: false,
       });
     });
 
     return () => {
-      socket.off('order_confirmed');
-      socket.off('order_shipped');
-      socket.off('new_order');
+      socket.off('notification');
     };
   }, [isAuthenticated, addNotification]);
 
@@ -76,7 +70,17 @@ export default function useRealtimeNotifications() {
     }
   }, [isAuthenticated]);
 
-  const markAllRead = useCallback(() => setUnreadCount(0), []);
+  const markAllRead = useCallback(() => {
+    setUnreadCount(0);
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    // Persist read state to backend
+    fetch('/api/notifications/mark-read', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'all' }),
+    }).catch(() => {});
+  }, []);
 
   const clearAll = useCallback(() => {
     setNotifications([]);
