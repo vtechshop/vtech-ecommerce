@@ -190,16 +190,16 @@ const Home = React.memo(() => {
                   categories.map((category, index) => (
                     <Link key={category.slug} to={`/category/${category.slug}`} className="group stagger-grid-item" style={{ animationDelay: `${index * 0.06}s` }}>
                       <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 hover:-translate-y-1">
-                        <div className="flex items-center justify-center py-5 px-4">
-                          <div className="w-24 h-24 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
-                            {category.image ? (
-                              <img src={normalizeImageUrl(category.image, { width: 96 })} alt={category.name} width={96} height={96} loading="lazy" decoding="async" className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-500" />
-                            ) : (
-                              <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className="aspect-square w-full bg-gray-50 overflow-hidden">
+                          {category.image ? (
+                            <img src={normalizeImageUrl(category.image, { width: 400 })} alt={category.name} width={400} height={400} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <svg className="w-16 h-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                               </svg>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                         <div className="py-3 px-3 text-center bg-gray-50">
                           <h3 className="font-semibold text-sm text-gray-900 group-hover:text-primary-600 transition-colors">{category.name}</h3>
@@ -210,9 +210,7 @@ const Home = React.memo(() => {
                 ) : (
                   [...Array(6)].map((_, i) => (
                     <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-100 animate-pulse">
-                      <div className="flex items-center justify-center py-5 px-4">
-                        <div className="w-24 h-24 rounded-xl bg-gray-200"></div>
-                      </div>
+                      <div className="aspect-square w-full bg-gray-200"></div>
                       <div className="py-3 px-3 text-center bg-gray-50">
                         <div className="h-4 bg-gray-200 rounded w-20 mx-auto"></div>
                       </div>
