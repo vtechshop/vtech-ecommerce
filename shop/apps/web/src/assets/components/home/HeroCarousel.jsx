@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const HeroCarousel = ({ items = [], fallback = null }) => {
   const [current, setCurrent] = useState(0);
@@ -86,25 +85,6 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
         </div>
       ))}
 
-      {/* Arrow buttons */}
-      {items.length > 1 && (
-        <>
-          <button
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); prev(); }}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 bg-black/25 backdrop-blur-sm hover:bg-black/45 rounded-full flex items-center justify-center text-white transition-all"
-            aria-label="Previous slide"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); e.preventDefault(); next(); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 bg-black/25 backdrop-blur-sm hover:bg-black/45 rounded-full flex items-center justify-center text-white transition-all"
-            aria-label="Next slide"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </>
-      )}
 
       {/* Dots */}
       {items.length > 1 && (
