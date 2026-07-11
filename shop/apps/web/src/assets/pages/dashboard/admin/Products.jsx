@@ -477,7 +477,6 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
   const [formData, setFormData] = useState({
     vendorId: product?.vendorId?._id || product?.vendorId || '',
     title: product?.title || '',
-    slug: product?.slug || '',
     description: product?.description || '',
     videoUrl: product?.videoUrl || '',
     price: product?.price || '',
@@ -650,7 +649,6 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
 
     const dataToSubmit = {
       ...formData,
-      slug: formData.slug || undefined,
       vendorId: formData.vendorId || undefined,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       structuredData: schemaData, // Fixed: changed from 'schema' to 'structuredData'
@@ -764,21 +762,6 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 disabled={isViewing}
                 className="input w-full"
                 required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Slug
-                <span className="text-xs text-gray-500 ml-1">(URL identifier — change to fix broken links)</span>
-              </label>
-              <input
-                type="text"
-                value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-') })}
-                disabled={isViewing}
-                className="input w-full font-mono text-sm"
-                placeholder="auto-generated-from-title"
               />
             </div>
 
