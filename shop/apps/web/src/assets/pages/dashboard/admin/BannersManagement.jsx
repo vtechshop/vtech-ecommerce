@@ -281,7 +281,7 @@ const LinkUrlInput = ({ value, onChange }) => {
           </div>
         )}
       </div>
-      <p className="text-xs text-gray-400 mt-1">Shows "Shop Now →" button. Click or type to search.</p>
+      <p className="text-xs text-gray-400 mt-1">Entire banner becomes clickable. Click or type to search.</p>
     </div>
   );
 };
@@ -378,22 +378,26 @@ const BannerModal = ({ banner, onClose, onSave, defaultPlatform = 'website' }) =
                 <p className="text-white/40 text-sm">Upload an image to see preview</p>
               </div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
-            <div className="absolute inset-0 flex items-center px-8">
-              <div className="max-w-xs">
-                <h3 className="text-white font-bold text-lg leading-tight mb-1">
-                  {formData.title || 'Your Banner Title'}
-                </h3>
-                {formData.subtitle && (
-                  <p className="text-white/80 text-xs mb-3 line-clamp-2">{formData.subtitle}</p>
-                )}
-                {formData.link && (
-                  <span className="inline-block bg-white text-gray-900 px-3 py-1.5 rounded-md text-xs font-semibold">
-                    Shop Now →
-                  </span>
-                )}
+            {(formData.title || formData.subtitle) && (
+              <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent pointer-events-none" />
+            )}
+            {(formData.title || formData.subtitle) && (
+              <div className="absolute inset-0 flex items-center px-8 pointer-events-none">
+                <div className="max-w-xs">
+                  {formData.title && (
+                    <h3 className="text-white font-bold text-lg leading-tight mb-1">{formData.title}</h3>
+                  )}
+                  {formData.subtitle && (
+                    <p className="text-white/80 text-xs line-clamp-2">{formData.subtitle}</p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+            {formData.link && (
+              <div className="absolute bottom-2 right-3 text-xs text-white/60 bg-black/30 px-2 py-1 rounded">
+                🔗 Entire banner is clickable
+              </div>
+            )}
           </div>
           <p className="text-xs text-gray-400 mt-1.5">Actual size: ~1400×500px. Recommended image ratio: 16:5</p>
         </div>
