@@ -366,24 +366,33 @@ async function generateInvoicePDF(order, outputStream, seller) {
       drawLine(doc, L, y, R, y, '#e5e7eb', 0.5);
       y += 2;
 
-      // Table column widths
+      // Table column widths — slightly wider price columns for large amounts
       const cols = {
-        sno: 25,
+        sno: 22,
         desc: 0,
-        hsn: 45,
-        qty: 30,
-        unitPrice: 62,
-        discount: 48,
-        taxRate: 38,
-        taxAmt: 55,
-        total: 65,
+        hsn: 42,
+        qty: 28,
+        unitPrice: 68,
+        discount: 52,
+        taxRate: 36,
+        taxAmt: 58,
+        total: 70,
       };
       cols.desc = W - cols.sno - cols.hsn - cols.qty - cols.unitPrice - cols.discount - cols.taxRate - cols.taxAmt - cols.total;
 
       // Table header
-      doc.rect(L, y, W, 20).fillColor('#f9fafb').fill();
+      const headerH = 20;
+      doc.rect(L, y, W, headerH).fillColor('#f0f0ff').fill();
       drawLine(doc, L, y, R, y, '#d1d5db', 0.5);
-      drawLine(doc, L, y + 20, R, y + 20, '#d1d5db', 0.5);
+      drawLine(doc, L, y + headerH, R, y + headerH, '#d1d5db', 0.5);
+
+      // Vertical column separators in header
+      let sepX = L + cols.sno;
+      const headerCols = [cols.desc, cols.hsn, cols.qty, cols.unitPrice, cols.discount, cols.taxRate, cols.taxAmt];
+      headerCols.forEach(cw => {
+        drawLine(doc, sepX, y, sepX, y + headerH, '#d1d5db', 0.4);
+        sepX += cw;
+      });
 
       let hx = L;
       const hY = y + 6;
@@ -398,7 +407,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
       doc.text(isIntraState ? 'CGST+SGST' : 'IGST', hx, hY, { width: cols.taxAmt, align: 'right' }); hx += cols.taxAmt;
       doc.text('TOTAL', hx, hY, { width: cols.total, align: 'right' });
 
-      let rowY = y + 24;
+      let rowY = y + headerH + 4;
 
       const items = order.items || [];
       const itemSubtotal = items.reduce((sum, i) => sum + (i.priceSnapshot || 0) * (i.qty || 1), 0);
@@ -410,48 +419,65 @@ async function generateInvoicePDF(order, outputStream, seller) {
           rowY = doc.page.margins.top + 5;
         }
 
-        // Zebra stripe
-        if (index % 2 === 0) {
-          doc.rect(L, rowY - 3, W, 20).fillColor('#f9fafb').fill();
-        }
-
         const lineTotal = (item.priceSnapshot || 0) * (item.qty || 1);
         const itemTax = itemSubtotal > 0 ? (lineTotal / itemSubtotal) * taxTotal : 0;
         const itemTaxRate = lineTotal > 0 ? ((itemTax / lineTotal) * 100) : 0;
         const itemGrandTotal = lineTotal + itemTax;
+
+        // ── Pre-calculate product column height so rows never overlap ──
+        const productColW = cols.desc - 5;
+        let prodH = 0;
+
+        doc.font('Helvetica-Bold').fontSize(7);
+        prodH += doc.heightOfString(item.name || 'Product', { width: productColW });
+        if (item.variantName) {
+          doc.font('Helvetica').fontSize(6);
+          prodH += doc.heightOfString(item.variantName, { width: productColW });
+        }
+        if (item.sku) {
+          doc.font('Helvetica').fontSize(5);
+          prodH += doc.heightOfString(`SKU: ${item.sku}`, { width: productColW });
+        }
+        if (item.warranty?.hasWarranty && item.warranty.duration) {
+          doc.font('Helvetica-Bold').fontSize(5.5);
+          prodH += doc.heightOfString('Warranty: XX Months', { width: productColW });
+        }
+
+        const rowH = Math.max(prodH, 16) + 8;
+
+        // Zebra stripe (correct dynamic height)
+        if (index % 2 === 0) {
+          doc.rect(L, rowY - 2, W, rowH).fillColor('#f9fafb').fill();
+        }
 
         let cx = L;
         doc.fontSize(6.5).font('Helvetica').fillColor('#374151');
 
         doc.text(String(index + 1), cx, rowY, { width: cols.sno, align: 'center' }); cx += cols.sno;
 
-        // Product description - structured layout
+        // Product description
         doc.font('Helvetica-Bold').fontSize(7).fillColor('#111827')
-          .text(item.name || 'Product', cx, rowY, { width: cols.desc - 5, align: 'left' });
+          .text(item.name || 'Product', cx, rowY, { width: productColW, align: 'left' });
         if (item.variantName) {
           doc.font('Helvetica').fontSize(6).fillColor('#6b7280')
-            .text(item.variantName, cx, doc.y, { width: cols.desc - 5 });
+            .text(item.variantName, cx, doc.y, { width: productColW });
         }
         if (item.sku) {
           doc.font('Helvetica').fontSize(5).fillColor('#b0b0b0')
-            .text(`SKU: ${item.sku}`, cx, doc.y, { width: cols.desc - 5 });
+            .text(`SKU: ${item.sku}`, cx, doc.y, { width: productColW });
         }
-        // Warranty badge
         if (item.warranty?.hasWarranty && item.warranty.duration) {
           const wDur = item.warranty.duration;
           const wType = item.warranty.durationType === 'lifetime' ? 'Lifetime' :
             `${wDur} ${item.warranty.durationType === 'years' ? (wDur === 1 ? 'Year' : 'Years') : (wDur === 1 ? 'Month' : 'Months')}`;
           doc.font('Helvetica-Bold').fontSize(5.5).fillColor('#4f46e5')
-            .text(`Warranty: ${wType}`, cx, doc.y, { width: cols.desc - 5 });
+            .text(`Warranty: ${wType}`, cx, doc.y, { width: productColW });
         }
         cx += cols.desc;
 
-        // HSN code
+        // All numeric columns aligned to top of row (rowY)
         doc.fontSize(6.5).font('Helvetica').fillColor('#374151');
         doc.text(item.hsnCode || item.hsn || '-', cx, rowY, { width: cols.hsn, align: 'center' }); cx += cols.hsn;
-
-        // Reset Y for other columns (align to row start)
-        doc.fontSize(6.5).font('Helvetica').fillColor('#374151');
         doc.text(String(item.qty || 1), cx, rowY, { width: cols.qty, align: 'center' }); cx += cols.qty;
         doc.text(formatINR(item.priceSnapshot || 0), cx, rowY, { width: cols.unitPrice, align: 'right' }); cx += cols.unitPrice;
 
@@ -464,14 +490,14 @@ async function generateInvoicePDF(order, outputStream, seller) {
         }
         cx += cols.discount;
 
-        // Tax - use item's taxRate if available, else calculate from order totals
+        // Tax
         const displayTaxRate = item.taxRate != null ? item.taxRate : (taxTotal > 0 ? itemTaxRate : 0);
         if (displayTaxRate > 0 || taxTotal > 0) {
           doc.fillColor('#374151');
           doc.text(displayTaxRate.toFixed(0) + '%', cx, rowY, { width: cols.taxRate, align: 'center' }); cx += cols.taxRate;
           doc.text(formatINR(itemTax), cx, rowY, { width: cols.taxAmt, align: 'right' }); cx += cols.taxAmt;
         } else {
-          doc.fillColor('#9ca3af');
+          doc.fillColor('#6b7280');
           doc.text('Incl.', cx, rowY, { width: cols.taxRate, align: 'center' }); cx += cols.taxRate;
           doc.text('-', cx, rowY, { width: cols.taxAmt, align: 'right' }); cx += cols.taxAmt;
         }
@@ -480,11 +506,14 @@ async function generateInvoicePDF(order, outputStream, seller) {
         doc.font('Helvetica-Bold').fillColor('#111827')
           .text(formatINR(itemGrandTotal), cx, rowY, { width: cols.total, align: 'right' });
 
-        rowY += 22;
+        // Row separator line
+        drawLine(doc, L, rowY + rowH - 3, R, rowY + rowH - 3, '#e5e7eb', 0.3);
+
+        rowY += rowH;
       });
 
       // Table bottom line
-      drawLine(doc, L, rowY - 2, R, rowY - 2, '#d1d5db', 0.5);
+      drawLine(doc, L, rowY, R, rowY, '#d1d5db', 0.5);
       rowY += 8;
       doc.y = rowY;
 
