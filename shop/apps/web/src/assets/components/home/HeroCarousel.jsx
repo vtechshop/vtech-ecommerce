@@ -55,11 +55,11 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             />
           )}
 
-          {/* Image — natural size on desktop; on mobile enforce min-h and crop from right so left text stays visible */}
+          {/* Image */}
           <img
             src={item.image || item.imageUrl}
             alt={item.title || ''}
-            className="w-full h-auto block min-h-[200px] object-cover object-left sm:min-h-0 sm:object-none"
+            className="w-full h-auto block"
             loading={index === 0 ? 'eager' : 'lazy'}
             fetchPriority={index === 0 ? 'high' : 'auto'}
           />
