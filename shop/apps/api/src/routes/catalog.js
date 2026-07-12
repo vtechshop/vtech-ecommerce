@@ -116,7 +116,27 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
 router.get('/products/:slug', cacheMiddleware(600), async (req, res, next) => {
   try {
     const { slug } = req.params;
-    const product = await Product.findOne({ slug, published: true }).populate('vendorId', 'storeName slug').populate('categoryIds', 'name slug').lean();
+    const populate = [
+      { path: 'vendorId', select: 'storeName slug' },
+      { path: 'categoryIds', select: 'name slug' },
+    ];
+
+    // 1. Exact slug match
+    let product = await Product.findOne({ slug, published: true }).populate(populate).lean();
+
+    // 2. Fallback: slug contains keywords → fuzzy title match
+    //    e.g. "vegetable-cutting-machine-with-conveyor" finds
+    //    "Automatic Vegetable Cutting Machine with Conveyor"
+    if (!product) {
+      const keywords = slug.replace(/-+/g, ' ').trim();
+      const words = keywords.split(' ').filter(w => w.length > 2);
+      if (words.length > 0) {
+        const regexParts = words.map(w => `(?=.*${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`).join('');
+        const fuzzyRegex = new RegExp(regexParts, 'i');
+        product = await Product.findOne({ title: fuzzyRegex, published: true }).populate(populate).lean();
+      }
+    }
+
     if (!product) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' }});
     res.json({ success: true, data: product });
   } catch (err) {
