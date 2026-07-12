@@ -382,7 +382,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
 
       // Table header
       const headerH = 20;
-      const P = 3; // column inner padding (px) — keeps text away from separator lines
+      const P = 7; // column inner padding (px) — keeps text away from separator lines
       doc.rect(L, y, W, headerH).fillColor('#f3f4f6').fill();
       drawLine(doc, L, y, R, y, '#d1d5db', 0.5);
       drawLine(doc, L, y + headerH, R, y + headerH, '#d1d5db', 0.5);
