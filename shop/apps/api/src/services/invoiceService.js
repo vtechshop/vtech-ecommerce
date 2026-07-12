@@ -382,7 +382,8 @@ async function generateInvoicePDF(order, outputStream, seller) {
 
       // Table header
       const headerH = 20;
-      doc.rect(L, y, W, headerH).fillColor('#f0f0ff').fill();
+      const P = 3; // column inner padding (px) — keeps text away from separator lines
+      doc.rect(L, y, W, headerH).fillColor('#f3f4f6').fill();
       drawLine(doc, L, y, R, y, '#d1d5db', 0.5);
       drawLine(doc, L, y + headerH, R, y + headerH, '#d1d5db', 0.5);
 
@@ -397,15 +398,15 @@ async function generateInvoicePDF(order, outputStream, seller) {
       let hx = L;
       const hY = y + 6;
       doc.fontSize(6).font('Helvetica-Bold').fillColor('#374151');
-      doc.text('#', hx, hY, { width: cols.sno, align: 'center' }); hx += cols.sno;
-      doc.text('PRODUCT', hx, hY, { width: cols.desc, align: 'left' }); hx += cols.desc;
-      doc.text('HSN', hx, hY, { width: cols.hsn, align: 'center' }); hx += cols.hsn;
-      doc.text('QTY', hx, hY, { width: cols.qty, align: 'center' }); hx += cols.qty;
-      doc.text('UNIT PRICE', hx, hY, { width: cols.unitPrice, align: 'right' }); hx += cols.unitPrice;
-      doc.text('DISCOUNT', hx, hY, { width: cols.discount, align: 'right' }); hx += cols.discount;
-      doc.text('GST %', hx, hY, { width: cols.taxRate, align: 'center' }); hx += cols.taxRate;
-      doc.text(isIntraState ? 'CGST+SGST' : 'IGST', hx, hY, { width: cols.taxAmt, align: 'right' }); hx += cols.taxAmt;
-      doc.text('TOTAL', hx, hY, { width: cols.total, align: 'right' });
+      doc.text('#',                                    hx,       hY, { width: cols.sno,              align: 'center' }); hx += cols.sno;
+      doc.text('PRODUCT',                             hx + P,   hY, { width: cols.desc - P,          align: 'left'   }); hx += cols.desc;
+      doc.text('HSN',                                 hx,       hY, { width: cols.hsn,               align: 'center' }); hx += cols.hsn;
+      doc.text('QTY',                                 hx,       hY, { width: cols.qty,               align: 'center' }); hx += cols.qty;
+      doc.text('UNIT PRICE',                          hx,       hY, { width: cols.unitPrice - P,      align: 'center' }); hx += cols.unitPrice;
+      doc.text('DISCOUNT',                            hx,       hY, { width: cols.discount - P,       align: 'center' }); hx += cols.discount;
+      doc.text('GST %',                               hx,       hY, { width: cols.taxRate,            align: 'center' }); hx += cols.taxRate;
+      doc.text(isIntraState ? 'CGST+SGST' : 'IGST',  hx,       hY, { width: cols.taxAmt - P,         align: 'center' }); hx += cols.taxAmt;
+      doc.text('TOTAL',                               hx,       hY, { width: cols.total - P,          align: 'center' });
 
       let rowY = y + headerH + 4;
 
@@ -425,7 +426,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
         const itemGrandTotal = lineTotal + itemTax;
 
         // ── Pre-calculate product column height so rows never overlap ──
-        const productColW = cols.desc - 5;
+        const productColW = cols.desc - P - 5; // account for left-padding P
         let prodH = 0;
 
         doc.font('Helvetica-Bold').fontSize(7);
@@ -440,7 +441,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
         }
         if (item.warranty?.hasWarranty && item.warranty.duration) {
           doc.font('Helvetica-Bold').fontSize(5.5);
-          prodH += doc.heightOfString('Warranty: XX Months', { width: productColW });
+          prodH += doc.heightOfString('Warranty: 12 Months', { width: productColW });
         }
 
         const rowH = Math.max(prodH, 16) + 8;
@@ -455,38 +456,39 @@ async function generateInvoicePDF(order, outputStream, seller) {
 
         doc.text(String(index + 1), cx, rowY, { width: cols.sno, align: 'center' }); cx += cols.sno;
 
-        // Product description
+        // Product description — left-padded by P so text doesn't sit on separator line
+        const pdW = productColW - P;
         doc.font('Helvetica-Bold').fontSize(7).fillColor('#111827')
-          .text(item.name || 'Product', cx, rowY, { width: productColW, align: 'left' });
+          .text(item.name || 'Product', cx + P, rowY, { width: pdW, align: 'left' });
         if (item.variantName) {
           doc.font('Helvetica').fontSize(6).fillColor('#6b7280')
-            .text(item.variantName, cx, doc.y, { width: productColW });
+            .text(item.variantName, cx + P, doc.y, { width: pdW });
         }
         if (item.sku) {
           doc.font('Helvetica').fontSize(5).fillColor('#b0b0b0')
-            .text(`SKU: ${item.sku}`, cx, doc.y, { width: productColW });
+            .text(`SKU: ${item.sku}`, cx + P, doc.y, { width: pdW });
         }
         if (item.warranty?.hasWarranty && item.warranty.duration) {
           const wDur = item.warranty.duration;
           const wType = item.warranty.durationType === 'lifetime' ? 'Lifetime' :
             `${wDur} ${item.warranty.durationType === 'years' ? (wDur === 1 ? 'Year' : 'Years') : (wDur === 1 ? 'Month' : 'Months')}`;
           doc.font('Helvetica-Bold').fontSize(5.5).fillColor('#4f46e5')
-            .text(`Warranty: ${wType}`, cx, doc.y, { width: productColW });
+            .text(`Warranty: ${wType}`, cx + P, doc.y, { width: pdW });
         }
         cx += cols.desc;
 
-        // All numeric columns aligned to top of row (rowY)
+        // All numeric columns aligned to top of row (rowY); right-padded by P
         doc.fontSize(6.5).font('Helvetica').fillColor('#374151');
         doc.text(item.hsnCode || item.hsn || '-', cx, rowY, { width: cols.hsn, align: 'center' }); cx += cols.hsn;
         doc.text(String(item.qty || 1), cx, rowY, { width: cols.qty, align: 'center' }); cx += cols.qty;
-        doc.text(formatINR(item.priceSnapshot || 0), cx, rowY, { width: cols.unitPrice, align: 'right' }); cx += cols.unitPrice;
+        doc.text(formatINR(item.priceSnapshot || 0), cx, rowY, { width: cols.unitPrice - P, align: 'right' }); cx += cols.unitPrice;
 
         // Discount
         const itemDiscount = item.discount || 0;
         if (itemDiscount > 0) {
-          doc.fillColor('#059669').text('-' + formatINR(itemDiscount), cx, rowY, { width: cols.discount, align: 'right' });
+          doc.fillColor('#059669').text('-' + formatINR(itemDiscount), cx, rowY, { width: cols.discount - P, align: 'right' });
         } else {
-          doc.fillColor('#9ca3af').text('-', cx, rowY, { width: cols.discount, align: 'right' });
+          doc.fillColor('#9ca3af').text('-', cx, rowY, { width: cols.discount - P, align: 'right' });
         }
         cx += cols.discount;
 
@@ -495,16 +497,16 @@ async function generateInvoicePDF(order, outputStream, seller) {
         if (displayTaxRate > 0 || taxTotal > 0) {
           doc.fillColor('#374151');
           doc.text(displayTaxRate.toFixed(0) + '%', cx, rowY, { width: cols.taxRate, align: 'center' }); cx += cols.taxRate;
-          doc.text(formatINR(itemTax), cx, rowY, { width: cols.taxAmt, align: 'right' }); cx += cols.taxAmt;
+          doc.text(formatINR(itemTax), cx, rowY, { width: cols.taxAmt - P, align: 'right' }); cx += cols.taxAmt;
         } else {
           doc.fillColor('#6b7280');
           doc.text('Incl.', cx, rowY, { width: cols.taxRate, align: 'center' }); cx += cols.taxRate;
-          doc.text('-', cx, rowY, { width: cols.taxAmt, align: 'right' }); cx += cols.taxAmt;
+          doc.text('-', cx, rowY, { width: cols.taxAmt - P, align: 'right' }); cx += cols.taxAmt;
         }
 
-        // Total
+        // Total — right-padded so value doesn't sit on the right page margin
         doc.font('Helvetica-Bold').fillColor('#111827')
-          .text(formatINR(itemGrandTotal), cx, rowY, { width: cols.total, align: 'right' });
+          .text(formatINR(itemGrandTotal), cx, rowY, { width: cols.total - P, align: 'right' });
 
         // Row separator line
         drawLine(doc, L, rowY + rowH - 3, R, rowY + rowH - 3, '#e5e7eb', 0.3);
