@@ -55,11 +55,11 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             />
           )}
 
-          {/* Image */}
+          {/* Image — min-h on mobile so wide landscape banners don't collapse to a tiny strip */}
           <img
             src={item.image || item.imageUrl}
             alt={item.title || ''}
-            className="w-full h-auto block"
+            className="w-full h-auto block min-h-[200px] sm:min-h-0 object-cover object-center sm:object-fill"
             loading={index === 0 ? 'eager' : 'lazy'}
             fetchPriority={index === 0 ? 'high' : 'auto'}
           />
