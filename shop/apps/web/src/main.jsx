@@ -26,9 +26,9 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000,        // 5 min — data stays fresh, no re-fetch
-      gcTime: 24 * 60 * 60 * 1000,     // 24 hours in-memory (persister handles disk)
-      refetchOnMount: false,
+      staleTime: 60 * 1000,             // 1 min — show cached, refetch after 1 min
+      gcTime: 30 * 60 * 1000,           // 30 min in-memory
+      refetchOnMount: true,             // refetch stale data when component mounts
     },
   },
 });
@@ -52,7 +52,7 @@ const AppWrapper = (
             client={queryClient}
             persistOptions={{
               persister,
-              maxAge: 24 * 60 * 60 * 1000, // 24 hours cache on disk
+              maxAge: 30 * 60 * 1000, // 30 min cache on disk
               dehydrateOptions: {
                 shouldDehydrateQuery: (query) => {
                   // Only persist public/non-sensitive queries

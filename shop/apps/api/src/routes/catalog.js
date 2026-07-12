@@ -124,16 +124,23 @@ router.get('/products/:slug', cacheMiddleware(600), async (req, res, next) => {
     // 1. Exact slug match
     let product = await Product.findOne({ slug, published: true }).populate(populate).lean();
 
-    // 2. Fallback: slug contains keywords → fuzzy title match
+    // 2. Fallback: convert slug to keywords → $text search
     //    e.g. "vegetable-cutting-machine-with-conveyor" finds
     //    "Automatic Vegetable Cutting Machine with Conveyor"
     if (!product) {
       const keywords = slug.replace(/-+/g, ' ').trim();
-      const words = keywords.split(' ').filter(w => w.length > 2);
-      if (words.length > 0) {
-        const regexParts = words.map(w => `(?=.*${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`).join('');
-        const fuzzyRegex = new RegExp(regexParts, 'i');
-        product = await Product.findOne({ title: fuzzyRegex, published: true }).populate(populate).lean();
+      if (keywords.length > 2) {
+        try {
+          product = await Product.findOne(
+            { published: true, $text: { $search: keywords } },
+            { score: { $meta: 'textScore' } }
+          )
+            .sort({ score: { $meta: 'textScore' } })
+            .populate(populate)
+            .lean();
+        } catch {
+          // $text index not available — skip fallback
+        }
       }
     }
 
