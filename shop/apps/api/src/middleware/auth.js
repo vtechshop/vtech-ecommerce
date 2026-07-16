@@ -13,6 +13,28 @@ async function authenticate(req, res, next) {
       });
     }
 
+    // API Key authentication (vt_live_ prefix)
+    if (token.startsWith('vt_live_')) {
+      const apiKeyService = require('../services/apiKeyService');
+      const apiKey = await apiKeyService.validateKey(token);
+
+      if (!apiKey || !apiKey.userId) {
+        return res.status(401).json({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Invalid or expired API key' },
+        });
+      }
+
+      req.user = {
+        _id: apiKey.userId._id,
+        role: apiKey.userId.role,
+        email: apiKey.userId.email,
+        isApiKey: true,
+        apiKeyPermissions: apiKey.permissions,
+      };
+      return next();
+    }
+
     const decoded = verifyAccessToken(token);
 
     // CRITICAL SECURITY FIX: Validate token data against database
