@@ -583,6 +583,9 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
     },
     onSuccess: (result) => {
       toast.success(`Product ${result.action} successfully`);
+      // Invalidate home page featured cache so changes reflect immediately
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       onSave();
     },
     onError: (error) => {
