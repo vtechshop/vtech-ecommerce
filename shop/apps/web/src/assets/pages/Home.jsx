@@ -79,7 +79,7 @@ const Home = React.memo(() => {
   const { data: featuredProducts, isLoading } = useQuery({
     queryKey: ['featured-products'],
     queryFn: async () => {
-      const { data } = await api.get('/catalog/products?featured=true&limit=8');
+      const { data } = await api.get('/catalog/products?featured=true&limit=20');
       return data.data;
     },
     staleTime: 10 * 60 * 1000,
