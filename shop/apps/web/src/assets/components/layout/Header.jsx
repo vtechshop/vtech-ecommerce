@@ -82,7 +82,66 @@ const Header = ({ onMobileMenuToggle }) => {
     }
   };
 
+  const NAV_QUICK = [
+    {
+      id: 'yt',
+      href: 'https://www.youtube.com/@makethingsbest',
+      external: true,
+      title: 'Watch Demo',
+      aria: 'Watch VTECH Kitchen demos on YouTube',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'call',
+      href: 'tel:+919944556683',
+      external: false,
+      title: 'Call Now',
+      aria: 'Call VTECH Kitchen',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+        </svg>
+      ),
+    },
+    {
+      id: 'maps',
+      href: 'https://www.google.com/maps/search/VTech+Kitchen+Ganapathy+Coimbatore',
+      external: true,
+      title: 'Get Directions',
+      aria: 'Get directions to VTECH Kitchen store',
+      icon: (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      ),
+    },
+  ];
+
   return (
+    <>
+    <style>{`
+      .nqb {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 38px; height: 38px; border-radius: 50%;
+        border: 1px solid rgba(0,0,0,0.13);
+        background: transparent;
+        color: #4b5563;
+        cursor: pointer; text-decoration: none;
+        transition: background .25s ease, border-color .25s ease,
+                    color .25s ease, transform .25s ease, box-shadow .25s ease;
+        flex-shrink: 0;
+      }
+      .dark .nqb { border-color: rgba(255,255,255,0.13); color: rgba(255,255,255,0.8); }
+      .nqb:hover { transform: scale(1.08); color: #fff; }
+      .nqb-yt:hover   { background:#dc2626; border-color:#dc2626; box-shadow:0 4px 16px rgba(220,38,38,.38); }
+      .nqb-call:hover { background:#2563eb; border-color:#2563eb; box-shadow:0 4px 16px rgba(37,99,235,.38); }
+      .nqb-maps:hover { background:#059669; border-color:#059669; box-shadow:0 4px 16px rgba(5,150,105,.38); }
+    `}</style>
     <header className={`bg-white dark:bg-gray-900 sticky top-0 z-40 transition-all duration-500 backdrop-blur-sm ${isScrolled ? 'py-2 shadow-2xl bg-white/95 dark:bg-gray-900/95' : 'py-3 shadow-md'} ${isScrolled && !isDashboardPage ? 'transform -translate-y-full' : 'transform translate-y-0'}`}>
       {/* Main header */}
       <div className="container mx-auto px-3 sm:px-4 md:px-6">
@@ -271,23 +330,22 @@ const Header = ({ onMobileMenuToggle }) => {
             <Link to="/page/about" className={navClass('/page/about')}>About</Link>
             <Link to="/track-order" className={navClass('/track-order')}>Track Order</Link>
             <Link to="/warranty-check" className={navClass('/warranty-check')}>Warranty Check</Link>
-            {/* Only show Become Vendor/Affiliate for non-logged in users */}
-            {!isAuthenticated && (
-              <div className="ml-auto flex items-center gap-4">
-                <Link
-                  to="/register?role=vendor"
-                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-md hover:shadow-lg"
+            {/* Quick action icon buttons — always visible */}
+            <div className="ml-auto flex items-center gap-3">
+              {NAV_QUICK.map((btn) => (
+                <a
+                  key={btn.id}
+                  href={btn.href}
+                  target={btn.external ? '_blank' : '_self'}
+                  rel={btn.external ? 'noopener noreferrer' : undefined}
+                  title={btn.title}
+                  aria-label={btn.aria}
+                  className={`nqb nqb-${btn.id}`}
                 >
-                  Become a Vendor
-                </Link>
-                <Link
-                  to="/register?role=affiliate"
-                  className="px-4 py-2 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors font-medium shadow-md hover:shadow-lg"
-                >
-                  Become an Affiliate
-                </Link>
-              </div>
-            )}
+                  {btn.icon}
+                </a>
+              ))}
+            </div>
           </nav>
           );
         })()}
@@ -315,32 +373,30 @@ const Header = ({ onMobileMenuToggle }) => {
             <Link to="/blog" className={mobileClass('/blog')} onClick={() => setMobileMenuOpen(false)}>Blog</Link>
             <Link to="/page/about" className={mobileClass('/page/about')} onClick={() => setMobileMenuOpen(false)}>About</Link>
             <Link to="/track-order" className={mobileClass('/track-order')} onClick={() => setMobileMenuOpen(false)}>Track Order</Link>
-            {/* Only show Become Vendor/Affiliate for non-logged in users */}
-            {!isAuthenticated && (
-              <>
-                <hr className="my-2" />
-                <Link
-                  to="/register?role=vendor"
-                  className="py-2 px-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium text-center"
+            {/* Quick action icons in mobile menu */}
+            <hr className="my-2 dark:border-gray-700" />
+            <div className="flex items-center justify-center gap-4 py-2">
+              {NAV_QUICK.map((btn) => (
+                <a
+                  key={btn.id}
+                  href={btn.href}
+                  target={btn.external ? '_blank' : '_self'}
+                  rel={btn.external ? 'noopener noreferrer' : undefined}
+                  aria-label={btn.aria}
+                  className={`nqb nqb-${btn.id}`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Become a Vendor
-                </Link>
-                <Link
-                  to="/register?role=affiliate"
-                  className="py-2 px-4 bg-secondary-600 text-white rounded-lg hover:bg-secondary-700 transition-colors font-medium text-center"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Become an Affiliate
-                </Link>
-              </>
-            )}
+                  {btn.icon}
+                </a>
+              ))}
+            </div>
           </nav>
         </div>
         </AnimatedDiv>
           );
       })()}
     </header>
+    </>
   );
 };
 
