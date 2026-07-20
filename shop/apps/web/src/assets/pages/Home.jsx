@@ -297,45 +297,11 @@ const Home = React.memo(() => {
               </Suspense>
             )}
 
-            {/* Join as Vendor or Affiliate */}
-            {(user?.role !== 'vendor' || user?.role !== 'affiliate') && (
+            {/* Join as Affiliate */}
+            {user?.role !== 'affiliate' && (
               <ScrollReveal animation="fadeUp" className="mb-8" as="section">
                 <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
-                <div className={`grid gap-6 ${
-                  user?.role === 'vendor' || user?.role === 'affiliate'
-                    ? 'md:grid-cols-1 max-w-2xl mx-auto'
-                    : 'md:grid-cols-2'
-                }`}>
-                  {user?.role !== 'vendor' && (
-                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-primary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                      <div className="flex items-center mb-4">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mr-3 sm:mr-4">
-                          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                        </div>
-                        <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{t('home.becomeVendor')}</h3>
-                      </div>
-                      <p className="text-gray-700 mb-6 leading-relaxed">{t('home.vendorDesc')}</p>
-                      <ul className="space-y-2 mb-6">
-                        {[t('home.easyProductMgmt'), t('home.powerfulAnalytics'), t('home.advertisingTools'), t('home.securePayment')].map((text, i) => (
-                          <li key={i} className="flex items-center text-gray-700">
-                            <svg className="w-5 h-5 text-green-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            {text}
-                          </li>
-                        ))}
-                      </ul>
-                      <Link
-                        to={user ? '/dashboard/become-vendor' : '/register?role=vendor'}
-                        className="inline-block w-full text-center bg-primary-600 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-primary-700 transition-colors duration-200 shadow-md hover:shadow-lg"
-                      >
-                        {t('home.startSelling')}
-                      </Link>
-                    </div>
-                  )}
-
+                <div className="grid gap-6 md:grid-cols-1 max-w-2xl mx-auto">
                   {user?.role !== 'affiliate' && (
                     <div className="bg-gradient-to-br from-secondary-50 to-secondary-100 rounded-xl p-4 sm:p-6 md:p-8 border border-secondary-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
                       <div className="flex items-center mb-4">
