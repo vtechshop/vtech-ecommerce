@@ -599,6 +599,7 @@ exports.getProducts = async (req, res, next) => {
     const query = {};
     if (status === 'published') query.published = true;
     if (status === 'unpublished') query.published = false;
+    if (status === 'featured') query.featured = true;
     if (vendorId) query.vendorId = vendorId;
     if (search) {
       // Treat hyphens and spaces as interchangeable ("pre p" finds "Pre-Programmed")

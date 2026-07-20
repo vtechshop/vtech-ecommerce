@@ -260,6 +260,7 @@ const Products = () => {
               { value: '', label: 'All Products' },
               { value: 'published', label: 'Published' },
               { value: 'unpublished', label: 'Unpublished' },
+              { value: 'featured', label: '★ Featured' },
             ]}
             placeholder="All Products"
             className="w-full"
@@ -339,7 +340,14 @@ const Products = () => {
                         />
                       )}
                       <div>
-                        <p className="font-medium">{product.title}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-medium">{product.title}</p>
+                          {product.featured && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200 leading-none">
+                              ★ Featured
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-700">{product.brand}</p>
                         <p className="text-xs text-gray-500">SKU: {product.sku || 'N/A'}</p>
                       </div>
