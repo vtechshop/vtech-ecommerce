@@ -136,8 +136,10 @@ const Home = React.memo(() => {
         <StaticHero t={t} />
       )}
 
-      {/* Quick Connect Strip — YouTube, Call, Location */}
-      <QuickConnectStrip />
+      {/* Glass Quick Action Bar — negative margin floats it over the hero bottom */}
+      <div className="relative z-20 -mt-9 sm:-mt-10">
+        <QuickConnectStrip />
+      </div>
 
       {/* Main Content with Sidebars */}
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-8 max-w-screen-2xl">
