@@ -12,6 +12,7 @@ import { normalizeImageUrl } from '@/utils/placeholders';
 
 // HeroCarousel is above-fold LCP — import eagerly so it doesn't add a lazy-load waterfall
 import HeroCarousel from '@/components/home/HeroCarousel';
+import QuickConnectStrip from '@/components/home/QuickConnectStrip';
 
 // Lazy load below-fold components for better initial load
 const FlashSaleBanner = lazy(() => import('@/components/flash-sale/FlashSaleBanner'));
@@ -134,6 +135,9 @@ const Home = React.memo(() => {
       ) : (
         <StaticHero t={t} />
       )}
+
+      {/* Quick Connect Strip — YouTube, Call, Location */}
+      <QuickConnectStrip />
 
       {/* Main Content with Sidebars */}
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-8 max-w-screen-2xl">
