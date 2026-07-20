@@ -57,6 +57,7 @@ const CarouselManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-carousel'] });
+      queryClient.invalidateQueries({ queryKey: ['carousel-items'] });
       toast.success(`Carousel item ${selected ? 'updated' : 'created'} successfully`);
       setModalOpen(false);
       resetForm();
@@ -74,6 +75,7 @@ const CarouselManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-carousel'] });
+      queryClient.invalidateQueries({ queryKey: ['carousel-items'] });
       toast.success('Carousel item deleted successfully');
     },
     onError: (error) => {
@@ -89,6 +91,7 @@ const CarouselManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-carousel'] });
+      queryClient.invalidateQueries({ queryKey: ['carousel-items'] });
       toast.success('Status updated');
     },
     onError: (error) => {
@@ -104,6 +107,7 @@ const CarouselManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-carousel'] });
+      queryClient.invalidateQueries({ queryKey: ['carousel-items'] });
       toast.success('Order updated');
     },
     onError: (error) => {

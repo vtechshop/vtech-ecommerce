@@ -24,6 +24,7 @@ const BannersManagement = ({ platformFilter }) => {
     mutationFn: () => api.post('/banners/fix-platform'),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+      queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
       toast.success(`Fixed ${res.data.fixed} banners → set to Website`);
     },
     onError: () => toast.error('Fix failed'),
@@ -33,6 +34,7 @@ const BannersManagement = ({ platformFilter }) => {
     mutationFn: async (id) => api.delete(`/banners/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+      queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
       toast.success('Banner deleted');
     },
     onError: (err) => toast.error(err.response?.data?.error?.message || 'Delete failed'),
@@ -42,6 +44,7 @@ const BannersManagement = ({ platformFilter }) => {
     mutationFn: async ({ id, isActive }) => api.put(`/banners/${id}`, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+      queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
     },
   });
 
@@ -176,6 +179,7 @@ const BannersManagement = ({ platformFilter }) => {
           onClose={() => { setShowModal(false); setEditingBanner(null); }}
           onSave={() => {
             queryClient.invalidateQueries({ queryKey: ['admin-banners'] });
+      queryClient.invalidateQueries({ queryKey: ['hero-banners'] });
             setShowModal(false);
             setEditingBanner(null);
           }}

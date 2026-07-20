@@ -29,6 +29,7 @@ const Categories = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       setShowModal(false);
       toast.success('Category created successfully!');
     },
@@ -43,6 +44,7 @@ const Categories = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       setShowModal(false);
       toast.success('Category updated successfully!');
     },
@@ -57,6 +59,7 @@ const Categories = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Category deleted successfully!');
     },
     onError: (error) => {
@@ -70,6 +73,7 @@ const Categories = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Delete request dismissed');
     },
   });

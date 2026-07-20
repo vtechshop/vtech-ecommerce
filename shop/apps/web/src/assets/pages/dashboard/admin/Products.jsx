@@ -51,6 +51,7 @@ const Products = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
       toast.success('Product approved successfully');
     },
     onError: (error) => {
@@ -64,6 +65,7 @@ const Products = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
       toast.success('Product rejected');
     },
     onError: (error) => {
@@ -77,6 +79,7 @@ const Products = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
       toast.success('Product deleted successfully');
     },
     onError: (error) => {
@@ -92,6 +95,7 @@ const Products = () => {
     },
     onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
       setSelectedProducts([]);
       toast.success(`${count} product(s) deleted successfully`);
     },
@@ -107,6 +111,7 @@ const Products = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
       setSelectedProducts([]);
       setPricePercent('');
       toast.success(`${data.data.updated} product(s) price updated`);
@@ -468,6 +473,7 @@ const Products = () => {
           }}
           onSave={() => {
             queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
             setShowModal(false);
             setEditingProduct(null);
             setViewingProduct(null);
@@ -586,6 +592,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
       // Invalidate home page featured cache so changes reflect immediately
       queryClient.invalidateQueries({ queryKey: ['featured-products'] });
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
       onSave();
     },
     onError: (error) => {
