@@ -77,7 +77,7 @@ const Home = React.memo(() => {
 
   // Featured products
   const { data: featuredProducts, isLoading } = useQuery({
-    queryKey: ['featured-products'],
+    queryKey: ['featured-products', 20],
     queryFn: async () => {
       const { data } = await api.get('/catalog/products?featured=true&limit=20');
       return data.data;
