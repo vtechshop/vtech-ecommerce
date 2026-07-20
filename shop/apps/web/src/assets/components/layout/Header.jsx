@@ -390,23 +390,6 @@ const Header = ({ onMobileMenuToggle }) => {
             <Link to="/blog" className={mobileClass('/blog')} onClick={() => setMobileMenuOpen(false)}>Blog</Link>
             <Link to="/page/about" className={mobileClass('/page/about')} onClick={() => setMobileMenuOpen(false)}>About</Link>
             <Link to="/track-order" className={mobileClass('/track-order')} onClick={() => setMobileMenuOpen(false)}>Track Order</Link>
-            {/* Quick action icons in mobile menu */}
-            <hr className="my-2 dark:border-gray-700" />
-            <div className="flex items-center justify-center gap-4 py-2">
-              {NAV_QUICK.map((btn) => (
-                <a
-                  key={btn.id}
-                  href={btn.href}
-                  target={btn.external ? '_blank' : '_self'}
-                  rel={btn.external ? 'noopener noreferrer' : undefined}
-                  aria-label={btn.aria}
-                  className={`nqb nqb-${btn.id}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {btn.icon}
-                </a>
-              ))}
-            </div>
           </nav>
         </div>
         </AnimatedDiv>
