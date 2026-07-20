@@ -279,6 +279,23 @@ const Header = ({ onMobileMenuToggle }) => {
               )}
             </Link>
 
+            {/* Quick action icons — mobile only (desktop shows them in the nav bar below) */}
+            <div className="md:hidden flex items-center gap-2">
+              {NAV_QUICK.map((btn) => (
+                <a
+                  key={btn.id}
+                  href={btn.href}
+                  target={btn.external ? '_blank' : '_self'}
+                  rel={btn.external ? 'noopener noreferrer' : undefined}
+                  aria-label={btn.aria}
+                  className={`nqb nqb-${btn.id}`}
+                  style={{ width: '32px', height: '32px' }}
+                >
+                  {btn.icon}
+                </a>
+              ))}
+            </div>
+
             {/* Mobile menu toggle - always visible */}
             <button
               onClick={handleMobileMenuToggle}
