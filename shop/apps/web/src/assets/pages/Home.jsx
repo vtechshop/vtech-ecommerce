@@ -82,7 +82,7 @@ const Home = React.memo(() => {
       const { data } = await api.get('/catalog/products?featured=true&limit=20');
       return data.data;
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 0,
   });
 
   // Categories (shared cache with Footer)
