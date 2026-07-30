@@ -269,18 +269,18 @@ const Hub = () => {
       {/* ══════════════════════════════
           HERO
       ══════════════════════════════ */}
-      <section className="relative min-h-[90vh] flex flex-col items-center justify-center bg-[#080c14] overflow-hidden">
+      <section className="relative min-h-[88vh] flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 overflow-hidden">
 
-        {/* Concentric ring decoration */}
-        <div aria-hidden="true" className="absolute right-[-15%] md:right-[-5%] top-1/2 -translate-y-1/2 pointer-events-none">
+        {/* Concentric ring decoration — blue-tinted for light bg */}
+        <div aria-hidden="true" className="absolute right-[-20%] md:right-[-8%] top-1/2 -translate-y-1/2 pointer-events-none">
           {[900, 680, 460, 280].map((size, i) => (
             <div
               key={size}
-              className="absolute rounded-full border border-white"
+              className="absolute rounded-full border border-blue-300 dark:border-white"
               style={{
                 width: size,
                 height: size,
-                opacity: 0.025 + i * 0.01,
+                opacity: 0.12 - i * 0.02,
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
@@ -293,15 +293,15 @@ const Hub = () => {
         <div
           aria-hidden="true"
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 70% 50% at 50% -5%, rgba(37,99,235,0.22) 0%, transparent 70%)' }}
+          style={{ background: 'radial-gradient(ellipse 70% 45% at 50% 0%, rgba(37,99,235,0.1) 0%, transparent 65%)' }}
         />
 
         {/* Dot grid */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 opacity-[0.06] pointer-events-none"
+          className="absolute inset-0 opacity-[0.04] dark:opacity-[0.06] pointer-events-none"
           style={{
-            backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
+            backgroundImage: 'radial-gradient(circle, #2563eb 1px, transparent 1px)',
             backgroundSize: '40px 40px',
           }}
         />
@@ -317,7 +317,7 @@ const Hub = () => {
             <img
               src="/cropped-vtech-logo.webp"
               alt="VTech Kitchen"
-              className="h-16 w-auto mx-auto mb-10 brightness-0 invert"
+              className="h-16 w-auto mx-auto mb-10 object-contain dark:brightness-0 dark:invert"
               loading="eager"
             />
           </motion.div>
@@ -327,13 +327,13 @@ const Hub = () => {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="text-[11px] font-bold tracking-[0.3em] uppercase text-blue-400 mb-6"
+            className="text-[11px] font-bold tracking-[0.3em] uppercase text-blue-600 dark:text-blue-400 mb-6"
           >
             Commercial Kitchen Equipment Manufacturer
           </motion.p>
 
           {/* H1 — word-by-word reveal */}
-          <div className="text-4xl sm:text-5xl md:text-[3.6rem] font-bold text-white leading-[1.08] tracking-tight">
+          <div className="text-4xl sm:text-5xl md:text-[3.6rem] font-bold text-gray-900 dark:text-white leading-[1.08] tracking-tight">
             {['Professional', 'Kitchen', 'Machines'].map((word, i) => (
               <motion.span
                 key={word}
@@ -350,7 +350,7 @@ const Hub = () => {
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.62, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-block bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mt-2"
+              className="inline-block bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent mt-2"
             >
               Built to Grow Your Business.
             </motion.span>
@@ -361,7 +361,7 @@ const Hub = () => {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.78, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-7 text-lg text-gray-400 max-w-xl mx-auto leading-relaxed"
+            className="mt-7 text-lg text-gray-500 dark:text-gray-400 max-w-xl mx-auto leading-relaxed"
           >
             Trusted by 10,000+ restaurants, hotels &amp; cloud kitchens across India.
           </motion.p>
@@ -375,7 +375,7 @@ const Hub = () => {
           >
             <Link
               to="/products"
-              className="inline-flex items-center justify-center gap-2.5 px-9 py-4 bg-white text-gray-900 font-bold rounded-2xl hover:bg-blue-50 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-white/20 text-[15px]"
+              className="inline-flex items-center justify-center gap-2.5 px-9 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-600/30 text-[15px]"
             >
               <ShoppingBag className="w-5 h-5" />
               Shop Products
@@ -384,7 +384,7 @@ const Hub = () => {
               href={WA_HREF}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2.5 px-9 py-4 bg-green-500 text-white font-bold rounded-2xl hover:bg-green-400 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-green-500/30 text-[15px]"
+              className="inline-flex items-center justify-center gap-2.5 px-9 py-4 bg-green-500 text-white font-bold rounded-2xl hover:bg-green-600 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-green-500/30 text-[15px]"
             >
               <MessageCircle className="w-5 h-5" />
               WhatsApp Us
@@ -400,58 +400,48 @@ const Hub = () => {
           className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5"
           aria-hidden="true"
         >
-          <span className="text-[10px] tracking-widest uppercase text-white/25 font-semibold">Scroll</span>
+          <span className="text-[10px] tracking-widest uppercase text-gray-300 dark:text-white/25 font-semibold">Scroll</span>
           <motion.div
             animate={{ y: [0, 7, 0] }}
             transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <ChevronDown className="w-5 h-5 text-white/25" />
+            <ChevronDown className="w-5 h-5 text-gray-300 dark:text-white/25" />
           </motion.div>
         </motion.div>
-
-        {/* Fade to white */}
-        <div aria-hidden="true" className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-white dark:from-gray-900 to-transparent" />
       </section>
 
       {/* ══════════════════════════════
-          QUICK ACTIONS — dark glassmorphism
+          QUICK ACTIONS
       ══════════════════════════════ */}
-      <section className="py-20 md:py-28 bg-gray-950 relative overflow-hidden">
-        {/* Faint radial */}
-        <div aria-hidden="true" className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 100%, rgba(37,99,235,0.1) 0%, transparent 70%)' }} />
-
-        <div className="max-w-6xl mx-auto px-5 sm:px-8">
-          <SectionTitle
-            eyebrow="Quick Actions"
-            title="Everything In One Place"
-            subtitle="Shop, call, chat, or navigate to our store — instantly."
-            light
-          />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {QUICK_ACTIONS.map((item, i) => {
-              const { tag: Tag, props } = linkable(item.href, false);
-              return (
-                <FadeIn key={item.label} delay={i * 0.06} className="h-full">
-                  <Tag
-                    {...props}
-                    className="relative flex flex-col gap-4 p-6 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-500/10 h-full group cursor-pointer"
-                  >
-                    <div className={`w-12 h-12 rounded-xl ${item.color} flex items-center justify-center flex-shrink-0 shadow-lg`}>
-                      <item.icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-white text-sm leading-tight">{item.label}</p>
-                      <p className="text-xs text-gray-400 mt-1">{item.desc}</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-gray-400 mt-auto transition-all group-hover:translate-x-0.5" />
-                  </Tag>
-                </FadeIn>
-              );
-            })}
-          </div>
+      <Section id="quick-actions" className="bg-gray-50 dark:bg-gray-800/30">
+        <SectionTitle
+          eyebrow="Quick Actions"
+          title="Everything In One Place"
+          subtitle="Shop, call, chat, or navigate to our store — instantly."
+        />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {QUICK_ACTIONS.map((item, i) => {
+            const { tag: Tag, props } = linkable(item.href, false);
+            return (
+              <FadeIn key={item.label} delay={i * 0.06} className="h-full">
+                <Tag
+                  {...props}
+                  className="flex flex-col gap-4 p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/30 hover:border-blue-100 dark:hover:border-blue-700 transition-all duration-300 hover:-translate-y-1 h-full group cursor-pointer"
+                >
+                  <div className={`w-12 h-12 rounded-xl ${item.color} flex items-center justify-center flex-shrink-0 shadow-md`}>
+                    <item.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">{item.label}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.desc}</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 mt-auto transition-all group-hover:translate-x-0.5" />
+                </Tag>
+              </FadeIn>
+            );
+          })}
         </div>
-      </section>
+      </Section>
 
       {/* ══════════════════════════════
           FEATURED PRODUCTS
@@ -511,9 +501,9 @@ const Hub = () => {
       {/* ══════════════════════════════
           TRUST STATS — dark
       ══════════════════════════════ */}
-      <section className="py-20 md:py-28 bg-gray-950 relative overflow-hidden">
+      <section className="py-20 md:py-28 bg-blue-600 dark:bg-gray-900 relative overflow-hidden">
         <div aria-hidden="true" className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 50% 60% at 50% 50%, rgba(37,99,235,0.07) 0%, transparent 70%)' }} />
+          style={{ background: 'radial-gradient(ellipse 50% 60% at 50% 50%, rgba(255,255,255,0.08) 0%, transparent 70%)' }} />
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-6">
             {STATS.map((stat, i) => (
@@ -527,7 +517,7 @@ const Hub = () => {
                     duration={2.2}
                   />
                 </div>
-                <p className="mt-2.5 text-gray-400 text-sm font-medium">{stat.label}</p>
+                <p className="mt-2.5 text-blue-100 dark:text-gray-400 text-sm font-medium">{stat.label}</p>
               </FadeIn>
             ))}
           </div>
@@ -731,7 +721,7 @@ const Hub = () => {
       {/* ══════════════════════════════
           HUB FOOTER
       ══════════════════════════════ */}
-      <div className="bg-gray-950 py-10 border-t border-white/5">
+      <div className="bg-gray-900 dark:bg-gray-950 py-10 border-t border-white/5">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-5 text-sm text-gray-500">
           <div className="flex items-center gap-3">
             <img src="/cropped-vtech-logo.webp" alt="" className="h-7 w-auto brightness-0 invert opacity-40" aria-hidden="true" />
