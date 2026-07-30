@@ -335,8 +335,8 @@ const MediaSlot = ({ label, field, url, mimeType, focalX = 50, focalY = 50, zoom
             {isVideo ? (
               <video
                 src={url}
-                className="w-full max-h-32 object-cover rounded-lg bg-gray-900"
-                controls={false}
+                className="w-full max-h-32 rounded-lg bg-gray-900"
+                controls
                 muted
                 preload="metadata"
                 playsInline

@@ -74,7 +74,8 @@ exports.deleteFile = async (req, res, next) => {
     }
 
     const adapter = uploadService.getAdapter();
-    await adapter.delete(media.filename);
+    const resType = media.mimeType?.startsWith('video/') ? 'video' : 'image';
+    await adapter.delete(media.filename, resType);
 
     await media.deleteOne();
 

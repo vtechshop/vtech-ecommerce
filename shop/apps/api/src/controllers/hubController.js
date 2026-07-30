@@ -411,7 +411,8 @@ exports.deleteHeroMedia = async (req, res) => {
         const media = await Media.findById(mediaId);
         if (media) {
           const adapter = uploadService.getAdapter();
-          await adapter.delete(media.filename);
+          const resType = media.mimeType?.startsWith('video/') ? 'video' : 'image';
+          await adapter.delete(media.filename, resType);
           await media.deleteOne();
         }
       } catch { /* non-fatal — file may already be gone */ }

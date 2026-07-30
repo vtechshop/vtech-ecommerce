@@ -55,8 +55,10 @@ class UploadService {
     const adapter = this.getAdapter();
     const filename = `${folder}/${uuidv4()}${path.extname(file.originalname)}`;
 
-    // Upload returns the stored path/id (for Cloudinary this is the public_id)
-    const storedPath = await adapter.upload(file, filename);
+    // Cloudinary returns { publicId, resourceType }; local/S3 adapters return a string path
+    const uploadResult = await adapter.upload(file, filename);
+    const storedPath   = typeof uploadResult === 'string' ? uploadResult : uploadResult.publicId;
+    const resourceType = typeof uploadResult === 'string' ? 'image' : (uploadResult.resourceType || 'image');
 
     const Media = require('../models/Media');
     const media = await Media.create({
@@ -64,7 +66,7 @@ class UploadService {
       originalName: file.originalname,
       mimeType: file.mimetype,
       size: file.size,
-      url: adapter.getUrl(storedPath || filename),
+      url: adapter.getUrl(storedPath || filename, resourceType),
       folder,
     });
 

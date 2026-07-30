@@ -13,7 +13,6 @@ class CloudinaryAdapter extends StorageAdapter {
   }
 
   async upload(file, filePath) {
-    // Extract folder from filePath (e.g., "general/uuid.webp" -> "general")
     const folder = filePath.split('/')[0] || 'uploads';
 
     return new Promise((resolve, reject) => {
@@ -21,16 +20,13 @@ class CloudinaryAdapter extends StorageAdapter {
         {
           folder: `vtech/${folder}`,
           resource_type: 'auto',
-          transformation: [
-            { quality: 'auto:good' },
-            { fetch_format: 'auto' }
-          ]
         },
         (error, result) => {
           if (error) {
             reject(error);
           } else {
-            resolve(result.public_id);
+            // Return both public_id and resource_type so callers can build the correct URL
+            resolve({ publicId: result.public_id, resourceType: result.resource_type });
           }
         }
       );
@@ -39,23 +35,22 @@ class CloudinaryAdapter extends StorageAdapter {
     });
   }
 
-  async delete(publicId) {
+  async delete(publicId, resourceType = 'image') {
     try {
-      await cloudinary.uploader.destroy(publicId);
+      await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
     } catch (err) {
-      // Ignore if already deleted
       console.error('Cloudinary delete error:', err.message);
     }
   }
 
-  getUrl(publicId) {
-    // Return Cloudinary URL with auto format and quality
+  getUrl(publicId, resourceType = 'image') {
     return cloudinary.url(publicId, {
       secure: true,
+      resource_type: resourceType,
       transformation: [
         { quality: 'auto:good' },
-        { fetch_format: 'auto' }
-      ]
+        { fetch_format: 'auto' },
+      ],
     });
   }
 }
