@@ -58,6 +58,10 @@ export const HeroBgImage = ({ desktop, mobile }) => {
 export const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, reduced }) => {
   const [useMobileVid, setUseMobileVid] = useState(false);
   const [showFallback, setShowFallback] = useState(false);
+  const [videoReady,   setVideoReady]   = useState(false);
+  const [prefersReduced, setPrefersReduced] = useState(
+    reduced || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  );
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -67,11 +71,26 @@ export const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, r
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = (e) => setPrefersReduced(reduced || e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [reduced]);
+
   const videoAsset  = (useMobileVid && mobile?.url)        ? mobile       : desktop;
   const posterAsset = (useMobileVid && mobilePoster?.url)  ? mobilePoster : poster;
   const videoSrc    = videoAsset?.url;
   const posterSrc   = posterAsset?.url;
-  const shouldPlay  = settings?.autoplay !== false && !reduced;
+  const shouldPlay  = settings?.autoplay !== false && !prefersReduced;
+
+  // Reset ready-state whenever the video source changes (breakpoint switch)
+  useEffect(() => { setVideoReady(false); }, [videoSrc]);
+
+  // If reduced motion: show poster permanently, no crossfade
+  const handleCanPlay = () => {
+    if (!prefersReduced) setVideoReady(true);
+  };
 
   if (!videoSrc || showFallback) {
     return posterSrc ? (
@@ -89,17 +108,35 @@ export const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, r
   }
 
   return (
-    <video
-      key={videoSrc}
-      src={videoSrc}
-      poster={posterSrc || undefined}
-      autoPlay={shouldPlay}
-      loop={settings?.loop !== false}
-      muted={settings?.muted !== false}
-      playsInline={settings?.playsInline !== false}
-      onError={() => setShowFallback(true)}
-      aria-hidden="true"
-      className={BASE}
-    />
+    <>
+      {/* Poster stays visible while video buffers, then fades out (500ms). Never blank. */}
+      {posterSrc && (
+        <img
+          src={posterSrc}
+          alt=""
+          aria-hidden="true"
+          className={`${BASE} transition-opacity duration-500 ${videoReady ? 'opacity-0' : 'opacity-100'}`}
+          loading="eager"
+          fetchPriority="high"
+          decoding="sync"
+          style={mediaStyle(posterAsset)}
+        />
+      )}
+      {/* Video starts invisible; crossfades in on canPlay */}
+      <video
+        key={videoSrc}
+        src={videoSrc}
+        poster={posterSrc || undefined}
+        autoPlay={shouldPlay}
+        loop={settings?.loop !== false}
+        muted={settings?.muted !== false}
+        playsInline={settings?.playsInline !== false}
+        onCanPlay={handleCanPlay}
+        onLoadedData={handleCanPlay}
+        onError={() => setShowFallback(true)}
+        aria-hidden="true"
+        className={`${BASE} transition-opacity duration-500 ${videoReady ? 'opacity-100' : 'opacity-0'}`}
+      />
+    </>
   );
 };
