@@ -8,6 +8,7 @@ import {
   ChevronUp, ChevronDown, ExternalLink, Download, CheckCircle,
   AlertCircle, Edit3, X, Globe, Clock,
   Upload, Film, Image as ImageIcon, Play, Layers, RefreshCw,
+  Crop, ZoomIn, ZoomOut,
 } from 'lucide-react';
 import api from '@/utils/api';
 import { useToast } from '@/components/common/ToastContainer';
@@ -129,8 +130,104 @@ const moveDown = (arr, i) => {
 
 // ── Section editors ───────────────────────────────────────────────────────────
 
+// ── ImageAdjustModal — drag focal point + zoom slider ────────────────────────
+const ImageAdjustModal = ({ url, focalX = 50, focalY = 50, zoom = 1, onApply, onClose }) => {
+  const [fx, setFx] = useState(focalX);
+  const [fy, setFy] = useState(focalY);
+  const [z,  setZ]  = useState(zoom);
+  const previewRef  = useRef(null);
+  const dragging    = useRef(false);
+
+  const getPos = (clientX, clientY) => {
+    const rect = previewRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    setFx(Math.round(Math.max(0, Math.min(100, ((clientX - rect.left)  / rect.width)  * 100))));
+    setFy(Math.round(Math.max(0, Math.min(100, ((clientY - rect.top)   / rect.height) * 100))));
+  };
+
+  const onPointerDown = (e) => {
+    dragging.current = true;
+    previewRef.current?.setPointerCapture(e.pointerId);
+    getPos(e.clientX, e.clientY);
+  };
+  const onPointerMove = (e) => { if (dragging.current) getPos(e.clientX, e.clientY); };
+  const onPointerUp   = ()  => { dragging.current = false; };
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <span className="font-semibold text-gray-900 text-sm">Adjust Image</span>
+          <button onClick={onClose} className="p-1 rounded text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+        </div>
+
+        <div
+          ref={previewRef}
+          className="relative bg-gray-900 overflow-hidden cursor-crosshair select-none"
+          style={{ height: 220 }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+        >
+          <img
+            src={url} alt="" draggable={false}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            style={{
+              objectPosition: `${fx}% ${fy}%`,
+              ...(z > 1 ? { transform: `scale(${z})`, transformOrigin: `${fx}% ${fy}%` } : {}),
+            }}
+          />
+          <div
+            className="absolute pointer-events-none"
+            style={{ left: `${fx}%`, top: `${fy}%`, transform: 'translate(-50%, -50%)' }}
+          >
+            <div className="w-5 h-5 rounded-full border-2 border-white" style={{ boxShadow: '0 0 0 1.5px rgba(0,0,0,0.6), 0 2px 6px rgba(0,0,0,0.4)' }} />
+          </div>
+          <p className="absolute bottom-2 inset-x-0 text-center text-white text-xs opacity-60 pointer-events-none">
+            Drag to set focal point
+          </p>
+        </div>
+
+        <div className="p-4 space-y-4">
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-gray-700">Zoom</label>
+              <span className="text-xs text-gray-500">{Math.round(z * 100)}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setZ(v => Math.max(1, parseFloat((v - 0.1).toFixed(2))))}
+                className="p-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50">
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <input type="range" min="1" max="3" step="0.05" value={z}
+                onChange={e => setZ(parseFloat(e.target.value))}
+                className="flex-1 accent-primary-600"
+              />
+              <button onClick={() => setZ(v => Math.min(3, parseFloat((v + 0.1).toFixed(2))))}
+                className="p-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50">
+                <ZoomIn className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={onClose}
+              className="flex-1 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button onClick={() => { onApply({ focalX: fx, focalY: fy, zoom: z }); onClose(); }}
+              className="flex-1 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors">
+              Apply
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── MediaSlot — upload / preview / replace / delete one hero asset ─────────
-const MediaSlot = ({ label, field, url, mimeType, onSaved, onDeleted, accept, hint }) => {
+const MediaSlot = ({ label, field, url, mimeType, focalX = 50, focalY = 50, zoom = 1, onSaved, onDeleted, onAdjusted, accept, hint }) => {
   const toast      = useToast();
   const fileRef    = useRef(null);
   const isVideo    = field.toLowerCase().includes('video');
@@ -174,6 +271,8 @@ const MediaSlot = ({ label, field, url, mimeType, onSaved, onDeleted, accept, hi
     deleteMutation.mutate();
   };
 
+  const [showAdjust, setShowAdjust] = useState(false);
+
   const isBusy = uploadMutation.isPending || deleteMutation.isPending;
 
   return (
@@ -193,6 +292,15 @@ const MediaSlot = ({ label, field, url, mimeType, onSaved, onDeleted, accept, hi
               className="p-1.5 rounded-lg text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-40"
             >
               <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {hasMedia && !isVideo && (
+            <button
+              onClick={() => setShowAdjust(true)}
+              title="Adjust position & zoom"
+              className="p-1.5 rounded-lg text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+            >
+              <Crop className="w-3.5 h-3.5" />
             </button>
           )}
           {hasMedia && (
@@ -257,6 +365,17 @@ const MediaSlot = ({ label, field, url, mimeType, onSaved, onDeleted, accept, hi
         className="hidden"
         onChange={handleFile}
       />
+
+      {showAdjust && (
+        <ImageAdjustModal
+          url={url}
+          focalX={focalX}
+          focalY={focalY}
+          zoom={zoom}
+          onApply={(adj) => onAdjusted?.(field, adj)}
+          onClose={() => setShowAdjust(false)}
+        />
+      )}
     </div>
   );
 };
@@ -291,6 +410,13 @@ const HeroEditor = ({ data, onChange, onMediaSaved, onMediaDeleted }) => {
     const type   = field.replace(/^desktop|^mobile/, '').toLowerCase();
     onMediaDeleted?.({ device, type });
     setMedia(device, type, { url: '', mediaId: null, mimeType: '' });
+  };
+
+  const handleAdjusted = (field, adj) => {
+    const device   = field.startsWith('desktop') ? 'desktop' : 'mobile';
+    const type     = field.replace(/^desktop|^mobile/, '').toLowerCase();
+    const existing = (data[device] || {})[type] || {};
+    setMedia(device, type, { ...existing, ...adj });
   };
 
   const BG_OPTIONS = [
@@ -351,8 +477,12 @@ const HeroEditor = ({ data, onChange, onMediaSaved, onMediaDeleted }) => {
                 field="desktopImage"
                 url={desktop.image?.url}
                 mimeType={desktop.image?.mimeType}
+                focalX={desktop.image?.focalX ?? 50}
+                focalY={desktop.image?.focalY ?? 50}
+                zoom={desktop.image?.zoom ?? 1}
                 onSaved={handleSaved}
                 onDeleted={handleDeleted}
+                onAdjusted={handleAdjusted}
                 hint="Shown on screens ≥ 768 px. Recommended: 1920×1080 px."
               />
             )}
@@ -372,8 +502,12 @@ const HeroEditor = ({ data, onChange, onMediaSaved, onMediaDeleted }) => {
                   field="desktopPoster"
                   url={desktop.poster?.url}
                   mimeType={desktop.poster?.mimeType}
+                  focalX={desktop.poster?.focalX ?? 50}
+                  focalY={desktop.poster?.focalY ?? 50}
+                  zoom={desktop.poster?.zoom ?? 1}
                   onSaved={handleSaved}
                   onDeleted={handleDeleted}
+                  onAdjusted={handleAdjusted}
                   hint="Shows while video loads & on reduced-motion. Required."
                 />
               </>
@@ -404,8 +538,12 @@ const HeroEditor = ({ data, onChange, onMediaSaved, onMediaDeleted }) => {
                   field="mobileImage"
                   url={mobile.image?.url}
                   mimeType={mobile.image?.mimeType}
+                  focalX={mobile.image?.focalX ?? 50}
+                  focalY={mobile.image?.focalY ?? 50}
+                  zoom={mobile.image?.zoom ?? 1}
                   onSaved={handleSaved}
                   onDeleted={handleDeleted}
+                  onAdjusted={handleAdjusted}
                   hint="Shown on screens < 768 px. Recommended: 768×1024 px portrait."
                 />
               )}
@@ -425,8 +563,12 @@ const HeroEditor = ({ data, onChange, onMediaSaved, onMediaDeleted }) => {
                     field="mobilePoster"
                     url={mobile.poster?.url}
                     mimeType={mobile.poster?.mimeType}
+                    focalX={mobile.poster?.focalX ?? 50}
+                    focalY={mobile.poster?.focalY ?? 50}
+                    zoom={mobile.poster?.zoom ?? 1}
                     onSaved={handleSaved}
                     onDeleted={handleDeleted}
+                    onAdjusted={handleAdjusted}
                     hint="Fallback image for mobile."
                   />
                 </>

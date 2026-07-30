@@ -1,5 +1,17 @@
 import { useState, useEffect } from 'react';
 
+const mediaStyle = (asset) => {
+  const fx = asset?.focalX ?? 50;
+  const fy = asset?.focalY ?? 50;
+  const z  = asset?.zoom   ?? 1;
+  return {
+    objectPosition: `${fx}% ${fy}%`,
+    ...(z > 1 ? { transform: `scale(${z})`, transformOrigin: `${fx}% ${fy}%` } : {}),
+  };
+};
+
+const BASE = 'absolute inset-0 w-full h-full object-cover pointer-events-none select-none';
+
 export const HeroBgImage = ({ desktop, mobile }) => {
   const deskUrl   = desktop?.url;
   const mobileUrl = mobile?.url;
@@ -11,18 +23,20 @@ export const HeroBgImage = ({ desktop, mobile }) => {
           src={mobileUrl}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none md:hidden"
+          className={`${BASE} md:hidden`}
           loading="eager"
           decoding="sync"
+          style={mediaStyle(mobile)}
         />
         <img
           src={deskUrl}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none hidden md:block"
+          className={`${BASE} hidden md:block`}
           loading="eager"
           fetchPriority="high"
           decoding="sync"
+          style={mediaStyle(desktop)}
         />
       </>
     );
@@ -32,10 +46,11 @@ export const HeroBgImage = ({ desktop, mobile }) => {
       src={deskUrl}
       alt=""
       aria-hidden="true"
-      className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+      className={BASE}
       loading="eager"
       fetchPriority="high"
       decoding="sync"
+      style={mediaStyle(desktop)}
     />
   );
 };
@@ -52,9 +67,11 @@ export const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, r
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  const videoSrc  = (useMobileVid && mobile?.url) ? mobile.url : desktop?.url;
-  const posterSrc = (useMobileVid && mobilePoster?.url) ? mobilePoster.url : poster?.url;
-  const shouldPlay = settings?.autoplay !== false && !reduced;
+  const videoAsset  = (useMobileVid && mobile?.url)        ? mobile       : desktop;
+  const posterAsset = (useMobileVid && mobilePoster?.url)  ? mobilePoster : poster;
+  const videoSrc    = videoAsset?.url;
+  const posterSrc   = posterAsset?.url;
+  const shouldPlay  = settings?.autoplay !== false && !reduced;
 
   if (!videoSrc || showFallback) {
     return posterSrc ? (
@@ -62,10 +79,11 @@ export const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, r
         src={posterSrc}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+        className={BASE}
         loading="eager"
         fetchPriority="high"
         decoding="sync"
+        style={mediaStyle(posterAsset)}
       />
     ) : null;
   }
@@ -81,7 +99,7 @@ export const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, r
       playsInline={settings?.playsInline !== false}
       onError={() => setShowFallback(true)}
       aria-hidden="true"
-      className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+      className={BASE}
     />
   );
 };

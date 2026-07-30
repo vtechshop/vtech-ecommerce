@@ -89,6 +89,9 @@ const mediaAssetSchema = new mongoose.Schema({
   url:      { type: String, default: '' },
   mediaId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Media', default: null },
   mimeType: { type: String, default: '' },
+  focalX:   { type: Number, default: 50 },
+  focalY:   { type: Number, default: 50 },
+  zoom:     { type: Number, default: 1 },
 }, { _id: false });
 
 const hubPageSchema = new mongoose.Schema({
