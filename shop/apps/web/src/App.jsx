@@ -38,6 +38,7 @@ const BlogPostDetail = lazy(() => import('./assets/pages/BlogPost'));
 const Page = lazy(() => import('./assets/pages/cms/Page'));
 const NotFound = lazy(() => import('./assets/pages/NotFound'));
 const WarrantyCheck = lazy(() => import('./assets/pages/WarrantyCheck'));
+const Hub = lazy(() => import('./assets/pages/Hub'));
 
 // Lazy load info pages
 const TrackOrder = lazy(() => import('./assets/pages/info/TrackOrder'));
@@ -259,6 +260,7 @@ function App() {
             {/* Info & Legal Pages */}
             <Route path="/track-order" element={<TrackOrder />} />
             <Route path="/warranty-check" element={<WarrantyCheck />} />
+            <Route path="/hub" element={<Hub />} />
             <Route path="/page/shipping" element={<Shipping />} />
             <Route path="/page/returns" element={<Returns />} />
             <Route path="/page/faq" element={<FAQ />} />
