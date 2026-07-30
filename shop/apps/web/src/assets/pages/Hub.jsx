@@ -251,23 +251,43 @@ const SOCIALS = [
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN COMPONENT
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-/* Responsive background image — <picture> uses mobile source when available */
 const HeroBgImage = ({ desktop, mobile }) => {
   const deskUrl   = desktop?.url;
   const mobileUrl = mobile?.url;
   if (!deskUrl) return null;
+  if (mobileUrl) {
+    return (
+      <>
+        <img
+          src={mobileUrl}
+          alt=””
+          aria-hidden=”true”
+          className=”absolute inset-0 w-full h-full object-cover pointer-events-none select-none md:hidden”
+          loading=”eager”
+          decoding=”sync”
+        />
+        <img
+          src={deskUrl}
+          alt=””
+          aria-hidden=”true”
+          className=”absolute inset-0 w-full h-full object-cover pointer-events-none select-none hidden md:block”
+          loading=”eager”
+          fetchPriority=”high”
+          decoding=”sync”
+        />
+      </>
+    );
+  }
   return (
-    <picture className=”absolute inset-0 w-full h-full pointer-events-none select-none” aria-hidden=”true”>
-      {mobileUrl && <source srcSet={mobileUrl} media=”(max-width: 767px)” />}
-      <img
-        src={deskUrl}
-        alt=””
-        className=”absolute inset-0 w-full h-full object-cover”
-        loading=”eager”
-        fetchPriority=”high”
-        decoding=”sync”
-      />
-    </picture>
+    <img
+      src={deskUrl}
+      alt=””
+      aria-hidden=”true”
+      className=”absolute inset-0 w-full h-full object-cover pointer-events-none select-none”
+      loading=”eager”
+      fetchPriority=”high”
+      decoding=”sync”
+    />
   );
 };
 
