@@ -300,7 +300,7 @@ const Hub = () => {
       const { data } = await api.get('/catalog/products?featured=true&limit=6');
       return data.data || [];
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   const { data: hubConfig } = useQuery({
@@ -309,7 +309,7 @@ const Hub = () => {
       const { data } = await api.get('/hub');
       return data.data || {};
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   const hasProducts = !productsLoading && products && products.length > 0;
