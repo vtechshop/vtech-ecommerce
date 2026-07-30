@@ -41,9 +41,9 @@ const STRUCTURED_DATA = {
   sameAs: [YOUTUBE_HREF, INSTAGRAM_HREF, FACEBOOK_HREF, LINKEDIN_HREF],
 };
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ==============================================
    UTILITY COMPONENTS
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+============================================== */
 
 /* FadeIn â€” respects prefers-reduced-motion */
 const FadeIn = ({ children, delay = 0, className = '', y = 20 }) => {
@@ -182,9 +182,9 @@ const ProductCard = ({ product, index }) => {
   );
 };
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ==============================================
    DATA â€” module-level, never re-created on render
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+============================================== */
 
 const QUICK_ACTIONS = [
   { label: 'Shop Products',  desc: 'Browse all machines',      icon: ShoppingBag,   href: '/products',       color: 'bg-gradient-to-r from-primary-600 to-primary-700', analyticsKey: 'shop_products' },
@@ -249,9 +249,9 @@ const SOCIALS = [
   },
 ];
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ==============================================
    MAIN COMPONENT
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+============================================== */
 /* Fire-and-forget click tracking — never blocks navigation */
 function trackHubClick(button, label, href) {
   try {
@@ -332,11 +332,11 @@ const Hub = () => {
         style={{ width: '0%' }}
       />
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           HERO
           Matches Home.jsx: bg-gradient-to-r from-primary-600 to-primary-200
           White text on blue gradient â€” same as site hero pattern
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <section
         aria-label=”VTech Kitchen Quick Hub”
         className={`relative overflow-hidden ${
@@ -493,10 +493,10 @@ const Hub = () => {
         </div>
       </section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           QUICK ACTIONS
           bg-gray-50 â€” matches Home.jsx page background for secondary sections
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <Section id="quick-actions" ariaLabel="Quick actions" className="bg-white">
         <SectionTitle
           eyebrow="Quick Actions"
@@ -536,10 +536,10 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           FEATURED PRODUCTS
           bg-white â€” same as Category.jsx, consistent with site
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <Section id="products" ariaLabel="Featured products" className="bg-white">
         <SectionTitle
           eyebrow="Our Products"
@@ -618,11 +618,11 @@ const Hub = () => {
         </FadeIn>
       </Section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           TRUST STATS
           Same gradient as hero â€” bg-gradient-to-r from-primary-600 to-primary-200
           Mirrors Home.jsx hero pattern for visual cohesion
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <section aria-label="Company statistics" className="py-16 md:py-20 bg-gradient-to-r from-primary-600 to-primary-200 relative overflow-hidden">
         <h2 className="sr-only">Our Numbers</h2>
         <div aria-hidden="true" className="absolute inset-0 pointer-events-none opacity-[0.06]"
@@ -651,10 +651,10 @@ const Hub = () => {
         </div>
       </section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           WHY VTECH
           bg-white â€” matching site's alternating section pattern
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <Section id="why-vtech" ariaLabel="Why choose VTech Kitchen" className="bg-white">
         <SectionTitle
           eyebrow="Why VTech Kitchen"
@@ -678,10 +678,10 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           RESOURCES
           bg-gray-50 â€” matches site alternating pattern
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <Section id="resources" ariaLabel="Learning resources" className="bg-white">
         <SectionTitle
           eyebrow="Resources"
@@ -713,10 +713,10 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           BUSINESS SERVICES
           bg-white â€” alternating
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <Section id="business" ariaLabel="Business services" className="bg-white">
         <SectionTitle
           eyebrow="Business Services"
@@ -750,10 +750,10 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           SOCIAL MEDIA
           bg-gray-50 â€” alternating
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <Section id="social" ariaLabel="Social media" className="bg-white">
         <SectionTitle
           eyebrow="Follow Us"
@@ -783,10 +783,10 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           CONTACT + MAP
           bg-white â€” alternating
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <Section id="contact" ariaLabel="Contact information" className="bg-white">
         <SectionTitle
           eyebrow="Contact"
@@ -856,9 +856,9 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+      {/* ==============================
           HUB FOOTER â€” semantic <footer> + <nav>
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      ============================== */}
       <footer className="bg-gray-900 py-8 border-t border-white/5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
           <div className="flex items-center gap-3">
