@@ -160,6 +160,7 @@ const AppConfigManagement = lazy(() => import('./assets/pages/dashboard/admin/Ap
 const MobileDevModules = lazy(() => import('./assets/pages/dashboard/admin/MobileDevModules'));
 const AdminInventory = lazy(() => import('./assets/pages/dashboard/admin/Inventory'));
 const AdminApiKeys = lazy(() => import('./assets/pages/dashboard/admin/ApiKeys'));
+const HubManager = lazy(() => import('./assets/pages/dashboard/admin/HubManager'));
 const VendorKYC = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
 const AffiliateKYC = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateKYC'));
 
@@ -404,6 +405,7 @@ function App() {
             <Route path="gamification" element={<GamificationManagement />} />
             <Route path="app-config" element={<AppConfigManagement />} />
             <Route path="mobile-modules" element={<MobileDevModules />} />
+            <Route path="hub-manager" element={<HubManager />} />
             <Route path="api-keys" element={<AdminApiKeys />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>

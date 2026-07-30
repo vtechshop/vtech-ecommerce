@@ -186,13 +186,13 @@ const ProductCard = ({ product, index }) => {
 ══════════════════════════════════════════════ */
 
 const QUICK_ACTIONS = [
-  { label: 'Shop Products',  desc: 'Browse all machines',      icon: ShoppingBag,   href: '/products',       color: 'bg-gradient-to-r from-primary-600 to-primary-700' },
-  { label: 'WhatsApp',       desc: 'Chat instantly',           icon: MessageCircle, href: WA_HREF,           color: 'bg-green-500', ping: true },
-  { label: 'Call Now',       desc: PHONE_DISPLAY,              icon: Phone,         href: PHONE_HREF,        color: 'bg-gradient-to-r from-primary-500 to-primary-600' },
-  { label: 'Find Our Store', desc: 'Ganapathy, Coimbatore',    icon: MapPin,        href: MAPS_HREF,         color: 'bg-gradient-to-r from-emerald-500 to-emerald-600' },
-  { label: 'Email Us',       desc: 'Quick replies guaranteed', icon: Mail,          href: EMAIL_HREF,        color: 'bg-gradient-to-r from-primary-600 to-primary-700' },
-  { label: 'Track Order',    desc: 'Real-time updates',        icon: Package,       href: '/track-order',    color: 'bg-gradient-to-r from-orange-500 to-orange-600' },
-  { label: 'Warranty',       desc: 'Check your coverage',      icon: Shield,        href: '/warranty-check', color: 'bg-gradient-to-r from-amber-500 to-amber-600' },
+  { label: 'Shop Products',  desc: 'Browse all machines',      icon: ShoppingBag,   href: '/products',       color: 'bg-gradient-to-r from-primary-600 to-primary-700', analyticsKey: 'shop_products' },
+  { label: 'WhatsApp',       desc: 'Chat instantly',           icon: MessageCircle, href: WA_HREF,           color: 'bg-green-500', ping: true,                          analyticsKey: 'whatsapp' },
+  { label: 'Call Now',       desc: PHONE_DISPLAY,              icon: Phone,         href: PHONE_HREF,        color: 'bg-gradient-to-r from-primary-500 to-primary-600', analyticsKey: 'call' },
+  { label: 'Find Our Store', desc: 'Ganapathy, Coimbatore',    icon: MapPin,        href: MAPS_HREF,         color: 'bg-gradient-to-r from-emerald-500 to-emerald-600', analyticsKey: 'maps' },
+  { label: 'Email Us',       desc: 'Quick replies guaranteed', icon: Mail,          href: EMAIL_HREF,        color: 'bg-gradient-to-r from-primary-600 to-primary-700', analyticsKey: 'email' },
+  { label: 'Track Order',    desc: 'Real-time updates',        icon: Package,       href: '/track-order',    color: 'bg-gradient-to-r from-orange-500 to-orange-600',  analyticsKey: 'track_order' },
+  { label: 'Warranty',       desc: 'Check your coverage',      icon: Shield,        href: '/warranty-check', color: 'bg-gradient-to-r from-amber-500 to-amber-600',    analyticsKey: 'warranty' },
 ];
 
 const FEATURES = [
@@ -251,6 +251,17 @@ const SOCIALS = [
 /* ══════════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════════ */
+/* Fire-and-forget click tracking — never blocks navigation */
+function trackHubClick(button, label, href) {
+  try {
+    const ua = navigator.userAgent.toLowerCase();
+    const deviceType = /tablet|ipad/.test(ua) ? 'tablet' : /mobile|android|iphone/.test(ua) ? 'mobile' : 'desktop';
+    api.post('/hub/analytics', { button, label, href, deviceType }).catch(() => {});
+  } catch {
+    // silent
+  }
+}
+
 const Hub = () => {
   const [showTop, setShowTop] = useState(false);
   const rafRef      = useRef(null);
@@ -457,6 +468,7 @@ const Hub = () => {
                 <Tag
                   {...props}
                   aria-label={item.label}
+                  onClick={() => trackHubClick(item.analyticsKey || item.label, item.label, item.href)}
                   className={`card-lift relative flex flex-col gap-3 p-5 h-full group cursor-pointer ${FOCUS_RING}`}
                 >
                   {/* WhatsApp live ping */}
