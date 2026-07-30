@@ -67,14 +67,14 @@ router.post('/users/bulk-update', admin.bulkUpdateUsers);
 // Products - SECURITY: Added ObjectId validation
 router.get('/products', admin.getProducts);
 router.get('/products/:id', validateObjectId('id'), admin.getProductById);
-router.post('/products', invalidateCache('cache:/catalog*'), admin.createProduct);
-router.put('/products/:id', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.updateProduct);
-router.delete('/products/:id', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.deleteProduct);
-router.put('/products/:id/approve', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.approveProduct);
-router.put('/products/:id/reject', validateObjectId('id'), invalidateCache('cache:/catalog*'), admin.rejectProduct);
-router.post('/products/bulk-price-update', invalidateCache('cache:/catalog*'), admin.bulkPriceUpdate);
-router.post('/products/assign-category', invalidateCache('cache:/catalog*'), admin.assignProductsToCategory);
-router.post('/products/remove-from-category', invalidateCache('cache:/catalog*'), admin.removeProductsFromCategory);
+router.post('/products', invalidateCache('cache:/api/catalog*'), admin.createProduct);
+router.put('/products/:id', validateObjectId('id'), invalidateCache('cache:/api/catalog*'), admin.updateProduct);
+router.delete('/products/:id', validateObjectId('id'), invalidateCache('cache:/api/catalog*'), admin.deleteProduct);
+router.put('/products/:id/approve', validateObjectId('id'), invalidateCache('cache:/api/catalog*'), admin.approveProduct);
+router.put('/products/:id/reject', validateObjectId('id'), invalidateCache('cache:/api/catalog*'), admin.rejectProduct);
+router.post('/products/bulk-price-update', invalidateCache('cache:/api/catalog*'), admin.bulkPriceUpdate);
+router.post('/products/assign-category', invalidateCache('cache:/api/catalog*'), admin.assignProductsToCategory);
+router.post('/products/remove-from-category', invalidateCache('cache:/api/catalog*'), admin.removeProductsFromCategory);
 router.post('/products/reassign', admin.reassignProducts);
 router.put('/products/:id/commission-rules', validateObjectId('id'), admin.updateProductCommissionRules);
 

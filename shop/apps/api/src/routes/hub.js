@@ -57,24 +57,24 @@ router.use('/admin', authenticate, authorize(['admin']));
 router.get('/admin', ctrl.getHubAdmin);
 
 // Update a single section
-router.put('/admin/section/:section', invalidateCache('cache:/hub*'), ctrl.updateSection);
+router.put('/admin/section/:section', invalidateCache('cache:/api/hub*'), ctrl.updateSection);
 
 // Draft workflow
 router.post('/admin/draft',   ctrl.saveDraft);
-router.post('/admin/publish', invalidateCache('cache:/hub*'), ctrl.publishHub);
+router.post('/admin/publish', invalidateCache('cache:/api/hub*'), ctrl.publishHub);
 router.post('/admin/discard', ctrl.discardDraft);
 
 // Version history
 router.get('/admin/versions',                    ctrl.getVersions);
 router.get('/admin/versions/:index',             ctrl.getVersionDetail);
-router.post('/admin/versions/:index/restore',    invalidateCache('cache:/hub*'), ctrl.restoreVersion);
+router.post('/admin/versions/:index/restore',    invalidateCache('cache:/api/hub*'), ctrl.restoreVersion);
 
 // Analytics
 router.get('/admin/analytics',        ctrl.getAnalytics);
 router.get('/admin/analytics/export', ctrl.exportAnalytics);
 
 // Hero media upload/delete
-router.post('/admin/hero/media',         uploadLimiter, heroMediaMiddleware, invalidateCache('cache:/hub*'), ctrl.uploadHeroMedia);
-router.delete('/admin/hero/media/:field', invalidateCache('cache:/hub*'), ctrl.deleteHeroMedia);
+router.post('/admin/hero/media',         uploadLimiter, heroMediaMiddleware, invalidateCache('cache:/api/hub*'), ctrl.uploadHeroMedia);
+router.delete('/admin/hero/media/:field', invalidateCache('cache:/api/hub*'), ctrl.deleteHeroMedia);
 
 module.exports = router;
