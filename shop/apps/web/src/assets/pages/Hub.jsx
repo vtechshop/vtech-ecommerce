@@ -13,16 +13,19 @@ import CountUp from '@/components/animations/CountUp';
 import api from '@/store/api';
 
 /* ── Contact constants ── */
-const PHONE_HREF    = 'tel:+919944556683';
-const PHONE_DISPLAY = '+91 99445 56683';
-const WA_HREF       = 'https://wa.me/919944556683?text=Hi%2C%20I%27m%20interested%20in%20VTech%20Kitchen%20products';
-const EMAIL_HREF    = 'mailto:vtechshop.customercare@gmail.com';
-const YOUTUBE_HREF  = 'https://www.youtube.com/@makethingsbest';
-const MAPS_HREF     = 'https://www.google.com/maps/search/VTech+Kitchen+Ganapathy+Coimbatore';
-const MAPS_EMBED    = 'https://maps.google.com/maps?q=Ganapathy+Coimbatore+Tamil+Nadu&t=&z=15&ie=UTF8&iwloc=&output=embed';
+const PHONE_HREF     = 'tel:+919944556683';
+const PHONE_DISPLAY  = '+91 99445 56683';
+const WA_HREF        = 'https://wa.me/919944556683?text=Hi%2C%20I%27m%20interested%20in%20VTech%20Kitchen%20products';
+const EMAIL_HREF     = 'mailto:vtechshop.customercare@gmail.com';
+const YOUTUBE_HREF   = 'https://www.youtube.com/@makethingsbest';
+const MAPS_HREF      = 'https://www.google.com/maps/search/VTech+Kitchen+Ganapathy+Coimbatore';
+const MAPS_EMBED     = 'https://maps.google.com/maps?q=Ganapathy+Coimbatore+Tamil+Nadu&t=&z=15&ie=UTF8&iwloc=&output=embed';
 const INSTAGRAM_HREF = 'https://instagram.com';
 const FACEBOOK_HREF  = 'https://facebook.com';
 const LINKEDIN_HREF  = 'https://linkedin.com';
+
+/* Computed once at module init — not on every render */
+const CURRENT_YEAR = new Date().getFullYear();
 
 /* ── Structured data ── */
 const STRUCTURED_DATA = {
@@ -63,13 +66,14 @@ const FadeIn = ({ children, delay = 0, className = '', y = 24 }) => {
   );
 };
 
-const Section = ({ children, className = '', id }) => (
-  <section id={id} className={`py-20 md:py-28 ${className}`}>
+/* Section — semantic <section> with accessible region landmark */
+const Section = ({ children, className = '', id, ariaLabel }) => (
+  <section id={id} aria-label={ariaLabel} className={`py-20 md:py-28 ${className}`}>
     <div className="max-w-6xl mx-auto px-5 sm:px-8">{children}</div>
   </section>
 );
 
-/* SectionTitle — eyebrow as pill badge for visual weight */
+/* SectionTitle — eyebrow pill + h2 + subtitle */
 const SectionTitle = ({ eyebrow, title, subtitle, light = false }) => (
   <FadeIn className="text-center mb-14 md:mb-16">
     {eyebrow && (
@@ -85,19 +89,19 @@ const SectionTitle = ({ eyebrow, title, subtitle, light = false }) => (
       {title}
     </h2>
     {subtitle && (
-      <p className={`mt-5 text-lg max-w-2xl mx-auto leading-relaxed ${light ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+      <p className={`mt-5 text-lg max-w-2xl mx-auto leading-relaxed ${light ? 'text-blue-100' : 'text-gray-600 dark:text-gray-400'}`}>
         {subtitle}
       </p>
     )}
   </FadeIn>
 );
 
-/* Focus-visible ring for keyboard nav */
+/* Consistent focus-visible ring — WCAG 2.4.7 */
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900';
 
-/* Helper to build anchor/Link props */
-const linkable = (href, external) => {
-  if (external || href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:')) {
+/* Returns the correct tag (a or Link) based on href shape */
+const linkable = (href) => {
+  if (href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:')) {
     return {
       tag: 'a',
       props: {
@@ -110,14 +114,14 @@ const linkable = (href, external) => {
   return { tag: Link, props: { to: href } };
 };
 
-/* Product skeleton */
+/* Product skeleton — reserves identical space to prevent CLS on load */
 const ProductSkeleton = () => (
   <div className="rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-    <div className="h-52 bg-gray-100 dark:bg-gray-700 animate-pulse" />
+    <div className="h-52 bg-gray-100 dark:bg-gray-700 animate-pulse motion-reduce:animate-none" />
     <div className="p-5 space-y-3">
-      <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
-      <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-2/3 animate-pulse" />
-      <div className="h-5 bg-gray-100 dark:bg-gray-700 rounded w-1/3 animate-pulse mt-4" />
+      <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse motion-reduce:animate-none" />
+      <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-2/3 animate-pulse motion-reduce:animate-none" />
+      <div className="h-5 bg-gray-100 dark:bg-gray-700 rounded w-1/3 animate-pulse motion-reduce:animate-none mt-4" />
     </div>
   </div>
 );
@@ -130,19 +134,22 @@ const ProductCard = ({ product, index }) => {
       <Link
         to={`/product/${product.slug}`}
         aria-label={`View ${product.title}`}
-        className={`group flex flex-col rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:shadow-2xl hover:shadow-black/10 dark:hover:shadow-black/40 hover:border-blue-200 dark:hover:border-blue-700 transition-all duration-500 hover:-translate-y-1.5 h-full ${FOCUS_RING}`}
+        className={`group flex flex-col rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:shadow-2xl hover:shadow-black/10 dark:hover:shadow-black/40 hover:border-blue-200 dark:hover:border-blue-700 transition-[transform,box-shadow,border-color] duration-500 hover:-translate-y-1.5 h-full ${FOCUS_RING}`}
       >
         <div className="relative h-52 overflow-hidden bg-gray-50 dark:bg-gray-700 group-hover:bg-gray-100 dark:group-hover:bg-gray-600 transition-colors duration-500">
           {imgSrc ? (
             <img
               src={imgSrc}
               alt={product.title}
-              className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500 ease-out"
+              width={400}
+              height={208}
+              className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500 ease-out motion-reduce:transition-none motion-reduce:group-hover:scale-100"
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <ShoppingBag className="w-14 h-14 text-gray-200 dark:text-gray-600" />
+              <ShoppingBag className="w-14 h-14 text-gray-200 dark:text-gray-600" aria-hidden="true" />
             </div>
           )}
           {product.featured && (
@@ -160,8 +167,8 @@ const ProductCard = ({ product, index }) => {
               ₹{Number(product.price).toLocaleString('en-IN')}
             </p>
           )}
-          <div className="mt-auto pt-4 flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 group-hover:gap-3 transition-all duration-300">
-            View Product <ArrowRight className="w-4 h-4" />
+          <div className="mt-auto pt-4 flex items-center gap-1.5 text-sm font-semibold text-blue-600 dark:text-blue-400 group-hover:gap-3 transition-[gap] duration-300">
+            View Product <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </div>
         </div>
       </Link>
@@ -170,19 +177,22 @@ const ProductCard = ({ product, index }) => {
 };
 
 /* ══════════════════════════════════════════════
-   DATA
+   DATA — module-level constants, never re-created
 ══════════════════════════════════════════════ */
 
-/* WhatsApp in 2nd position — highest mobile conversion after Shop */
+/* WhatsApp 2nd — highest mobile conversion after Shop */
 const QUICK_ACTIONS = [
-  { label: 'Shop Products',  desc: 'Browse all machines',      icon: ShoppingBag,   href: '/products',       color: 'bg-blue-600',   ping: false },
-  { label: 'WhatsApp',       desc: 'Chat instantly',           icon: MessageCircle, href: WA_HREF,           color: 'bg-green-500',  ping: true  },
-  { label: 'Call Now',       desc: PHONE_DISPLAY,              icon: Phone,         href: PHONE_HREF,        color: 'bg-sky-500',    ping: false },
-  { label: 'Find Our Store', desc: 'Ganapathy, Coimbatore',    icon: MapPin,        href: MAPS_HREF,         color: 'bg-emerald-600',ping: false },
-  { label: 'Email Us',       desc: 'Quick replies guaranteed', icon: Mail,          href: EMAIL_HREF,        color: 'bg-violet-600', ping: false },
-  { label: 'Track Order',    desc: 'Real-time updates',        icon: Package,       href: '/track-order',   color: 'bg-orange-500', ping: false },
-  { label: 'Warranty',       desc: 'Check your coverage',      icon: Shield,        href: '/warranty-check', color: 'bg-amber-500',  ping: false },
+  { label: 'Shop Products',  desc: 'Browse all machines',      icon: ShoppingBag,   href: '/products'       },
+  { label: 'WhatsApp',       desc: 'Chat instantly',           icon: MessageCircle, href: WA_HREF,    ping: true },
+  { label: 'Call Now',       desc: PHONE_DISPLAY,              icon: Phone,         href: PHONE_HREF        },
+  { label: 'Find Our Store', desc: 'Ganapathy, Coimbatore',    icon: MapPin,        href: MAPS_HREF         },
+  { label: 'Email Us',       desc: 'Quick replies guaranteed', icon: Mail,          href: EMAIL_HREF        },
+  { label: 'Track Order',    desc: 'Real-time updates',        icon: Package,       href: '/track-order'   },
+  { label: 'Warranty',       desc: 'Check your coverage',      icon: Shield,        href: '/warranty-check' },
 ];
+
+/* Icon colors are part of design — grouped to minimize DOM recalculation */
+const QA_COLORS = ['bg-blue-600', 'bg-green-500', 'bg-sky-500', 'bg-emerald-600', 'bg-violet-600', 'bg-orange-500', 'bg-amber-500'];
 
 const FEATURES = [
   { icon: Factory,     title: 'Direct Manufacturer', desc: 'Own factory, zero intermediaries — pure cost advantage for you.' },
@@ -204,18 +214,18 @@ const STATS = [
 ];
 
 const RESOURCES = [
-  { icon: Youtube,    label: 'Watch on YouTube', desc: 'Product demos & machine videos', href: YOUTUBE_HREF,    external: true,  iconClass: 'bg-red-500' },
-  { icon: BookOpen,   label: 'Read Our Blog',    desc: 'Tips, guides & industry news',  href: '/blog',          external: false, iconClass: 'bg-blue-600' },
-  { icon: FileText,   label: 'User Manuals',     desc: 'Setup & usage documentation',   href: '/page/contact',  external: false, iconClass: 'bg-gray-500' },
-  { icon: Headphones, label: 'Customer Support', desc: 'We respond within hours',       href: '/page/contact',  external: false, iconClass: 'bg-teal-600' },
+  { icon: Youtube,    label: 'Watch on YouTube', desc: 'Product demos & machine videos', href: YOUTUBE_HREF,   iconClass: 'bg-red-500'   },
+  { icon: BookOpen,   label: 'Read Our Blog',    desc: 'Tips, guides & industry news',   href: '/blog',         iconClass: 'bg-blue-600'  },
+  { icon: FileText,   label: 'User Manuals',     desc: 'Setup & usage documentation',    href: '/page/contact', iconClass: 'bg-gray-500'  },
+  { icon: Headphones, label: 'Customer Support', desc: 'We respond within hours',        href: '/page/contact', iconClass: 'bg-teal-600'  },
 ];
 
 const SERVICES = [
-  { icon: Building2,  label: 'Become a Dealer',    desc: 'Join our network across India',  href: '/page/contact' },
-  { icon: FileText,   label: 'Request a Quote',     desc: 'Pricing tailored to your needs', href: '/page/contact' },
-  { icon: Star,       label: 'Book a Demo',         desc: 'See machines working live',      href: WA_HREF },
-  { icon: TrendingUp, label: 'Bulk Purchase',       desc: 'Special rates for large orders', href: WA_HREF },
-  { icon: Users,      label: 'Contact Sales',       desc: 'Talk directly to our team',      href: PHONE_HREF },
+  { icon: Building2,  label: 'Become a Dealer',  desc: 'Join our network across India',  href: '/page/contact' },
+  { icon: FileText,   label: 'Request a Quote',   desc: 'Pricing tailored to your needs', href: '/page/contact' },
+  { icon: Star,       label: 'Book a Demo',       desc: 'See machines working live',      href: WA_HREF         },
+  { icon: TrendingUp, label: 'Bulk Purchase',     desc: 'Special rates for large orders', href: WA_HREF         },
+  { icon: Users,      label: 'Contact Sales',     desc: 'Talk directly to our team',      href: PHONE_HREF      },
 ];
 
 const SOCIALS = [
@@ -241,18 +251,28 @@ const SOCIALS = [
    MAIN COMPONENT
 ══════════════════════════════════════════════ */
 const Hub = () => {
-  const [scrollPct, setScrollPct] = useState(0);
   const [showTop, setShowTop] = useState(false);
-  const rafRef = useRef(null);
+  const rafRef     = useRef(null);
+  const progressRef = useRef(null);
+  /* Hoist reduced-motion check — reused in hero animations below */
+  const reduced = useReducedMotion();
 
-  /* RAF-throttled scroll handler — prevents jank */
+  /* RAF-throttled scroll handler.
+     Progress bar updated via direct DOM ref — zero React re-renders.
+     showTop state only flips at the 500px threshold (at most 2× per session). */
   useEffect(() => {
     const onScroll = () => {
       if (rafRef.current) return;
       rafRef.current = requestAnimationFrame(() => {
-        const total = document.documentElement.scrollHeight - window.innerHeight;
-        if (total > 0) setScrollPct((window.scrollY / total) * 100);
-        setShowTop(window.scrollY > 500);
+        const scrollY = window.scrollY;
+        if (progressRef.current) {
+          const total = document.documentElement.scrollHeight - window.innerHeight;
+          progressRef.current.style.width = total > 0 ? `${(scrollY / total) * 100}%` : '0%';
+        }
+        setShowTop(prev => {
+          const next = scrollY > 500;
+          return prev === next ? prev : next;
+        });
         rafRef.current = null;
       });
     };
@@ -284,19 +304,24 @@ const Hub = () => {
         structuredData={STRUCTURED_DATA}
       />
 
-      {/* ── Scroll progress bar ── */}
+      {/* Scroll progress bar — width driven by ref, not state */}
       <div
+        ref={progressRef}
         aria-hidden="true"
-        className="fixed top-0 left-0 z-50 h-[3px] bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 transition-[width] duration-100 ease-out"
-        style={{ width: `${scrollPct}%` }}
+        className="fixed top-0 left-0 z-50 h-[3px] bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-400 motion-reduce:hidden"
+        style={{ width: '0%' }}
       />
 
       {/* ══════════════════════════════
           HERO
+          LCP: logo fetchPriority=high, loading=eager, explicit width/height
+          CLS: min-h-[88vh] reserves space; no image shifts layout
       ══════════════════════════════ */}
-      <section className="relative min-h-[88vh] flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 overflow-hidden">
-
-        {/* Concentric rings — decorative */}
+      <section
+        aria-label="VTech Kitchen Quick Hub"
+        className="relative min-h-[88vh] flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 overflow-hidden"
+      >
+        {/* Concentric rings — decorative, pointer-events:none */}
         <div aria-hidden="true" className="absolute right-[-20%] md:right-[-8%] top-1/2 -translate-y-1/2 pointer-events-none select-none">
           {[900, 680, 460, 280].map((size, i) => (
             <div
@@ -324,39 +349,42 @@ const Hub = () => {
 
         <div className="relative z-10 max-w-3xl mx-auto px-5 text-center">
 
-          {/* Logo — eager + high priority */}
+          {/* Logo — LCP candidate: eager + high priority + explicit dimensions */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.92 }}
+            initial={{ opacity: 0, scale: reduced ? 1 : 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: reduced ? 0.01 : 0.65, ease: [0.22, 1, 0.36, 1] }}
           >
             <img
               src="/cropped-vtech-logo.webp"
-              alt="VTech Kitchen"
+              alt="VTech Kitchen logo"
+              width={200}
+              height={64}
               className="h-16 w-auto mx-auto mb-10 object-contain dark:brightness-0 dark:invert"
               loading="eager"
               fetchPriority="high"
+              decoding="sync"
             />
           </motion.div>
 
           {/* Eyebrow */}
           <motion.p
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: reduced ? 0 : 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ delay: reduced ? 0 : 0.15, duration: reduced ? 0.01 : 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="text-[11px] font-bold tracking-[0.3em] uppercase text-blue-600 dark:text-blue-400 mb-6"
           >
             Commercial Kitchen Equipment Manufacturer
           </motion.p>
 
-          {/* H1 — word-by-word stagger */}
+          {/* H1 — reduced motion: instant render; normal: word-by-word stagger */}
           <h1 className="text-4xl sm:text-5xl md:text-[3.6rem] font-bold text-gray-900 dark:text-white leading-[1.08] tracking-tight">
             {['Professional', 'Kitchen', 'Machines'].map((word, i) => (
               <motion.span
                 key={word}
-                initial={{ opacity: 0, y: 28 }}
+                initial={{ opacity: 0, y: reduced ? 0 : 28 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.28 + i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                transition={{ delay: reduced ? 0 : 0.28 + i * 0.1, duration: reduced ? 0.01 : 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className="inline-block mr-3"
               >
                 {word}
@@ -364,9 +392,9 @@ const Hub = () => {
             ))}
             <br />
             <motion.span
-              initial={{ opacity: 0, y: 28 }}
+              initial={{ opacity: 0, y: reduced ? 0 : 28 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.62, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ delay: reduced ? 0 : 0.62, duration: reduced ? 0.01 : 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="inline-block bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent mt-2"
             >
               Built to Grow Your Business.
@@ -375,24 +403,24 @@ const Hub = () => {
 
           {/* Subtext */}
           <motion.p
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: reduced ? 0 : 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.78, duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-7 text-lg text-gray-500 dark:text-gray-400 max-w-xl mx-auto leading-relaxed"
+            transition={{ delay: reduced ? 0 : 0.78, duration: reduced ? 0.01 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-7 text-lg text-gray-600 dark:text-gray-400 max-w-xl mx-auto leading-relaxed"
           >
             Trusted by 10,000+ restaurants, hotels &amp; cloud kitchens across India.
           </motion.p>
 
-          {/* CTAs — active:scale for tactile feedback */}
+          {/* CTAs — min 44×44 touch target; active:scale for tactile press feedback */}
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={{ opacity: 0, y: reduced ? 0 : 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ delay: reduced ? 0 : 0.9, duration: reduced ? 0.01 : 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="mt-10 flex flex-col sm:flex-row gap-4 justify-center"
           >
             <Link
               to="/products"
-              className={`inline-flex items-center justify-center gap-2.5 px-9 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-600/25 active:scale-[0.97] text-[15px] ${FOCUS_RING}`}
+              className={`inline-flex items-center justify-center gap-2.5 px-9 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-600/25 active:scale-[0.97] motion-reduce:hover:translate-y-0 text-[15px] ${FOCUS_RING}`}
             >
               <ShoppingBag className="w-5 h-5" aria-hidden="true" />
               Shop Products
@@ -402,20 +430,19 @@ const Hub = () => {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Chat with VTech Kitchen on WhatsApp"
-              className={`inline-flex items-center justify-center gap-2.5 px-9 py-4 bg-green-500 text-white font-bold rounded-2xl hover:bg-green-600 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-green-500/25 active:scale-[0.97] text-[15px] ${FOCUS_RING}`}
+              className={`inline-flex items-center justify-center gap-2.5 px-9 py-4 bg-green-500 text-white font-bold rounded-2xl hover:bg-green-600 transition-[transform,box-shadow,background-color] duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-green-500/25 active:scale-[0.97] motion-reduce:hover:translate-y-0 text-[15px] ${FOCUS_RING}`}
             >
               <MessageCircle className="w-5 h-5" aria-hidden="true" />
               WhatsApp Us
             </a>
           </motion.div>
         </div>
-
       </section>
 
       {/* ══════════════════════════════
           QUICK ACTIONS
       ══════════════════════════════ */}
-      <Section id="quick-actions" className="bg-gray-50 dark:bg-gray-800/30">
+      <Section id="quick-actions" ariaLabel="Quick actions" className="bg-gray-50 dark:bg-gray-800/30">
         <SectionTitle
           eyebrow="Quick Actions"
           title="Everything In One Place"
@@ -423,29 +450,29 @@ const Hub = () => {
         />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {QUICK_ACTIONS.map((item, i) => {
-            const { tag: Tag, props } = linkable(item.href, false);
+            const { tag: Tag, props } = linkable(item.href);
             return (
               <FadeIn key={item.label} delay={i * 0.05} className="h-full">
                 <Tag
                   {...props}
                   aria-label={item.label}
-                  className={`relative flex flex-col gap-4 p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/30 hover:border-blue-100 dark:hover:border-blue-700 transition-all duration-300 hover:-translate-y-1 h-full group cursor-pointer ${FOCUS_RING}`}
+                  className={`relative flex flex-col gap-4 p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/30 hover:border-blue-100 dark:hover:border-blue-700 transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 motion-reduce:hover:translate-y-0 h-full group cursor-pointer ${FOCUS_RING}`}
                 >
-                  {/* Ping indicator for WhatsApp — signals live availability */}
+                  {/* Live ping — WhatsApp availability signal; hidden when reduced motion */}
                   {item.ping && (
                     <span className="absolute top-3 right-3 flex h-2.5 w-2.5" aria-hidden="true">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                      <span className="animate-ping motion-reduce:animate-none absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
                     </span>
                   )}
-                  <div className={`w-12 h-12 rounded-xl ${item.color} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 transition-transform duration-300`}>
+                  <div className={`w-12 h-12 rounded-xl ${QA_COLORS[i]} flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-105 motion-reduce:group-hover:scale-100 transition-transform duration-300`}>
                     <item.icon className="w-5 h-5 text-white" aria-hidden="true" />
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">{item.label}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{item.desc}</p>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 mt-auto transition-all duration-300 group-hover:translate-x-1" aria-hidden="true" />
+                  <ArrowRight className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-blue-500 mt-auto transition-[color,transform] duration-300 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0" aria-hidden="true" />
                 </Tag>
               </FadeIn>
             );
@@ -454,9 +481,10 @@ const Hub = () => {
       </Section>
 
       {/* ══════════════════════════════
-          FEATURED PRODUCTS — white bg separates visually from gray-50 Quick Actions
+          FEATURED PRODUCTS
+          White bg — visually separates from gray-50 Quick Actions section
       ══════════════════════════════ */}
-      <Section id="products" className="bg-white dark:bg-gray-900">
+      <Section id="products" ariaLabel="Featured products" className="bg-white dark:bg-gray-900">
         <SectionTitle
           eyebrow="Our Products"
           title="Featured Machines"
@@ -464,7 +492,7 @@ const Hub = () => {
         />
 
         {productsLoading && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5" aria-label="Loading products" aria-busy="true">
             {[...Array(6)].map((_, i) => <ProductSkeleton key={i} />)}
           </div>
         )}
@@ -475,7 +503,7 @@ const Hub = () => {
           </div>
         )}
 
-        {/* Fallback category links */}
+        {/* Fallback category links if no products returned */}
         {!productsLoading && !hasProducts && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
@@ -487,10 +515,10 @@ const Hub = () => {
               { icon: '🥣', label: 'Dough Kneaders',     href: '/search?q=dough+kneader' },
             ].map((cat, i) => (
               <FadeIn key={cat.label} delay={i * 0.06}>
-                <Link to={cat.href} className={`flex items-center gap-4 p-5 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 group ${FOCUS_RING}`}>
+                <Link to={cat.href} className={`flex items-center gap-4 p-5 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700 hover:shadow-lg transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 group ${FOCUS_RING}`}>
                   <span className="text-3xl leading-none flex-shrink-0" aria-hidden="true">{cat.icon}</span>
                   <span className="text-sm font-semibold text-gray-800 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{cat.label}</span>
-                  <ChevronRight className="w-4 h-4 text-gray-300 ml-auto flex-shrink-0 group-hover:text-blue-400 group-hover:translate-x-1 transition-all duration-300" aria-hidden="true" />
+                  <ChevronRight className="w-4 h-4 text-gray-300 ml-auto flex-shrink-0 group-hover:text-blue-400 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300" aria-hidden="true" />
                 </Link>
               </FadeIn>
             ))}
@@ -500,7 +528,7 @@ const Hub = () => {
         <FadeIn delay={0.35} className="text-center mt-10">
           <Link
             to="/products"
-            className={`inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl border-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 font-bold hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white hover:shadow-lg hover:shadow-blue-600/20 active:scale-[0.98] transition-all duration-300 ${FOCUS_RING}`}
+            className={`inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl border-2 border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 font-bold hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white hover:shadow-lg hover:shadow-blue-600/20 active:scale-[0.98] transition-[transform,box-shadow,background-color,color,border-color] duration-300 ${FOCUS_RING}`}
           >
             View All Products
             <ArrowRight className="w-4 h-4" aria-hidden="true" />
@@ -510,8 +538,10 @@ const Hub = () => {
 
       {/* ══════════════════════════════
           TRUST STATS
+          Visually hidden h2 maintains heading hierarchy for screen readers
       ══════════════════════════════ */}
-      <section className="py-20 md:py-28 bg-blue-600 dark:bg-gray-900 relative overflow-hidden">
+      <section aria-label="Company statistics" className="py-20 md:py-28 bg-blue-600 dark:bg-gray-900 relative overflow-hidden">
+        <h2 className="sr-only">Our Numbers</h2>
         <div aria-hidden="true" className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse 50% 60% at 50% 50%, rgba(255,255,255,0.08) 0%, transparent 70%)' }}
         />
@@ -519,7 +549,10 @@ const Hub = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-6">
             {STATS.map((stat, i) => (
               <FadeIn key={stat.label} delay={i * 0.08} className="text-center">
-                <div className="text-4xl md:text-5xl font-extrabold text-white tracking-tight tabular-nums" aria-label={`${stat.prefix || ''}${stat.end}${stat.suffix} ${stat.label}`}>
+                <div
+                  className="text-4xl md:text-5xl font-extrabold text-white tracking-tight tabular-nums"
+                  aria-label={`${stat.prefix || ''}${stat.end}${stat.suffix} ${stat.label}`}
+                >
                   <CountUp
                     end={stat.end}
                     suffix={stat.suffix}
@@ -537,8 +570,9 @@ const Hub = () => {
 
       {/* ══════════════════════════════
           WHY VTECH
+          h3 on card titles — correct heading hierarchy (h1 > h2 > h3)
       ══════════════════════════════ */}
-      <Section id="why-vtech">
+      <Section id="why-vtech" ariaLabel="Why choose VTech Kitchen">
         <SectionTitle
           eyebrow="Why VTech Kitchen"
           title="Businesses Choose Us For a Reason"
@@ -547,12 +581,12 @@ const Hub = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {FEATURES.map((feat, i) => (
             <FadeIn key={feat.title} delay={i * 0.05}>
-              <div className="group flex flex-col gap-4 p-6 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/30 hover:-translate-y-1 transition-all duration-300">
-                <div className="w-12 h-12 rounded-xl bg-gray-900 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 group-hover:scale-105 transition-all duration-300">
+              <div className="group flex flex-col gap-4 p-6 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/30 hover:-translate-y-1 motion-reduce:hover:translate-y-0 transition-[transform,box-shadow,background-color] duration-300">
+                <div className="w-12 h-12 rounded-xl bg-gray-900 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 group-hover:scale-105 motion-reduce:group-hover:scale-100 transition-[background-color,transform] duration-300">
                   <feat.icon className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors duration-300" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="font-bold text-gray-900 dark:text-white text-sm">{feat.title}</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm">{feat.title}</h3>
                   <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{feat.desc}</p>
                 </div>
               </div>
@@ -564,7 +598,7 @@ const Hub = () => {
       {/* ══════════════════════════════
           RESOURCES
       ══════════════════════════════ */}
-      <Section id="resources" className="bg-gray-50 dark:bg-gray-800/30">
+      <Section id="resources" ariaLabel="Learning resources" className="bg-gray-50 dark:bg-gray-800/30">
         <SectionTitle
           eyebrow="Resources"
           title="Learn, Watch &amp; Get Support"
@@ -572,22 +606,22 @@ const Hub = () => {
         />
         <div className="grid sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
           {RESOURCES.map((res, i) => {
-            const { tag: Tag, props } = linkable(res.href, res.external);
+            const { tag: Tag, props } = linkable(res.href);
             return (
               <FadeIn key={res.label} delay={i * 0.08}>
                 <Tag
                   {...props}
                   aria-label={res.label}
-                  className={`flex items-center gap-5 p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/30 hover:-translate-y-0.5 transition-all duration-300 group ${FOCUS_RING}`}
+                  className={`flex items-center gap-5 p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:shadow-xl hover:shadow-black/5 dark:hover:shadow-black/30 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 transition-[transform,box-shadow] duration-300 group ${FOCUS_RING}`}
                 >
-                  <div className={`w-12 h-12 rounded-xl ${res.iconClass} flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform duration-300`}>
+                  <div className={`w-12 h-12 rounded-xl ${res.iconClass} flex items-center justify-center flex-shrink-0 group-hover:scale-105 motion-reduce:group-hover:scale-100 transition-transform duration-300`}>
                     <res.icon className="w-5 h-5 text-white" aria-hidden="true" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 dark:text-white text-sm">{res.label}</p>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-sm">{res.label}</h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{res.desc}</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 flex-shrink-0 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-300" aria-hidden="true" />
+                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 flex-shrink-0 group-hover:text-blue-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300" aria-hidden="true" />
                 </Tag>
               </FadeIn>
             );
@@ -598,7 +632,7 @@ const Hub = () => {
       {/* ══════════════════════════════
           BUSINESS SERVICES
       ══════════════════════════════ */}
-      <Section id="business">
+      <Section id="business" ariaLabel="Business services">
         <SectionTitle
           eyebrow="Business Services"
           title="Grow With VTech Kitchen"
@@ -606,21 +640,22 @@ const Hub = () => {
         />
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {SERVICES.map((svc, i) => {
-            const { tag: Tag, props } = linkable(svc.href, false);
+            const { tag: Tag, props } = linkable(svc.href);
             return (
               <FadeIn key={svc.label} delay={i * 0.07}>
                 <Tag
                   {...props}
-                  className={`flex flex-col gap-5 p-7 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-200 dark:hover:border-blue-700 hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-black/30 transition-all duration-300 hover:-translate-y-1.5 group h-full ${FOCUS_RING}`}
+                  aria-label={svc.label}
+                  className={`flex flex-col gap-5 p-7 rounded-2xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-blue-200 dark:hover:border-blue-700 hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-black/30 transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1.5 motion-reduce:hover:translate-y-0 group h-full ${FOCUS_RING}`}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 group-hover:border-blue-600 group-hover:scale-105 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-600 group-hover:border-blue-600 group-hover:scale-105 motion-reduce:group-hover:scale-100 transition-[background-color,border-color,transform] duration-300">
                     <svc.icon className="w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-white transition-colors duration-300" aria-hidden="true" />
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900 dark:text-white text-base">{svc.label}</p>
+                    <h3 className="font-bold text-gray-900 dark:text-white text-base">{svc.label}</h3>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">{svc.desc}</p>
                   </div>
-                  <div className="mt-auto flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 group-hover:gap-3 transition-all duration-300">
+                  <div className="mt-auto flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 group-hover:gap-3 transition-[gap] duration-300">
                     Get Started <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </div>
                 </Tag>
@@ -633,7 +668,7 @@ const Hub = () => {
       {/* ══════════════════════════════
           SOCIAL MEDIA
       ══════════════════════════════ */}
-      <Section id="social" className="bg-gray-50 dark:bg-gray-800/30">
+      <Section id="social" ariaLabel="Social media" className="bg-gray-50 dark:bg-gray-800/30">
         <SectionTitle
           eyebrow="Follow Us"
           title="Stay Connected"
@@ -647,14 +682,14 @@ const Hub = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`Follow VTech Kitchen on ${s.label}`}
-                className={`group flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:shadow-2xl hover:shadow-black/10 dark:hover:shadow-black/40 hover:-translate-y-1.5 transition-all duration-300 text-center ${FOCUS_RING}`}
+                className={`group flex flex-col items-center gap-4 p-7 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:shadow-2xl hover:shadow-black/10 dark:hover:shadow-black/40 hover:-translate-y-1.5 motion-reduce:hover:translate-y-0 transition-[transform,box-shadow] duration-300 text-center ${FOCUS_RING}`}
               >
-                <div className={`w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-700 ${s.hoverBg} flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-white group-hover:scale-105 transition-all duration-300 flex-shrink-0`}>
+                <div className={`w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-700 ${s.hoverBg} flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:text-white group-hover:scale-105 motion-reduce:group-hover:scale-100 transition-[background-color,color,transform] duration-300 flex-shrink-0`}>
                   {s.icon}
                 </div>
                 <div>
                   <p className="font-bold text-gray-900 dark:text-white text-sm">{s.label}</p>
-                  <p className="text-xs text-gray-400 mt-1">{s.handle}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{s.handle}</p>
                 </div>
               </a>
             </FadeIn>
@@ -665,7 +700,7 @@ const Hub = () => {
       {/* ══════════════════════════════
           CONTACT + MAP
       ══════════════════════════════ */}
-      <Section id="contact">
+      <Section id="contact" ariaLabel="Contact information">
         <SectionTitle
           eyebrow="Contact"
           title="Reach Us Anytime"
@@ -674,53 +709,58 @@ const Hub = () => {
         <div className="grid lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
 
           {/* Contact rows */}
-          <FadeIn className="space-y-4">
-            {[
-              { href: PHONE_HREF,  icon: Phone,         label: 'Call Us',   value: PHONE_DISPLAY,                      bg: 'bg-blue-600',    hov: 'hover:border-blue-200 dark:hover:border-blue-700' },
-              { href: WA_HREF,     icon: MessageCircle, label: 'WhatsApp',  value: 'Chat with us instantly',            bg: 'bg-green-500',   hov: 'hover:border-green-200 dark:hover:border-green-700', external: true },
-              { href: EMAIL_HREF,  icon: Mail,          label: 'Email',     value: 'vtechshop.customercare@gmail.com',  bg: 'bg-violet-600',  hov: 'hover:border-violet-200 dark:hover:border-violet-700' },
-              { href: MAPS_HREF,   icon: MapPin,        label: 'Location',  value: 'Ganapathy, Coimbatore, TN',         bg: 'bg-emerald-600', hov: 'hover:border-emerald-200 dark:hover:border-emerald-700', external: true },
-            ].map((item) => {
-              const { tag: Tag, props } = linkable(item.href, item.external);
-              return (
-                <Tag
-                  key={item.label}
-                  {...props}
-                  aria-label={`${item.label}: ${item.value}`}
-                  className={`flex items-center gap-5 p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${item.hov} hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 group ${FOCUS_RING}`}
-                >
-                  <div className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform duration-300`}>
-                    <item.icon className="w-5 h-5 text-white" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold tracking-wider uppercase text-gray-400">{item.label}</p>
-                    <p className="font-bold text-gray-900 dark:text-white text-sm mt-0.5 truncate">{item.value}</p>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 ml-auto flex-shrink-0 group-hover:text-blue-500 group-hover:translate-x-1 transition-all duration-300" aria-hidden="true" />
-                </Tag>
-              );
-            })}
+          <FadeIn>
+            <ul className="space-y-4 list-none" role="list">
+              {[
+                { href: PHONE_HREF,  icon: Phone,         label: 'Call Us',   value: PHONE_DISPLAY,                     bg: 'bg-blue-600',    hov: 'hover:border-blue-200 dark:hover:border-blue-700' },
+                { href: WA_HREF,     icon: MessageCircle, label: 'WhatsApp',  value: 'Chat with us instantly',           bg: 'bg-green-500',   hov: 'hover:border-green-200 dark:hover:border-green-700' },
+                { href: EMAIL_HREF,  icon: Mail,          label: 'Email',     value: 'vtechshop.customercare@gmail.com', bg: 'bg-violet-600',  hov: 'hover:border-violet-200 dark:hover:border-violet-700' },
+                { href: MAPS_HREF,   icon: MapPin,        label: 'Location',  value: 'Ganapathy, Coimbatore, TN',        bg: 'bg-emerald-600', hov: 'hover:border-emerald-200 dark:hover:border-emerald-700' },
+              ].map((item) => {
+                const { tag: Tag, props } = linkable(item.href);
+                return (
+                  <li key={item.label}>
+                    <Tag
+                      {...props}
+                      aria-label={`${item.label}: ${item.value}`}
+                      className={`flex items-center gap-5 p-5 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 ${item.hov} hover:shadow-lg transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 group ${FOCUS_RING}`}
+                    >
+                      <div className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-105 motion-reduce:group-hover:scale-100 transition-transform duration-300`}>
+                        <item.icon className="w-5 h-5 text-white" aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold tracking-wider uppercase text-gray-500 dark:text-gray-400">{item.label}</p>
+                        <p className="font-bold text-gray-900 dark:text-white text-sm mt-0.5 truncate">{item.value}</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600 ml-auto flex-shrink-0 group-hover:text-blue-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300" aria-hidden="true" />
+                    </Tag>
+                  </li>
+                );
+              })}
 
-            {/* Hours */}
-            <div className="flex items-center gap-5 p-5 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
-              <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
-                <Clock className="w-5 h-5 text-gray-500 dark:text-gray-300" aria-hidden="true" />
-              </div>
-              <div>
-                <p className="text-xs font-bold tracking-wider uppercase text-gray-400">Business Hours</p>
-                <p className="font-bold text-gray-900 dark:text-white text-sm mt-0.5">Mon – Sat · 9:00 AM – 6:00 PM IST</p>
-              </div>
-            </div>
+              {/* Business hours — static, not a link */}
+              <li className="flex items-center gap-5 p-5 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0" aria-hidden="true">
+                  <Clock className="w-5 h-5 text-gray-500 dark:text-gray-300" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold tracking-wider uppercase text-gray-500 dark:text-gray-400">Business Hours</p>
+                  <p className="font-bold text-gray-900 dark:text-white text-sm mt-0.5">
+                    <time>Mon – Sat · 9:00 AM – 6:00 PM IST</time>
+                  </p>
+                </div>
+              </li>
+            </ul>
           </FadeIn>
 
-          {/* Embedded map */}
+          {/* Embedded map — lazy loaded; explicit container height prevents CLS */}
           <FadeIn delay={0.15} className="h-full min-h-[360px]">
             <div className="w-full h-full min-h-[360px] rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm">
               <iframe
                 src={MAPS_EMBED}
-                width="100%"
-                height="100%"
-                style={{ minHeight: 360, border: 0 }}
+                width="600"
+                height="360"
+                style={{ width: '100%', minHeight: 360, border: 0, display: 'block' }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 title="VTech Kitchen Store Location — Ganapathy, Coimbatore"
@@ -732,23 +772,34 @@ const Hub = () => {
       </Section>
 
       {/* ══════════════════════════════
-          HUB FOOTER
+          HUB FOOTER — semantic <footer> + <nav>
       ══════════════════════════════ */}
-      <div className="bg-gray-900 dark:bg-gray-950 py-10 border-t border-white/5">
+      <footer className="bg-gray-900 dark:bg-gray-950 py-10 border-t border-white/5">
         <div className="max-w-6xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-5 text-sm text-gray-500">
           <div className="flex items-center gap-3">
-            <img src="/cropped-vtech-logo.webp" alt="" className="h-7 w-auto brightness-0 invert opacity-40" aria-hidden="true" />
-            <span>© {new Date().getFullYear()} VTech Kitchen. All rights reserved.</span>
+            <img
+              src="/cropped-vtech-logo.webp"
+              alt=""
+              width={112}
+              height={28}
+              className="h-7 w-auto brightness-0 invert opacity-40"
+              loading="lazy"
+              decoding="async"
+              aria-hidden="true"
+            />
+            <span>© {CURRENT_YEAR} VTech Kitchen. All rights reserved.</span>
           </div>
-          <div className="flex items-center gap-6">
-            <Link to="/" className={`hover:text-white transition-colors ${FOCUS_RING}`}>vtechkitchen.com</Link>
-            <Link to="/page/privacy" className={`hover:text-white transition-colors ${FOCUS_RING}`}>Privacy</Link>
-            <Link to="/page/terms" className={`hover:text-white transition-colors ${FOCUS_RING}`}>Terms</Link>
-          </div>
+          <nav aria-label="Hub footer navigation">
+            <ul className="flex items-center gap-6 list-none" role="list">
+              <li><Link to="/"             className={`hover:text-white transition-colors py-1 ${FOCUS_RING}`}>vtechkitchen.com</Link></li>
+              <li><Link to="/page/privacy" className={`hover:text-white transition-colors py-1 ${FOCUS_RING}`}>Privacy</Link></li>
+              <li><Link to="/page/terms"   className={`hover:text-white transition-colors py-1 ${FOCUS_RING}`}>Terms</Link></li>
+            </ul>
+          </nav>
         </div>
-      </div>
+      </footer>
 
-      {/* ── Back to top — whileHover + whileTap for tactile feel ── */}
+      {/* Back to top — min 44×44 touch target; whileHover/whileTap for tactile feel */}
       <AnimatePresence>
         {showTop && (
           <motion.button
@@ -758,7 +809,7 @@ const Hub = () => {
             whileHover={{ scale: 1.12, y: -2 }}
             whileTap={{ scale: 0.93 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() => window.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' })}
             className={`fixed bottom-24 right-5 z-40 w-11 h-11 rounded-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-2xl flex items-center justify-center hover:bg-blue-600 dark:hover:bg-blue-600 dark:hover:text-white transition-colors duration-200 ${FOCUS_RING}`}
             aria-label="Scroll back to top"
           >
