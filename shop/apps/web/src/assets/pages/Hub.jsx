@@ -338,13 +338,14 @@ const Hub = () => {
           White text on blue gradient â€” same as site hero pattern
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <section
-        aria-label=”VTech Kitchen Quick Hub”
+        aria-label="VTech Kitchen Quick Hub"
         className={`relative overflow-hidden ${
           !hubConfig?.hero?.backgroundType || hubConfig.hero.backgroundType === 'gradient'
             ? 'bg-gradient-to-r from-primary-600 to-primary-200'
             : 'bg-gray-900'
         }`}
       >
+        {/* Subtle concentric rings â€” white on blue, matching site's hero decorative pattern */}
         {hubConfig?.hero?.backgroundType === 'image' && (
           <HeroBgImage
             desktop={hubConfig.hero.desktop?.image}
@@ -363,8 +364,8 @@ const Hub = () => {
         )}
         {hubConfig?.hero?.backgroundType !== 'gradient' && (hubConfig?.hero?.overlay?.opacity ?? 0) > 0 && (
           <div
-            aria-hidden=”true”
-            className=”absolute inset-0 pointer-events-none”
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
             style={{
               backgroundColor: hubConfig.hero.overlay.color || '#000000',
               opacity: hubConfig.hero.overlay.opacity,
@@ -373,11 +374,11 @@ const Hub = () => {
         )}
         {(!hubConfig?.hero?.backgroundType || hubConfig.hero.backgroundType === 'gradient') && (
           <>
-            <div aria-hidden=”true” className=”absolute right-[-15%] md:right-0 top-1/2 -translate-y-1/2 pointer-events-none select-none”>
+            <div aria-hidden="true" className="absolute right-[-15%] md:right-0 top-1/2 -translate-y-1/2 pointer-events-none select-none">
               {[700, 520, 360, 220].map((size, i) => (
                 <div
                   key={size}
-                  className=”absolute rounded-full border border-white”
+                  className="absolute rounded-full border border-white"
                   style={{
                     width: size, height: size,
                     opacity: 0.08 - i * 0.015,
@@ -387,7 +388,9 @@ const Hub = () => {
                 />
               ))}
             </div>
-            <div aria-hidden=”true” className=”absolute inset-0 opacity-[0.06] pointer-events-none”
+
+        {/* Dot grid â€” white dots, consistent with existing gradient sections */}
+            <div aria-hidden="true" className="absolute inset-0 opacity-[0.06] pointer-events-none"
               style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '36px 36px' }}
             />
           </>
