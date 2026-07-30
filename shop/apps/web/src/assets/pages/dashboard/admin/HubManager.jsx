@@ -263,6 +263,18 @@ const MediaSlot = ({ label, field, url, mimeType, focalX = 50, focalY = 50, zoom
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
+
+    const MAX_MB  = isVideo ? 20 : 10;
+    const fileMB  = file.size / (1024 * 1024);
+    if (fileMB > MAX_MB) {
+      toast.error(
+        `File too large (${fileMB.toFixed(1)} MB). ` +
+        `${isVideo ? 'Videos' : 'Images'} must be under ${MAX_MB} MB. ` +
+        `Please compress the file and try again.`
+      );
+      return;
+    }
+
     uploadMutation.mutate(file);
   };
 
