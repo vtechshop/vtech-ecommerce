@@ -866,34 +866,6 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-          HUB FOOTER â€” semantic <footer> + <nav>
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      <footer className="bg-gray-900 py-8 border-t border-white/5">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-          <div className="flex items-center gap-3">
-            <img
-              src="/cropped-vtech-logo.webp"
-              alt=""
-              width={112}
-              height={28}
-              className="h-7 w-auto brightness-0 invert opacity-40"
-              loading="lazy"
-              decoding="async"
-              aria-hidden="true"
-            />
-            <span>Â© {CURRENT_YEAR} VTech Kitchen. All rights reserved.</span>
-          </div>
-          <nav aria-label="Hub footer navigation">
-            <ul className="flex items-center gap-5 list-none" role="list">
-              <li><Link to="/"             className={`hover:text-white transition-colors py-1 ${FOCUS_RING}`}>vtechkitchen.com</Link></li>
-              <li><Link to="/page/privacy" className={`hover:text-white transition-colors py-1 ${FOCUS_RING}`}>Privacy</Link></li>
-              <li><Link to="/page/terms"   className={`hover:text-white transition-colors py-1 ${FOCUS_RING}`}>Terms</Link></li>
-            </ul>
-          </nav>
-        </div>
-      </footer>
-
       {/* Back to top â€” matches site's primary-600 button pattern */}
       <AnimatePresence>
         {showTop && (
