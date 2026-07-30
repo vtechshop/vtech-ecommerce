@@ -1,5 +1,4 @@
 ﻿import { useState, useEffect, useRef } from 'react';
-import { HeroBgImage, HeroBgVideo } from './HeroBgMedia';
 import { Link } from 'react-router-dom';
 import { motion, useInView, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +11,7 @@ import {
 import SEO from '@/components/common/SEO';
 import CountUp from '@/components/animations/CountUp';
 import api from '@/store/api';
+import { HeroBgImage, HeroBgVideo } from './HeroBgMedia';
 
 /* â”€â”€ Contact constants â”€â”€ */
 const PHONE_HREF     = 'tel:+919944556683';
@@ -41,9 +41,9 @@ const STRUCTURED_DATA = {
   sameAs: [YOUTUBE_HREF, INSTAGRAM_HREF, FACEBOOK_HREF, LINKEDIN_HREF],
 };
 
-/* ==============================================
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    UTILITY COMPONENTS
-============================================== */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /* FadeIn â€” respects prefers-reduced-motion */
 const FadeIn = ({ children, delay = 0, className = '', y = 20 }) => {
@@ -182,9 +182,9 @@ const ProductCard = ({ product, index }) => {
   );
 };
 
-/* ==============================================
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    DATA â€” module-level, never re-created on render
-============================================== */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 const QUICK_ACTIONS = [
   { label: 'Shop Products',  desc: 'Browse all machines',      icon: ShoppingBag,   href: '/products',       color: 'bg-gradient-to-r from-primary-600 to-primary-700', analyticsKey: 'shop_products' },
@@ -249,10 +249,10 @@ const SOCIALS = [
   },
 ];
 
-/* ==============================================
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN COMPONENT
-============================================== */
-/* Fire-and-forget click tracking — never blocks navigation */
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* Fire-and-forget click tracking â€” never blocks navigation */
 function trackHubClick(button, label, href) {
   try {
     const ua = navigator.userAgent.toLowerCase();
@@ -294,20 +294,20 @@ const Hub = () => {
     };
   }, []);
 
-  const { data: hubConfig } = useQuery({
-    queryKey: ['hub-public'],
-    queryFn: async () => {
-      const { data } = await api.get('/hub');
-      return data.data || {};
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['hub-featured-products'],
     queryFn: async () => {
       const { data } = await api.get('/catalog/products?featured=true&limit=6');
       return data.data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: hubConfig } = useQuery({
+    queryKey: ['hub-public'],
+    queryFn: async () => {
+      const { data } = await api.get('/hub');
+      return data.data || {};
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -332,11 +332,11 @@ const Hub = () => {
         style={{ width: '0%' }}
       />
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           HERO
           Matches Home.jsx: bg-gradient-to-r from-primary-600 to-primary-200
           White text on blue gradient â€” same as site hero pattern
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <section
         aria-label=”VTech Kitchen Quick Hub”
         className={`relative overflow-hidden ${
@@ -345,9 +345,11 @@ const Hub = () => {
             : 'bg-gray-900'
         }`}
       >
-        {/* Media layer — image or video (hidden for gradient) */}
         {hubConfig?.hero?.backgroundType === 'image' && (
-          <HeroBgImage desktop={hubConfig.hero.desktop?.image} mobile={hubConfig.hero.mobile?.image} />
+          <HeroBgImage
+            desktop={hubConfig.hero.desktop?.image}
+            mobile={hubConfig.hero.mobile?.image}
+          />
         )}
         {hubConfig?.hero?.backgroundType === 'video' && (
           <HeroBgVideo
@@ -359,9 +361,7 @@ const Hub = () => {
             reduced={reduced}
           />
         )}
-
-        {/* Overlay — only for image/video types */}
-        {hubConfig?.hero?.backgroundType !== 'gradient' && hubConfig?.hero?.overlay?.opacity > 0 && (
+        {hubConfig?.hero?.backgroundType !== 'gradient' && (hubConfig?.hero?.overlay?.opacity ?? 0) > 0 && (
           <div
             aria-hidden=”true”
             className=”absolute inset-0 pointer-events-none”
@@ -371,8 +371,6 @@ const Hub = () => {
             }}
           />
         )}
-
-        {/* Decorative rings + dot grid — gradient type only */}
         {(!hubConfig?.hero?.backgroundType || hubConfig.hero.backgroundType === 'gradient') && (
           <>
             <div aria-hidden=”true” className=”absolute right-[-15%] md:right-0 top-1/2 -translate-y-1/2 pointer-events-none select-none”>
@@ -493,10 +491,10 @@ const Hub = () => {
         </div>
       </section>
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           QUICK ACTIONS
           bg-gray-50 â€” matches Home.jsx page background for secondary sections
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="quick-actions" ariaLabel="Quick actions" className="bg-white">
         <SectionTitle
           eyebrow="Quick Actions"
@@ -536,10 +534,42 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           FEATURED PRODUCTS
           bg-white â€” same as Category.jsx, consistent with site
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      <Section id="categories" ariaLabel="Browse by category" className="bg-white">
+        <SectionTitle
+          eyebrow="Browse by Category"
+          title="Shop by Machine Type"
+          subtitle="Find the perfect machine for your kitchen."
+        />
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {(hubConfig?.categoryLinks?.length
+            ? hubConfig.categoryLinks.filter(c => c.visible !== false)
+            : [
+              { emoji: '\u{1F96C}', label: 'Vegetable Cutting', href: '/products?category=vegetable-cutting' },
+              { emoji: '\u{1FAD4}', label: 'Chapati Press',     href: '/products?category=chapati-press' },
+              { emoji: '\u{1F300}', label: 'Wet Grinders',      href: '/products?category=wet-grinders' },
+              { emoji: '\u{1F965}', label: 'Coconut Scrapers',  href: '/products?category=coconut-scrapers' },
+              { emoji: '\u{1F954}', label: 'Potato Slicers',    href: '/products?category=potato-slicers' },
+              { emoji: '\u{1F963}', label: 'Dough Kneaders',    href: '/products?category=dough-kneaders' },
+            ]
+          ).map((cat, i) => (
+            <FadeIn key={cat.label} delay={i * 0.06}>
+              <Link
+                to={cat.href}
+                className={`flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 motion-reduce:hover:translate-y-0 group ${FOCUS_RING}`}
+              >
+                <span className="text-2xl leading-none flex-shrink-0" aria-hidden="true">{cat.emoji}</span>
+                <span className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">{cat.label}</span>
+                <ChevronRight className="w-4 h-4 text-gray-400 ml-auto flex-shrink-0 group-hover:text-primary-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300" aria-hidden="true" />
+              </Link>
+            </FadeIn>
+          ))}
+        </div>
+      </Section>
+
       <Section id="products" ariaLabel="Featured products" className="bg-white">
         <SectionTitle
           eyebrow="Our Products"
@@ -559,53 +589,27 @@ const Hub = () => {
           </div>
         )}
 
-        {/* Browse by Category — always shown, driven by admin config */}
-        {(() => {
-          const FALLBACK_CATS = [
-            { emoji: '🥬', label: 'Vegetable Cutting', href: '/products?category=vegetable-cutting' },
-            { emoji: '🫔', label: 'Chapati Press',      href: '/products?category=chapati-press'      },
-            { emoji: '🌀', label: 'Wet Grinders',       href: '/products?category=wet-grinders'       },
-            { emoji: '🥥', label: 'Coconut Scrapers',   href: '/products?category=coconut-scrapers'   },
-            { emoji: '🥔', label: 'Potato Slicers',     href: '/products?category=potato-slicers'     },
-            { emoji: '🥣', label: 'Dough Kneaders',     href: '/products?category=dough-kneaders'     },
-          ];
-          const cats = hubConfig?.categoryLinks
-            ? hubConfig.categoryLinks.filter(c => c.visible !== false).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
-            : FALLBACK_CATS;
-          if (!cats.length) return null;
-          return (
-            <div className=”mt-10”>
-              <p className=”text-xs font-bold tracking-[0.2em] uppercase text-primary-600 mb-4”>Browse by Category</p>
-              <div className=”grid grid-cols-2 md:grid-cols-3 gap-3”>
-                {cats.map((cat, i) => {
-                  const href = cat.href || '/products';
-                  const isExternal = href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:');
-                  const linkProps = isExternal
-                    ? { href, target: '_blank', rel: 'noopener noreferrer' }
-                    : null;
-                  const cls = `flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 group ${FOCUS_RING}`;
-                  return (
-                    <FadeIn key={cat.label || i} delay={i * 0.06}>
-                      {isExternal ? (
-                        <a {...linkProps} className={cls}>
-                          <span className=”text-2xl leading-none flex-shrink-0” aria-hidden=”true”>{cat.emoji}</span>
-                          <span className=”text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors”>{cat.label}</span>
-                          <ChevronRight className=”w-4 h-4 text-gray-400 ml-auto flex-shrink-0 group-hover:text-primary-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300” aria-hidden=”true” />
-                        </a>
-                      ) : (
-                        <Link to={href} className={cls}>
-                          <span className=”text-2xl leading-none flex-shrink-0” aria-hidden=”true”>{cat.emoji}</span>
-                          <span className=”text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors”>{cat.label}</span>
-                          <ChevronRight className=”w-4 h-4 text-gray-400 ml-auto flex-shrink-0 group-hover:text-primary-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300” aria-hidden=”true” />
-                        </Link>
-                      )}
-                    </FadeIn>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
+        {/* Fallback category links if no products returned */}
+        {!productsLoading && !hasProducts && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { icon: 'ðŸ¥¬', label: 'Vegetable Cutting', href: '/search?q=vegetable+cutting+machine' },
+              { icon: 'ðŸ«“', label: 'Chapati Press',      href: '/search?q=chapati+press' },
+              { icon: 'ðŸŒ€', label: 'Wet Grinders',       href: '/search?q=wet+grinder' },
+              { icon: 'ðŸ¥¥', label: 'Coconut Scrapers',   href: '/search?q=coconut+scraper' },
+              { icon: 'ðŸ¥”', label: 'Potato Slicers',     href: '/search?q=potato+slicer' },
+              { icon: 'ðŸ¥£', label: 'Dough Kneaders',     href: '/search?q=dough+kneader' },
+            ].map((cat, i) => (
+              <FadeIn key={cat.label} delay={i * 0.06}>
+                <Link to={cat.href} className={`flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 motion-reduce:hover:translate-y-0 group ${FOCUS_RING}`}>
+                  <span className="text-2xl leading-none flex-shrink-0" aria-hidden="true">{cat.icon}</span>
+                  <span className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">{cat.label}</span>
+                  <ChevronRight className="w-4 h-4 text-gray-400 ml-auto flex-shrink-0 group-hover:text-primary-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300" aria-hidden="true" />
+                </Link>
+              </FadeIn>
+            ))}
+          </div>
+        )}
 
         <FadeIn delay={0.3} className="text-center mt-8">
           <Link
@@ -618,11 +622,11 @@ const Hub = () => {
         </FadeIn>
       </Section>
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           TRUST STATS
           Same gradient as hero â€” bg-gradient-to-r from-primary-600 to-primary-200
           Mirrors Home.jsx hero pattern for visual cohesion
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <section aria-label="Company statistics" className="py-16 md:py-20 bg-gradient-to-r from-primary-600 to-primary-200 relative overflow-hidden">
         <h2 className="sr-only">Our Numbers</h2>
         <div aria-hidden="true" className="absolute inset-0 pointer-events-none opacity-[0.06]"
@@ -651,10 +655,10 @@ const Hub = () => {
         </div>
       </section>
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           WHY VTECH
           bg-white â€” matching site's alternating section pattern
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="why-vtech" ariaLabel="Why choose VTech Kitchen" className="bg-white">
         <SectionTitle
           eyebrow="Why VTech Kitchen"
@@ -678,10 +682,10 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           RESOURCES
           bg-gray-50 â€” matches site alternating pattern
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="resources" ariaLabel="Learning resources" className="bg-white">
         <SectionTitle
           eyebrow="Resources"
@@ -713,10 +717,10 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           BUSINESS SERVICES
           bg-white â€” alternating
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="business" ariaLabel="Business services" className="bg-white">
         <SectionTitle
           eyebrow="Business Services"
@@ -750,10 +754,10 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           SOCIAL MEDIA
           bg-gray-50 â€” alternating
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="social" ariaLabel="Social media" className="bg-white">
         <SectionTitle
           eyebrow="Follow Us"
@@ -783,10 +787,10 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           CONTACT + MAP
           bg-white â€” alternating
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="contact" ariaLabel="Contact information" className="bg-white">
         <SectionTitle
           eyebrow="Contact"
@@ -856,9 +860,9 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* ==============================
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           HUB FOOTER â€” semantic <footer> + <nav>
-      ============================== */}
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <footer className="bg-gray-900 py-8 border-t border-white/5">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
           <div className="flex items-center gap-3">
