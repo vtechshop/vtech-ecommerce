@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import CountUp from '@/components/animations/CountUp';
 import api from '@/store/api';
 import { HeroBgImage, HeroBgVideo } from './HeroBgMedia';
 
-/* â”€â”€ Contact constants â”€â”€ */
+/* ── Contact constants ── */
 const PHONE_HREF     = 'tel:+919944556683';
 const PHONE_DISPLAY  = '+91 99445 56683';
 const WA_HREF        = 'https://wa.me/919944556683?text=Hi%2C%20I%27m%20interested%20in%20VTech%20Kitchen%20products';
@@ -25,10 +25,10 @@ const INSTAGRAM_HREF = 'https://instagram.com';
 const FACEBOOK_HREF  = 'https://facebook.com';
 const LINKEDIN_HREF  = 'https://linkedin.com';
 
-/* Computed once at module init â€” not on every render */
+/* Computed once at module init — not on every render */
 const CURRENT_YEAR = new Date().getFullYear();
 
-/* â”€â”€ Structured data â”€â”€ */
+/* ── Structured data ── */
 const STRUCTURED_DATA = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
@@ -45,7 +45,7 @@ const STRUCTURED_DATA = {
    UTILITY COMPONENTS
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-/* FadeIn â€” respects prefers-reduced-motion */
+/* FadeIn — respects prefers-reduced-motion */
 const FadeIn = ({ children, delay = 0, className = '', y = 20 }) => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-80px' });
@@ -67,7 +67,7 @@ const FadeIn = ({ children, delay = 0, className = '', y = 20 }) => {
   );
 };
 
-/* Section â€” semantic landmark with accessible region label */
+/* Section — semantic landmark with accessible region label */
 const Section = ({ children, className = '', id, ariaLabel }) => (
   <section id={id} aria-label={ariaLabel} className={`py-16 md:py-20 ${className}`}>
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
@@ -75,8 +75,8 @@ const Section = ({ children, className = '', id, ariaLabel }) => (
 );
 
 /*
-  SectionTitle â€” matches existing VTech Kitchen heading scale (text-xl md:text-2xl).
-  Eyebrow as plain-text label above the heading â€” no pill border/bg (not in existing site).
+  SectionTitle — matches existing VTech Kitchen heading scale (text-xl md:text-2xl).
+  Eyebrow as plain-text label above the heading — no pill border/bg (not in existing site).
 */
 const SectionTitle = ({ eyebrow, title, subtitle, light = false }) => (
   <FadeIn className="text-center mb-10 md:mb-12">
@@ -96,7 +96,7 @@ const SectionTitle = ({ eyebrow, title, subtitle, light = false }) => (
   </FadeIn>
 );
 
-/* Focus ring â€” matches site's focus-ring-primary-300 pattern */
+/* Focus ring — matches site's focus-ring-primary-300 pattern */
 const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2';
 
 /* Returns the correct tag (Link or <a>) based on href shape */
@@ -115,7 +115,7 @@ const linkable = (href) => {
 };
 
 /*
-  ProductSkeleton â€” matches site's animate-pulse skeleton pattern:
+  ProductSkeleton — matches site's animate-pulse skeleton pattern:
   bg-white rounded-xl shadow-sm border border-gray-100 animate-pulse
 */
 const ProductSkeleton = () => (
@@ -130,7 +130,7 @@ const ProductSkeleton = () => (
 );
 
 /*
-  ProductCard â€” mirrors site's .product-card CSS class:
+  ProductCard — mirrors site's .product-card CSS class:
   bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-2xl hover:-translate-y-2 hover:border-primary-300
 */
 const ProductCard = ({ product, index }) => {
@@ -170,7 +170,7 @@ const ProductCard = ({ product, index }) => {
           </h3>
           {product.price > 0 && (
             <p className="text-lg font-bold text-gray-900">
-              â‚¹{Number(product.price).toLocaleString('en-IN')}
+              ₹{Number(product.price).toLocaleString('en-IN')}
             </p>
           )}
           <div className="mt-auto pt-3 flex items-center gap-1.5 text-sm font-semibold text-primary-600 group-hover:gap-2.5 transition-[gap] duration-300">
@@ -183,7 +183,7 @@ const ProductCard = ({ product, index }) => {
 };
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   DATA â€” module-level, never re-created on render
+   DATA — module-level, never re-created on render
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 const QUICK_ACTIONS = [
@@ -197,11 +197,11 @@ const QUICK_ACTIONS = [
 ];
 
 const FEATURES = [
-  { icon: Factory,     title: 'Direct Manufacturer', desc: 'Own factory, zero intermediaries â€” pure cost advantage for you.' },
+  { icon: Factory,     title: 'Direct Manufacturer', desc: 'Own factory, zero intermediaries — pure cost advantage for you.' },
   { icon: Tag,         title: 'Factory Pricing',      desc: 'Industry-best rates because we own the entire supply chain.' },
   { icon: Award,       title: 'Premium Quality',      desc: 'Industrial-grade components built for heavy commercial daily use.' },
   { icon: Zap,         title: 'Fast Dispatch',        desc: 'Quick order processing with reliable logistics partners.' },
-  { icon: Truck,       title: 'All India Shipping',   desc: 'From Kanyakumari to Kashmir â€” we deliver to your doorstep.' },
+  { icon: Truck,       title: 'All India Shipping',   desc: 'From Kanyakumari to Kashmir — we deliver to your doorstep.' },
   { icon: ShieldCheck, title: 'One Year Warranty',    desc: 'Full coverage warranty on every machine we manufacture.' },
   { icon: Headphones,  title: 'Dedicated Support',    desc: 'Expert team to help with setup, service, and spare parts.' },
   { icon: Star,        title: '5-Star Rated',         desc: 'Consistently loved and recommended by 10,000+ happy businesses.' },
@@ -212,7 +212,7 @@ const STATS = [
   { end: 500,   suffix: '+',  label: 'Machine Models'  },
   { end: 7,     suffix: '+',  label: 'Years of Trust'  },
   { end: 28,    suffix: '',   label: 'States Served'   },
-  { end: 4.9,   suffix: '/5', decimals: 1, label: 'Customer Rating', prefix: 'â˜… ' },
+  { end: 4.9,   suffix: '/5', decimals: 1, label: 'Customer Rating', prefix: '★ ' },
 ];
 
 const RESOURCES = [
@@ -252,7 +252,7 @@ const SOCIALS = [
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN COMPONENT
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-/* Fire-and-forget click tracking â€” never blocks navigation */
+/* Fire-and-forget click tracking — never blocks navigation */
 function trackHubClick(button, label, href) {
   try {
     const ua = navigator.userAgent.toLowerCase();
@@ -270,7 +270,7 @@ const Hub = () => {
   /* Hoist for hero animations */
   const reduced = useReducedMotion();
 
-  /* RAF-throttled â€” progress bar via direct DOM ref (zero re-renders on scroll) */
+  /* RAF-throttled — progress bar via direct DOM ref (zero re-renders on scroll) */
   useEffect(() => {
     const onScroll = () => {
       if (rafRef.current) return;
@@ -317,14 +317,14 @@ const Hub = () => {
   return (
     <>
       <SEO
-        title="Quick Hub â€” VTech Kitchen | Commercial Kitchen Equipment"
-        description="Shop commercial kitchen machines, get a quote, book a demo, or contact VTech Kitchen â€” everything in one place. Trusted by 10,000+ businesses across India."
+        title="Quick Hub — VTech Kitchen | Commercial Kitchen Equipment"
+        description="Shop commercial kitchen machines, get a quote, book a demo, or contact VTech Kitchen — everything in one place. Trusted by 10,000+ businesses across India."
         url="https://www.vtechkitchen.com/hub"
         keywords="VTech Kitchen, commercial kitchen equipment, vegetable cutting machine, chapati press, wet grinder, Coimbatore"
         structuredData={STRUCTURED_DATA}
       />
 
-      {/* Scroll progress bar â€” width via DOM ref, zero re-renders */}
+      {/* Scroll progress bar — width via DOM ref, zero re-renders */}
       <div
         ref={progressRef}
         aria-hidden="true"
@@ -335,7 +335,7 @@ const Hub = () => {
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           HERO
           Matches Home.jsx: bg-gradient-to-r from-primary-600 to-primary-200
-          White text on blue gradient â€” same as site hero pattern
+          White text on blue gradient — same as site hero pattern
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <section
         aria-label="VTech Kitchen Quick Hub"
@@ -345,7 +345,7 @@ const Hub = () => {
             : 'bg-gray-900'
         }`}
       >
-        {/* Subtle concentric rings â€” white on blue, matching site's hero decorative pattern */}
+        {/* Subtle concentric rings — white on blue, matching site's hero decorative pattern */}
         {hubConfig?.hero?.backgroundType === 'image' && (
           <HeroBgImage
             desktop={hubConfig.hero.desktop?.image}
@@ -389,7 +389,7 @@ const Hub = () => {
               ))}
             </div>
 
-        {/* Dot grid â€” white dots, consistent with existing gradient sections */}
+        {/* Dot grid — white dots, consistent with existing gradient sections */}
             <div aria-hidden="true" className="absolute inset-0 opacity-[0.06] pointer-events-none"
               style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '36px 36px' }}
             />
@@ -398,7 +398,7 @@ const Hub = () => {
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center">
 
-          {/* Logo â€” inverted white on blue hero background; LCP target */}
+          {/* Logo — inverted white on blue hero background; LCP target */}
           <motion.div
             initial={{ opacity: 0, scale: reduced ? 1 : 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -461,8 +461,8 @@ const Hub = () => {
           </motion.p>
 
           {/*
-            CTAs â€” matches Home.jsx hero button patterns.
-            Primary: white bg (on blue hero) â€” existing site pattern for hero CTAs.
+            CTAs — matches Home.jsx hero button patterns.
+            Primary: white bg (on blue hero) — existing site pattern for hero CTAs.
             Secondary: green for WhatsApp (user requirement).
           */}
           <motion.div
@@ -471,7 +471,7 @@ const Hub = () => {
             transition={{ delay: reduced ? 0 : 0.85, duration: reduced ? 0.01 : 0.45, ease: [0.22, 1, 0.36, 1] }}
             className="mt-8 flex flex-col sm:flex-row gap-3 justify-center"
           >
-            {/* Primary CTA â€” red gradient matching site's discount badge/urgent action style */}
+            {/* Primary CTA — red gradient matching site's discount badge/urgent action style */}
             <Link
               to="/products"
               className={`btn inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 px-6 py-3 rounded-lg font-semibold shadow-lg motion-reduce:hover:translate-y-0 ${FOCUS_RING}`}
@@ -479,7 +479,7 @@ const Hub = () => {
               <ShoppingBag className="w-5 h-5" aria-hidden="true" />
               Shop Products
             </Link>
-            {/* WhatsApp â€” green only (user requirement) */}
+            {/* WhatsApp — green only (user requirement) */}
             <a
               href={WA_HREF}
               target="_blank"
@@ -496,13 +496,13 @@ const Hub = () => {
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           QUICK ACTIONS
-          bg-gray-50 â€” matches Home.jsx page background for secondary sections
+          bg-gray-50 — matches Home.jsx page background for secondary sections
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="quick-actions" ariaLabel="Quick actions" className="bg-white">
         <SectionTitle
           eyebrow="Quick Actions"
           title="Everything In One Place"
-          subtitle="Shop, call, chat, or navigate to our store â€” instantly."
+          subtitle="Shop, call, chat, or navigate to our store — instantly."
         />
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {QUICK_ACTIONS.map((item, i) => {
@@ -539,7 +539,7 @@ const Hub = () => {
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           FEATURED PRODUCTS
-          bg-white â€” same as Category.jsx, consistent with site
+          bg-white — same as Category.jsx, consistent with site
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="categories" ariaLabel="Browse by category" className="bg-white">
         <SectionTitle
@@ -599,12 +599,12 @@ const Hub = () => {
         {!productsLoading && !hasProducts && (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { icon: 'ðŸ¥¬', label: 'Vegetable Cutting', href: '/search?q=vegetable+cutting+machine' },
-              { icon: 'ðŸ«“', label: 'Chapati Press',      href: '/search?q=chapati+press' },
-              { icon: 'ðŸŒ€', label: 'Wet Grinders',       href: '/search?q=wet+grinder' },
-              { icon: 'ðŸ¥¥', label: 'Coconut Scrapers',   href: '/search?q=coconut+scraper' },
-              { icon: 'ðŸ¥”', label: 'Potato Slicers',     href: '/search?q=potato+slicer' },
-              { icon: 'ðŸ¥£', label: 'Dough Kneaders',     href: '/search?q=dough+kneader' },
+              { icon: '🥬', label: 'Vegetable Cutting', href: '/search?q=vegetable+cutting+machine' },
+              { icon: '🫓', label: 'Chapati Press',      href: '/search?q=chapati+press' },
+              { icon: '🌀', label: 'Wet Grinders',       href: '/search?q=wet+grinder' },
+              { icon: '🥥', label: 'Coconut Scrapers',   href: '/search?q=coconut+scraper' },
+              { icon: '🥔', label: 'Potato Slicers',     href: '/search?q=potato+slicer' },
+              { icon: '🥣', label: 'Dough Kneaders',     href: '/search?q=dough+kneader' },
             ].map((cat, i) => (
               <FadeIn key={cat.label} delay={i * 0.06}>
                 <Link to={cat.href} className={`flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 motion-reduce:hover:translate-y-0 group ${FOCUS_RING}`}>
@@ -630,13 +630,13 @@ const Hub = () => {
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           WHY VTECH
-          bg-white â€” matching site's alternating section pattern
+          bg-white — matching site's alternating section pattern
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="why-vtech" ariaLabel="Why choose VTech Kitchen" className="bg-white">
         <SectionTitle
           eyebrow="Why VTech Kitchen"
           title="Businesses Choose Us For a Reason"
-          subtitle="We manufacture, sell, and support â€” no middlemen, no compromise on quality."
+          subtitle="We manufacture, sell, and support — no middlemen, no compromise on quality."
         />
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {FEATURES.map((feat, i) => (
@@ -657,7 +657,7 @@ const Hub = () => {
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           RESOURCES
-          bg-gray-50 â€” matches site alternating pattern
+          bg-gray-50 — matches site alternating pattern
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="resources" ariaLabel="Learning resources" className="bg-white">
         <SectionTitle
@@ -692,13 +692,13 @@ const Hub = () => {
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           BUSINESS SERVICES
-          bg-white â€” alternating
+          bg-white — alternating
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="business" ariaLabel="Business services" className="bg-white">
         <SectionTitle
           eyebrow="Business Services"
           title="Grow With VTech Kitchen"
-          subtitle="Dealer programs, bulk pricing, and live demos â€” we partner for your growth."
+          subtitle="Dealer programs, bulk pricing, and live demos — we partner for your growth."
         />
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {SERVICES.map((svc, i) => {
@@ -729,13 +729,13 @@ const Hub = () => {
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           SOCIAL MEDIA
-          bg-gray-50 â€” alternating
+          bg-gray-50 — alternating
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="social" ariaLabel="Social media" className="bg-white">
         <SectionTitle
           eyebrow="Follow Us"
           title="Stay Connected"
-          subtitle="Product launches, demo videos, and exclusive offers â€” all on social media."
+          subtitle="Product launches, demo videos, and exclusive offers — all on social media."
         />
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
           {SOCIALS.map((s, i) => (
@@ -762,13 +762,13 @@ const Hub = () => {
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           CONTACT + MAP
-          bg-white â€” alternating
+          bg-white — alternating
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Section id="contact" ariaLabel="Contact information" className="bg-white">
         <SectionTitle
           eyebrow="Contact"
           title="Reach Us Anytime"
-          subtitle="Multiple channels to connect â€” pick what works best for you."
+          subtitle="Multiple channels to connect — pick what works best for you."
         />
         <div className="grid lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
 
@@ -808,14 +808,14 @@ const Hub = () => {
                 <div>
                   <p className="text-xs font-bold tracking-wider uppercase text-gray-500">Business Hours</p>
                   <p className="font-semibold text-gray-900 text-sm mt-0.5">
-                    <time>Mon â€“ Sat Â· 9:00 AM â€“ 6:00 PM IST</time>
+                    <time>Mon – Sat · 9:00 AM – 6:00 PM IST</time>
                   </p>
                 </div>
               </li>
             </ul>
           </FadeIn>
 
-          {/* Embedded map â€” explicit dimensions prevent CLS */}
+          {/* Embedded map — explicit dimensions prevent CLS */}
           <FadeIn delay={0.15} className="h-full min-h-[320px]">
             <div className="w-full h-full min-h-[320px] rounded-xl overflow-hidden border border-gray-200 shadow-soft">
               <iframe
@@ -825,7 +825,7 @@ const Hub = () => {
                 style={{ width: '100%', minHeight: 320, border: 0, display: 'block' }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                title="VTech Kitchen Store Location â€” Ganapathy, Coimbatore"
+                title="VTech Kitchen Store Location — Ganapathy, Coimbatore"
                 aria-label="Map showing VTech Kitchen location in Ganapathy, Coimbatore, Tamil Nadu"
               />
             </div>
@@ -833,7 +833,7 @@ const Hub = () => {
         </div>
       </Section>
 
-      {/* Back to top â€” matches site's primary-600 button pattern */}
+      {/* Back to top — matches site's primary-600 button pattern */}
       <AnimatePresence>
         {showTop && (
           <motion.button
