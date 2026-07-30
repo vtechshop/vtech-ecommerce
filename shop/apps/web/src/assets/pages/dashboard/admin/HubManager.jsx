@@ -1,5 +1,5 @@
 // FILE: apps/web/src/assets/pages/dashboard/admin/HubManager.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   LayoutDashboard, Layout, Zap, Package, Star, TrendingUp,
@@ -7,6 +7,7 @@ import {
   History, Eye, Send, Save, Trash2, RotateCcw, Plus, GripVertical,
   ChevronUp, ChevronDown, ExternalLink, Download, CheckCircle,
   AlertCircle, Edit3, X, Globe, Clock,
+  Upload, Film, Image as ImageIcon, Play, Layers, RefreshCw,
 } from 'lucide-react';
 import api from '@/utils/api';
 import { useToast } from '@/components/common/ToastContainer';
@@ -127,15 +128,409 @@ const moveDown = (arr, i) => {
 
 // ── Section editors ───────────────────────────────────────────────────────────
 
-const HeroEditor = ({ data, onChange }) => {
-  const set = (key, val) => onChange({ ...data, [key]: val });
-  const setBtn = (btn, key, val) => onChange({ ...data, [btn]: { ...data[btn], [key]: val } });
+// ── MediaSlot — upload / preview / replace / delete one hero asset ─────────
+const MediaSlot = ({ label, field, url, mimeType, onSaved, onDeleted, accept, hint }) => {
+  const toast      = useToast();
+  const fileRef    = useRef(null);
+  const isVideo    = field.toLowerCase().includes('video');
+  const hasMedia   = !!url;
+
+  const uploadMutation = useMutation({
+    mutationFn: async (file) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('field', field);
+      const res = await api.post('/hub/admin/hero/media', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data.data;
+    },
+    onSuccess: (result) => {
+      toast.success(`${label} uploaded.`);
+      onSaved(field, result);
+    },
+    onError: (e) => toast.error(e.response?.data?.error?.message || `Upload failed`),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/hub/admin/hero/media/${field}`),
+    onSuccess: () => {
+      toast.success(`${label} removed.`);
+      onDeleted(field);
+    },
+    onError: (e) => toast.error(e.response?.data?.error?.message || 'Delete failed'),
+  });
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    uploadMutation.mutate(file);
+  };
+
+  const handleDelete = () => {
+    if (!window.confirm(`Remove ${label}? This also deletes the file from storage.`)) return;
+    deleteMutation.mutate();
+  };
+
+  const isBusy = uploadMutation.isPending || deleteMutation.isPending;
+
   return (
-    <div className="space-y-5">
-      <Field label="Visible">
-        <Toggle checked={data.visible !== false} onChange={v => set('visible', v)} label="Show hero section" />
-      </Field>
-      <Field label="Eyebrow (small text above headline)">
+    <div className="rounded-xl border border-gray-200 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+        <span className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+          {isVideo ? <Film className="w-3.5 h-3.5 text-gray-400" /> : <ImageIcon className="w-3.5 h-3.5 text-gray-400" />}
+          {label}
+        </span>
+        <div className="flex items-center gap-2">
+          {hasMedia && (
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={isBusy}
+              title="Replace"
+              className="p-1.5 rounded-lg text-gray-500 hover:text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-40"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {hasMedia && (
+            <button
+              onClick={handleDelete}
+              disabled={isBusy}
+              title="Delete"
+              className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-3">
+        {hasMedia ? (
+          <div className="space-y-2">
+            {isVideo ? (
+              <video
+                src={url}
+                className="w-full max-h-32 object-cover rounded-lg bg-gray-900"
+                controls={false}
+                muted
+                preload="metadata"
+                playsInline
+              />
+            ) : (
+              <img src={url} alt="" className="w-full max-h-32 object-cover rounded-lg bg-gray-100" />
+            )}
+            <p className="text-xs text-gray-500 truncate">{mimeType || (isVideo ? 'video' : 'image')}</p>
+          </div>
+        ) : (
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={isBusy}
+            className="w-full h-24 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-1.5 text-gray-400 hover:border-primary-400 hover:text-primary-600 transition-colors disabled:opacity-40"
+          >
+            {uploadMutation.isPending ? (
+              <>
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                <span className="text-xs">Uploading…</span>
+              </>
+            ) : (
+              <>
+                <Upload className="w-5 h-5" />
+                <span className="text-xs font-medium">Click to upload</span>
+                <span className="text-xs">{isVideo ? 'MP4 or WebM, max 200 MB' : 'JPG, PNG, WebP, max 10 MB'}</span>
+              </>
+            )}
+          </button>
+        )}
+        {hint && <p className="mt-1.5 text-xs text-gray-400">{hint}</p>}
+      </div>
+
+      {/* Hidden file input */}
+      <input
+        ref={fileRef}
+        type="file"
+        accept={accept || (isVideo ? 'video/mp4,video/webm' : 'image/jpeg,image/png,image/webp,image/gif,image/avif')}
+        className="hidden"
+        onChange={handleFile}
+      />
+    </div>
+  );
+};
+
+// ── HeroEditor — full background + text + CTA manager ─────────────────────
+const HeroEditor = ({ data, onChange, onMediaSaved, onMediaDeleted }) => {
+  const set     = (key, val) => onChange({ ...data, [key]: val });
+  const setBtn  = (btn, key, val) => onChange({ ...data, [btn]: { ...data[btn], [key]: val } });
+  const setOver = (key, val) => onChange({ ...data, overlay: { ...(data.overlay || {}), [key]: val } });
+  const setVid  = (key, val) => onChange({ ...data, videoSettings: { ...(data.videoSettings || {}), [key]: val } });
+  const setMedia = (device, type, val) =>
+    onChange({ ...data, [device]: { ...(data[device] || {}), [type]: val } });
+
+  const bgType    = data.backgroundType || 'gradient';
+  const overlay   = data.overlay    || { color: '#000000', opacity: 0 };
+  const vidSet    = data.videoSettings || { autoplay: true, loop: true, muted: true, playsInline: true };
+  const desktop   = data.desktop   || {};
+  const mobile    = data.mobile    || {};
+  const [showMobile, setShowMobile] = useState(false);
+
+  // Called after a successful upload — update hero asset locally (media already in DB)
+  const handleSaved = (field, result) => {
+    const device = field.startsWith('desktop') ? 'desktop' : 'mobile';
+    const type   = field.replace(/^desktop|^mobile/, '').toLowerCase();
+    onMediaSaved?.({ device, type, result });
+    // Also update local formData so Save Section picks up the URLs
+    setMedia(device, type, { url: result.url, mediaId: result.mediaId, mimeType: result.mimeType });
+  };
+
+  const handleDeleted = (field) => {
+    const device = field.startsWith('desktop') ? 'desktop' : 'mobile';
+    const type   = field.replace(/^desktop|^mobile/, '').toLowerCase();
+    onMediaDeleted?.({ device, type });
+    setMedia(device, type, { url: '', mediaId: null, mimeType: '' });
+  };
+
+  const BG_OPTIONS = [
+    { value: 'gradient', label: 'Gradient', icon: Layers,    desc: 'Default blue gradient' },
+    { value: 'image',    label: 'Image',    icon: ImageIcon, desc: 'Full-bleed background image' },
+    { value: 'video',    label: 'Video',    icon: Film,      desc: 'Autoplay background video' },
+  ];
+
+  return (
+    <div className="space-y-7">
+
+      {/* ── Background Type ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+          <Layers className="w-4 h-4 text-gray-400" /> Background Type
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          {BG_OPTIONS.map(opt => {
+            const Icon = opt.icon;
+            const active = bgType === opt.value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => set('backgroundType', opt.value)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 text-center transition-all ${
+                  active
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                }`}
+              >
+                <Icon className={`w-6 h-6 ${active ? 'text-primary-600' : 'text-gray-400'}`} />
+                <div>
+                  <p className="text-sm font-medium">{opt.label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{opt.desc}</p>
+                </div>
+                {active && <CheckCircle className="w-4 h-4 text-primary-600" />}
+              </button>
+            );
+          })}
+        </div>
+        {bgType === 'gradient' && (
+          <p className="mt-3 text-sm text-gray-500 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+            The existing blue-to-light-blue gradient is shown. Switch to Image or Video to upload custom media.
+          </p>
+        )}
+      </div>
+
+      {/* ── Desktop Media ── */}
+      {bgType !== 'gradient' && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Eye className="w-4 h-4 text-gray-400" /> Desktop Media
+          </h3>
+          <div className={`grid gap-3 ${bgType === 'video' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {bgType === 'image' && (
+              <MediaSlot
+                label="Desktop Image"
+                field="desktopImage"
+                url={desktop.image?.url}
+                mimeType={desktop.image?.mimeType}
+                onSaved={handleSaved}
+                onDeleted={handleDeleted}
+                hint="Shown on screens ≥ 768 px. Recommended: 1920×1080 px."
+              />
+            )}
+            {bgType === 'video' && (
+              <>
+                <MediaSlot
+                  label="Desktop Video"
+                  field="desktopVideo"
+                  url={desktop.video?.url}
+                  mimeType={desktop.video?.mimeType}
+                  onSaved={handleSaved}
+                  onDeleted={handleDeleted}
+                  hint="MP4 or WebM · keep under 20 MB for fast load."
+                />
+                <MediaSlot
+                  label="Poster (fallback image)"
+                  field="desktopPoster"
+                  url={desktop.poster?.url}
+                  mimeType={desktop.poster?.mimeType}
+                  onSaved={handleSaved}
+                  onDeleted={handleDeleted}
+                  hint="Shows while video loads & on reduced-motion. Required."
+                />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Mobile Media (collapsible) ── */}
+      {bgType !== 'gradient' && (
+        <div>
+          <button
+            onClick={() => setShowMobile(s => !s)}
+            className="w-full flex items-center justify-between text-sm font-semibold text-gray-900 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-100 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <Play className="w-4 h-4 text-gray-400" />
+              Mobile Media
+              <span className="text-xs font-normal text-gray-500">(optional — falls back to desktop)</span>
+            </span>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${showMobile ? 'rotate-180' : ''}`} />
+          </button>
+          {showMobile && (
+            <div className={`mt-3 grid gap-3 ${bgType === 'video' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {bgType === 'image' && (
+                <MediaSlot
+                  label="Mobile Image"
+                  field="mobileImage"
+                  url={mobile.image?.url}
+                  mimeType={mobile.image?.mimeType}
+                  onSaved={handleSaved}
+                  onDeleted={handleDeleted}
+                  hint="Shown on screens < 768 px. Recommended: 768×1024 px portrait."
+                />
+              )}
+              {bgType === 'video' && (
+                <>
+                  <MediaSlot
+                    label="Mobile Video"
+                    field="mobileVideo"
+                    url={mobile.video?.url}
+                    mimeType={mobile.video?.mimeType}
+                    onSaved={handleSaved}
+                    onDeleted={handleDeleted}
+                    hint="Portrait crop, ≤ 10 MB recommended."
+                  />
+                  <MediaSlot
+                    label="Mobile Poster"
+                    field="mobilePoster"
+                    url={mobile.poster?.url}
+                    mimeType={mobile.poster?.mimeType}
+                    onSaved={handleSaved}
+                    onDeleted={handleDeleted}
+                    hint="Fallback image for mobile."
+                  />
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Overlay ── */}
+      {bgType !== 'gradient' && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Palette className="w-4 h-4 text-gray-400" /> Overlay
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Overlay Color">
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={overlay.color || '#000000'}
+                  onChange={e => setOver('color', e.target.value)}
+                  className="h-9 w-14 rounded-lg border border-gray-300 cursor-pointer p-0.5"
+                />
+                <Input
+                  value={overlay.color || '#000000'}
+                  onChange={e => setOver('color', e.target.value)}
+                  placeholder="#000000"
+                  className="flex-1"
+                />
+              </div>
+            </Field>
+            <Field label={`Overlay Opacity — ${Math.round((overlay.opacity || 0) * 100)}%`}>
+              <input
+                type="range"
+                min={0} max={1} step={0.05}
+                value={overlay.opacity || 0}
+                onChange={e => setOver('opacity', Number(e.target.value))}
+                className="w-full h-2 mt-2.5 accent-primary-600"
+              />
+            </Field>
+          </div>
+          {/* Live preview strip */}
+          <div className="mt-3 h-10 rounded-lg overflow-hidden border border-gray-200 relative bg-gradient-to-r from-primary-600 to-primary-200">
+            <div
+              className="absolute inset-0 rounded-lg"
+              style={{ backgroundColor: overlay.color, opacity: overlay.opacity }}
+            />
+            <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium drop-shadow">
+              Overlay preview
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Video Settings ── */}
+      {bgType === 'video' && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <Film className="w-4 h-4 text-gray-400" /> Video Settings
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Autoplay</p>
+                <p className="text-xs text-gray-500">Start on page load (muted)</p>
+              </div>
+              <Toggle checked={vidSet.autoplay !== false} onChange={v => setVid('autoplay', v)} />
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Loop</p>
+                <p className="text-xs text-gray-500">Repeat when finished</p>
+              </div>
+              <Toggle checked={vidSet.loop !== false} onChange={v => setVid('loop', v)} />
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Muted</p>
+                <p className="text-xs text-gray-500">Required for autoplay</p>
+              </div>
+              <Toggle checked={vidSet.muted !== false} onChange={v => setVid('muted', v)} />
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-xl">
+              <div>
+                <p className="text-sm font-medium text-gray-900">Plays Inline</p>
+                <p className="text-xs text-gray-500">iOS fullscreen prevention</p>
+              </div>
+              <Toggle checked={vidSet.playsInline !== false} onChange={v => setVid('playsInline', v)} />
+            </div>
+          </div>
+          <p className="mt-3 text-xs text-gray-400 bg-yellow-50 border border-yellow-100 rounded-lg px-3 py-2">
+            prefers-reduced-motion: autoplay is automatically disabled for users who prefer reduced motion — poster image is shown instead.
+          </p>
+        </div>
+      )}
+
+      {/* ── Divider ── */}
+      <div className="border-t border-gray-100 pt-1">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">Hero Text</h3>
+      </div>
+
+      {/* ── Text fields ── */}
+      <Toggle checked={data.visible !== false} onChange={v => set('visible', v)} label="Show hero section" />
+      <Field label="Eyebrow (small label above headline)">
         <Input value={data.eyebrow || ''} onChange={e => set('eyebrow', e.target.value)} />
       </Field>
       <Field label="Headline">
@@ -144,21 +539,26 @@ const HeroEditor = ({ data, onChange }) => {
       <Field label="Subheading">
         <Input value={data.subheading || ''} onChange={e => set('subheading', e.target.value)} />
       </Field>
-      <Field label="Trust Text (small text below buttons)">
+      <Field label="Trust Text (below buttons)">
         <Input value={data.trustText || ''} onChange={e => set('trustText', e.target.value)} />
       </Field>
-      <Field label="Badge (optional pill above eyebrow)">
-        <Input value={data.badge || ''} onChange={e => set('badge', e.target.value)} placeholder="e.g. 🎉 New Collection" />
+      <Field label="Badge pill (optional)">
+        <Input value={data.badge || ''} onChange={e => set('badge', e.target.value)} placeholder="e.g. New Arrivals" />
       </Field>
-      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+
+      {/* ── CTA Buttons ── */}
+      <div className="border-t border-gray-100 pt-1">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">CTA Buttons</h3>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
         <div className="space-y-3">
-          <h4 className="font-medium text-gray-900">Primary Button</h4>
+          <h4 className="font-medium text-gray-900 text-sm">Primary Button</h4>
           <Field label="Text"><Input value={data.primaryButton?.text || ''} onChange={e => setBtn('primaryButton', 'text', e.target.value)} /></Field>
           <Field label="URL"><Input value={data.primaryButton?.url || ''} onChange={e => setBtn('primaryButton', 'url', e.target.value)} /></Field>
           <Toggle checked={data.primaryButton?.visible !== false} onChange={v => setBtn('primaryButton', 'visible', v)} label="Visible" />
         </div>
         <div className="space-y-3">
-          <h4 className="font-medium text-gray-900">Secondary Button</h4>
+          <h4 className="font-medium text-gray-900 text-sm">Secondary Button</h4>
           <Field label="Text"><Input value={data.secondaryButton?.text || ''} onChange={e => setBtn('secondaryButton', 'text', e.target.value)} /></Field>
           <Field label="URL"><Input value={data.secondaryButton?.url || ''} onChange={e => setBtn('secondaryButton', 'url', e.target.value)} /></Field>
           <Toggle checked={data.secondaryButton?.visible !== false} onChange={v => setBtn('secondaryButton', 'visible', v)} label="Visible" />

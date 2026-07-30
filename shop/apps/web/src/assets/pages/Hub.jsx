@@ -251,7 +251,74 @@ const SOCIALS = [
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN COMPONENT
 â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-/* Fire-and-forget click tracking â€” never blocks navigation */
+/* Responsive background image — <picture> uses mobile source when available */
+const HeroBgImage = ({ desktop, mobile }) => {
+  const deskUrl   = desktop?.url;
+  const mobileUrl = mobile?.url;
+  if (!deskUrl) return null;
+  return (
+    <picture className=”absolute inset-0 w-full h-full pointer-events-none select-none” aria-hidden=”true”>
+      {mobileUrl && <source srcSet={mobileUrl} media=”(max-width: 767px)” />}
+      <img
+        src={deskUrl}
+        alt=””
+        className=”absolute inset-0 w-full h-full object-cover”
+        loading=”eager”
+        fetchPriority=”high”
+        decoding=”sync”
+      />
+    </picture>
+  );
+};
+
+/* Autoplay background video — respects prefers-reduced-motion; falls back to poster on error */
+const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, reduced }) => {
+  const [useMobileVid, setUseMobileVid]   = useState(false);
+  const [showFallback, setShowFallback]   = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setUseMobileVid(mq.matches);
+    const handler = (e) => setUseMobileVid(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const videoSrc  = (useMobileVid && mobile?.url) ? mobile.url : desktop?.url;
+  const posterSrc = (useMobileVid && mobilePoster?.url) ? mobilePoster.url : poster?.url;
+  const shouldPlay = settings?.autoplay !== false && !reduced;
+
+  if (!videoSrc || showFallback) {
+    return posterSrc ? (
+      <img
+        src={posterSrc}
+        alt=””
+        aria-hidden=”true”
+        className=”absolute inset-0 w-full h-full object-cover pointer-events-none select-none”
+        loading=”eager”
+        fetchPriority=”high”
+        decoding=”sync”
+      />
+    ) : null;
+  }
+
+  return (
+    <video
+      key={videoSrc}
+      src={videoSrc}
+      poster={posterSrc || undefined}
+      autoPlay={shouldPlay}
+      loop={settings?.loop !== false}
+      muted={settings?.muted !== false}
+      playsInline={settings?.playsInline !== false}
+      onError={() => setShowFallback(true)}
+      aria-hidden=”true”
+      className=”absolute inset-0 w-full h-full object-cover pointer-events-none select-none”
+    />
+  );
+};
+
+/* Fire-and-forget click tracking — never blocks navigation */
 function trackHubClick(button, label, href) {
   try {
     const ua = navigator.userAgent.toLowerCase();
@@ -293,6 +360,15 @@ const Hub = () => {
     };
   }, []);
 
+  const { data: hubConfig } = useQuery({
+    queryKey: ['hub-public'],
+    queryFn: async () => {
+      const { data } = await api.get('/hub');
+      return data.data || {};
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['hub-featured-products'],
     queryFn: async () => {
@@ -328,29 +404,62 @@ const Hub = () => {
           White text on blue gradient â€” same as site hero pattern
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <section
-        aria-label="VTech Kitchen Quick Hub"
-        className="relative overflow-hidden bg-gradient-to-r from-primary-600 to-primary-200"
+        aria-label=”VTech Kitchen Quick Hub”
+        className={`relative overflow-hidden ${
+          !hubConfig?.hero?.backgroundType || hubConfig.hero.backgroundType === 'gradient'
+            ? 'bg-gradient-to-r from-primary-600 to-primary-200'
+            : 'bg-gray-900'
+        }`}
       >
-        {/* Subtle concentric rings â€” white on blue, matching site's hero decorative pattern */}
-        <div aria-hidden="true" className="absolute right-[-15%] md:right-0 top-1/2 -translate-y-1/2 pointer-events-none select-none">
-          {[700, 520, 360, 220].map((size, i) => (
-            <div
-              key={size}
-              className="absolute rounded-full border border-white"
-              style={{
-                width: size, height: size,
-                opacity: 0.08 - i * 0.015,
-                top: '50%', left: '50%',
-                transform: 'translate(-50%, -50%)',
-              }}
-            />
-          ))}
-        </div>
+        {/* Media layer — image or video (hidden for gradient) */}
+        {hubConfig?.hero?.backgroundType === 'image' && (
+          <HeroBgImage desktop={hubConfig.hero.desktop?.image} mobile={hubConfig.hero.mobile?.image} />
+        )}
+        {hubConfig?.hero?.backgroundType === 'video' && (
+          <HeroBgVideo
+            desktop={hubConfig.hero.desktop?.video}
+            mobile={hubConfig.hero.mobile?.video}
+            poster={hubConfig.hero.desktop?.poster}
+            mobilePoster={hubConfig.hero.mobile?.poster}
+            settings={hubConfig.hero.videoSettings}
+            reduced={reduced}
+          />
+        )}
 
-        {/* Dot grid â€” white dots, consistent with existing gradient sections */}
-        <div aria-hidden="true" className="absolute inset-0 opacity-[0.06] pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '36px 36px' }}
-        />
+        {/* Overlay — only for image/video types */}
+        {hubConfig?.hero?.backgroundType !== 'gradient' && hubConfig?.hero?.overlay?.opacity > 0 && (
+          <div
+            aria-hidden=”true”
+            className=”absolute inset-0 pointer-events-none”
+            style={{
+              backgroundColor: hubConfig.hero.overlay.color || '#000000',
+              opacity: hubConfig.hero.overlay.opacity,
+            }}
+          />
+        )}
+
+        {/* Decorative rings + dot grid — gradient type only */}
+        {(!hubConfig?.hero?.backgroundType || hubConfig.hero.backgroundType === 'gradient') && (
+          <>
+            <div aria-hidden=”true” className=”absolute right-[-15%] md:right-0 top-1/2 -translate-y-1/2 pointer-events-none select-none”>
+              {[700, 520, 360, 220].map((size, i) => (
+                <div
+                  key={size}
+                  className=”absolute rounded-full border border-white”
+                  style={{
+                    width: size, height: size,
+                    opacity: 0.08 - i * 0.015,
+                    top: '50%', left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                  }}
+                />
+              ))}
+            </div>
+            <div aria-hidden=”true” className=”absolute inset-0 opacity-[0.06] pointer-events-none”
+              style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '36px 36px' }}
+            />
+          </>
+        )}
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center">
 

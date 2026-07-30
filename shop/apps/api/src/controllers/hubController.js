@@ -1,6 +1,7 @@
 // FILE: apps/api/src/controllers/hubController.js
 const HubPage = require('../models/HubPage');
 const HubAnalytics = require('../models/HubAnalytics');
+const uploadService = require('../services/uploadService');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -310,5 +311,95 @@ exports.exportAnalytics = async (req, res) => {
     res.send(csv);
   } catch (err) {
     res.status(500).json({ success: false, error: { code: 'HUB_EXPORT_ERROR', message: err.message } });
+  }
+};
+
+// ── Hero Media ────────────────────────────────────────────────────────────────
+
+const HERO_MEDIA_FIELDS = ['desktopImage', 'desktopVideo', 'desktopPoster', 'mobileImage', 'mobileVideo', 'mobilePoster'];
+
+function parseHeroField(field) {
+  // 'desktopImage' → ['desktop', 'image']
+  const device = field.startsWith('desktop') ? 'desktop' : 'mobile';
+  const type   = field.replace(/^desktop|^mobile/, '').toLowerCase(); // 'image' | 'video' | 'poster'
+  return [device, type];
+}
+
+// POST /api/hub/admin/hero/media  — upload a hero media asset
+exports.uploadHeroMedia = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'No file uploaded.' } });
+    }
+
+    const { field } = req.body;
+    if (!field || !HERO_MEDIA_FIELDS.includes(field)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_FIELD', message: `field must be one of: ${HERO_MEDIA_FIELDS.join(', ')}` } });
+    }
+
+    const isVideoField = field.toLowerCase().includes('video');
+    const isVideoFile  = req.file.mimetype.startsWith('video/');
+    const isPosterField = field.toLowerCase().includes('poster');
+
+    // Semantic validation: video fields need video files; image/poster fields need image files
+    if (isVideoField && !isVideoFile) {
+      return res.status(400).json({ success: false, error: { code: 'WRONG_FILE_TYPE', message: 'Video field requires an MP4 or WebM file.' } });
+    }
+    if ((isPosterField || (!isVideoField && !isPosterField)) && isVideoFile) {
+      return res.status(400).json({ success: false, error: { code: 'WRONG_FILE_TYPE', message: 'Image/poster field requires an image file.' } });
+    }
+
+    // Store via existing upload infrastructure (same adapter as all other uploads)
+    const media = await uploadService.uploadFile(req.file, 'hub-hero');
+
+    // Persist URL onto the hero sub-field in the singleton
+    const [device, type] = parseHeroField(field);
+    const doc = await HubPage.getSingleton();
+    doc.hero[device][type] = { url: media.url, mediaId: media._id, mimeType: media.mimeType };
+    doc.updatedBy = req.user?._id;
+    await doc.save();
+
+    res.json({
+      success: true,
+      data: { field, url: media.url, mediaId: media._id, mimeType: media.mimeType },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'HERO_MEDIA_UPLOAD_ERROR', message: err.message } });
+  }
+};
+
+// DELETE /api/hub/admin/hero/media/:field  — remove a hero media asset
+exports.deleteHeroMedia = async (req, res) => {
+  try {
+    const { field } = req.params;
+    if (!HERO_MEDIA_FIELDS.includes(field)) {
+      return res.status(400).json({ success: false, error: { code: 'INVALID_FIELD' } });
+    }
+
+    const [device, type] = parseHeroField(field);
+    const doc = await HubPage.getSingleton();
+    const mediaId = doc.hero[device]?.[type]?.mediaId;
+
+    // Clear the asset on the document
+    doc.hero[device][type] = { url: '', mediaId: null, mimeType: '' };
+    doc.updatedBy = req.user?._id;
+    await doc.save();
+
+    // Remove from storage + Media collection (best-effort; non-blocking)
+    if (mediaId) {
+      try {
+        const Media = require('../models/Media');
+        const media = await Media.findById(mediaId);
+        if (media) {
+          const adapter = uploadService.getAdapter();
+          await adapter.delete(media.filename);
+          await media.deleteOne();
+        }
+      } catch { /* non-fatal — file may already be gone */ }
+    }
+
+    res.json({ success: true, message: `${field} deleted.` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'HERO_MEDIA_DELETE_ERROR', message: err.message } });
   }
 };

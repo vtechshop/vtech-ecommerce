@@ -77,6 +77,12 @@ const versionSchema = new mongoose.Schema({
   note:    { type: String, trim: true, default: '' },
 }, { _id: false });
 
+const mediaAssetSchema = new mongoose.Schema({
+  url:      { type: String, default: '' },
+  mediaId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Media', default: null },
+  mimeType: { type: String, default: '' },
+}, { _id: false });
+
 const hubPageSchema = new mongoose.Schema({
   hero: {
     visible:       { type: Boolean, default: true },
@@ -87,6 +93,28 @@ const hubPageSchema = new mongoose.Schema({
     badge:         { type: String, default: '' },
     primaryButton:   { type: buttonSchema, default: () => ({ text: 'Shop Products', url: '/products', visible: true }) },
     secondaryButton: { type: buttonSchema, default: () => ({ text: 'WhatsApp Us', url: 'https://wa.me/919944556683?text=Hi%2C%20I%27m%20interested%20in%20VTech%20Kitchen%20products', visible: true }) },
+    // Media
+    backgroundType: { type: String, enum: ['gradient', 'image', 'video'], default: 'gradient' },
+    desktop: {
+      image:  { type: mediaAssetSchema, default: () => ({}) },
+      video:  { type: mediaAssetSchema, default: () => ({}) },
+      poster: { type: mediaAssetSchema, default: () => ({}) },
+    },
+    mobile: {
+      image:  { type: mediaAssetSchema, default: () => ({}) },
+      video:  { type: mediaAssetSchema, default: () => ({}) },
+      poster: { type: mediaAssetSchema, default: () => ({}) },
+    },
+    overlay: {
+      color:   { type: String, default: '#000000' },
+      opacity: { type: Number, default: 0, min: 0, max: 1 },
+    },
+    videoSettings: {
+      autoplay:    { type: Boolean, default: true },
+      loop:        { type: Boolean, default: true },
+      muted:       { type: Boolean, default: true },
+      playsInline: { type: Boolean, default: true },
+    },
   },
   quickActions:     { type: [quickActionSchema], default: () => DEFAULT_QUICK_ACTIONS },
   featuredProducts: {
