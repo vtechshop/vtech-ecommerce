@@ -443,7 +443,7 @@ const Hub = () => {
           QUICK ACTIONS
           bg-gray-50 — matches Home.jsx page background for secondary sections
       ══════════════════════════════ */}
-      <Section id="quick-actions" ariaLabel="Quick actions" className="bg-gray-50 dark:bg-gray-800/30">
+      <Section id="quick-actions" ariaLabel="Quick actions" className="bg-white dark:bg-gray-900">
         <SectionTitle
           eyebrow="Quick Actions"
           title="Everything In One Place"
@@ -601,7 +601,7 @@ const Hub = () => {
           RESOURCES
           bg-gray-50 — matches site alternating pattern
       ══════════════════════════════ */}
-      <Section id="resources" ariaLabel="Learning resources" className="bg-gray-50 dark:bg-gray-800/30">
+      <Section id="resources" ariaLabel="Learning resources" className="bg-white dark:bg-gray-900">
         <SectionTitle
           eyebrow="Resources"
           title="Learn, Watch &amp; Get Support"
@@ -673,7 +673,7 @@ const Hub = () => {
           SOCIAL MEDIA
           bg-gray-50 — alternating
       ══════════════════════════════ */}
-      <Section id="social" ariaLabel="Social media" className="bg-gray-50 dark:bg-gray-800/30">
+      <Section id="social" ariaLabel="Social media" className="bg-white dark:bg-gray-900">
         <SectionTitle
           eyebrow="Follow Us"
           title="Stay Connected"
@@ -743,7 +743,7 @@ const Hub = () => {
                 );
               })}
 
-              <li className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+              <li className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
                 <div className="w-11 h-11 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0" aria-hidden="true">
                   <Clock className="w-5 h-5 text-gray-500 dark:text-gray-300" />
                 </div>
