@@ -391,102 +391,143 @@ const Hub = () => {
           </>
         )}
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center">
+        {(() => {
+          const hEyebrow    = hubConfig?.hero?.eyebrow    || 'Commercial Kitchen Equipment Manufacturer';
+          const hHeadline   = hubConfig?.hero?.headline   || 'Professional Kitchen Machines';
+          const hSubheading = hubConfig?.hero?.subheading || 'Built to Grow Your Business.';
+          const hTrustText  = hubConfig?.hero?.trustText  || 'Trusted by 10,000+ restaurants, hotels & cloud kitchens across India.';
+          const hBadge      = hubConfig?.hero?.badge      || '';
+          const hPrimary    = hubConfig?.hero?.primaryButton   || { text: 'Shop Products',  url: '/products', visible: true };
+          const hSecondary  = hubConfig?.hero?.secondaryButton || { text: 'WhatsApp Us',    url: WA_HREF,     visible: true };
+          const hColor      = hubConfig?.hero?.textColor  || '#ffffff';
+          const hWords      = hHeadline.split(' ');
+          const subDelay    = 0.25 + hWords.length * 0.1;
 
-          {/* Logo — inverted white on blue hero background; LCP target */}
-          <motion.div
-            initial={{ opacity: 0, scale: reduced ? 1 : 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: reduced ? 0.01 : 0.65, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <img
-              src="/cropped-vtech-logo.webp"
-              alt="VTech Kitchen logo"
-              width={200}
-              height={64}
-              className="h-14 w-auto mx-auto mb-8 object-contain brightness-0 invert"
-              loading="eager"
-              fetchPriority="high"
-              decoding="sync"
-            />
-          </motion.div>
+          const { tag: PrimaryTag,   props: primaryProps   } = linkable(hPrimary.url   || '/products');
+          const { tag: SecondaryTag, props: secondaryProps } = linkable(hSecondary.url || WA_HREF);
 
-          {/* Eyebrow */}
-          <motion.p
-            initial={{ opacity: 0, y: reduced ? 0 : 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: reduced ? 0 : 0.15, duration: reduced ? 0.01 : 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="text-xs font-bold tracking-[0.25em] uppercase text-blue-100 mb-5"
-          >
-            Commercial Kitchen Equipment Manufacturer
-          </motion.p>
+          return (
+            <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center">
 
-          {/* H1 */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight tracking-tight">
-            {['Professional', 'Kitchen', 'Machines'].map((word, i) => (
-              <motion.span
-                key={word}
-                initial={{ opacity: 0, y: reduced ? 0 : 24 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reduced ? 0 : 0.25 + i * 0.1, duration: reduced ? 0.01 : 0.55, ease: [0.22, 1, 0.36, 1] }}
-                className="inline-block mr-3"
+              {/* Logo */}
+              <motion.div
+                initial={{ opacity: 0, scale: reduced ? 1 : 0.92 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: reduced ? 0.01 : 0.65, ease: [0.22, 1, 0.36, 1] }}
               >
-                {word}
-              </motion.span>
-            ))}
-            <br />
-            <motion.span
-              initial={{ opacity: 0, y: reduced ? 0 : 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: reduced ? 0 : 0.58, duration: reduced ? 0.01 : 0.55, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-block text-blue-100 mt-1"
-            >
-              Built to Grow Your Business.
-            </motion.span>
-          </h1>
+                <img
+                  src="/cropped-vtech-logo.webp"
+                  alt="VTech Kitchen logo"
+                  width={200}
+                  height={64}
+                  className="h-14 w-auto mx-auto mb-8 object-contain brightness-0 invert"
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="sync"
+                />
+              </motion.div>
 
-          {/* Subtext */}
-          <motion.p
-            initial={{ opacity: 0, y: reduced ? 0 : 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: reduced ? 0 : 0.72, duration: reduced ? 0.01 : 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-5 text-base text-blue-100 max-w-xl mx-auto leading-relaxed"
-          >
-            Trusted by 10,000+ restaurants, hotels &amp; cloud kitchens across India.
-          </motion.p>
+              {/* Badge pill */}
+              {hBadge && (
+                <motion.div
+                  initial={{ opacity: 0, y: reduced ? 0 : 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: reduced ? 0 : 0.1, duration: reduced ? 0.01 : 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-4 border"
+                  style={{ color: hColor, borderColor: hColor + '55', backgroundColor: hColor + '18' }}
+                >
+                  {hBadge}
+                </motion.div>
+              )}
 
-          {/*
-            CTAs — matches Home.jsx hero button patterns.
-            Primary: white bg (on blue hero) — existing site pattern for hero CTAs.
-            Secondary: green for WhatsApp (user requirement).
-          */}
-          <motion.div
-            initial={{ opacity: 0, y: reduced ? 0 : 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: reduced ? 0 : 0.85, duration: reduced ? 0.01 : 0.45, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-8 flex flex-col sm:flex-row gap-3 justify-center"
-          >
-            {/* Primary CTA — red gradient matching site's discount badge/urgent action style */}
-            <Link
-              to="/products"
-              className={`btn inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 px-6 py-3 rounded-lg font-semibold shadow-lg motion-reduce:hover:translate-y-0 ${FOCUS_RING}`}
-            >
-              <ShoppingBag className="w-5 h-5" aria-hidden="true" />
-              Shop Products
-            </Link>
-            {/* WhatsApp — green only (user requirement) */}
-            <a
-              href={WA_HREF}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Chat with VTech Kitchen on WhatsApp"
-              className={`btn inline-flex items-center justify-center gap-2 bg-green-500 text-white hover:bg-green-600 px-6 py-3 rounded-lg font-semibold shadow-lg motion-reduce:hover:translate-y-0 ${FOCUS_RING}`}
-            >
-              <MessageCircle className="w-5 h-5" aria-hidden="true" />
-              WhatsApp Us
-            </a>
-          </motion.div>
-        </div>
+              {/* Eyebrow */}
+              <motion.p
+                initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduced ? 0 : 0.15, duration: reduced ? 0.01 : 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="text-xs font-bold tracking-[0.25em] uppercase mb-5"
+                style={{ color: hColor, opacity: 0.8 }}
+              >
+                {hEyebrow}
+              </motion.p>
+
+              {/* H1 — words animate in one by one */}
+              <h1
+                className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight"
+                style={{ color: hColor }}
+              >
+                {hWords.map((word, i) => (
+                  <motion.span
+                    key={`${word}-${i}`}
+                    initial={{ opacity: 0, y: reduced ? 0 : 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: reduced ? 0 : 0.25 + i * 0.1, duration: reduced ? 0.01 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+                    className="inline-block mr-3"
+                  >
+                    {word}
+                  </motion.span>
+                ))}
+                {hSubheading && (
+                  <>
+                    <br />
+                    <motion.span
+                      initial={{ opacity: 0, y: reduced ? 0 : 24 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: reduced ? 0 : subDelay, duration: reduced ? 0.01 : 0.55, ease: [0.22, 1, 0.36, 1] }}
+                      className="inline-block mt-1"
+                      style={{ color: hColor, opacity: 0.85 }}
+                    >
+                      {hSubheading}
+                    </motion.span>
+                  </>
+                )}
+              </h1>
+
+              {/* Trust text */}
+              {hTrustText && (
+                <motion.p
+                  initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: reduced ? 0 : subDelay + 0.14, duration: reduced ? 0.01 : 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  className="mt-5 text-base max-w-xl mx-auto leading-relaxed"
+                  style={{ color: hColor, opacity: 0.8 }}
+                >
+                  {hTrustText}
+                </motion.p>
+              )}
+
+              {/* CTA Buttons */}
+              {(hPrimary.visible !== false || hSecondary.visible !== false) && (
+                <motion.div
+                  initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: reduced ? 0 : subDelay + 0.27, duration: reduced ? 0.01 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+                  className="mt-8 flex flex-col sm:flex-row gap-3 justify-center"
+                >
+                  {hPrimary.visible !== false && hPrimary.text && (
+                    <PrimaryTag
+                      {...primaryProps}
+                      className={`btn inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 px-6 py-3 rounded-lg font-semibold shadow-lg motion-reduce:hover:translate-y-0 ${FOCUS_RING}`}
+                    >
+                      <ShoppingBag className="w-5 h-5" aria-hidden="true" />
+                      {hPrimary.text}
+                    </PrimaryTag>
+                  )}
+                  {hSecondary.visible !== false && hSecondary.text && (
+                    <SecondaryTag
+                      {...secondaryProps}
+                      aria-label={`${hSecondary.text} — VTech Kitchen`}
+                      className={`btn inline-flex items-center justify-center gap-2 bg-green-500 text-white hover:bg-green-600 px-6 py-3 rounded-lg font-semibold shadow-lg motion-reduce:hover:translate-y-0 ${FOCUS_RING}`}
+                    >
+                      <MessageCircle className="w-5 h-5" aria-hidden="true" />
+                      {hSecondary.text}
+                    </SecondaryTag>
+                  )}
+                </motion.div>
+              )}
+            </div>
+          );
+        })()}
       </section>
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

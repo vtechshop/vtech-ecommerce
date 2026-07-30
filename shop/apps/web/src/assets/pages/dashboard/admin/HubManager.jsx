@@ -701,6 +701,53 @@ const HeroEditor = ({ data, onChange, onMediaSaved, onMediaDeleted }) => {
         <Input value={data.badge || ''} onChange={e => set('badge', e.target.value)} placeholder="e.g. New Arrivals" />
       </Field>
 
+      {/* ── Text Color ── */}
+      <Field label="Text Color" hint="Color applied to all hero text. Use white for dark backgrounds, dark for light image backgrounds.">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { label: 'White',  value: '#ffffff' },
+              { label: 'Black',  value: '#111827' },
+              { label: 'Blue',   value: '#1d4ed8' },
+              { label: 'Gold',   value: '#d97706' },
+            ].map(preset => (
+              <button
+                key={preset.value}
+                type="button"
+                onClick={() => set('textColor', preset.value)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-colors ${
+                  (data.textColor || '#ffffff') === preset.value
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: preset.value, border: '1px solid rgba(0,0,0,0.15)' }}
+                />
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={data.textColor || '#ffffff'}
+              onChange={e => set('textColor', e.target.value)}
+              className="w-9 h-9 rounded cursor-pointer border border-gray-200 p-0.5 bg-white"
+              title="Custom color"
+            />
+            <Input
+              value={data.textColor || '#ffffff'}
+              onChange={e => set('textColor', e.target.value)}
+              placeholder="#ffffff"
+              className="font-mono text-sm"
+              maxLength={7}
+            />
+          </div>
+        </div>
+      </Field>
+
       {/* ── CTA Buttons ── */}
       <div className="border-t border-gray-100 pt-1">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">CTA Buttons</h3>

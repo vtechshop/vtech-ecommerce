@@ -107,6 +107,7 @@ const hubPageSchema = new mongoose.Schema({
     secondaryButton: { type: buttonSchema, default: () => ({ text: 'WhatsApp Us', url: 'https://wa.me/919944556683?text=Hi%2C%20I%27m%20interested%20in%20VTech%20Kitchen%20products', visible: true }) },
     // Media
     backgroundType: { type: String, enum: ['gradient', 'image', 'video'], default: 'gradient' },
+    textColor:      { type: String, default: '#ffffff' },
     desktop: {
       image:  { type: mediaAssetSchema, default: () => ({}) },
       video:  { type: mediaAssetSchema, default: () => ({}) },
