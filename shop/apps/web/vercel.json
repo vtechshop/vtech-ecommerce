@@ -4,6 +4,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://api.vtechkitchen.com/api/:path*"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "https://api.vtechkitchen.com/sitemap.xml"
     },
