@@ -115,7 +115,7 @@ exports.getHubAdmin = async (req, res) => {
 // PUT /api/hub/admin/section/:section  — update one section immediately (no draft)
 exports.updateSection = async (req, res) => {
   const { section } = req.params;
-  const ALLOWED = ['hero', 'quickActions', 'featuredProducts', 'whyChooseUs', 'stats', 'resources', 'services', 'socials', 'contact', 'seo'];
+  const ALLOWED = ['hero', 'quickActions', 'categoryLinks', 'featuredProducts', 'whyChooseUs', 'stats', 'resources', 'services', 'socials', 'contact', 'seo'];
   if (!ALLOWED.includes(section)) {
     return res.status(400).json({ success: false, error: { code: 'INVALID_SECTION', message: `Unknown section: ${section}` } });
   }

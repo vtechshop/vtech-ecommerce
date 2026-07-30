@@ -19,6 +19,7 @@ const TABS = [
   { id: 'dashboard',    label: 'Dashboard',         icon: LayoutDashboard },
   { id: 'hero',         label: 'Hero',               icon: Layout          },
   { id: 'quick-actions',label: 'Quick Actions',      icon: Zap             },
+  { id: 'categories',   label: 'Categories',         icon: Layers          },
   { id: 'products',     label: 'Featured Products',  icon: Package         },
   { id: 'why-us',       label: 'Why Choose Us',      icon: Star            },
   { id: 'stats',        label: 'Statistics',         icon: TrendingUp      },
@@ -775,6 +776,42 @@ const ResourcesEditor = ({ data, onChange }) => (
   />
 );
 
+const CategoryLinksEditor = ({ data, onChange }) => (
+  <ItemListEditor
+    items={data || []}
+    onChange={onChange}
+    newItem={{ emoji: '🔗', label: '', href: '', visible: true }}
+    renderForm={(draft, setDraft) => {
+      const set = (k, v) => setDraft(d => ({ ...d, [k]: v }));
+      return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Emoji">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={draft.emoji || ''}
+                  onChange={e => set('emoji', e.target.value)}
+                  placeholder="🔗"
+                  className="text-center text-xl"
+                  maxLength={4}
+                />
+                <span className="text-2xl leading-none">{draft.emoji || '🔗'}</span>
+              </div>
+            </Field>
+            <Field label="Category Label" className="col-span-2">
+              <Input value={draft.label || ''} onChange={e => set('label', e.target.value)} placeholder="e.g. Vegetable Cutting" />
+            </Field>
+          </div>
+          <Field label="Link URL">
+            <Input value={draft.href || ''} onChange={e => set('href', e.target.value)} placeholder="/products?category=vegetable-cutting" />
+          </Field>
+          <Toggle checked={draft.visible !== false} onChange={v => set('visible', v)} label="Visible" />
+        </div>
+      );
+    }}
+  />
+);
+
 const ServicesEditor = ({ data, onChange }) => (
   <ItemListEditor
     items={data || []}
@@ -1056,7 +1093,8 @@ const VersionHistory = ({ onRestore }) => {
 const DashboardOverview = ({ hubData, onTabChange }) => {
   const sections = [
     { id: 'hero',          label: 'Hero',              count: null },
-    { id: 'quick-actions', label: 'Quick Actions',     count: hubData?.quickActions?.length },
+    { id: 'quick-actions', label: 'Quick Actions',     count: hubData?.quickActions?.length  },
+    { id: 'categories',    label: 'Categories',        count: hubData?.categoryLinks?.length },
     { id: 'why-us',        label: 'Why Choose Us',     count: hubData?.whyChooseUs?.length  },
     { id: 'stats',         label: 'Statistics',        count: hubData?.stats?.length        },
     { id: 'resources',     label: 'Resources',         count: hubData?.resources?.length    },
@@ -1145,6 +1183,7 @@ const HubManager = () => {
     const SECTION_MAP = {
       'hero':          'hero',
       'quick-actions': 'quickActions',
+      'categories':    'categoryLinks',
       'products':      'featuredProducts',
       'why-us':        'whyChooseUs',
       'stats':         'stats',
@@ -1192,7 +1231,7 @@ const HubManager = () => {
     publishMutation.mutate(note);
   };
 
-  const EDIT_TABS = ['hero','quick-actions','products','why-us','stats','resources','services','social','contact','seo'];
+  const EDIT_TABS = ['hero','quick-actions','categories','products','why-us','stats','resources','services','social','contact','seo'];
   const showSaveSection = EDIT_TABS.includes(activeTab);
 
   const renderContent = () => {
@@ -1201,6 +1240,7 @@ const HubManager = () => {
       case 'dashboard':    return <DashboardOverview hubData={formData} onTabChange={setActiveTab} />;
       case 'hero':         return <HeroEditor data={formData.hero || {}} onChange={v => handleSectionChange('hero', v)} />;
       case 'quick-actions':return <QuickActionsEditor data={formData.quickActions || []} onChange={v => handleSectionChange('quickActions', v)} />;
+      case 'categories':   return <CategoryLinksEditor data={formData.categoryLinks || []} onChange={v => handleSectionChange('categoryLinks', v)} />;
       case 'products':     return <FeaturedProductsEditor data={formData.featuredProducts || {}} onChange={v => handleSectionChange('featuredProducts', v)} />;
       case 'why-us':       return <WhyUsEditor data={formData.whyChooseUs || []} onChange={v => handleSectionChange('whyChooseUs', v)} />;
       case 'stats':        return <StatsEditor data={formData.stats || []} onChange={v => handleSectionChange('stats', v)} />;

@@ -625,27 +625,53 @@ const Hub = () => {
           </div>
         )}
 
-        {/* Fallback category links if no products returned */}
-        {!productsLoading && !hasProducts && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { icon: 'ðŸ¥¬', label: 'Vegetable Cutting', href: '/search?q=vegetable+cutting+machine' },
-              { icon: 'ðŸ«“', label: 'Chapati Press',      href: '/search?q=chapati+press' },
-              { icon: 'ðŸŒ€', label: 'Wet Grinders',       href: '/search?q=wet+grinder' },
-              { icon: 'ðŸ¥¥', label: 'Coconut Scrapers',   href: '/search?q=coconut+scraper' },
-              { icon: 'ðŸ¥”', label: 'Potato Slicers',     href: '/search?q=potato+slicer' },
-              { icon: 'ðŸ¥£', label: 'Dough Kneaders',     href: '/search?q=dough+kneader' },
-            ].map((cat, i) => (
-              <FadeIn key={cat.label} delay={i * 0.06}>
-                <Link to={cat.href} className={`flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 motion-reduce:hover:translate-y-0 group ${FOCUS_RING}`}>
-                  <span className="text-2xl leading-none flex-shrink-0" aria-hidden="true">{cat.icon}</span>
-                  <span className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">{cat.label}</span>
-                  <ChevronRight className="w-4 h-4 text-gray-400 ml-auto flex-shrink-0 group-hover:text-primary-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300" aria-hidden="true" />
-                </Link>
-              </FadeIn>
-            ))}
-          </div>
-        )}
+        {/* Browse by Category — always shown, driven by admin config */}
+        {(() => {
+          const FALLBACK_CATS = [
+            { emoji: '🥬', label: 'Vegetable Cutting', href: '/products?category=vegetable-cutting' },
+            { emoji: '🫔', label: 'Chapati Press',      href: '/products?category=chapati-press'      },
+            { emoji: '🌀', label: 'Wet Grinders',       href: '/products?category=wet-grinders'       },
+            { emoji: '🥥', label: 'Coconut Scrapers',   href: '/products?category=coconut-scrapers'   },
+            { emoji: '🥔', label: 'Potato Slicers',     href: '/products?category=potato-slicers'     },
+            { emoji: '🥣', label: 'Dough Kneaders',     href: '/products?category=dough-kneaders'     },
+          ];
+          const cats = hubConfig?.categoryLinks
+            ? hubConfig.categoryLinks.filter(c => c.visible !== false).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0))
+            : FALLBACK_CATS;
+          if (!cats.length) return null;
+          return (
+            <div className=”mt-10”>
+              <p className=”text-xs font-bold tracking-[0.2em] uppercase text-primary-600 mb-4”>Browse by Category</p>
+              <div className=”grid grid-cols-2 md:grid-cols-3 gap-3”>
+                {cats.map((cat, i) => {
+                  const href = cat.href || '/products';
+                  const isExternal = href.startsWith('http') || href.startsWith('tel:') || href.startsWith('mailto:');
+                  const linkProps = isExternal
+                    ? { href, target: '_blank', rel: 'noopener noreferrer' }
+                    : null;
+                  const cls = `flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0 group ${FOCUS_RING}`;
+                  return (
+                    <FadeIn key={cat.label || i} delay={i * 0.06}>
+                      {isExternal ? (
+                        <a {...linkProps} className={cls}>
+                          <span className=”text-2xl leading-none flex-shrink-0” aria-hidden=”true”>{cat.emoji}</span>
+                          <span className=”text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors”>{cat.label}</span>
+                          <ChevronRight className=”w-4 h-4 text-gray-400 ml-auto flex-shrink-0 group-hover:text-primary-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300” aria-hidden=”true” />
+                        </a>
+                      ) : (
+                        <Link to={href} className={cls}>
+                          <span className=”text-2xl leading-none flex-shrink-0” aria-hidden=”true”>{cat.emoji}</span>
+                          <span className=”text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors”>{cat.label}</span>
+                          <ChevronRight className=”w-4 h-4 text-gray-400 ml-auto flex-shrink-0 group-hover:text-primary-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300” aria-hidden=”true” />
+                        </Link>
+                      )}
+                    </FadeIn>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         <FadeIn delay={0.3} className="text-center mt-8">
           <Link

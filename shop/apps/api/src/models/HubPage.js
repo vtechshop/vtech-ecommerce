@@ -70,6 +70,14 @@ const socialSchema = new mongoose.Schema({
   displayOrder: { type: Number, default: 0 },
 });
 
+const categoryLinkSchema = new mongoose.Schema({
+  emoji:        { type: String, default: '🔗' },
+  label:        { type: String, required: true, trim: true },
+  href:         { type: String, required: true, trim: true },
+  visible:      { type: Boolean, default: true },
+  displayOrder: { type: Number, default: 0 },
+});
+
 const versionSchema = new mongoose.Schema({
   data:    { type: mongoose.Schema.Types.Mixed },
   savedAt: { type: Date, default: Date.now },
@@ -116,7 +124,8 @@ const hubPageSchema = new mongoose.Schema({
       playsInline: { type: Boolean, default: true },
     },
   },
-  quickActions:     { type: [quickActionSchema], default: () => DEFAULT_QUICK_ACTIONS },
+  quickActions:     { type: [quickActionSchema],   default: () => DEFAULT_QUICK_ACTIONS  },
+  categoryLinks:    { type: [categoryLinkSchema], default: () => DEFAULT_CATEGORY_LINKS },
   featuredProducts: {
     mode:             { type: String, enum: ['automatic', 'manual'], default: 'automatic' },
     automaticMode:    { type: String, enum: ['featured', 'newest', 'bestsellers', 'highest_rated'], default: 'featured' },
@@ -178,6 +187,15 @@ const DEFAULT_QUICK_ACTIONS = [
   { label: 'Email', desc: 'Quick replies guaranteed', icon: 'mail', href: 'mailto:vtechshop.customercare@gmail.com', color: 'bg-blue-500', analyticsKey: 'email', displayOrder: 4 },
   { label: 'Track Order', desc: 'Real-time updates', icon: 'package', href: '/track-order', color: 'bg-orange-500', analyticsKey: 'track_order', displayOrder: 5 },
   { label: 'Warranty', desc: 'Check your coverage', icon: 'shield-check', href: '/warranty-check', color: 'bg-yellow-500', analyticsKey: 'warranty', displayOrder: 6 },
+];
+
+const DEFAULT_CATEGORY_LINKS = [
+  { emoji: '🥬', label: 'Vegetable Cutting', href: '/products?category=vegetable-cutting', displayOrder: 0 },
+  { emoji: '🫔', label: 'Chapati Press',      href: '/products?category=chapati-press',      displayOrder: 1 },
+  { emoji: '🌀', label: 'Wet Grinders',       href: '/products?category=wet-grinders',       displayOrder: 2 },
+  { emoji: '🥥', label: 'Coconut Scrapers',   href: '/products?category=coconut-scrapers',   displayOrder: 3 },
+  { emoji: '🥔', label: 'Potato Slicers',     href: '/products?category=potato-slicers',     displayOrder: 4 },
+  { emoji: '🥣', label: 'Dough Kneaders',     href: '/products?category=dough-kneaders',     displayOrder: 5 },
 ];
 
 const DEFAULT_FEATURES = [
