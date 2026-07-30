@@ -122,6 +122,7 @@ exports.updateSection = async (req, res) => {
   try {
     const doc = await HubPage.getSingleton();
     doc.set(section, req.body);
+    doc.markModified(section);
     doc.updatedBy = req.user?._id;
     await doc.save();
     res.json({ success: true, data: doc[section] });
@@ -156,7 +157,10 @@ exports.publishHub = async (req, res) => {
 
     const SECTION_KEYS = ['hero', 'quickActions', 'featuredProducts', 'whyChooseUs', 'stats', 'resources', 'services', 'socials', 'contact', 'seo'];
     for (const key of SECTION_KEYS) {
-      if (source[key] !== undefined) doc.set(key, source[key]);
+      if (source[key] !== undefined) {
+        doc.set(key, source[key]);
+        doc.markModified(key);
+      }
     }
 
     doc.draft    = null;
@@ -355,7 +359,8 @@ exports.uploadHeroMedia = async (req, res) => {
     // Persist URL onto the hero sub-field in the singleton
     const [device, type] = parseHeroField(field);
     const doc = await HubPage.getSingleton();
-    doc.hero[device][type] = { url: media.url, mediaId: media._id, mimeType: media.mimeType };
+    doc.set(`hero.${device}.${type}`, { url: media.url, mediaId: media._id, mimeType: media.mimeType });
+    doc.markModified('hero');
     doc.updatedBy = req.user?._id;
     await doc.save();
 
@@ -381,7 +386,8 @@ exports.deleteHeroMedia = async (req, res) => {
     const mediaId = doc.hero[device]?.[type]?.mediaId;
 
     // Clear the asset on the document
-    doc.hero[device][type] = { url: '', mediaId: null, mimeType: '' };
+    doc.set(`hero.${device}.${type}`, { url: '', mediaId: null, mimeType: '' });
+    doc.markModified('hero');
     doc.updatedBy = req.user?._id;
     await doc.save();
 
