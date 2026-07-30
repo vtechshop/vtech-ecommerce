@@ -56,11 +56,12 @@ export const HeroBgImage = ({ desktop, mobile }) => {
 };
 
 export const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, reduced }) => {
-  const [useMobileVid, setUseMobileVid] = useState(false);
-  const [showFallback, setShowFallback] = useState(false);
-  const [videoReady,   setVideoReady]   = useState(false);
+  const [useMobileVid,   setUseMobileVid]   = useState(false);
+  const [showFallback,   setShowFallback]   = useState(false);
+  const [videoReady,     setVideoReady]     = useState(false);
+  const [posterHidden,   setPosterHidden]   = useState(false);
   const [prefersReduced, setPrefersReduced] = useState(
-    reduced || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    () => reduced || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   );
 
   useEffect(() => {
@@ -84,14 +85,23 @@ export const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, r
   const posterSrc   = posterAsset?.url;
   const shouldPlay  = settings?.autoplay !== false && !prefersReduced;
 
-  // Reset ready-state whenever the video source changes (breakpoint switch)
-  useEffect(() => { setVideoReady(false); }, [videoSrc]);
+  // Reset when the source changes (e.g. breakpoint flip desktop↔mobile)
+  useEffect(() => {
+    setVideoReady(false);
+    setPosterHidden(false);
+  }, [videoSrc]);
 
-  // If reduced motion: show poster permanently, no crossfade
-  const handleCanPlay = () => {
+  // onPlaying fires when frames are actually being rendered — safer than onCanPlay
+  const handlePlaying = () => {
     if (!prefersReduced) setVideoReady(true);
   };
 
+  // After the poster's opacity transition finishes, pull it from layout to free memory
+  const handlePosterTransitionEnd = (e) => {
+    if (e.propertyName === 'opacity' && videoReady) setPosterHidden(true);
+  };
+
+  // Video missing or broken — poster only
   if (!videoSrc || showFallback) {
     return posterSrc ? (
       <img
@@ -109,33 +119,42 @@ export const HeroBgVideo = ({ desktop, mobile, poster, mobilePoster, settings, r
 
   return (
     <>
-      {/* Poster stays visible while video buffers, then fades out (500ms). Never blank. */}
+      {/* Poster: fully visible initially; fades to opacity-0 when video plays; removed from layout after fade */}
       {posterSrc && (
         <img
           src={posterSrc}
           alt=""
           aria-hidden="true"
-          className={`${BASE} transition-opacity duration-500 ${videoReady ? 'opacity-0' : 'opacity-100'}`}
+          className={BASE}
           loading="eager"
           fetchPriority="high"
           decoding="sync"
-          style={mediaStyle(posterAsset)}
+          style={{
+            ...mediaStyle(posterAsset),
+            opacity:    videoReady ? 0 : 1,
+            transition: 'opacity 500ms ease',
+            display:    posterHidden ? 'none' : undefined,
+          }}
+          onTransitionEnd={handlePosterTransitionEnd}
         />
       )}
-      {/* Video starts invisible; crossfades in on canPlay */}
+
+      {/* Video: invisible until actually playing; fades to opacity-1 on onPlaying */}
       <video
         key={videoSrc}
         src={videoSrc}
-        poster={posterSrc || undefined}
         autoPlay={shouldPlay}
         loop={settings?.loop !== false}
         muted={settings?.muted !== false}
         playsInline={settings?.playsInline !== false}
-        onCanPlay={handleCanPlay}
-        onLoadedData={handleCanPlay}
+        onPlaying={handlePlaying}
         onError={() => setShowFallback(true)}
         aria-hidden="true"
-        className={`${BASE} transition-opacity duration-500 ${videoReady ? 'opacity-100' : 'opacity-0'}`}
+        className={BASE}
+        style={{
+          opacity:    videoReady ? 1 : 0,
+          transition: 'opacity 500ms ease',
+        }}
       />
     </>
   );
