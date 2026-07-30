@@ -629,39 +629,6 @@ const Hub = () => {
       </Section>
 
       {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-          TRUST STATS
-          Same gradient as hero â€” bg-gradient-to-r from-primary-600 to-primary-200
-          Mirrors Home.jsx hero pattern for visual cohesion
-      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      <section aria-label="Company statistics" className="py-16 md:py-20 bg-gradient-to-r from-primary-600 to-primary-200 relative overflow-hidden">
-        <h2 className="sr-only">Our Numbers</h2>
-        <div aria-hidden="true" className="absolute inset-0 pointer-events-none opacity-[0.06]"
-          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '36px 36px' }}
-        />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
-            {STATS.map((stat, i) => (
-              <FadeIn key={stat.label} delay={i * 0.08} className="text-center">
-                <div
-                  className="text-3xl md:text-4xl font-bold text-white tabular-nums"
-                  aria-label={`${stat.prefix || ''}${stat.end}${stat.suffix} ${stat.label}`}
-                >
-                  <CountUp
-                    end={stat.end}
-                    suffix={stat.suffix}
-                    prefix={stat.prefix || ''}
-                    decimals={stat.decimals || 0}
-                    duration={2.2}
-                  />
-                </div>
-                <p className="mt-2 text-blue-100 text-sm font-medium">{stat.label}</p>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
           WHY VTECH
           bg-white â€” matching site's alternating section pattern
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
