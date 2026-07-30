@@ -74,6 +74,7 @@ const categoryLinkSchema = new mongoose.Schema({
   emoji:        { type: String, default: '🔗' },
   label:        { type: String, required: true, trim: true },
   href:         { type: String, required: true, trim: true },
+  image:        { type: String, default: '' },
   visible:      { type: Boolean, default: true },
   displayOrder: { type: Number, default: 0 },
 });

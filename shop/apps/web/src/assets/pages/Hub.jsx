@@ -564,7 +564,10 @@ const Hub = () => {
                 to={cat.href}
                 className={`flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 motion-reduce:hover:translate-y-0 group ${FOCUS_RING}`}
               >
-                <span className="text-2xl leading-none flex-shrink-0" aria-hidden="true">{cat.emoji}</span>
+                {cat.image
+                  ? <img src={cat.image} alt="" aria-hidden="true" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                  : <span className="text-2xl leading-none flex-shrink-0" aria-hidden="true">{cat.emoji}</span>
+                }
                 <span className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">{cat.label}</span>
                 <ChevronRight className="w-4 h-4 text-gray-400 ml-auto flex-shrink-0 group-hover:text-primary-500 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0 transition-[color,transform] duration-300" aria-hidden="true" />
               </Link>

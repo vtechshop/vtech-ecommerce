@@ -373,6 +373,19 @@ exports.uploadHeroMedia = async (req, res) => {
   }
 };
 
+// POST /api/hub/admin/categories/image  — upload an image for a category card
+exports.uploadCategoryImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: { code: 'NO_FILE', message: 'No file uploaded.' } });
+    }
+    const media = await uploadService.uploadFile(req.file, 'hub-categories');
+    res.json({ success: true, data: { url: media.url, mediaId: media._id, mimeType: media.mimeType } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: { code: 'CATEGORY_IMAGE_ERROR', message: err.message } });
+  }
+};
+
 // DELETE /api/hub/admin/hero/media/:field  — remove a hero media asset
 exports.deleteHeroMedia = async (req, res) => {
   try {

@@ -930,39 +930,148 @@ const ResourcesEditor = ({ data, onChange }) => (
   />
 );
 
+const CAT_URL_SUGGESTIONS = [
+  '/products',
+  '/products?category=vegetable-cutting',
+  '/products?category=chapati-press',
+  '/products?category=wet-grinders',
+  '/products?category=coconut-scrapers',
+  '/products?category=potato-slicers',
+  '/products?category=dough-kneaders',
+  '/hub',
+  '/contact',
+];
+
+const CategoryItemForm = ({ draft, setDraft }) => {
+  const set = (k, v) => setDraft(d => ({ ...d, [k]: v }));
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef(null);
+  const toast = useToast();
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const fileMB = file.size / (1024 * 1024);
+    if (fileMB > 10) {
+      toast.error(`Image too large (${fileMB.toFixed(1)} MB). Max 10 MB.`);
+      return;
+    }
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const res = await api.post('/hub/admin/categories/image', form);
+      set('image', res.data.data.url);
+      toast.success('Category image uploaded');
+    } catch {
+      toast.error('Image upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Image upload */}
+      <Field label="Category Image (optional — replaces emoji on card)">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0">
+            {draft.image
+              ? (
+                <div className="relative w-14 h-14">
+                  <img src={draft.image} alt="" className="w-14 h-14 rounded-lg object-cover border border-gray-200" />
+                  <button
+                    type="button"
+                    onClick={() => set('image', '')}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs leading-none"
+                    title="Remove image"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )
+              : (
+                <div className="w-14 h-14 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center text-gray-400">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+              )
+            }
+          </div>
+          <div className="flex-1">
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-gray-300 hover:border-primary-400 hover:text-primary-600 transition-colors disabled:opacity-50"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              {uploading ? 'Uploading…' : draft.image ? 'Replace Image' : 'Upload Image'}
+            </button>
+            <p className="text-xs text-gray-500 mt-1">JPG, PNG, WebP · max 10 MB · leave empty to use emoji</p>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+          </div>
+        </div>
+      </Field>
+
+      {/* Emoji + Label */}
+      <div className="grid grid-cols-3 gap-3">
+        <Field label="Emoji (fallback)">
+          <div className="flex items-center gap-2">
+            <Input
+              value={draft.emoji || ''}
+              onChange={e => set('emoji', e.target.value)}
+              placeholder="🔗"
+              className="text-center text-xl"
+              maxLength={4}
+            />
+            <span className="text-2xl leading-none">{draft.emoji || '🔗'}</span>
+          </div>
+        </Field>
+        <Field label="Category Label" className="col-span-2">
+          <Input value={draft.label || ''} onChange={e => set('label', e.target.value)} placeholder="e.g. Vegetable Cutting" />
+        </Field>
+      </div>
+
+      {/* Link URL with quick picks */}
+      <Field label="Link URL">
+        <Input
+          value={draft.href || ''}
+          onChange={e => set('href', e.target.value)}
+          placeholder="/products?category=vegetable-cutting"
+          list="cat-href-datalist"
+        />
+        <datalist id="cat-href-datalist">
+          {CAT_URL_SUGGESTIONS.map(u => <option key={u} value={u} />)}
+        </datalist>
+        <div className="flex flex-wrap gap-1 mt-1.5">
+          {CAT_URL_SUGGESTIONS.filter(u => u.includes('category=')).map(u => {
+            const slug = u.split('category=')[1];
+            return (
+              <button
+                key={u}
+                type="button"
+                onClick={() => set('href', u)}
+                className="text-xs px-2 py-0.5 rounded-full bg-gray-100 hover:bg-primary-100 hover:text-primary-700 text-gray-600 transition-colors capitalize"
+              >
+                {slug.replace(/-/g, ' ')}
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+
+      <Toggle checked={draft.visible !== false} onChange={v => set('visible', v)} label="Visible" />
+    </div>
+  );
+};
+
 const CategoryLinksEditor = ({ data, onChange }) => (
   <ItemListEditor
     items={data || []}
     onChange={onChange}
-    newItem={{ emoji: '🔗', label: '', href: '', visible: true }}
-    renderForm={(draft, setDraft) => {
-      const set = (k, v) => setDraft(d => ({ ...d, [k]: v }));
-      return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Emoji">
-              <div className="flex items-center gap-2">
-                <Input
-                  value={draft.emoji || ''}
-                  onChange={e => set('emoji', e.target.value)}
-                  placeholder="🔗"
-                  className="text-center text-xl"
-                  maxLength={4}
-                />
-                <span className="text-2xl leading-none">{draft.emoji || '🔗'}</span>
-              </div>
-            </Field>
-            <Field label="Category Label" className="col-span-2">
-              <Input value={draft.label || ''} onChange={e => set('label', e.target.value)} placeholder="e.g. Vegetable Cutting" />
-            </Field>
-          </div>
-          <Field label="Link URL">
-            <Input value={draft.href || ''} onChange={e => set('href', e.target.value)} placeholder="/products?category=vegetable-cutting" />
-          </Field>
-          <Toggle checked={draft.visible !== false} onChange={v => set('visible', v)} label="Visible" />
-        </div>
-      );
-    }}
+    newItem={{ emoji: '🔗', label: '', href: '', image: '', visible: true }}
+    renderForm={(draft, setDraft) => <CategoryItemForm draft={draft} setDraft={setDraft} />}
   />
 );
 

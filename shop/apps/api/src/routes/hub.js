@@ -77,4 +77,36 @@ router.get('/admin/analytics/export', ctrl.exportAnalytics);
 router.post('/admin/hero/media',         uploadLimiter, heroMediaMiddleware, invalidateCache('cache:/api/hub*'), ctrl.uploadHeroMedia);
 router.delete('/admin/hero/media/:field', invalidateCache('cache:/api/hub*'), ctrl.deleteHeroMedia);
 
+// ── Category image multer (images only, 10 MB) ────────────────────────────────
+const categoryImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const ALLOWED = {
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png':  ['.png'],
+      'image/webp': ['.webp'],
+      'image/gif':  ['.gif'],
+      'image/avif': ['.avif'],
+    };
+    const validExts = ALLOWED[file.mimetype];
+    if (validExts && validExts.includes(ext)) return cb(null, true);
+    cb(new Error('Only images (JPG, PNG, WebP, GIF, AVIF) are allowed.'));
+  },
+}).single('file');
+
+function categoryImageMiddleware(req, res, next) {
+  categoryImageUpload(req, res, (err) => {
+    if (err instanceof multer.MulterError)
+      return res.status(400).json({ success: false, error: { code: 'UPLOAD_ERROR', message: err.message } });
+    if (err)
+      return res.status(400).json({ success: false, error: { code: 'INVALID_FILE', message: err.message } });
+    next();
+  });
+}
+
+// Category image upload
+router.post('/admin/categories/image', uploadLimiter, categoryImageMiddleware, ctrl.uploadCategoryImage);
+
 module.exports = router;
