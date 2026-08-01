@@ -541,18 +541,27 @@ const Hub = () => {
                   ))}
                 </div>
 
-                {/* CMS-driven video grid — navy gradient, horizontal icon + text */}
+                {/* CMS-driven video list — single column, icon-left arrow-right */}
                 {(() => {
                   const vBtns = (hubConfig?.hero?.videoButtons || [])
                     .filter(b => b.visible !== false)
                     .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
                   if (!vBtns.length) return null;
                   return (
-                    <div className="mt-9 w-full">
-                      <p className="text-white/55 text-[11px] font-semibold uppercase tracking-[0.2em] mb-4 text-center">
-                        Watch Product Videos
-                      </p>
-                      <div className="grid grid-cols-2 gap-2">
+                    <div className="mt-8 w-full">
+                      {/* Decorated heading */}
+                      <div className="flex items-center gap-3 mb-3.5 px-1">
+                        <div className="flex-1 h-px bg-white/25" aria-hidden="true" />
+                        <p
+                          className="text-white text-[12px] font-bold uppercase tracking-[0.22em] whitespace-nowrap"
+                          style={{ textShadow: '0 1px 6px rgba(0,0,0,0.7)' }}
+                        >
+                          Watch Product Videos
+                        </p>
+                        <div className="flex-1 h-px bg-white/25" aria-hidden="true" />
+                      </div>
+                      {/* Single-column list */}
+                      <div className="flex flex-col gap-2">
                         {vBtns.map(btn => (
                           <a
                             key={btn._id}
@@ -560,10 +569,11 @@ const Hub = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`Watch ${btn.title} on YouTube`}
-                            className={`flex items-center justify-center gap-2 h-[48px] px-3 bg-gradient-to-r from-[#0F172A] to-[#1E293B] border border-white/[0.1] text-white rounded-[16px] text-[12px] font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.5),0_8px_28px_rgba(0,0,0,0.45)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.4),0_14px_36px_rgba(0,0,0,0.6)] hover:brightness-110 active:scale-[0.97] transition-all duration-200 ${FOCUS_RING}`}
+                            className={`flex items-center gap-3 h-[54px] px-4 w-full bg-gradient-to-r from-[#0F172A] to-[#1E293B] border border-white/[0.1] text-white rounded-[16px] text-[13px] font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.5),0_8px_28px_rgba(0,0,0,0.45)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.4),0_14px_36px_rgba(0,0,0,0.6)] hover:brightness-110 active:scale-[0.97] transition-all duration-200 ${FOCUS_RING}`}
                           >
-                            <Youtube className="w-4 h-4 text-[#FF4444] flex-shrink-0" aria-hidden="true" />
-                            <span className="leading-none">{btn.title}</span>
+                            <Youtube className="w-5 h-5 text-[#FF4444] flex-shrink-0" aria-hidden="true" />
+                            <span className="flex-1 text-left leading-none">{btn.title}</span>
+                            <ArrowRight className="w-4 h-4 flex-shrink-0 text-white/35" aria-hidden="true" />
                           </a>
                         ))}
                       </div>
