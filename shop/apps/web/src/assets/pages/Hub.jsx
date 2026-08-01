@@ -497,42 +497,58 @@ const Hub = () => {
                 </motion.p>
               )}
 
-              {/* Mobile layout — 2×2 primary + CMS video grid (sm:hidden) */}
+              {/* Mobile layout — premium 2×2 primary + CMS video grid (sm:hidden) */}
               <motion.div
                 initial={{ opacity: 0, y: reduced ? 0 : 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: reduced ? 0 : 0.2, duration: reduced ? 0.01 : 0.45, ease: [0.22, 1, 0.36, 1] }}
-                className="sm:hidden w-full mt-4"
+                className="sm:hidden w-full mt-4 pb-2"
               >
-                {/* Primary 2×2 — identical width/height/spacing via CSS Grid */}
+                {/* Primary 2×2 — solid branded colors, equal h-[72px] cells */}
                 <div className="grid grid-cols-2 gap-3 w-[280px] mx-auto">
                   {[
-                    { href: WA_HREF,        external: true,  Icon: MessageCircle, label: 'WhatsApp',     aria: 'Chat on WhatsApp' },
-                    { href: '/page/contact', external: false, Icon: Phone,         label: 'Contact Us',   aria: 'Contact VTech Kitchen' },
-                    { href: MAPS_HREF,       external: true,  Icon: MapPin,        label: 'Our Location', aria: 'Get directions to VTech Kitchen' },
-                    { href: YOUTUBE_HREF,    external: true,  Icon: Youtube,       label: 'YouTube',      aria: 'Watch product demos on YouTube' },
-                  ].map(({ href, external, Icon, label, aria }) => (
+                    {
+                      href: WA_HREF, external: true,
+                      Icon: MessageCircle, label: 'WhatsApp', aria: 'Chat on WhatsApp',
+                      cls: 'bg-[#25D366] text-white shadow-[0_4px_14px_rgba(37,211,102,0.45)] hover:brightness-105 hover:shadow-[0_6px_20px_rgba(37,211,102,0.6)]',
+                    },
+                    {
+                      href: '/page/contact', external: false,
+                      Icon: Phone, label: 'Contact Us', aria: 'Contact VTech Kitchen',
+                      cls: 'bg-white text-[#0F172A] shadow-[0_4px_14px_rgba(0,0,0,0.18)] hover:bg-gray-50 hover:shadow-[0_6px_20px_rgba(0,0,0,0.25)]',
+                    },
+                    {
+                      href: MAPS_HREF, external: true,
+                      Icon: MapPin, label: 'Our Location', aria: 'Get directions to VTech Kitchen',
+                      cls: 'bg-[#2563EB] text-white shadow-[0_4px_14px_rgba(37,99,235,0.45)] hover:brightness-105 hover:shadow-[0_6px_20px_rgba(37,99,235,0.6)]',
+                    },
+                    {
+                      href: YOUTUBE_HREF, external: true,
+                      Icon: Youtube, label: 'YouTube', aria: 'Watch product demos on YouTube',
+                      cls: 'bg-[#FF0000] text-white shadow-[0_4px_14px_rgba(255,0,0,0.4)] hover:brightness-105 hover:shadow-[0_6px_20px_rgba(255,0,0,0.55)]',
+                    },
+                  ].map(({ href, external, Icon, label, aria, cls }) => (
                     <a
                       key={label}
                       href={href}
                       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                       aria-label={aria}
-                      className={`flex flex-col items-center justify-center gap-2 h-[72px] bg-white/8 backdrop-blur-md border border-white/15 text-white rounded-2xl font-semibold text-xs ${FOCUS_RING}`}
+                      className={`flex flex-col items-center justify-center gap-[10px] h-[72px] rounded-[18px] font-semibold text-[13px] transition-all duration-200 active:scale-[0.97] ${cls} ${FOCUS_RING}`}
                     >
-                      <Icon className="w-5 h-5" aria-hidden="true" />
+                      <Icon className="w-[22px] h-[22px]" aria-hidden="true" />
                       {label}
                     </a>
                   ))}
                 </div>
 
-                {/* CMS-driven video grid — 2 columns, identical cells, inside hero */}
+                {/* CMS-driven video grid — elegant glass, equal h-[48px] cells */}
                 {(() => {
                   const vBtns = (hubConfig?.hero?.videoButtons || [])
                     .filter(b => b.visible !== false)
                     .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
                   if (!vBtns.length) return null;
                   return (
-                    <div className="mt-4 w-[280px] mx-auto">
+                    <div className="mt-5 w-[280px] mx-auto">
                       <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest mb-3 text-center">
                         Watch Product Videos
                       </p>
@@ -544,10 +560,11 @@ const Hub = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`Watch ${btn.title} demo on YouTube`}
-                            className={`flex items-center gap-2 h-[48px] px-3 bg-white/8 backdrop-blur-md border border-white/15 text-white rounded-2xl text-xs font-semibold ${FOCUS_RING}`}
+                            className={`flex items-center gap-2 h-[48px] px-3 bg-white/[0.14] backdrop-blur-sm border border-white/[0.18] text-white rounded-2xl text-[13px] font-semibold transition-all duration-200 hover:bg-white/[0.22] hover:border-white/[0.35] hover:scale-[1.02] active:scale-[0.97] ${FOCUS_RING}`}
                           >
-                            {btn.emoji && <span className="flex-shrink-0" aria-hidden="true">{btn.emoji}</span>}
-                            <span className="truncate">{btn.title}</span>
+                            {btn.emoji && <span className="flex-shrink-0 text-sm leading-none" aria-hidden="true">{btn.emoji}</span>}
+                            <span className="flex-1 truncate">{btn.title}</span>
+                            <Youtube className="w-3 h-3 text-red-400 flex-shrink-0" aria-hidden="true" />
                           </a>
                         ))}
                         <a
@@ -555,10 +572,11 @@ const Hub = () => {
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label="View all product videos on YouTube"
-                          className={`col-span-2 flex items-center justify-center gap-2 h-[44px] bg-white/8 backdrop-blur-md border border-white/15 text-white/70 rounded-2xl text-xs font-semibold ${FOCUS_RING}`}
+                          className={`col-span-2 flex items-center justify-center gap-2 h-[48px] bg-gradient-to-r from-[#FF0000] to-[#FF6B00] text-white rounded-[18px] text-[13px] font-semibold shadow-[0_4px_14px_rgba(255,0,0,0.4)] hover:shadow-[0_6px_20px_rgba(255,0,0,0.55)] hover:brightness-105 active:scale-[0.97] transition-all duration-200 ${FOCUS_RING}`}
                         >
-                          <Youtube className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                          <Youtube className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                           View All Videos
+                          <ArrowRight className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
                         </a>
                       </div>
                     </div>
