@@ -510,7 +510,7 @@ const Hub = () => {
                     {
                       href: WA_HREF, external: true,
                       Icon: MessageCircle, label: 'WhatsApp', aria: 'Chat on WhatsApp',
-                      cls: 'bg-[#128C7E] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(18,140,126,0.6)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(18,140,126,0.75)] hover:brightness-110',
+                      cls: 'bg-[#25D366] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(37,211,102,0.65)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(37,211,102,0.8)] hover:brightness-110',
                     },
                     {
                       href: '/page/contact', external: false,
@@ -520,12 +520,12 @@ const Hub = () => {
                     {
                       href: MAPS_HREF, external: true,
                       Icon: MapPin, label: 'Our Location', aria: 'Get directions to VTech Kitchen',
-                      cls: 'bg-[#1E40AF] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(30,64,175,0.6)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(30,64,175,0.75)] hover:brightness-110',
+                      cls: 'bg-[#2563EB] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(37,99,235,0.65)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(37,99,235,0.8)] hover:brightness-110',
                     },
                     {
                       href: YOUTUBE_HREF, external: true,
                       Icon: Youtube, label: 'YouTube', aria: 'Watch product demos on YouTube',
-                      cls: 'bg-[#B91C1C] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(185,28,28,0.6)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(185,28,28,0.75)] hover:brightness-110',
+                      cls: 'bg-[#DC2626] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(220,38,38,0.65)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(220,38,38,0.8)] hover:brightness-110',
                     },
                   ].map(({ href, external, Icon, label, aria, cls }) => (
                     <a
@@ -549,19 +549,19 @@ const Hub = () => {
                   if (!vBtns.length) return null;
                   return (
                     <div className="mt-8 w-full">
-                      {/* Decorated heading */}
-                      <div className="flex items-center gap-3 mb-3.5 px-1">
-                        <div className="flex-1 h-px bg-white/25" aria-hidden="true" />
+                      {/* Decorated heading — gold to match reference */}
+                      <div className="flex items-center gap-3 mb-3.5">
+                        <div className="flex-1 h-px bg-[#FBBF24]/50" aria-hidden="true" />
                         <p
-                          className="text-white text-[12px] font-bold uppercase tracking-[0.22em] whitespace-nowrap"
-                          style={{ textShadow: '0 1px 6px rgba(0,0,0,0.7)' }}
+                          className="text-[#FBBF24] text-[12px] font-bold uppercase tracking-[0.22em] whitespace-nowrap"
+                          style={{ textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}
                         >
                           Watch Product Videos
                         </p>
-                        <div className="flex-1 h-px bg-white/25" aria-hidden="true" />
+                        <div className="flex-1 h-px bg-[#FBBF24]/50" aria-hidden="true" />
                       </div>
-                      {/* Single-column list */}
-                      <div className="flex flex-col gap-2">
+                      {/* 2-column grid — icon left, name center, arrow right */}
+                      <div className="grid grid-cols-2 gap-2">
                         {vBtns.map(btn => (
                           <a
                             key={btn._id}
@@ -569,11 +569,11 @@ const Hub = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`Watch ${btn.title} on YouTube`}
-                            className={`flex items-center gap-3 h-[54px] px-4 w-full bg-gradient-to-r from-[#0F172A] to-[#1E293B] border border-white/[0.1] text-white rounded-[16px] text-[13px] font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.5),0_8px_28px_rgba(0,0,0,0.45)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.4),0_14px_36px_rgba(0,0,0,0.6)] hover:brightness-110 active:scale-[0.97] transition-all duration-200 ${FOCUS_RING}`}
+                            className={`flex items-center gap-2 h-[54px] px-3 bg-gradient-to-r from-[#0F172A] to-[#1E293B] border border-white/[0.1] text-white rounded-[16px] text-[11px] font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.5),0_8px_28px_rgba(0,0,0,0.45)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.4),0_14px_36px_rgba(0,0,0,0.6)] hover:brightness-110 active:scale-[0.97] transition-all duration-200 ${FOCUS_RING}`}
                           >
-                            <Youtube className="w-5 h-5 text-[#FF4444] flex-shrink-0" aria-hidden="true" />
-                            <span className="flex-1 text-left leading-none">{btn.title}</span>
-                            <ArrowRight className="w-4 h-4 flex-shrink-0 text-white/35" aria-hidden="true" />
+                            <Youtube className="w-4 h-4 text-[#FF4444] flex-shrink-0" aria-hidden="true" />
+                            <span className="flex-1 text-left leading-tight">{btn.title}</span>
+                            <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 text-white/40" aria-hidden="true" />
                           </a>
                         ))}
                       </div>
