@@ -95,6 +95,14 @@ const mediaAssetSchema = new mongoose.Schema({
   zoom:     { type: Number, default: 1 },
 }, { _id: false });
 
+const videoButtonSchema = new mongoose.Schema({
+  title:        { type: String, required: true, trim: true },
+  emoji:        { type: String, default: '▶️', trim: true },
+  url:          { type: String, required: true, trim: true },
+  displayOrder: { type: Number, default: 0 },
+  visible:      { type: Boolean, default: true },
+});
+
 const hubPageSchema = new mongoose.Schema({
   hero: {
     visible:       { type: Boolean, default: true },
@@ -128,6 +136,7 @@ const hubPageSchema = new mongoose.Schema({
       muted:       { type: Boolean, default: true },
       playsInline: { type: Boolean, default: true },
     },
+    videoButtons: { type: [videoButtonSchema], default: () => [] },
   },
   quickActions:     { type: [quickActionSchema],   default: () => DEFAULT_QUICK_ACTIONS  },
   categoryLinks:    { type: [categoryLinkSchema], default: () => DEFAULT_CATEGORY_LINKS },

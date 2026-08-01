@@ -554,6 +554,51 @@ const Hub = () => {
                 </div>
               </motion.div>
 
+              {/* Mobile product video chips — CMS-driven, hidden on desktop */}
+              {(() => {
+                const vBtns = (hubConfig?.hero?.videoButtons || [])
+                  .filter(b => b.visible !== false)
+                  .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+                if (!vBtns.length) return null;
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: reduced ? 0 : 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: reduced ? 0 : 0.3, duration: reduced ? 0.01 : 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    className="sm:hidden w-full mt-5"
+                  >
+                    <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-3 text-center">
+                      Watch Product Videos
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center max-w-xs mx-auto">
+                      {vBtns.map(btn => (
+                        <a
+                          key={btn._id}
+                          href={btn.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-xl text-xs font-semibold ${FOCUS_RING}`}
+                          aria-label={`Watch ${btn.title} demo on YouTube`}
+                        >
+                          {btn.emoji && <span aria-hidden="true">{btn.emoji}</span>}
+                          {btn.title}
+                        </a>
+                      ))}
+                      <a
+                        href={YOUTUBE_HREF}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] bg-white/5 border border-white/15 text-white/60 rounded-xl text-xs font-semibold ${FOCUS_RING}`}
+                        aria-label="View all product videos on YouTube"
+                      >
+                        <Youtube className="w-3.5 h-3.5" aria-hidden="true" />
+                        View All
+                      </a>
+                    </div>
+                  </motion.div>
+                );
+              })()}
+
               {/* Desktop CTA buttons — unchanged, hidden on mobile */}
               {(hPrimary.visible !== false || hSecondary.visible !== false) && (
                 <motion.div

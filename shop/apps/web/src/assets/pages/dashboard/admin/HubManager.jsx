@@ -766,6 +766,32 @@ const HeroEditor = ({ data, onChange, onMediaSaved, onMediaDeleted }) => {
           <Toggle checked={data.secondaryButton?.visible !== false} onChange={v => setBtn('secondaryButton', 'visible', v)} label="Visible" />
         </div>
       </div>
+
+      {/* ── Product Video Buttons ── */}
+      <div className="border-t border-gray-100 pt-1">
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">Product Video Buttons</h3>
+        <p className="text-xs text-gray-500 mb-4">Mobile hero only — chip buttons linking to individual YouTube videos. Drag to reorder.</p>
+      </div>
+      <ItemListEditor
+        items={data.videoButtons || []}
+        onChange={v => set('videoButtons', v)}
+        newItem={{ title: '', emoji: '▶️', url: '', visible: true }}
+        renderForm={(draft, setDraft) => {
+          const setF = (k, v) => setDraft(d => ({ ...d, [k]: v }));
+          return (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Emoji"><Input value={draft.emoji || ''} onChange={e => setF('emoji', e.target.value)} placeholder="▶️" /></Field>
+                <div className="col-span-2">
+                  <Field label="Title"><Input value={draft.title || ''} onChange={e => setF('title', e.target.value)} placeholder="Vegetable Cutting" /></Field>
+                </div>
+              </div>
+              <Field label="YouTube URL"><Input value={draft.url || ''} onChange={e => setF('url', e.target.value)} placeholder="https://youtu.be/..." /></Field>
+              <Toggle checked={draft.visible !== false} onChange={v => setF('visible', v)} label="Visible on mobile hero" />
+            </div>
+          );
+        }}
+      />
     </div>
   );
 };
