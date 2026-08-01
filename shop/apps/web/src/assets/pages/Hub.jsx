@@ -334,7 +334,7 @@ const Hub = () => {
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <section
         aria-label="VTech Kitchen Quick Hub"
-        className={`relative overflow-hidden ${
+        className={`relative overflow-hidden min-h-[60vh] sm:min-h-0 flex flex-col sm:block ${
           !hubConfig?.hero?.backgroundType || hubConfig.hero.backgroundType === 'gradient'
             ? 'bg-gradient-to-r from-primary-600 to-primary-200'
             : 'bg-gray-900'
@@ -357,13 +357,13 @@ const Hub = () => {
             reduced={reduced}
           />
         )}
-        {hubConfig?.hero?.backgroundType !== 'gradient' && (hubConfig?.hero?.overlay?.opacity ?? 0) > 0 && (
+        {hubConfig?.hero?.backgroundType !== 'gradient' && (
           <div
             aria-hidden="true"
             className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundColor: hubConfig.hero.overlay.color || '#000000',
-              opacity: hubConfig.hero.overlay.opacity,
+              backgroundColor: hubConfig?.hero?.overlay?.color || '#000000',
+              opacity: Math.max(hubConfig?.hero?.overlay?.opacity ?? 0, 0.5),
             }}
           />
         )}
@@ -407,20 +407,21 @@ const Hub = () => {
           const { tag: SecondaryTag, props: secondaryProps } = linkable(hSecondary.url || WA_HREF);
 
           return (
-            <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 text-center">
+            <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-16 md:py-28 text-center flex-1 flex flex-col justify-center sm:flex-none sm:block">
 
-              {/* Logo */}
+              {/* Logo — desktop only */}
               <motion.div
                 initial={{ opacity: 0, scale: reduced ? 1 : 0.92 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: reduced ? 0.01 : 0.65, ease: [0.22, 1, 0.36, 1] }}
+                className="hidden sm:block"
               >
                 <img
                   src="/cropped-vtech-logo.webp"
                   alt="VTech Kitchen logo"
                   width={200}
                   height={64}
-                  className="h-14 w-auto mx-auto mb-8 object-contain brightness-0 invert"
+                  className="h-10 sm:h-14 w-auto mx-auto mb-4 sm:mb-8 object-contain brightness-0 invert"
                   loading="eager"
                   fetchPriority="high"
                   decoding="sync"
@@ -433,7 +434,7 @@ const Hub = () => {
                   initial={{ opacity: 0, y: reduced ? 0 : 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: reduced ? 0 : 0.1, duration: reduced ? 0.01 : 0.4, ease: [0.22, 1, 0.36, 1] }}
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-4 border"
+                  className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-4 border"
                   style={{ color: hColor, borderColor: hColor + '55', backgroundColor: hColor + '18' }}
                 >
                   {hBadge}
@@ -445,7 +446,7 @@ const Hub = () => {
                 initial={{ opacity: 0, y: reduced ? 0 : 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: reduced ? 0 : 0.15, duration: reduced ? 0.01 : 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="text-xs font-bold tracking-[0.25em] uppercase mb-5"
+                className="hidden sm:block text-xs font-bold tracking-[0.25em] uppercase mb-5"
                 style={{ color: hColor, opacity: 0.8 }}
               >
                 {hEyebrow}
@@ -453,7 +454,7 @@ const Hub = () => {
 
               {/* H1 — words animate in one by one */}
               <h1
-                className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight"
+                className="hidden sm:block text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight"
                 style={{ color: hColor }}
               >
                 {hWords.map((word, i) => (
@@ -489,20 +490,77 @@ const Hub = () => {
                   initial={{ opacity: 0, y: reduced ? 0 : 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: reduced ? 0 : subDelay + 0.14, duration: reduced ? 0.01 : 0.5, ease: [0.22, 1, 0.36, 1] }}
-                  className="mt-5 text-base max-w-xl mx-auto leading-relaxed"
+                  className="hidden sm:block mt-5 text-base max-w-xl mx-auto leading-relaxed"
                   style={{ color: hColor, opacity: 0.8 }}
                 >
                   {hTrustText}
                 </motion.p>
               )}
 
-              {/* CTA Buttons */}
+              {/* Mobile CTA grid — link-tree layout, no text/logo (hidden on sm+) */}
+              <motion.div
+                initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: reduced ? 0 : 0.2, duration: reduced ? 0.01 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="sm:hidden w-full mt-4"
+              >
+                <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
+                  <a
+                    href="/products"
+                    className={`flex flex-col items-center justify-center gap-1.5 min-h-[72px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
+                    aria-label="Shop all products"
+                  >
+                    <ShoppingBag className="w-6 h-6" aria-hidden="true" />
+                    Shop Products
+                  </a>
+                  <a
+                    href={WA_HREF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex flex-col items-center justify-center gap-1.5 min-h-[72px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
+                    aria-label="Chat on WhatsApp"
+                  >
+                    <MessageCircle className="w-6 h-6" aria-hidden="true" />
+                    WhatsApp
+                  </a>
+                  <a
+                    href="/page/contact"
+                    className={`flex flex-col items-center justify-center gap-1.5 min-h-[72px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
+                    aria-label="Contact VTech Kitchen"
+                  >
+                    <Phone className="w-6 h-6" aria-hidden="true" />
+                    Contact Us
+                  </a>
+                  <a
+                    href={MAPS_HREF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex flex-col items-center justify-center gap-1.5 min-h-[72px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
+                    aria-label="Get directions to VTech Kitchen"
+                  >
+                    <MapPin className="w-6 h-6" aria-hidden="true" />
+                    Our Location
+                  </a>
+                  <a
+                    href={YOUTUBE_HREF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`col-span-2 flex items-center justify-center gap-2 min-h-[56px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
+                    aria-label="Watch product demos on YouTube"
+                  >
+                    <Youtube className="w-6 h-6" aria-hidden="true" />
+                    Watch Videos
+                  </a>
+                </div>
+              </motion.div>
+
+              {/* Desktop CTA buttons — unchanged, hidden on mobile */}
               {(hPrimary.visible !== false || hSecondary.visible !== false) && (
                 <motion.div
                   initial={{ opacity: 0, y: reduced ? 0 : 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: reduced ? 0 : subDelay + 0.27, duration: reduced ? 0.01 : 0.45, ease: [0.22, 1, 0.36, 1] }}
-                  className="mt-8 flex flex-col sm:flex-row gap-3 justify-center"
+                  className="hidden sm:flex mt-8 flex-row gap-3 justify-center"
                 >
                   {hPrimary.visible !== false && hPrimary.text && (
                     <PrimaryTag

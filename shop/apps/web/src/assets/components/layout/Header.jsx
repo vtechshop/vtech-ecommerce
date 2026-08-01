@@ -279,8 +279,8 @@ const Header = ({ onMobileMenuToggle }) => {
               )}
             </Link>
 
-            {/* Quick action icons — mobile only (desktop shows them in the nav bar below) */}
-            <div className="md:hidden flex items-center gap-2">
+            {/* Quick action icons — hidden on mobile (moved to hub hero CTA grid) */}
+            <div className="hidden">
               {NAV_QUICK.map((btn) => (
                 <a
                   key={btn.id}
