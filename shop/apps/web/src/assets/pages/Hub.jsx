@@ -562,7 +562,7 @@ const Hub = () => {
                             aria-label={`Watch ${btn.title} demo on YouTube`}
                             className={`flex flex-col items-center justify-center gap-1.5 h-[62px] bg-black/[0.48] backdrop-blur-md border border-white/[0.14] text-white rounded-[14px] text-[11px] font-semibold transition-all duration-200 hover:bg-black/[0.62] hover:border-white/[0.24] hover:scale-[1.02] active:scale-[0.97] ${FOCUS_RING}`}
                           >
-                            {btn.emoji && <span className="text-[15px] leading-none" aria-hidden="true">{btn.emoji}</span>}
+                            <Youtube className="w-4 h-4 text-[#FF4444]" aria-hidden="true" />
                             <span className="text-center leading-snug px-1 text-white/90">{btn.title}</span>
                           </a>
                         ))}
