@@ -497,107 +497,33 @@ const Hub = () => {
                 </motion.p>
               )}
 
-              {/* Mobile CTA grid — link-tree layout, no text/logo (hidden on sm+) */}
+              {/* Mobile CTA grid — 2×2, fixed height for pixel-perfect alignment (hidden on sm+) */}
               <motion.div
                 initial={{ opacity: 0, y: reduced ? 0 : 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: reduced ? 0 : 0.2, duration: reduced ? 0.01 : 0.45, ease: [0.22, 1, 0.36, 1] }}
                 className="sm:hidden w-full mt-4"
               >
-                <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
-                  <a
-                    href="/products"
-                    className={`flex flex-col items-center justify-center gap-1.5 min-h-[72px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
-                    aria-label="Shop all products"
-                  >
-                    <ShoppingBag className="w-6 h-6" aria-hidden="true" />
-                    Shop Products
-                  </a>
-                  <a
-                    href={WA_HREF}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex flex-col items-center justify-center gap-1.5 min-h-[72px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
-                    aria-label="Chat on WhatsApp"
-                  >
-                    <MessageCircle className="w-6 h-6" aria-hidden="true" />
-                    WhatsApp
-                  </a>
-                  <a
-                    href="/page/contact"
-                    className={`flex flex-col items-center justify-center gap-1.5 min-h-[72px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
-                    aria-label="Contact VTech Kitchen"
-                  >
-                    <Phone className="w-6 h-6" aria-hidden="true" />
-                    Contact Us
-                  </a>
-                  <a
-                    href={MAPS_HREF}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`flex flex-col items-center justify-center gap-1.5 min-h-[72px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
-                    aria-label="Get directions to VTech Kitchen"
-                  >
-                    <MapPin className="w-6 h-6" aria-hidden="true" />
-                    Our Location
-                  </a>
-                  <a
-                    href={YOUTUBE_HREF}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`col-span-2 flex items-center justify-center gap-2 min-h-[56px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
-                    aria-label="Watch product demos on YouTube"
-                  >
-                    <Youtube className="w-6 h-6" aria-hidden="true" />
-                    Watch Videos
-                  </a>
+                <div className="grid grid-cols-2 gap-3 w-[280px] mx-auto">
+                  {[
+                    { href: WA_HREF,         external: true,  Icon: MessageCircle, label: 'WhatsApp',     aria: 'Chat on WhatsApp' },
+                    { href: '/page/contact',  external: false, Icon: Phone,         label: 'Contact Us',   aria: 'Contact VTech Kitchen' },
+                    { href: MAPS_HREF,        external: true,  Icon: MapPin,        label: 'Our Location', aria: 'Get directions to VTech Kitchen' },
+                    { href: YOUTUBE_HREF,     external: true,  Icon: Youtube,       label: 'YouTube',      aria: 'Watch product demos on YouTube' },
+                  ].map(({ href, external, Icon, label, aria }) => (
+                    <a
+                      key={label}
+                      href={href}
+                      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                      aria-label={aria}
+                      className={`flex flex-col items-center justify-center gap-2 h-[80px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
+                    >
+                      <Icon className="w-6 h-6" aria-hidden="true" />
+                      {label}
+                    </a>
+                  ))}
                 </div>
               </motion.div>
-
-              {/* Mobile product video chips — CMS-driven, hidden on desktop */}
-              {(() => {
-                const vBtns = (hubConfig?.hero?.videoButtons || [])
-                  .filter(b => b.visible !== false)
-                  .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
-                if (!vBtns.length) return null;
-                return (
-                  <motion.div
-                    initial={{ opacity: 0, y: reduced ? 0 : 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: reduced ? 0 : 0.3, duration: reduced ? 0.01 : 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    className="sm:hidden w-full mt-5"
-                  >
-                    <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-3 text-center">
-                      Watch Product Videos
-                    </p>
-                    <div className="flex flex-wrap gap-2 justify-center max-w-xs mx-auto">
-                      {vBtns.map(btn => (
-                        <a
-                          key={btn._id}
-                          href={btn.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-xl text-xs font-semibold ${FOCUS_RING}`}
-                          aria-label={`Watch ${btn.title} demo on YouTube`}
-                        >
-                          {btn.emoji && <span aria-hidden="true">{btn.emoji}</span>}
-                          {btn.title}
-                        </a>
-                      ))}
-                      <a
-                        href={YOUTUBE_HREF}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] bg-white/5 border border-white/15 text-white/60 rounded-xl text-xs font-semibold ${FOCUS_RING}`}
-                        aria-label="View all product videos on YouTube"
-                      >
-                        <Youtube className="w-3.5 h-3.5" aria-hidden="true" />
-                        View All
-                      </a>
-                    </div>
-                  </motion.div>
-                );
-              })()}
 
               {/* Desktop CTA buttons — unchanged, hidden on mobile */}
               {(hPrimary.visible !== false || hSecondary.visible !== false) && (
@@ -637,6 +563,51 @@ const Hub = () => {
           QUICK ACTIONS
           bg-gray-50 — matches Home.jsx page background for secondary sections
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ── Watch Product Videos ── CMS-driven, renders only when buttons exist */}
+      {(() => {
+        const vBtns = (hubConfig?.hero?.videoButtons || [])
+          .filter(b => b.visible !== false)
+          .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+        if (!vBtns.length) return null;
+        return (
+          <section aria-label="Product demo videos" className="bg-white py-10 border-b border-gray-100">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="max-w-sm sm:max-w-2xl mx-auto">
+                <h2 className="text-center text-base font-bold text-gray-900 uppercase tracking-wider mb-1">
+                  Watch Product Videos
+                </h2>
+                <p className="text-center text-xs text-gray-400 mb-6">Tap any machine to watch a live demo</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {vBtns.map(btn => (
+                    <a
+                      key={btn._id}
+                      href={btn.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Watch ${btn.title} demo on YouTube`}
+                      className={`flex items-center gap-3 h-[60px] px-4 bg-gray-50 border border-gray-200 hover:border-primary-300 hover:bg-primary-50 rounded-2xl text-gray-800 font-semibold text-sm transition-colors ${FOCUS_RING}`}
+                    >
+                      {btn.emoji && <span className="text-xl flex-shrink-0" aria-hidden="true">{btn.emoji}</span>}
+                      <span className="truncate">{btn.title}</span>
+                    </a>
+                  ))}
+                  <a
+                    href={YOUTUBE_HREF}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="View all product videos on YouTube"
+                    className={`col-span-2 sm:col-span-3 lg:col-span-4 flex items-center justify-center gap-2 h-[52px] bg-gray-50 border border-gray-200 hover:border-red-200 hover:bg-red-50 rounded-2xl text-gray-500 hover:text-red-600 font-semibold text-sm transition-colors ${FOCUS_RING}`}
+                  >
+                    <Youtube className="w-4 h-4 text-red-500 flex-shrink-0" aria-hidden="true" />
+                    View All Videos
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
+
       <Section id="quick-actions" ariaLabel="Quick actions" className="bg-white">
         <SectionTitle
           eyebrow="Quick Actions"
