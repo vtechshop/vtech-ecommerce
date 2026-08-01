@@ -334,7 +334,7 @@ const Hub = () => {
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <section
         aria-label="VTech Kitchen Quick Hub"
-        className={`relative overflow-hidden min-h-[60vh] sm:min-h-0 flex flex-col sm:block ${
+        className={`relative overflow-hidden min-h-[65vh] sm:min-h-0 flex flex-col sm:block ${
           !hubConfig?.hero?.backgroundType || hubConfig.hero.backgroundType === 'gradient'
             ? 'bg-gradient-to-r from-primary-600 to-primary-200'
             : 'bg-gray-900'
@@ -497,32 +497,73 @@ const Hub = () => {
                 </motion.p>
               )}
 
-              {/* Mobile CTA grid — 2×2, fixed height for pixel-perfect alignment (hidden on sm+) */}
+              {/* Mobile layout — 2×2 primary + CMS video grid (sm:hidden) */}
               <motion.div
                 initial={{ opacity: 0, y: reduced ? 0 : 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: reduced ? 0 : 0.2, duration: reduced ? 0.01 : 0.45, ease: [0.22, 1, 0.36, 1] }}
                 className="sm:hidden w-full mt-4"
               >
+                {/* Primary 2×2 — identical width/height/spacing via CSS Grid */}
                 <div className="grid grid-cols-2 gap-3 w-[280px] mx-auto">
                   {[
-                    { href: WA_HREF,         external: true,  Icon: MessageCircle, label: 'WhatsApp',     aria: 'Chat on WhatsApp' },
-                    { href: '/page/contact',  external: false, Icon: Phone,         label: 'Contact Us',   aria: 'Contact VTech Kitchen' },
-                    { href: MAPS_HREF,        external: true,  Icon: MapPin,        label: 'Our Location', aria: 'Get directions to VTech Kitchen' },
-                    { href: YOUTUBE_HREF,     external: true,  Icon: Youtube,       label: 'YouTube',      aria: 'Watch product demos on YouTube' },
+                    { href: WA_HREF,        external: true,  Icon: MessageCircle, label: 'WhatsApp',     aria: 'Chat on WhatsApp' },
+                    { href: '/page/contact', external: false, Icon: Phone,         label: 'Contact Us',   aria: 'Contact VTech Kitchen' },
+                    { href: MAPS_HREF,       external: true,  Icon: MapPin,        label: 'Our Location', aria: 'Get directions to VTech Kitchen' },
+                    { href: YOUTUBE_HREF,    external: true,  Icon: Youtube,       label: 'YouTube',      aria: 'Watch product demos on YouTube' },
                   ].map(({ href, external, Icon, label, aria }) => (
                     <a
                       key={label}
                       href={href}
                       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
                       aria-label={aria}
-                      className={`flex flex-col items-center justify-center gap-2 h-[80px] bg-white/15 backdrop-blur-sm border border-white/25 text-white rounded-2xl font-semibold text-sm ${FOCUS_RING}`}
+                      className={`flex flex-col items-center justify-center gap-2 h-[72px] bg-white/8 backdrop-blur-md border border-white/15 text-white rounded-2xl font-semibold text-xs ${FOCUS_RING}`}
                     >
-                      <Icon className="w-6 h-6" aria-hidden="true" />
+                      <Icon className="w-5 h-5" aria-hidden="true" />
                       {label}
                     </a>
                   ))}
                 </div>
+
+                {/* CMS-driven video grid — 2 columns, identical cells, inside hero */}
+                {(() => {
+                  const vBtns = (hubConfig?.hero?.videoButtons || [])
+                    .filter(b => b.visible !== false)
+                    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+                  if (!vBtns.length) return null;
+                  return (
+                    <div className="mt-4 w-[280px] mx-auto">
+                      <p className="text-white/40 text-[9px] font-bold uppercase tracking-widest mb-3 text-center">
+                        Watch Product Videos
+                      </p>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {vBtns.map(btn => (
+                          <a
+                            key={btn._id}
+                            href={btn.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Watch ${btn.title} demo on YouTube`}
+                            className={`flex items-center gap-2 h-[48px] px-3 bg-white/8 backdrop-blur-md border border-white/15 text-white rounded-2xl text-xs font-semibold ${FOCUS_RING}`}
+                          >
+                            {btn.emoji && <span className="flex-shrink-0" aria-hidden="true">{btn.emoji}</span>}
+                            <span className="truncate">{btn.title}</span>
+                          </a>
+                        ))}
+                        <a
+                          href={YOUTUBE_HREF}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="View all product videos on YouTube"
+                          className={`col-span-2 flex items-center justify-center gap-2 h-[44px] bg-white/8 backdrop-blur-md border border-white/15 text-white/70 rounded-2xl text-xs font-semibold ${FOCUS_RING}`}
+                        >
+                          <Youtube className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                          View All Videos
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })()}
               </motion.div>
 
               {/* Desktop CTA buttons — unchanged, hidden on mobile */}
@@ -563,51 +604,6 @@ const Hub = () => {
           QUICK ACTIONS
           bg-gray-50 — matches Home.jsx page background for secondary sections
       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
-      {/* ── Watch Product Videos ── CMS-driven, renders only when buttons exist */}
-      {(() => {
-        const vBtns = (hubConfig?.hero?.videoButtons || [])
-          .filter(b => b.visible !== false)
-          .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
-        if (!vBtns.length) return null;
-        return (
-          <section aria-label="Product demo videos" className="bg-white py-10 border-b border-gray-100">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="max-w-sm sm:max-w-2xl mx-auto">
-                <h2 className="text-center text-base font-bold text-gray-900 uppercase tracking-wider mb-1">
-                  Watch Product Videos
-                </h2>
-                <p className="text-center text-xs text-gray-400 mb-6">Tap any machine to watch a live demo</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {vBtns.map(btn => (
-                    <a
-                      key={btn._id}
-                      href={btn.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Watch ${btn.title} demo on YouTube`}
-                      className={`flex items-center gap-3 h-[60px] px-4 bg-gray-50 border border-gray-200 hover:border-primary-300 hover:bg-primary-50 rounded-2xl text-gray-800 font-semibold text-sm transition-colors ${FOCUS_RING}`}
-                    >
-                      {btn.emoji && <span className="text-xl flex-shrink-0" aria-hidden="true">{btn.emoji}</span>}
-                      <span className="truncate">{btn.title}</span>
-                    </a>
-                  ))}
-                  <a
-                    href={YOUTUBE_HREF}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="View all product videos on YouTube"
-                    className={`col-span-2 sm:col-span-3 lg:col-span-4 flex items-center justify-center gap-2 h-[52px] bg-gray-50 border border-gray-200 hover:border-red-200 hover:bg-red-50 rounded-2xl text-gray-500 hover:text-red-600 font-semibold text-sm transition-colors ${FOCUS_RING}`}
-                  >
-                    <Youtube className="w-4 h-4 text-red-500 flex-shrink-0" aria-hidden="true" />
-                    View All Videos
-                  </a>
-                </div>
-              </div>
-            </div>
-          </section>
-        );
-      })()}
-
       <Section id="quick-actions" ariaLabel="Quick actions" className="bg-white">
         <SectionTitle
           eyebrow="Quick Actions"
