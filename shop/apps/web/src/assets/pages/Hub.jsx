@@ -541,15 +541,15 @@ const Hub = () => {
                   ))}
                 </div>
 
-                {/* CMS-driven video grid — low-opacity glass, vertical chip layout */}
+                {/* CMS-driven video grid — dark frosted glass, vertical chip layout */}
                 {(() => {
                   const vBtns = (hubConfig?.hero?.videoButtons || [])
                     .filter(b => b.visible !== false)
                     .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
                   if (!vBtns.length) return null;
                   return (
-                    <div className="mt-7 w-[280px] mx-auto">
-                      <p className="text-white/60 text-[11px] font-bold uppercase tracking-[0.18em] mb-3.5 text-center">
+                    <div className="mt-9 w-[280px] mx-auto">
+                      <p className="text-white/55 text-[11px] font-semibold uppercase tracking-[0.2em] mb-4 text-center">
                         Watch Product Videos
                       </p>
                       <div className="grid grid-cols-2 gap-2">
@@ -560,22 +560,24 @@ const Hub = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`Watch ${btn.title} demo on YouTube`}
-                            className={`flex flex-col items-center justify-center gap-1 h-[56px] bg-white/[0.08] border border-white/[0.12] text-white rounded-[14px] text-[11px] font-semibold transition-all duration-200 hover:bg-white/[0.14] hover:border-white/[0.22] hover:scale-[1.02] active:scale-[0.97] ${FOCUS_RING}`}
+                            className={`flex flex-col items-center justify-center gap-1.5 h-[62px] bg-black/[0.48] backdrop-blur-md border border-white/[0.14] text-white rounded-[14px] text-[11px] font-semibold transition-all duration-200 hover:bg-black/[0.62] hover:border-white/[0.24] hover:scale-[1.02] active:scale-[0.97] ${FOCUS_RING}`}
                           >
-                            {btn.emoji && <span className="text-sm leading-none" aria-hidden="true">{btn.emoji}</span>}
-                            <span className="text-center leading-snug px-1">{btn.title}</span>
+                            {btn.emoji && <span className="text-[15px] leading-none" aria-hidden="true">{btn.emoji}</span>}
+                            <span className="text-center leading-snug px-1 text-white/90">{btn.title}</span>
                           </a>
                         ))}
+                      </div>
+                      <div className="mt-2.5 flex justify-center">
                         <a
                           href={YOUTUBE_HREF}
                           target="_blank"
                           rel="noopener noreferrer"
                           aria-label="View all product videos on YouTube"
-                          className={`col-span-2 flex items-center justify-center gap-2.5 h-[48px] bg-gradient-to-r from-[#0F172A] to-[#1E293B] border border-white/[0.1] text-white rounded-[18px] text-[13px] font-semibold shadow-[0_2px_8px_rgba(0,0,0,0.55)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.65)] hover:brightness-110 active:scale-[0.97] transition-all duration-200 ${FOCUS_RING}`}
+                          className={`w-[228px] flex items-center justify-center gap-2.5 h-[48px] bg-gradient-to-r from-[#0F172A] to-[#1E293B] border border-white/[0.1] text-white rounded-[18px] text-[13px] font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.5),0_8px_28px_rgba(0,0,0,0.45)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.4),0_14px_36px_rgba(0,0,0,0.6)] hover:brightness-110 active:scale-[0.97] transition-all duration-200 ${FOCUS_RING}`}
                         >
                           <Youtube className="w-4 h-4 text-[#FF4444] flex-shrink-0" aria-hidden="true" />
                           View All Videos
-                          <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 opacity-50" aria-hidden="true" />
+                          <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 opacity-40" aria-hidden="true" />
                         </a>
                       </div>
                     </div>
