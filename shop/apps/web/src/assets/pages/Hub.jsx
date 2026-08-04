@@ -560,8 +560,8 @@ const Hub = () => {
                         </p>
                         <div className="flex-1 h-px bg-[#FBBF24]/50" aria-hidden="true" />
                       </div>
-                      {/* 2-column grid — icon left, name center, arrow right */}
-                      <div className="grid grid-cols-2 gap-2">
+                      {/* Single column — full width, no wrapping */}
+                      <div className="flex flex-col gap-2">
                         {vBtns.map(btn => (
                           <a
                             key={btn._id}
@@ -569,11 +569,11 @@ const Hub = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             aria-label={`Watch ${btn.title} on YouTube`}
-                            className={`flex items-center gap-2 h-[54px] px-3 bg-gradient-to-r from-[#0F172A] to-[#1E293B] border border-white/[0.1] text-white rounded-[16px] text-[11px] font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.5),0_8px_28px_rgba(0,0,0,0.45)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.4),0_14px_36px_rgba(0,0,0,0.6)] hover:brightness-110 active:scale-[0.97] transition-all duration-200 ${FOCUS_RING}`}
+                            className={`flex items-center gap-3 h-[52px] px-4 w-full bg-gradient-to-r from-[#0F172A] to-[#1E293B] border border-white/[0.1] text-white rounded-[16px] text-[13px] font-semibold shadow-[0_2px_6px_rgba(0,0,0,0.5),0_8px_28px_rgba(0,0,0,0.45)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.4),0_14px_36px_rgba(0,0,0,0.6)] hover:brightness-110 active:scale-[0.97] transition-all duration-200 ${FOCUS_RING}`}
                           >
-                            <Youtube className="w-4 h-4 text-[#FF4444] flex-shrink-0" aria-hidden="true" />
-                            <span className="flex-1 text-left leading-tight">{btn.title}</span>
-                            <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 text-white/40" aria-hidden="true" />
+                            <Youtube className="w-5 h-5 text-[#FF4444] flex-shrink-0" aria-hidden="true" />
+                            <span className="flex-1 text-left leading-none">{btn.title}</span>
+                            <ArrowRight className="w-4 h-4 flex-shrink-0 text-white/35" aria-hidden="true" />
                           </a>
                         ))}
                       </div>
