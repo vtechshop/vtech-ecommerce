@@ -7,6 +7,7 @@ import ScrollReveal from '@/components/common/ScrollReveal';
 import api from '@/store/api';
 
 const WA_HREF      = 'https://wa.me/919944556683?text=Hi%2C%20I%27m%20interested%20in%20VTech%20Kitchen%20products';
+const PHONE_HREF   = 'tel:+919944556683';
 const MAPS_HREF    = 'https://www.google.com/maps/search/VTech+Kitchen+Ganapathy+Coimbatore';
 const YOUTUBE_HREF = 'https://www.youtube.com/@makethingsbest';
 
@@ -50,7 +51,7 @@ const About = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-sm sm:max-w-xl mx-auto mt-8">
                 {[
                   { href: waHref,         external: true,  Icon: MessageCircle, label: 'WhatsApp',     cls: 'bg-[#25D366] text-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_6px_20px_rgba(37,211,102,0.45)] hover:brightness-110' },
-                  { href: '/page/contact', external: false, Icon: Phone,         label: 'Contact Us',   cls: 'bg-gray-900 text-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_6px_20px_rgba(0,0,0,0.2)] hover:bg-gray-800' },
+                  { href: hubConfig?.contact?.phoneHref || PHONE_HREF, external: false, Icon: Phone, label: 'Contact Us', cls: 'bg-[#F8FAFC] text-[#0F172A] shadow-[0_2px_6px_rgba(0,0,0,0.25),0_6px_20px_rgba(0,0,0,0.2)] hover:bg-white' },
                   { href: mapsHref,        external: true,  Icon: MapPin,        label: 'Our Location', cls: 'bg-[#2563EB] text-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_6px_20px_rgba(37,99,235,0.45)] hover:brightness-110' },
                   { href: ytHref,          external: true,  Icon: Youtube,       label: 'YouTube',      cls: 'bg-[#DC2626] text-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_6px_20px_rgba(220,38,38,0.45)] hover:brightness-110' },
                 ].map(({ href, external, Icon, label, cls }) => (

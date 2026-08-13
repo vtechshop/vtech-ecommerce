@@ -518,8 +518,8 @@ const Hub = () => {
                       cls: 'bg-[#25D366] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(37,211,102,0.65)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(37,211,102,0.8)] hover:brightness-110',
                     },
                     {
-                      href: '/page/contact', external: false,
-                      Icon: Phone, label: 'Contact Us', aria: 'Contact VTech Kitchen',
+                      href: hubConfig?.contact?.phoneHref || PHONE_HREF, external: false,
+                      Icon: Phone, label: 'Contact Us', aria: 'Call VTech Kitchen',
                       cls: 'bg-[#F8FAFC] text-[#0F172A] shadow-[0_2px_6px_rgba(0,0,0,0.45),0_8px_28px_rgba(0,0,0,0.25)] hover:bg-white hover:shadow-[0_4px_10px_rgba(0,0,0,0.35),0_14px_36px_rgba(0,0,0,0.32)]',
                     },
                     {
