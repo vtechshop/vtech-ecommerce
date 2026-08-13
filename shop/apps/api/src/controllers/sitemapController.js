@@ -243,6 +243,7 @@ Disallow: /reset-password
 Disallow: /verify-email
 Disallow: /order-confirmation
 Disallow: /api/
+Allow: /search?view=categories
 Disallow: /search
 Disallow: /*?page=
 Disallow: /*?sort=

@@ -41,6 +41,9 @@
             meta.content = 'noindex, nofollow';
             document.head.insertBefore(meta, tag);
             tag.href = base;
+          } else if (path.startsWith('/product/')) {
+            // Product pages: remove this placeholder so react-helmet-async is the sole canonical source
+            tag.parentNode && tag.parentNode.removeChild(tag);
           } else {
             tag.href = base + path;
           }

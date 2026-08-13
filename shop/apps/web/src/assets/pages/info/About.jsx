@@ -1,10 +1,22 @@
 ﻿import { useEffect } from 'react';
-import { Users, Target, Eye, Shield, Heart, Lightbulb, MapPin, Mail, Phone, Clock } from 'lucide-react';
+import { Users, Target, Eye, Shield, Heart, Lightbulb, MapPin, Mail, Phone, Clock, MessageCircle, Youtube } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { updateMetaTags } from '@/utils/seo';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import api from '@/store/api';
+
+const WA_HREF      = 'https://wa.me/919944556683?text=Hi%2C%20I%27m%20interested%20in%20VTech%20Kitchen%20products';
+const MAPS_HREF    = 'https://www.google.com/maps/search/VTech+Kitchen+Ganapathy+Coimbatore';
+const YOUTUBE_HREF = 'https://www.youtube.com/@makethingsbest';
 
 const About = () => {
+  const { data: hubConfig } = useQuery({
+    queryKey: ['hub-config'],
+    queryFn: async () => { const { data } = await api.get('/hub'); return data.data; },
+    staleTime: 5 * 60 * 1000,
+  });
+
   useEffect(() => {
     updateMetaTags({
       title: 'About VTech Kitchen | Equipment Manufacturer, Coimbatore',
@@ -28,6 +40,30 @@ const About = () => {
           <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
             Leading Manufacturer of Commercial Kitchen Equipment - Empowering Professional Kitchens Across India
           </p>
+
+          {/* Quick contact CTA buttons */}
+          {(() => {
+            const waHref   = hubConfig?.contact?.whatsappHref || WA_HREF;
+            const mapsHref = hubConfig?.contact?.mapsHref     || MAPS_HREF;
+            const ytHref   = hubConfig?.socials?.find(s => s.platform === 'youtube')?.href || YOUTUBE_HREF;
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-sm sm:max-w-xl mx-auto mt-8">
+                {[
+                  { href: waHref,         external: true,  Icon: MessageCircle, label: 'WhatsApp',     cls: 'bg-[#25D366] text-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_6px_20px_rgba(37,211,102,0.45)] hover:brightness-110' },
+                  { href: '/page/contact', external: false, Icon: Phone,         label: 'Contact Us',   cls: 'bg-gray-900 text-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_6px_20px_rgba(0,0,0,0.2)] hover:bg-gray-800' },
+                  { href: mapsHref,        external: true,  Icon: MapPin,        label: 'Our Location', cls: 'bg-[#2563EB] text-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_6px_20px_rgba(37,99,235,0.45)] hover:brightness-110' },
+                  { href: ytHref,          external: true,  Icon: Youtube,       label: 'YouTube',      cls: 'bg-[#DC2626] text-white shadow-[0_2px_6px_rgba(0,0,0,0.25),0_6px_20px_rgba(220,38,38,0.45)] hover:brightness-110' },
+                ].map(({ href, external, Icon, label, cls }) => (
+                  <a key={label} href={href}
+                     {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                     className={`flex flex-col items-center justify-center gap-2.5 h-[72px] rounded-[18px] font-semibold text-[13px] transition-all duration-200 active:scale-[0.97] ${cls}`}>
+                    <Icon className="w-5 h-5" aria-hidden="true" />
+                    {label}
+                  </a>
+                ))}
+              </div>
+            );
+          })()}
         </div>
         </ScrollReveal>
 
@@ -595,6 +631,7 @@ const About = () => {
                 </div>
               </div>
             </div>
+
           </div>
         </div>
         </ScrollReveal>

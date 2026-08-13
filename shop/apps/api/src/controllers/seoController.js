@@ -370,11 +370,9 @@ exports.renderPage = async (req, res, next) => {
         .populate('categoryIds', 'name slug')
         .lean();
 
-      // Product not found or unpublished — tell Google to not index this URL
+      // Product not found or unpublished — send 410 Gone so Google removes it from the index
       if (!product) {
-        pageData.title = 'Product Not Found - VTech Kitchen';
-        pageData.description = 'This product is no longer available.';
-        pageData.noindex = true;
+        return res.status(410).send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Product Not Found - V-Tech Kitchen</title><meta name="robots" content="noindex, nofollow"><link rel="canonical" href="${clientUrl}"></head><body><h1>Product Not Found</h1><p>This product is no longer available at V-Tech Kitchen.</p><p><a href="${clientUrl}/products">Browse all products</a></p></body></html>`);
       }
 
       if (product) {

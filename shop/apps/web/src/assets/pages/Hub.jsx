@@ -505,10 +505,15 @@ const Hub = () => {
                 className="sm:hidden w-full mt-4 pb-2"
               >
                 {/* Primary 2×2 — rich muted brand colors, layered shadows */}
+                {(() => {
+                  const waHref   = hubConfig?.contact?.whatsappHref || WA_HREF;
+                  const mapsHref = hubConfig?.contact?.mapsHref     || MAPS_HREF;
+                  const ytHref   = hubConfig?.socials?.find(s => s.platform === 'youtube')?.href || YOUTUBE_HREF;
+                  return (
                 <div className="grid grid-cols-2 gap-3 w-[280px] mx-auto">
                   {[
                     {
-                      href: WA_HREF, external: true,
+                      href: waHref, external: true,
                       Icon: MessageCircle, label: 'WhatsApp', aria: 'Chat on WhatsApp',
                       cls: 'bg-[#25D366] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(37,211,102,0.65)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(37,211,102,0.8)] hover:brightness-110',
                     },
@@ -518,12 +523,12 @@ const Hub = () => {
                       cls: 'bg-[#F8FAFC] text-[#0F172A] shadow-[0_2px_6px_rgba(0,0,0,0.45),0_8px_28px_rgba(0,0,0,0.25)] hover:bg-white hover:shadow-[0_4px_10px_rgba(0,0,0,0.35),0_14px_36px_rgba(0,0,0,0.32)]',
                     },
                     {
-                      href: MAPS_HREF, external: true,
+                      href: mapsHref, external: true,
                       Icon: MapPin, label: 'Our Location', aria: 'Get directions to VTech Kitchen',
                       cls: 'bg-[#2563EB] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(37,99,235,0.65)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(37,99,235,0.8)] hover:brightness-110',
                     },
                     {
-                      href: YOUTUBE_HREF, external: true,
+                      href: ytHref, external: true,
                       Icon: Youtube, label: 'YouTube', aria: 'Watch product demos on YouTube',
                       cls: 'bg-[#DC2626] text-white shadow-[0_2px_6px_rgba(0,0,0,0.4),0_8px_28px_rgba(220,38,38,0.65)] hover:shadow-[0_4px_10px_rgba(0,0,0,0.3),0_14px_36px_rgba(220,38,38,0.8)] hover:brightness-110',
                     },
@@ -540,6 +545,8 @@ const Hub = () => {
                     </a>
                   ))}
                 </div>
+                  );
+                })()}
 
                 {/* CMS-driven video list — single column, icon-left arrow-right */}
                 {(() => {
