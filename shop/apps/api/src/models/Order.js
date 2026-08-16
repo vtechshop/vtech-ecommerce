@@ -108,6 +108,31 @@ const orderSchema = new mongoose.Schema({
     cancelledAt: Date,
     cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
+  // Idempotency flag: prevents double stock restoration when both frontend failure
+  // callback and webhook worker both try to restore stock on payment failure
+  stockRestorationDone: { type: Boolean, default: false },
+  // Notification state machine: atomic claims prevent duplicate sends across
+  // concurrent callers (verifyPayment + webhook worker)
+  notifications: {
+    customerEmail: {
+      status: { type: String, enum: ['pending', 'claimed', 'sent', 'failed', 'dead'], default: 'pending' },
+      claimedAt: { type: Date },
+      claimedBy: { type: String },
+      sentAt: { type: Date },
+      attemptCount: { type: Number, default: 0 },
+      lastError: { type: String },
+      nextRetryAt: { type: Date },
+    },
+    adminNotification: {
+      status: { type: String, enum: ['pending', 'claimed', 'sent', 'failed', 'dead'], default: 'pending' },
+      claimedAt: { type: Date },
+      claimedBy: { type: String },
+      sentAt: { type: Date },
+      attemptCount: { type: Number, default: 0 },
+      lastError: { type: String },
+      nextRetryAt: { type: Date },
+    },
+  },
 }, { timestamps: true });
 
 // useful indexes (avoid duplicating uniques)

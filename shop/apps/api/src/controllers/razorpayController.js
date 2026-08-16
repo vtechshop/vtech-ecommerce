@@ -6,10 +6,12 @@ const {
   createTransfers,
 } = require('../utils/razorpay');
 const Order = require('../models/Order');
+const WebhookEvent = require('../models/WebhookEvent');
 const Commission = require('../models/Commission');
 const Vendor = require('../models/Vendor');
 const Affiliate = require('../models/Affiliate');
 const crypto = require('crypto');
+const os = require('os');
 const logger = require('../config/logger');
 const notificationHelper = require('../services/notificationHelper');
 const notificationService = require('../services/notificationService');
@@ -17,127 +19,34 @@ const { activateWarrantiesForOrder } = require('./adminController');
 const socketService = require('../services/socketService');
 const whatsappService = require('../services/whatsappService');
 
+// Unique identifier for this process instance — used as the claimedBy field in
+// notification atomic claims so optimistic lock checks can distinguish instances
+const NOTIFICATION_WORKER_ID = `${os.hostname()}-${process.pid}`;
+
+// Maximum age of a webhook event before it is silently dropped (25h > Razorpay's 24h retry window)
+const MAX_WEBHOOK_AGE_MS = 25 * 60 * 60 * 1000;
+
 /**
- * Send order confirmation + vendor/admin notifications after payment
- * Shared by verifyPayment and handlePaymentCaptured webhook
+ * Send order confirmation + admin notifications after payment.
+ * Uses atomic findOneAndUpdate claims so concurrent callers (verifyPayment +
+ * webhook worker) cannot duplicate sends.
  */
 async function sendPostPaymentNotifications(order) {
-  // Send order confirmation email (only if not already sent)
-  if (!order.confirmationEmailSent) {
-    try {
-      const User = require('../models/User');
+  const now = new Date();
 
-      let userInfo;
-      if (order.userId && !order.isGuest) {
-        const user = await User.findById(order.userId);
-        if (user) {
-          userInfo = { name: user.name, email: user.email };
-        }
-      } else if (order.isGuest && order.guestEmail) {
-        userInfo = { name: order.shipTo?.fullName || 'Guest', email: order.guestEmail };
-      }
+  // Customer confirmation email (atomic claim)
+  await _claimAndSendCustomerEmail(order._id, now);
 
-      if (userInfo) {
-        await notificationService.sendOrderConfirmation(userInfo, order);
-        order.confirmationEmailSent = true;
-        order.confirmationEmailSentAt = new Date();
-        await order.save();
-        logger.info(`Order confirmation email sent: ${userInfo.email}`);
-      }
-    } catch (emailError) {
-      logger.error('Failed to send order confirmation email:', emailError);
-    }
-  }
+  // Admin in-app notification (atomic claim)
+  await _claimAndSendAdminNotification(order._id, now);
 
-  // Send vendor and admin notifications (only if not already sent)
-  if (!order.vendorNotificationSent) {
-    try {
-      const vendorItemsMap = {};
-      for (const item of order.items) {
-        if (item.vendorId) {
-          const vendorIdStr = item.vendorId.toString();
-          if (!vendorItemsMap[vendorIdStr]) vendorItemsMap[vendorIdStr] = [];
-          vendorItemsMap[vendorIdStr].push(item);
-        }
-      }
-
-      for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
-        try {
-          const vendor = await Vendor.findById(vendorIdStr).populate('userId', 'email name');
-          if (vendor && vendor.userId?.email) {
-            await notificationService.sendVendorOrderNotification(vendor, order, vendorItems);
-            logger.info(`Vendor email notification sent to ${vendor.storeName} (${vendor.userId.email})`);
-
-            await notificationHelper.notifyVendorNewOrder({
-              vendorUserId: vendor.userId._id,
-              order: { _id: order._id, orderNumber: order.orderId },
-              items: vendorItems.map(item => ({ quantity: item.qty, price: item.priceSnapshot })),
-            });
-          }
-          await notificationService.sendAdminOrderNotification(order, vendorItems, vendor?.userId, vendor);
-        } catch (vendorError) {
-          logger.error(`Failed to send vendor notification to ${vendorIdStr}:`, vendorError);
-        }
-      }
-
-      // Single admin in-app notification
-      try {
-        const vendorNames = Object.keys(vendorItemsMap).length > 0
-          ? (await Promise.all(
-              Object.keys(vendorItemsMap).map(async (vid) => {
-                const v = await Vendor.findById(vid).select('storeName').lean();
-                return v?.storeName;
-              })
-            )).filter(Boolean).join(', ')
-          : 'Direct Sale';
-
-        await notificationHelper.notifyAdminNewOrder({
-          order: {
-            _id: order._id,
-            orderNumber: order.orderId,
-            shippingAddress: { name: order.shipTo?.fullName },
-            totalAmount: order.totals?.total,
-          },
-          vendorName: vendorNames,
-        });
-      } catch (adminNotifError) {
-        logger.error('Failed to create admin in-app notification:', adminNotifError);
-      }
-
-      order.vendorNotificationSent = true;
-      order.vendorNotificationSentAt = new Date();
-      await order.save();
-      logger.info(`Vendor/admin notifications sent for order ${order.orderId}`);
-
-      // Real-time socket notifications to vendors
-      try {
-        for (const [vendorIdStr, vendorItems] of Object.entries(vendorItemsMap)) {
-          const vendor = await Vendor.findById(vendorIdStr).select('userId storeName').lean();
-          if (vendor?.userId) {
-            socketService.emitToUser(vendor.userId.toString(), 'new_order', {
-              orderId: order._id,
-              orderNumber: order.orderId,
-              itemCount: vendorItems.length,
-              total: order.totals?.total,
-            });
-          }
-        }
-      } catch (socketErr) {
-        logger.error('Failed to emit vendor socket notification:', socketErr);
-      }
-    } catch (notifError) {
-      logger.error('Failed to send vendor/admin notifications:', notifError);
-    }
-  }
-
-  // WhatsApp order confirmation to customer (fire-and-forget)
+  // WhatsApp confirmation (fire-and-forget, no state machine)
   try {
     const customerPhone = order.shipTo?.phone;
-    const customerName = order.shipTo?.fullName || 'Customer';
     if (customerPhone) {
       whatsappService.sendOrderConfirmation(
         customerPhone,
-        customerName,
+        order.shipTo?.fullName || 'Customer',
         order.orderId,
         order.totals?.total
       );
@@ -146,7 +55,7 @@ async function sendPostPaymentNotifications(order) {
     logger.error('Failed to send WhatsApp order confirmation:', waErr);
   }
 
-  // Real-time socket notification to customer
+  // Real-time socket notification to customer (best-effort)
   try {
     if (order.userId) {
       socketService.emitToUser(order.userId.toString(), 'order_confirmed', {
@@ -161,13 +70,185 @@ async function sendPostPaymentNotifications(order) {
 }
 
 /**
- * Helper function to restore stock when payment fails
- * @param {Object} order - Order object
+ * Atomically claim and send the customer confirmation email.
+ * Guards against both the verifyPayment path and the webhook worker path
+ * sending the same email concurrently.
+ */
+async function _claimAndSendCustomerEmail(orderId, now) {
+  const claimed = await Order.findOneAndUpdate(
+    {
+      _id: orderId,
+      confirmationEmailSent: { $ne: true },
+      $or: [
+        { 'notifications.customerEmail': { $exists: false } },
+        {
+          'notifications.customerEmail.status': { $in: ['pending', 'failed'] },
+          $or: [
+            { 'notifications.customerEmail.nextRetryAt': null },
+            { 'notifications.customerEmail.nextRetryAt': { $lte: now } },
+          ],
+        },
+      ],
+    },
+    {
+      $set: {
+        'notifications.customerEmail.status': 'claimed',
+        'notifications.customerEmail.claimedAt': now,
+        'notifications.customerEmail.claimedBy': NOTIFICATION_WORKER_ID,
+      },
+      $inc: { 'notifications.customerEmail.attemptCount': 1 },
+    },
+    { new: true }
+  );
+
+  if (!claimed) return; // Already sent or claimed by another process
+
+  try {
+    const User = require('../models/User');
+    let userInfo;
+    if (claimed.userId && !claimed.isGuest) {
+      const user = await User.findById(claimed.userId);
+      if (user) userInfo = { name: user.name, email: user.email };
+    } else if (claimed.isGuest && claimed.guestEmail) {
+      userInfo = { name: claimed.shipTo?.fullName || 'Guest', email: claimed.guestEmail };
+    }
+
+    if (!userInfo) {
+      await Order.findOneAndUpdate(
+        { _id: orderId, 'notifications.customerEmail.claimedBy': NOTIFICATION_WORKER_ID },
+        {
+          $set: {
+            'notifications.customerEmail.status': 'dead',
+            'notifications.customerEmail.lastError': 'No valid email recipient',
+          },
+        }
+      );
+      return;
+    }
+
+    await notificationService.sendOrderConfirmation(userInfo, claimed);
+
+    // Mark sent AFTER successful delivery (never before)
+    await Order.findOneAndUpdate(
+      { _id: orderId, 'notifications.customerEmail.claimedBy': NOTIFICATION_WORKER_ID },
+      {
+        $set: {
+          'notifications.customerEmail.status': 'sent',
+          'notifications.customerEmail.sentAt': new Date(),
+          confirmationEmailSent: true,
+          confirmationEmailSentAt: new Date(),
+        },
+      }
+    );
+    logger.info(`Order confirmation email sent for order ${orderId}`);
+  } catch (err) {
+    logger.error(`Failed to send customer email for order ${orderId}:`, err);
+    const attemptCount = claimed.notifications?.customerEmail?.attemptCount || 1;
+    const isDead = attemptCount >= 3;
+    await Order.findOneAndUpdate(
+      { _id: orderId, 'notifications.customerEmail.claimedBy': NOTIFICATION_WORKER_ID },
+      {
+        $set: {
+          'notifications.customerEmail.status': isDead ? 'dead' : 'failed',
+          'notifications.customerEmail.lastError': err.message?.slice(0, 500),
+          'notifications.customerEmail.nextRetryAt': isDead ? null : new Date(now.getTime() + 5 * 60 * 1000),
+        },
+      }
+    );
+  }
+}
+
+/**
+ * Atomically claim and send the admin in-app notification for a new order.
+ */
+async function _claimAndSendAdminNotification(orderId, now) {
+  const claimed = await Order.findOneAndUpdate(
+    {
+      _id: orderId,
+      $or: [
+        { 'notifications.adminNotification': { $exists: false } },
+        {
+          'notifications.adminNotification.status': { $in: ['pending', 'failed'] },
+          $or: [
+            { 'notifications.adminNotification.nextRetryAt': null },
+            { 'notifications.adminNotification.nextRetryAt': { $lte: now } },
+          ],
+        },
+      ],
+    },
+    {
+      $set: {
+        'notifications.adminNotification.status': 'claimed',
+        'notifications.adminNotification.claimedAt': now,
+        'notifications.adminNotification.claimedBy': NOTIFICATION_WORKER_ID,
+      },
+      $inc: { 'notifications.adminNotification.attemptCount': 1 },
+    },
+    { new: true }
+  );
+
+  if (!claimed) return;
+
+  try {
+    await notificationHelper.notifyAdminNewOrder({
+      order: {
+        _id: claimed._id,
+        orderNumber: claimed.orderId,
+        shippingAddress: { name: claimed.shipTo?.fullName },
+        totalAmount: claimed.totals?.total,
+      },
+      vendorName: 'Direct Sale',
+    });
+
+    await Order.findOneAndUpdate(
+      { _id: orderId, 'notifications.adminNotification.claimedBy': NOTIFICATION_WORKER_ID },
+      {
+        $set: {
+          'notifications.adminNotification.status': 'sent',
+          'notifications.adminNotification.sentAt': new Date(),
+          vendorNotificationSent: true,
+          vendorNotificationSentAt: new Date(),
+        },
+      }
+    );
+    logger.info(`Admin notification sent for order ${orderId}`);
+  } catch (err) {
+    logger.error(`Failed to send admin notification for order ${orderId}:`, err);
+    const attemptCount = claimed.notifications?.adminNotification?.attemptCount || 1;
+    const isDead = attemptCount >= 3;
+    await Order.findOneAndUpdate(
+      { _id: orderId, 'notifications.adminNotification.claimedBy': NOTIFICATION_WORKER_ID },
+      {
+        $set: {
+          'notifications.adminNotification.status': isDead ? 'dead' : 'failed',
+          'notifications.adminNotification.lastError': err.message?.slice(0, 500),
+          'notifications.adminNotification.nextRetryAt': isDead ? null : new Date(now.getTime() + 5 * 60 * 1000),
+        },
+      }
+    );
+  }
+}
+
+/**
+ * Restore stock when payment fails.
+ * Uses an atomic stockRestorationDone flag to ensure this runs at most once,
+ * even when both the frontend failure callback and the webhook worker both fire
+ * for the same failed payment.
  */
 const restoreStockOnPaymentFailure = async (order) => {
-  try {
-    logger.info(`Restoring stock for failed payment on order ${order._id}`);
+  // Atomic claim: set stockRestorationDone=true only if it wasn't already set
+  const claimed = await Order.findOneAndUpdate(
+    { _id: order._id, stockRestorationDone: { $ne: true } },
+    { $set: { stockRestorationDone: true } }
+  );
 
+  if (!claimed) {
+    logger.info(`Stock already restored for order ${order._id}, skipping`);
+    return;
+  }
+
+  logger.info(`Restoring stock for failed payment on order ${order._id}`);
+  try {
     for (const item of order.items) {
       const Product = require('../models/Product');
       const product = await Product.findById(item.productId);
@@ -192,10 +273,16 @@ const restoreStockOnPaymentFailure = async (order) => {
 
       await product.save();
     }
-
     logger.info(`Stock restoration completed for order ${order._id}`);
   } catch (error) {
-    logger.error(`Failed to restore stock for order ${order._id}:`, error);
+    // Reset the flag so the next retry attempt can restore stock
+    await Order.findOneAndUpdate(
+      { _id: order._id },
+      { $set: { stockRestorationDone: false } }
+    ).catch(resetErr =>
+      logger.error(`CRITICAL: Failed to reset stockRestorationDone for order ${order._id}:`, resetErr)
+    );
+    throw error; // Re-throw so the webhook worker schedules a retry
   }
 };
 
@@ -644,148 +731,196 @@ exports.paymentFailure = async (req, res, next) => {
 };
 
 /**
- * Razorpay webhook handler
+ * Razorpay webhook endpoint — persist-then-200 pattern.
  * POST /api/payment/razorpay/webhook
+ *
+ * Flow:
+ *   1. Reject if RAZORPAY_WEBHOOK_SECRET not configured
+ *   2. HMAC verification over raw body bytes (req.body is a Buffer via express.raw)
+ *   3. JSON.parse the raw body
+ *   4. Age-check: silently drop events older than 25 hours
+ *   5. Deduplicate via x-razorpay-event-id unique index (MongoDB 11000 = duplicate)
+ *   6. Persist WebhookEvent with status=pending
+ *   7. Return 200 immediately — worker processes in background
  */
-exports.webhook = async (req, res, next) => {
-  try {
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    const signature = req.headers['x-razorpay-signature'];
-
-    // Verify webhook signature
-    if (webhookSecret) {
-      const expectedSignature = crypto
-        .createHmac('sha256', webhookSecret)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
-
-      if (signature !== expectedSignature) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid webhook signature',
-        });
-      }
-    }
-
-    const event = req.body.event;
-
-    // Handle different webhook events
-    // Note: payload structure varies by event type
-    switch (event) {
-      case 'payment.captured':
-        await handlePaymentCaptured(req.body.payload.payment.entity);
-        break;
-      case 'payment.failed':
-        await handlePaymentFailed(req.body.payload.payment.entity);
-        break;
-      case 'refund.created':
-        await handleRefundCreated(req.body.payload.payment.entity);
-        break;
-      case 'transfer.processed':
-        await handleTransferProcessed(req.body.payload.transfer.entity);
-        break;
-      case 'transfer.failed':
-        await handleTransferFailed(req.body.payload.transfer.entity);
-        break;
-      case 'transfer.reversed':
-        await handleTransferReversed(req.body.payload.transfer.entity);
-        break;
-      case 'account.under_review':
-      case 'account.activated':
-      case 'account.suspended':
-      case 'account.funds_hold':
-      case 'account.funds_unhold':
-        await handleAccountStatusChange(event, req.body.payload.account?.entity);
-        break;
-      default:
-        logger.warn(`Unhandled webhook event: ${event}`);
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    logger.error('Webhook error:', error);
-    next(error);
+exports.webhook = async (req, res) => {
+  // 1. Require secret to be configured — reject with 400 if missing
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    logger.error('[Webhook] RAZORPAY_WEBHOOK_SECRET not configured');
+    return res.status(400).json({ success: false, error: 'Webhook not configured' });
   }
+
+  // 2. HMAC verification over raw body bytes
+  const signature = req.headers['x-razorpay-signature'];
+  const rawBody = req.body; // Buffer provided by express.raw mounted in app.js
+
+  const expectedSignature = crypto
+    .createHmac('sha256', webhookSecret)
+    .update(rawBody)
+    .digest('hex');
+
+  if (signature !== expectedSignature) {
+    logger.warn('[Webhook] Signature mismatch — possible tampering or misconfigured secret');
+    return res.status(400).json({ success: false, error: 'Invalid webhook signature' });
+  }
+
+  // 3. Parse payload
+  let parsed;
+  try {
+    parsed = JSON.parse(rawBody.toString('utf8'));
+  } catch (e) {
+    logger.error('[Webhook] Failed to parse body:', e.message);
+    return res.status(400).json({ success: false, error: 'Invalid JSON body' });
+  }
+
+  // 4. Age check — silently accept (return 200) rather than 4xx to avoid Razorpay deactivation
+  if (parsed.created_at) {
+    const ageMs = Date.now() - parsed.created_at * 1000;
+    if (ageMs > MAX_WEBHOOK_AGE_MS) {
+      logger.warn(`[Webhook] Dropping stale event: age=${Math.round(ageMs / 3600000)}h event=${parsed.event}`);
+      return res.status(200).json({ success: true });
+    }
+  }
+
+  // 5. Event-ID idempotency key
+  const eventId = req.headers['x-razorpay-event-id'];
+  if (!eventId) {
+    logger.warn('[Webhook] Missing x-razorpay-event-id header — accepting but not queuing');
+    return res.status(200).json({ success: true });
+  }
+
+  // 6. Persist event (duplicate insert = 11000 = already queued or processed)
+  try {
+    await WebhookEvent.create({
+      eventId,
+      event: parsed.event,
+      payload: parsed.payload || {},
+      status: 'pending',
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      logger.info(`[Webhook] Duplicate event ignored: ${eventId} (${parsed.event})`);
+    } else {
+      logger.error('[Webhook] Failed to persist event:', err);
+      // Return 200 anyway — prevents Razorpay from counting this as a failure
+    }
+  }
+
+  // 7. Return immediately — background worker handles processing
+  return res.status(200).json({ success: true });
 };
 
-// Helper function to handle payment captured
-async function handlePaymentCaptured(payload) {
-  try {
-    const orderId = payload.notes?.orderId;
-    if (!orderId) return;
-
-    const order = await Order.findById(orderId);
-    if (!order) return;
-
-    order.payment = order.payment || {};
-    order.payment.status = 'paid';
-    order.payment.paidAt = new Date();
-
-    // Update status from pending_payment to paid
-    if (order.status === 'pending' || order.status === 'pending_payment' || order.status === 'placed') {
-      order.status = 'paid';
-      order.events.push({
-        status: 'paid',
-        description: 'Payment captured successfully',
-        timestamp: new Date(),
-      });
-
-      // Activate warranties for products in this order (safety net if not done in verifyPayment)
-      try {
-        await activateWarrantiesForOrder(order);
-        logger.info(`[Webhook] Warranties activated for order ${orderId}`);
-      } catch (warrantyError) {
-        logger.error(`[Webhook] Failed to activate warranties for order ${orderId}:`, warrantyError);
-      }
-    }
-
-    await order.save();
-    logger.info(`Payment captured for order ${orderId}`);
-
-    // Safety net: Create commissions and transfers if not already created by verifyPayment
-    const existingCommissions = await Commission.countDocuments({ orderId: order._id });
-    if (existingCommissions === 0) {
-      logger.info(`[Webhook] No commissions found for order ${orderId}, creating now (safety net)...`);
-      try {
-        await createCommissionsAfterPayment(order);
-        const razorpayPaymentId = payload.id;
-        if (razorpayPaymentId) {
-          await processAutomaticTransfers(order, razorpayPaymentId);
-        }
-      } catch (commissionError) {
-        logger.error(`[Webhook] Failed to create commissions/transfers for order ${orderId}:`, commissionError);
-      }
-    }
-
-    // Send order confirmation + vendor/admin notifications
-    await sendPostPaymentNotifications(order);
-  } catch (error) {
-    logger.error('Error handling payment captured:', error);
+/**
+ * Process a payment.captured webhook payload.
+ * Called by the webhook worker — throws on error so the worker can schedule a retry.
+ * All side effects are idempotent: safe to call multiple times for the same order.
+ */
+exports.processWebhookPaymentCaptured = async function(payload) {
+  const paymentEntity = payload.payment?.entity;
+  if (!paymentEntity) {
+    logger.warn('[Webhook] payment.captured missing payment entity — skipping');
+    return; // Non-retryable: malformed payload
   }
-}
 
-// Helper function to handle payment failed
-async function handlePaymentFailed(payload) {
-  try {
-    const orderId = payload.notes?.orderId;
-    if (!orderId) return;
-
-    const order = await Order.findById(orderId);
-    if (!order) return;
-
-    order.payment = order.payment || {};
-    order.payment.status = 'failed';
-    order.payment.error = payload.error_description;
-
-    await order.save();
-    logger.info(`Payment failed for order ${orderId}`);
-
-    // Restore stock since payment failed via webhook
-    await restoreStockOnPaymentFailure(order);
-  } catch (error) {
-    logger.error('Error handling payment failed:', error);
+  const orderId = paymentEntity.notes?.orderId;
+  if (!orderId) {
+    logger.warn('[Webhook] payment.captured missing notes.orderId — skipping');
+    return; // Non-retryable: no order to update
   }
-}
+
+  // 1. Idempotent payment status update (only if not already paid)
+  await Order.findOneAndUpdate(
+    { _id: orderId, 'payment.status': { $nin: ['paid', 'captured'] } },
+    {
+      $set: {
+        'payment.status': 'paid',
+        'payment.paidAt': new Date(),
+        ...(paymentEntity.id ? { 'payment.razorpayPaymentId': paymentEntity.id } : {}),
+      },
+    }
+  );
+
+  // 2. Idempotent order status update (only if still in a pre-payment state)
+  await Order.findOneAndUpdate(
+    { _id: orderId, status: { $in: ['pending', 'pending_payment', 'placed'] } },
+    {
+      $set: { status: 'paid' },
+      $push: {
+        events: {
+          status: 'paid',
+          description: 'Payment captured (webhook safety net)',
+          timestamp: new Date(),
+        },
+      },
+    }
+  );
+
+  // 3. Fetch fresh order for downstream processing
+  const freshOrder = await Order.findById(orderId);
+  if (!freshOrder) {
+    logger.warn(`[Webhook] Order ${orderId} not found — skipping side effects`);
+    return;
+  }
+
+  // 4. Activate warranties (idempotent: item.warranty.isActivated guard + generateWarranty upsert)
+  await activateWarrantiesForOrder(freshOrder);
+
+  // 5. Commission/transfer safety net — no-op for direct sales (no vendorId on items)
+  const existingCommissions = await Commission.countDocuments({ orderId: freshOrder._id });
+  if (existingCommissions === 0) {
+    await createCommissionsAfterPayment(freshOrder);
+    if (paymentEntity.id) {
+      await processAutomaticTransfers(freshOrder, paymentEntity.id);
+    }
+  }
+
+  // 6. Notifications (atomic claim prevents duplicate sends)
+  await sendPostPaymentNotifications(freshOrder);
+
+  logger.info(`[Webhook] payment.captured processing complete for order ${orderId}`);
+};
+
+/**
+ * Process a payment.failed webhook payload.
+ * Called by the webhook worker — throws on error so the worker can schedule a retry.
+ */
+exports.processWebhookPaymentFailed = async function(payload) {
+  const paymentEntity = payload.payment?.entity;
+  if (!paymentEntity) {
+    logger.warn('[Webhook] payment.failed missing payment entity — skipping');
+    return;
+  }
+
+  const orderId = paymentEntity.notes?.orderId;
+  if (!orderId) {
+    logger.warn('[Webhook] payment.failed missing notes.orderId — skipping');
+    return;
+  }
+
+  const order = await Order.findById(orderId);
+  if (!order) {
+    logger.warn(`[Webhook] Order ${orderId} not found for payment.failed — skipping`);
+    return;
+  }
+
+  // Idempotent payment status update
+  await Order.findOneAndUpdate(
+    { _id: orderId, 'payment.status': { $ne: 'failed' } },
+    {
+      $set: {
+        'payment.status': 'failed',
+        'payment.error': paymentEntity.error_description,
+        'payment.failedAt': new Date(),
+      },
+    }
+  );
+
+  // Idempotent stock restoration (atomic flag prevents double-restore)
+  await restoreStockOnPaymentFailure(order);
+
+  logger.info(`[Webhook] payment.failed processing complete for order ${orderId}`);
+};
 
 // Helper function to handle refund created
 async function handleRefundCreated(payload) {

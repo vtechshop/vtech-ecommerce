@@ -44,33 +44,37 @@ class WarrantyService {
       status = 'active';
     }
 
-    // Create warranty record
-    const warranty = new Warranty({
-      warrantyId,
-      purchaseId,
-      orderId,
-      userId: user.id || undefined,
-      // Store guest info for manual/in-store orders without registered user
-      customerName: !user.id ? user.name : undefined,
-      customerEmail: !user.id ? user.email : undefined,
-      customerPhone: !user.id ? user.phone : undefined,
-      productId: product.id,
-      product: {
-        name: product.name,
-        model: product.model,
-        serial: product.serial,
-        category: product.category,
+    // Idempotent upsert: if a warranty for this purchase+product already exists
+    // (e.g. webhook retried after verifyPayment already ran), reuse it
+    const warranty = await Warranty.findOneAndUpdate(
+      { purchaseId, productId: product.id },
+      {
+        $setOnInsert: {
+          warrantyId,
+          purchaseId,
+          orderId,
+          userId: user.id || undefined,
+          customerName: !user.id ? user.name : undefined,
+          customerEmail: !user.id ? user.email : undefined,
+          customerPhone: !user.id ? user.phone : undefined,
+          productId: product.id,
+          product: {
+            name: product.name,
+            model: product.model,
+            serial: product.serial,
+            category: product.category,
+          },
+          purchaseDate: startDate,
+          warrantyStartDate: startDate,
+          warrantyEndDate: endDate,
+          warrantyPeriodDays,
+          warrantyType,
+          status,
+          extraInfo,
+        },
       },
-      purchaseDate: startDate,
-      warrantyStartDate: startDate,
-      warrantyEndDate: endDate,
-      warrantyPeriodDays,
-      warrantyType,
-      status,
-      extraInfo,
-    });
-
-    await warranty.save();
+      { upsert: true, new: true }
+    );
 
     // Generate notifications
     const notifications = this._generateNotifications(daysRemaining, status, product.name, endDate);

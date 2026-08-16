@@ -114,6 +114,10 @@ app.use(cors({
   credentials: true,
 }));
 
+// Raw body for Razorpay webhook HMAC verification — must be registered before express.json
+// so the webhook route receives a Buffer rather than a parsed object
+app.use('/api/payment/razorpay/webhook', express.raw({ type: 'application/json', limit: '1mb' }));
+
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

@@ -163,6 +163,19 @@ function setupCronJobs() {
     // Set up automated cron jobs for platform features
     setupCronJobs();
 
+    // Webhook worker cron registered independently — must not be affected by setupCronJobs() failures
+    try {
+      const webhookWorker = require('./jobs/webhookWorker');
+      cron.schedule('*/30 * * * * *', () => {
+        webhookWorker.runOneTick().catch(err =>
+          logger.error('[Cron] Webhook worker tick failed:', err)
+        );
+      });
+      logger.info('✅ Webhook worker cron registered (every 30s)');
+    } catch (webhookCronErr) {
+      logger.error('CRITICAL: Webhook worker cron failed to register:', webhookCronErr);
+    }
+
     // One-time cleanup: delete "Kitchen Machinary" (typo duplicate of "Kitchen Machinery")
     try {
       const Category = require('./models/Category');
