@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { normalizeImageUrl } from '../../utils/placeholders';
 
 const HeroCarousel = ({ items = [], fallback = null }) => {
   const [current, setCurrent] = useState(0);
@@ -31,35 +32,38 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
 
   return (
     <div
-      className="relative w-full bg-white overflow-hidden"
+      className="relative w-full bg-gray-100 overflow-hidden aspect-[2/1] sm:aspect-[21/8]"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
-      {/* Slides — current is relative (defines height), others are absolute */}
+      {/* Slides — all absolutely positioned inside the aspect-ratio wrapper */}
       {items.map((item, index) => (
         <div
           key={item._id || index}
-          className={`w-full transition-opacity duration-700 ${
+          className={`absolute inset-0 w-full h-full transition-opacity duration-700 ${
             index === current
-              ? 'relative opacity-100 z-10'
-              : 'absolute inset-0 opacity-0 z-0'
+              ? 'opacity-100 z-10'
+              : 'opacity-0 z-0'
           }`}
           aria-hidden={index !== current}
         >
-          {/* Full-slide clickable overlay */}
+          {/* Full-slide clickable overlay — tabIndex -1 when slide is hidden */}
           {item.link && (
             <Link
               to={item.link}
               className="absolute inset-0 z-10 cursor-pointer"
               aria-label={item.title || 'View product'}
+              tabIndex={index !== current ? -1 : 0}
             />
           )}
 
-          {/* Image */}
+          {/* Image — height reserved by wrapper aspect-ratio; Cloudinary auto-format+quality applied */}
           <img
-            src={item.image || item.imageUrl}
+            src={normalizeImageUrl(item.image || item.imageUrl, { width: 1920, quality: 'auto', format: 'auto' })}
             alt={item.title || ''}
-            className="w-full h-auto block"
+            width={1920}
+            height={640}
+            className="w-full h-full object-cover block"
             loading={index === 0 ? 'eager' : 'lazy'}
             fetchPriority={index === 0 ? 'high' : 'auto'}
           />
@@ -97,11 +101,13 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             <button
               key={idx}
               onClick={() => goTo(idx)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                current === idx ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
-              }`}
+              className="p-2 flex items-center justify-center"
               aria-label={`Go to slide ${idx + 1}`}
-            />
+            >
+              <span className={`h-2 rounded-full transition-all duration-300 block ${
+                current === idx ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
+              }`} />
+            </button>
           ))}
         </div>
       )}

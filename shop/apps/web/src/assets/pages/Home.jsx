@@ -128,8 +128,10 @@ const Home = React.memo(() => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section — dynamic carousel if banners uploaded, else static fallback */}
-      {heroBanners && heroBanners.length > 0 ? (
+      {/* Hero Section — skeleton while loading prevents StaticHero→Carousel bait-and-switch CLS */}
+      {bannersLoading ? (
+        <div className="w-full aspect-[2/1] sm:aspect-[21/8] bg-gray-200 animate-pulse" />
+      ) : heroBanners?.length > 0 ? (
         <HeroCarousel items={heroBanners} fallback={<StaticHero t={t} />} />
       ) : (
         <StaticHero t={t} />
@@ -138,27 +140,30 @@ const Home = React.memo(() => {
 
       {/* Main Content with Sidebars */}
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-8 max-w-screen-2xl">
+        {/* Grid is committed to 4-col while ads are loading so column count never changes mid-render */}
         <div className={`grid grid-cols-1 gap-8 ${
-          leftAd || rightAd
+          leftAd || rightAd || leftLoading || rightLoading
             ? 'lg:grid-cols-4'
             : 'lg:grid-cols-1'
         }`}>
-          {/* Left Sidebar */}
-          {!leftLoading && leftAd && (
-            <Suspense fallback={null}>
-              <aside className="lg:col-span-1">
-                <SponsorAd ad={leftAd} variant="sidebar" />
-              </aside>
-            </Suspense>
+          {/* Left Sidebar — placeholder reserves column while loading to prevent CLS */}
+          {(leftLoading || leftAd) && (
+            <aside className="hidden lg:block lg:col-span-1">
+              {!leftLoading && leftAd && (
+                <Suspense fallback={null}>
+                  <SponsorAd ad={leftAd} variant="sidebar" />
+                </Suspense>
+              )}
+            </aside>
           )}
 
           {/* Main Content */}
           <main className={
-            leftAd && rightAd
+            (leftAd || leftLoading) && (rightAd || rightLoading)
               ? 'lg:col-span-2'
-              : leftAd || rightAd
+              : (leftAd || leftLoading) || (rightAd || rightLoading)
                 ? 'lg:col-span-3'
-                : 'lg:col-span-1'
+                : 'lg:col-span-4'
           }>
 
             {/* Flash Sales */}
@@ -185,7 +190,7 @@ const Home = React.memo(() => {
             <div className="mb-8">
               <h2 className="text-xl md:text-2xl font-bold mb-6">{t('home.shopByCategory')}</h2>
               <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 ${
-                leftAd || rightAd ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
+                leftAd || rightAd || leftLoading || rightLoading ? 'lg:grid-cols-3' : 'lg:grid-cols-6'
               }`}>
                 {categories?.length > 0 ? (
                   categories.map((category, index) => (
@@ -372,13 +377,15 @@ const Home = React.memo(() => {
             )}
           </main>
 
-          {/* Right Sidebar */}
-          {!rightLoading && rightAd && (
-            <Suspense fallback={null}>
-              <aside className="lg:col-span-1">
-                <SponsorAd ad={rightAd} variant="sidebar" />
-              </aside>
-            </Suspense>
+          {/* Right Sidebar — placeholder reserves column while loading to prevent CLS */}
+          {(rightLoading || rightAd) && (
+            <aside className="hidden lg:block lg:col-span-1">
+              {!rightLoading && rightAd && (
+                <Suspense fallback={null}>
+                  <SponsorAd ad={rightAd} variant="sidebar" />
+                </Suspense>
+              )}
+            </aside>
           )}
         </div>
       </div>
