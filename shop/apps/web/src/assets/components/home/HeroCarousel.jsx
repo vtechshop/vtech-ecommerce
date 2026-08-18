@@ -57,16 +57,26 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             />
           )}
 
-          {/* Image — height reserved by wrapper aspect-ratio; Cloudinary auto-format+quality applied */}
-          <img
-            src={normalizeImageUrl(item.image || item.imageUrl, { width: 1920, quality: 'auto', format: 'auto' })}
-            alt={item.title || ''}
-            width={1920}
-            height={640}
-            className="w-full h-full object-cover block"
-            loading={index === 0 ? 'eager' : 'lazy'}
-            fetchPriority={index === 0 ? 'high' : 'auto'}
-          />
+          {/* Image — height reserved by wrapper aspect-ratio; responsive srcSet avoids oversized downloads */}
+          {(() => {
+            const rawUrl = item.image || item.imageUrl;
+            const src800 = normalizeImageUrl(rawUrl, { width: 800, quality: 'auto', format: 'auto' });
+            const src1200 = normalizeImageUrl(rawUrl, { width: 1200, quality: 'auto', format: 'auto' });
+            const src1920 = normalizeImageUrl(rawUrl, { width: 1920, quality: 'auto', format: 'auto' });
+            return (
+              <img
+                src={src1200}
+                srcSet={`${src800} 800w, ${src1200} 1200w, ${src1920} 1920w`}
+                sizes="100vw"
+                alt={item.title || ''}
+                width={1920}
+                height={640}
+                className="w-full h-full object-cover block"
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 ? 'high' : 'auto'}
+              />
+            );
+          })()}
 
           {/* Gradient + text overlay (pointer-events-none so clicks pass to the link above) */}
           {(item.title || item.subtitle || item.description) && (

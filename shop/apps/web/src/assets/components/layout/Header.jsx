@@ -148,7 +148,7 @@ const Header = ({ onMobileMenuToggle }) => {
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex-shrink-0 ml-4">
-            <img src="/cropped-vtech-logo.webp" alt="VTech Kitchen" className="h-14 w-auto object-contain dark:ring-2 dark:ring-white/50 dark:rounded-xl dark:p-1" />
+            <img src="/cropped-vtech-logo.webp" alt="VTech Kitchen" width={110} height={98} className="h-14 w-auto object-contain dark:ring-2 dark:ring-white/50 dark:rounded-xl dark:p-1" />
           </Link>
 
           {/* Search with Autocomplete */}

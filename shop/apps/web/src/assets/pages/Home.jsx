@@ -21,8 +21,8 @@ const ThreeDCarousel = lazy(() => import('@/components/home/ThreeDCarousel'));
 
 // Static fallback hero shown when no carousel items are configured
 const StaticHero = ({ t }) => (
-  <section className="bg-gradient-to-r from-primary-600 to-primary-200">
-    <div className="container mx-auto px-3 sm:px-4 md:px-6 py-16 max-w-screen-2xl">
+  <section className="relative w-full aspect-[2/1] sm:aspect-[21/8] bg-gradient-to-r from-primary-600 to-primary-200 flex items-center">
+    <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
       <div className="max-w-3xl">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white">{t('home.heroTitle')}</h1>
         <p className="text-lg md:text-xl mb-6 md:mb-8 text-white leading-relaxed">{t('home.heroDesc')}</p>
@@ -128,10 +128,9 @@ const Home = React.memo(() => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section — skeleton while loading prevents StaticHero→Carousel bait-and-switch CLS */}
-      {bannersLoading ? (
-        <div className="w-full aspect-[2/1] sm:aspect-[21/8] bg-gray-200 animate-pulse" />
-      ) : heroBanners?.length > 0 ? (
+      {/* Hero Section — StaticHero and HeroCarousel share the same aspect-ratio wrapper height,
+          so swapping them after the banners API resolves produces zero layout shift */}
+      {!bannersLoading && heroBanners?.length > 0 ? (
         <HeroCarousel items={heroBanners} fallback={<StaticHero t={t} />} />
       ) : (
         <StaticHero t={t} />
