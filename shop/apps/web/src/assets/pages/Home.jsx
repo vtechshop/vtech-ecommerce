@@ -289,21 +289,24 @@ const Home = React.memo(() => {
 
             {/* 3D Carousel - Featured Brands/Categories */}
             {carouselItems && carouselItems.length > 0 && (
-              <Suspense fallback={<div className="mb-8 h-96 bg-gray-100 rounded-lg animate-pulse"></div>}>
-                <ScrollReveal animation="scaleUp" className="mb-8">
-                  <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
-                  <ThreeDCarousel
-                    items={carouselItems.map(item => ({ ...item, id: item._id }))}
-                    autoRotate={true}
-                    rotateInterval={5000}
-                    cardHeight={560}
-                  />
-                </ScrollReveal>
-              </Suspense>
+              <div style={{ contentVisibility: 'auto', containIntrinsicBlockSize: '500px' }}>
+                <Suspense fallback={<div className="mb-8 h-96 bg-gray-100 rounded-lg animate-pulse"></div>}>
+                  <ScrollReveal animation="scaleUp" className="mb-8">
+                    <h2 className="text-xl md:text-2xl font-bold text-center mb-4">{t('home.exploreCategories') || 'Explore Our Categories'}</h2>
+                    <ThreeDCarousel
+                      items={carouselItems.map(item => ({ ...item, id: item._id }))}
+                      autoRotate={true}
+                      rotateInterval={5000}
+                      cardHeight={560}
+                    />
+                  </ScrollReveal>
+                </Suspense>
+              </div>
             )}
 
             {/* Join as Affiliate */}
             {user?.role !== 'affiliate' && (
+              <div style={{ contentVisibility: 'auto', containIntrinsicBlockSize: '400px' }}>
               <ScrollReveal animation="fadeUp" className="mb-8" as="section">
                 <h2 className="text-xl md:text-2xl font-bold text-center mb-8">{t('home.growBusiness')}</h2>
                 <div className="grid gap-6 md:grid-cols-1 max-w-2xl mx-auto">
@@ -338,33 +341,38 @@ const Home = React.memo(() => {
                   )}
                 </div>
               </ScrollReveal>
+              </div>
             )}
 
             {/* Personalized Recommendations */}
             {user && (
-              <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
-                <ScrollReveal animation="fadeUp" className="mb-8">
-                  <ProductRecommendations
-                    type="personalized"
-                    limit={8}
-                    showViewAll={true}
-                    viewAllLink="/products"
-                  />
-                </ScrollReveal>
-              </Suspense>
+              <div style={{ contentVisibility: 'auto', containIntrinsicBlockSize: '350px' }}>
+                <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
+                  <ScrollReveal animation="fadeUp" className="mb-8">
+                    <ProductRecommendations
+                      type="personalized"
+                      limit={8}
+                      showViewAll={true}
+                      viewAllLink="/products"
+                    />
+                  </ScrollReveal>
+                </Suspense>
+              </div>
             )}
 
             {/* Trending Products */}
-            <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
-              <ScrollReveal animation="fadeUp" className="mb-8">
-                <ProductRecommendations
-                  type="trending"
-                  limit={8}
-                  showViewAll={true}
-                  viewAllLink="/products?sort=-sold"
-                />
-              </ScrollReveal>
-            </Suspense>
+            <div style={{ contentVisibility: 'auto', containIntrinsicBlockSize: '350px' }}>
+              <Suspense fallback={<div className="mb-8 h-64 bg-gray-100 rounded-lg animate-pulse"></div>}>
+                <ScrollReveal animation="fadeUp" className="mb-8">
+                  <ProductRecommendations
+                    type="trending"
+                    limit={8}
+                    showViewAll={true}
+                    viewAllLink="/products?sort=-sold"
+                  />
+                </ScrollReveal>
+              </Suspense>
+            </div>
 
             {/* Sponsored Ad - Bottom */}
             {!bottomLoading && bottomAd && (

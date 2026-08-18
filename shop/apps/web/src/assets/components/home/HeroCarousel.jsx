@@ -72,23 +72,43 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             />
           )}
 
-          {/* Image — height reserved by wrapper aspect-ratio; responsive srcSet avoids oversized downloads */}
+          {/* Image — height reserved by wrapper aspect-ratio.
+              First slide uses <picture> to cap mobile download at 800w even on high-DPR devices,
+              avoiding the ~150KB 1200w download on slow 4G (sizes="100vw" + DPR=3 picks 1200w). */}
           {(() => {
             const rawUrl = item.image || item.imageUrl;
-            const src800 = normalizeImageUrl(rawUrl, { width: 800, quality: 'auto', format: 'auto' });
+            const src640  = normalizeImageUrl(rawUrl, { width: 640,  quality: 'auto', format: 'auto' });
+            const src800  = normalizeImageUrl(rawUrl, { width: 800,  quality: 'auto', format: 'auto' });
             const src1200 = normalizeImageUrl(rawUrl, { width: 1200, quality: 'auto', format: 'auto' });
             const src1920 = normalizeImageUrl(rawUrl, { width: 1920, quality: 'auto', format: 'auto' });
+            if (index === 0) {
+              return (
+                <picture>
+                  <source media="(max-width: 767px)" srcSet={`${src640} 1x, ${src800} 2x`} />
+                  <source media="(min-width: 768px)" srcSet={`${src1200} 1x, ${src1920} 2x`} />
+                  <img
+                    src={src1200}
+                    alt={item.title || ''}
+                    width={1920}
+                    height={640}
+                    className="w-full h-full object-cover block"
+                    loading="eager"
+                    fetchPriority="high"
+                  />
+                </picture>
+              );
+            }
             return (
               <img
-                src={src1200}
+                src={src800}
                 srcSet={`${src800} 800w, ${src1200} 1200w, ${src1920} 1920w`}
                 sizes="100vw"
                 alt={item.title || ''}
                 width={1920}
                 height={640}
                 className="w-full h-full object-cover block"
-                loading={index === 0 ? 'eager' : 'lazy'}
-                fetchPriority={index === 0 ? 'high' : 'auto'}
+                loading="lazy"
+                fetchPriority="auto"
               />
             );
           })()}
@@ -129,9 +149,15 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
               className="p-2 flex items-center justify-center"
               aria-label={`Go to slide ${idx + 1}`}
             >
-              <span className={`h-2 rounded-full transition-all duration-300 block ${
-                current === idx ? 'w-6 bg-white' : 'w-2 bg-white/50 hover:bg-white/80'
-              }`} />
+              {/* scaleX + opacity — both GPU-composited; avoids non-composited width/background-color transitions */}
+              <span
+                className="h-2 w-2 rounded-full block bg-white transition-[opacity,transform] duration-300"
+                style={{
+                  opacity: current === idx ? 1 : 0.5,
+                  transform: current === idx ? 'scaleX(3)' : 'scaleX(1)',
+                  transformOrigin: 'center',
+                }}
+              />
             </button>
           ))}
         </div>
