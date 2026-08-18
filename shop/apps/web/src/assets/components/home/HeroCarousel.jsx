@@ -7,6 +7,21 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
   const [isHovering, setIsHovering] = useState(false);
   const [progressKey, setProgressKey] = useState(0);
 
+  // Inject <link rel="preload"> for the first banner image as early as possible
+  // so the browser fetches it at highest priority even before the img tag renders
+  useEffect(() => {
+    if (!items.length) return;
+    const firstUrl = normalizeImageUrl(items[0].image || items[0].imageUrl, { width: 800, quality: 'auto', format: 'auto' });
+    if (!firstUrl) return;
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = firstUrl;
+    link.fetchPriority = 'high';
+    document.head.appendChild(link);
+    return () => { try { document.head.removeChild(link); } catch {} };
+  }, [items]);
+
   const next = useCallback(() => {
     setCurrent(prev => (prev + 1) % items.length);
     setProgressKey(k => k + 1);

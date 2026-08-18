@@ -41,6 +41,15 @@ const persister = createSyncStoragePersister({
   throttleTime: 1000,
 });
 
+// Prefetch hero banners before React renders — starts the API call as early as possible
+// so HeroCarousel has data ready on first mount instead of waiting for component mount + query
+queryClient.prefetchQuery({
+  queryKey: ['hero-banners'],
+  queryFn: () =>
+    axios.get('/banners?platform=website').then(r => r.data.data || []),
+  staleTime: 2 * 60 * 1000,
+});
+
 const rootElement = document.getElementById('root');
 
 const AppWrapper = (
