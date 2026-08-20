@@ -178,7 +178,7 @@
   <body>
     <!-- SEO fallback for non-JS crawlers — outside #root so React never replaces it.
          Off-screen absolute position means it takes zero layout space → zero CLS. -->
-    <div id="seo-content" aria-hidden="true" style="position:absolute;left:-9999px;top:0;overflow:hidden;width:1px;height:1px;clip:rect(0,0,0,0)">
+    <div id="seo-content" aria-hidden="true" inert style="position:absolute;left:-9999px;top:0;overflow:hidden;width:1px;height:1px;clip:rect(0,0,0,0)">
         <header style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 12px; margin-bottom: 30px;">
           <h1 style="font-size: 2.5rem; margin: 0 0 10px 0;">V-Tech Kitchen</h1>
           <p style="font-size: 1.2rem; margin: 0; opacity: 0.9;">Premium Kitchen Appliances & Utensils</p>
@@ -244,6 +244,15 @@
     </div>
 
     <div id="root">
+      <!-- App skeleton — paints immediately (fast FCP + Speed Index) while React loads.
+           Header height exactly matches Header.jsx py-3 (12+12) + h-14 logo (56) = 80px.
+           Hero aspect-ratio + max-height matches HeroCarousel → zero CLS on React mount. -->
+      <div id="app-skeleton" aria-hidden="true" style="min-height:100vh;background:#f9fafb;">
+        <div style="background:white;box-shadow:0 1px 3px rgba(0,0,0,.1);height:80px;display:flex;align-items:center;padding:0 12px;">
+          <div style="height:56px;width:64px;background:#f1f5f9;border-radius:6px;margin-left:16px;"></div>
+        </div>
+        <div style="width:100%;aspect-ratio:2/1;max-height:500px;background:#d1d5db;"></div>
+      </div>
       <noscript>
         <p style="text-align: center; padding: 20px;">Please enable JavaScript for the best shopping experience.</p>
       </noscript>
