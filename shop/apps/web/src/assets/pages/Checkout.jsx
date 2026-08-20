@@ -771,13 +771,14 @@ const Checkout = () => {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-700">Shipping:</span>
                 {step < 2 ? (
-                  <span className="text-gray-400 italic">Calculated next</span>
+                  <span className="text-gray-400 italic">Select a shipping method</span>
                 ) : shippingMethod.cost === 0 ? (
                   <span className="text-green-600 font-medium">FREE</span>
                 ) : (
-                  // Show shipping as GST-inclusive (base + shipping GST) — same as Amazon/Flipkart
-                  // Tax line above stays product-only so it never jumps mid-checkout
-                  <span>{formatCurrency(shippingMethod.cost + Math.round(shippingMethod.cost * (_principalTaxRate / 100) * 100) / 100)}</span>
+                  <div className="text-right">
+                    <div>{formatCurrency(shippingMethod.cost + Math.round(shippingMethod.cost * (_principalTaxRate / 100) * 100) / 100)}</div>
+                    <div className="text-xs text-gray-400">Includes {formatCurrency(Math.round(shippingMethod.cost * (_principalTaxRate / 100) * 100) / 100)} GST</div>
+                  </div>
                 )}
               </div>
               <div className="border-t pt-2 flex justify-between font-bold text-lg">
