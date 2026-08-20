@@ -176,9 +176,9 @@
     </script>
   </head>
   <body>
-    <div id="root">
-      <!-- SEO Content - Visible to crawlers, hidden when React loads -->
-      <div id="seo-content" style="font-family: system-ui, -apple-system, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <!-- SEO fallback for non-JS crawlers — outside #root so React never replaces it.
+         Off-screen absolute position means it takes zero layout space → zero CLS. -->
+    <div id="seo-content" aria-hidden="true" style="position:absolute;left:-9999px;top:0;overflow:hidden;width:1px;height:1px;clip:rect(0,0,0,0)">
         <header style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 12px; margin-bottom: 30px;">
           <h1 style="font-size: 2.5rem; margin: 0 0 10px 0;">V-Tech Kitchen</h1>
           <p style="font-size: 1.2rem; margin: 0; opacity: 0.9;">Premium Kitchen Appliances & Utensils</p>
@@ -241,22 +241,13 @@
           <p style="margin: 0 0 10px 0;">© 2026 V-Tech Kitchen. All rights reserved.</p>
           <p style="margin: 0;">Shop premium kitchen appliances and utensils online in India.</p>
         </footer>
-      </div>
+    </div>
 
+    <div id="root">
       <noscript>
         <p style="text-align: center; padding: 20px;">Please enable JavaScript for the best shopping experience.</p>
       </noscript>
     </div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      // Hide SEO content once React mounts (React replaces #root contents)
-      // This is a fallback in case React doesn't fully replace the content
-      window.addEventListener('load', function() {
-        setTimeout(function() {
-          var seoContent = document.getElementById('seo-content');
-          if (seoContent) seoContent.style.display = 'none';
-        }, 500);
-      });
-    </script>
   </body>
 </html>

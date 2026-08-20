@@ -12,6 +12,7 @@ import axios from 'axios';
 import App from './App';
 import store from './assets/store';
 import ErrorBoundary from './assets/components/common/ErrorBoundary';
+import { normalizeImageUrl } from './assets/utils/placeholders';
 import './index.css';
 import './assets/styles/animations.css';
 
@@ -42,11 +43,29 @@ const persister = createSyncStoragePersister({
 });
 
 // Prefetch hero banners before React renders — starts the API call as early as possible
-// so HeroCarousel has data ready on first mount instead of waiting for component mount + query
+// so HeroCarousel has data ready on first mount instead of waiting for component mount + query.
+// Also injects a <link rel="preload"> the moment the API responds so the browser starts
+// downloading the hero image immediately, overlapping with React's render.
 queryClient.prefetchQuery({
   queryKey: ['hero-banners'],
   queryFn: () =>
-    axios.get('/banners?platform=website').then(r => r.data.data || []),
+    axios.get('/banners?platform=website').then(r => {
+      const banners = r.data.data || [];
+      if (banners.length > 0) {
+        const raw = banners[0].image || banners[0].imageUrl;
+        const w = window.innerWidth < 768 ? 800 : 1200;
+        const url = normalizeImageUrl(raw, { width: w, quality: 'auto', format: 'auto' });
+        if (url && !document.querySelector('link[rel="preload"][as="image"]')) {
+          const link = document.createElement('link');
+          link.rel = 'preload';
+          link.as = 'image';
+          link.href = url;
+          link.fetchPriority = 'high';
+          document.head.appendChild(link);
+        }
+      }
+      return banners;
+    }),
   staleTime: 2 * 60 * 1000,
 });
 
