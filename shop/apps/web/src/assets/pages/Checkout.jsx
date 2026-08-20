@@ -756,19 +756,12 @@ const Checkout = () => {
                 <span className="text-gray-700">Subtotal:</span>
                 <span>{formatCurrency(totals.subtotal)}</span>
               </div>
-              {(() => {
-                const shippingCost = step >= 2 ? (shippingMethod.cost || 0) : 0;
-                const displayShippingTax = shippingCost > 0
-                  ? Math.round(shippingCost * (_principalTaxRate / 100) * 100) / 100
-                  : 0;
-                const displayTax = totals.tax + displayShippingTax;
-                return displayTax > 0 ? (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-700">Tax (GST):</span>
-                    <span>{formatCurrency(displayTax)}</span>
-                  </div>
-                ) : null;
-              })()}
+              {totals.tax > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700">Tax (GST):</span>
+                  <span>{formatCurrency(totals.tax)}</span>
+                </div>
+              )}
               {totals.discount > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Discount:</span>
@@ -782,7 +775,9 @@ const Checkout = () => {
                 ) : shippingMethod.cost === 0 ? (
                   <span className="text-green-600 font-medium">FREE</span>
                 ) : (
-                  <span>{formatCurrency(shippingMethod.cost)}</span>
+                  // Show shipping as GST-inclusive (base + shipping GST) — same as Amazon/Flipkart
+                  // Tax line above stays product-only so it never jumps mid-checkout
+                  <span>{formatCurrency(shippingMethod.cost + Math.round(shippingMethod.cost * (_principalTaxRate / 100) * 100) / 100)}</span>
                 )}
               </div>
               <div className="border-t pt-2 flex justify-between font-bold text-lg">
@@ -790,10 +785,10 @@ const Checkout = () => {
                 <span className="price-highlight">
                   {(() => {
                     const shippingCost = step >= 2 ? (shippingMethod.cost || 0) : 0;
-                    const displayShippingTax = shippingCost > 0
+                    const shippingTax = shippingCost > 0
                       ? Math.round(shippingCost * (_principalTaxRate / 100) * 100) / 100
                       : 0;
-                    return formatCurrency(totals.total + shippingCost + displayShippingTax);
+                    return formatCurrency(totals.total + shippingCost + shippingTax);
                   })()}
                 </span>
               </div>
