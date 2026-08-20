@@ -26,6 +26,20 @@ const Checkout = () => {
   const dispatch = useDispatch();
   const toast = useToast();
   const { items, totals } = useSelector((state) => state.cart);
+
+  // Derive shipping GST for display using the same principal-supply-rate formula as the backend.
+  // This is a preview only — the authoritative tax/total comes from order.totals written by the server.
+  // principalTaxRate = taxRate of the highest-value taxable, non-tax-inclusive item (Section 8(a) CGST).
+  const _principalTaxRate = (() => {
+    let rate = 0;
+    let maxVal = 0;
+    for (const item of items) {
+      if (item.taxIncluded || !item.taxable || item.taxRate <= 0) continue;
+      const val = (item.priceSnapshot || 0) * (item.qty || 1);
+      if (val > maxVal) { maxVal = val; rate = item.taxRate; }
+    }
+    return rate;
+  })();
   const { user } = useSelector((state) => state.auth);
 
 
@@ -742,12 +756,19 @@ const Checkout = () => {
                 <span className="text-gray-700">Subtotal:</span>
                 <span>{formatCurrency(totals.subtotal)}</span>
               </div>
-              {totals.tax > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-700">Tax (GST):</span>
-                  <span>{formatCurrency(totals.tax)}</span>
-                </div>
-              )}
+              {(() => {
+                const shippingCost = step >= 2 ? (shippingMethod.cost || 0) : 0;
+                const displayShippingTax = shippingCost > 0
+                  ? Math.round(shippingCost * (_principalTaxRate / 100) * 100) / 100
+                  : 0;
+                const displayTax = totals.tax + displayShippingTax;
+                return displayTax > 0 ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-700">Tax (GST):</span>
+                    <span>{formatCurrency(displayTax)}</span>
+                  </div>
+                ) : null;
+              })()}
               {totals.discount > 0 && (
                 <div className="flex justify-between text-sm text-green-600">
                   <span>Discount:</span>
@@ -767,7 +788,13 @@ const Checkout = () => {
               <div className="border-t pt-2 flex justify-between font-bold text-lg">
                 <span>Total:</span>
                 <span className="price-highlight">
-                  {formatCurrency(totals.total + (step >= 2 ? (shippingMethod.cost || 0) : 0))}
+                  {(() => {
+                    const shippingCost = step >= 2 ? (shippingMethod.cost || 0) : 0;
+                    const displayShippingTax = shippingCost > 0
+                      ? Math.round(shippingCost * (_principalTaxRate / 100) * 100) / 100
+                      : 0;
+                    return formatCurrency(totals.total + shippingCost + displayShippingTax);
+                  })()}
                 </span>
               </div>
             </div>

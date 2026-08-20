@@ -547,9 +547,10 @@ async function generateInvoicePDF(order, outputStream, seller) {
       drawTotalRow('Subtotal', formatINR(order.totals?.subtotal || 0));
 
       if (taxTotal > 0) {
-        // Calculate effective GST rate from totals
-        const subtotal = order.totals?.subtotal || 0;
-        const effectiveRate = subtotal > 0 ? ((taxTotal / subtotal) * 100) : 0;
+        // Effective GST rate = tax / taxableBase where taxableBase = subtotal + shipping
+        // (shipping is now part of the taxable supply, so denominator includes both)
+        const taxableBase = (order.totals?.subtotal || 0) + (order.totals?.shipping || 0);
+        const effectiveRate = taxableBase > 0 ? ((taxTotal / taxableBase) * 100) : 0;
         const rateLabel = effectiveRate > 0 ? ` (${effectiveRate.toFixed(0)}%)` : '';
 
         if (isIntraState) {

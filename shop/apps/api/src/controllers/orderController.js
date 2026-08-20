@@ -270,23 +270,28 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Calculate tax directly from order items (same logic as Cart model)
-    // This ensures consistency even if cart is not found
+    // Calculate item tax from order items (unchanged — tax on goods only, per-item rate)
     const calculatedTax = orderItems.reduce((sum, item) => {
-      // Skip if tax is already included in price (Indian MRP)
-      if (item.taxIncluded) {
-        return sum;
-      }
-      // Calculate tax if item is taxable
+      if (item.taxIncluded) return sum;
       if (item.taxable && item.taxRate > 0) {
-        const itemTax = (item.priceSnapshot * item.qty) * (item.taxRate / 100);
-        return sum + itemTax;
+        return sum + (item.priceSnapshot * item.qty) * (item.taxRate / 100);
       }
       return sum;
     }, 0);
 
-    const tax = calculatedTax;
+    // Principal supply rate = taxRate of highest-value taxable, non-tax-inclusive item
+    // Section 8(a) CGST Act: composite supply (goods + delivery) follows principal supply rate
+    let principalTaxRate = 0;
+    let _principalMaxValue = 0;
+    for (const item of orderItems) {
+      if (item.taxIncluded || !item.taxable || item.taxRate <= 0) continue;
+      const value = item.priceSnapshot * item.qty;
+      if (value > _principalMaxValue) { _principalMaxValue = value; principalTaxRate = item.taxRate; }
+    }
+
     const shipping = shippingMethod?.cost ? Math.round(parseFloat(shippingMethod.cost)) : 0;
+    const shippingTax = Math.round(shipping * (principalTaxRate / 100) * 100) / 100;
+    const tax = Math.round((calculatedTax + shippingTax) * 100) / 100;
     const discount = cartDiscount;
     const total = subtotal + tax + shipping - discount;
 
@@ -368,16 +373,11 @@ exports.createOrder = async (req, res, next) => {
       const vendorSubtotal = vendorItems.reduce((sum, item) =>
         sum + (item.priceSnapshot * item.qty), 0);
 
-      // Calculate vendor tax directly from vendor items (same logic as Cart model)
+      // Calculate vendor item tax
       const vendorTax = vendorItems.reduce((sum, item) => {
-        // Skip if tax is already included in price (Indian MRP)
-        if (item.taxIncluded) {
-          return sum;
-        }
-        // Calculate tax if item is taxable
+        if (item.taxIncluded) return sum;
         if (item.taxable && item.taxRate > 0) {
-          const itemTax = (item.priceSnapshot * item.qty) * (item.taxRate / 100);
-          return sum + itemTax;
+          return sum + (item.priceSnapshot * item.qty) * (item.taxRate / 100);
         }
         return sum;
       }, 0);
@@ -386,7 +386,11 @@ exports.createOrder = async (req, res, next) => {
       const vendorProportion = subtotal > 0 ? vendorSubtotal / subtotal : 1;
       const vendorShipping = Math.round(shipping * vendorProportion * 100) / 100;
       const vendorDiscount = Math.round(discount * vendorProportion * 100) / 100;
-      const vendorTotal = vendorSubtotal + vendorTax + vendorShipping - vendorDiscount;
+
+      // Shipping GST at principal supply rate (reuses principalTaxRate from full order items above)
+      const vendorShippingTax = Math.round(vendorShipping * (principalTaxRate / 100) * 100) / 100;
+      const vendorTaxTotal = Math.round((vendorTax + vendorShippingTax) * 100) / 100;
+      const vendorTotal = vendorSubtotal + vendorTaxTotal + vendorShipping - vendorDiscount;
 
         // All orders require payment verification (COD removed)
         // Orders start as pending_payment and change to 'placed' after payment verification
@@ -402,7 +406,7 @@ exports.createOrder = async (req, res, next) => {
           items: vendorItems, // ONLY THIS VENDOR'S ITEMS
           totals: {
             subtotal: vendorSubtotal,
-            tax: vendorTax,
+            tax: vendorTaxTotal,
             shipping: vendorShipping,
             discount: vendorDiscount,
             total: vendorTotal,
