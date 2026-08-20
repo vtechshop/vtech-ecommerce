@@ -21,7 +21,7 @@ const ThreeDCarousel = lazy(() => import('@/components/home/ThreeDCarousel'));
 
 // Static fallback hero shown when no carousel items are configured
 const StaticHero = ({ t }) => (
-  <section className="relative w-full aspect-[2/1] sm:aspect-[21/8] bg-gradient-to-r from-primary-600 to-primary-200 flex items-center">
+  <section className="relative w-full aspect-[2/1] sm:aspect-[21/8] lg:max-h-[500px] bg-gradient-to-r from-primary-600 to-primary-200 flex items-center">
     <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-screen-2xl">
       <div className="max-w-3xl">
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white">{t('home.heroTitle')}</h1>

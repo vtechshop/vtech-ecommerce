@@ -47,7 +47,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
 
   return (
     <div
-      className="relative w-full bg-gray-100 overflow-hidden aspect-[2/1] sm:aspect-[21/8]"
+      className="relative w-full bg-gray-100 overflow-hidden aspect-[2/1] sm:aspect-[21/8] lg:max-h-[500px]"
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
@@ -141,7 +141,7 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
 
       {/* Dots */}
       {items.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1">
           {items.map((_, idx) => (
             <button
               key={idx}
@@ -149,15 +149,16 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
               className="p-2 flex items-center justify-center"
               aria-label={`Go to slide ${idx + 1}`}
             >
-              {/* scaleX + opacity — both GPU-composited; avoids non-composited width/background-color transitions */}
-              <span
-                className="h-2 w-2 rounded-full block bg-white transition-[opacity,transform] duration-300"
-                style={{
-                  opacity: current === idx ? 1 : 0.5,
-                  transform: current === idx ? 'scaleX(3)' : 'scaleX(1)',
-                  transformOrigin: 'center',
-                }}
-              />
+              {/* Fixed w-6 outer container keeps layout stable (no shift on active change).
+                  Inner span width swaps instantly (no width transition = no non-composited paint).
+                  Only opacity transitions — GPU-composited. */}
+              <span className="flex items-center justify-center w-6 h-2">
+                <span
+                  className={`h-2 rounded-full bg-white transition-opacity duration-300 ${
+                    current === idx ? 'w-6 opacity-100' : 'w-2 opacity-40'
+                  }`}
+                />
+              </span>
             </button>
           ))}
         </div>
