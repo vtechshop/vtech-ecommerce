@@ -546,26 +546,30 @@ async function generateInvoicePDF(order, outputStream, seller) {
 
       drawTotalRow('Subtotal', formatINR(order.totals?.subtotal || 0));
 
+      // Shipping & Delivery is shown BEFORE GST because GST is levied on the
+      // composite supply value (subtotal + shipping) per Section 8(a) CGST Act.
+      const shippingAmt = order.totals?.shipping || 0;
+      if (shippingAmt > 0) {
+        drawTotalRow('Shipping & Delivery', formatINR(shippingAmt));
+      } else {
+        drawTotalRow('Shipping & Delivery', 'FREE', { valueColor: '#059669' });
+      }
+
       if (taxTotal > 0) {
-        // Effective GST rate = tax / taxableBase where taxableBase = subtotal + shipping
-        // (shipping is now part of the taxable supply, so denominator includes both)
-        const taxableBase = (order.totals?.subtotal || 0) + (order.totals?.shipping || 0);
+        // GST is on the taxable value = subtotal + shipping (composite supply)
+        const taxableBase = (order.totals?.subtotal || 0) + shippingAmt;
         const effectiveRate = taxableBase > 0 ? ((taxTotal / taxableBase) * 100) : 0;
-        const rateLabel = effectiveRate > 0 ? ` (${effectiveRate.toFixed(0)}%)` : '';
 
         if (isIntraState) {
+          // Intra-state: split into CGST + SGST at half the effective rate each
           const halfRate = effectiveRate > 0 ? ` @ ${(effectiveRate / 2).toFixed(0)}%` : '';
           drawTotalRow(`CGST${halfRate}`, formatINR(taxTotal / 2));
           drawTotalRow(`SGST${halfRate}`, formatINR(taxTotal / 2));
         } else {
+          // Inter-state: single IGST line
+          const rateLabel = effectiveRate > 0 ? ` @ ${effectiveRate.toFixed(0)}%` : '';
           drawTotalRow(`IGST${rateLabel}`, formatINR(taxTotal));
         }
-      }
-
-      if (order.totals?.shipping > 0) {
-        drawTotalRow('Shipping', formatINR(order.totals.shipping));
-      } else {
-        drawTotalRow('Shipping', 'FREE', { valueColor: '#059669' });
       }
 
       if (order.totals?.discount > 0) {
@@ -592,7 +596,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
       doc.moveDown(0.5);
       if (taxTotal > 0) {
         doc.fontSize(6.5).font('Helvetica-Oblique').fillColor('#6b7280')
-          .text('* GST has been charged separately as shown above.', L);
+          .text('* GST is levied on the taxable value inclusive of shipping charges (composite supply, Sec. 8(a) CGST Act).', L);
       } else {
         doc.fontSize(6.5).font('Helvetica-Oblique').fillColor('#6b7280')
           .text('* All prices are inclusive of applicable GST.', L);
