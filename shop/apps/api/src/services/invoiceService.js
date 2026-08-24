@@ -421,8 +421,16 @@ async function generateInvoicePDF(order, outputStream, seller) {
         }
 
         const lineTotal = (item.priceSnapshot || 0) * (item.qty || 1);
-        const itemTax = itemSubtotal > 0 ? (lineTotal / itemSubtotal) * taxTotal : 0;
-        const itemTaxRate = lineTotal > 0 ? ((itemTax / lineTotal) * 100) : 0;
+        // perItemTaxRate: null → "–" (unknown/historical); 'incl' → "Incl."; number → exact rate
+        let itemTax = 0;
+        let perItemTaxRate = null;
+        if (item.taxIncluded) {
+          perItemTaxRate = 'incl';
+        } else if ((item.taxRate || 0) > 0 && item.taxable) {
+          itemTax = lineTotal * (item.taxRate / 100);
+          perItemTaxRate = item.taxRate;
+        }
+        // else: historical order — taxRate not persisted; show "–", do not invent a rate
         const itemGrandTotal = lineTotal + itemTax;
 
         // ── Pre-calculate product column height so rows never overlap ──
@@ -493,14 +501,18 @@ async function generateInvoicePDF(order, outputStream, seller) {
         cx += cols.discount;
 
         // Tax
-        const displayTaxRate = item.taxRate != null ? item.taxRate : (taxTotal > 0 ? itemTaxRate : 0);
-        if (displayTaxRate > 0 || taxTotal > 0) {
-          doc.fillColor('#374151');
-          doc.text(displayTaxRate.toFixed(0) + '%', cx, rowY, { width: cols.taxRate, align: 'center' }); cx += cols.taxRate;
-          doc.text(formatINR(itemTax), cx, rowY, { width: cols.taxAmt - P, align: 'right' }); cx += cols.taxAmt;
-        } else {
+        if (perItemTaxRate === 'incl') {
           doc.fillColor('#6b7280');
           doc.text('Incl.', cx, rowY, { width: cols.taxRate, align: 'center' }); cx += cols.taxRate;
+          doc.text('-',     cx, rowY, { width: cols.taxAmt - P, align: 'right' }); cx += cols.taxAmt;
+        } else if (perItemTaxRate !== null) {
+          doc.fillColor('#374151');
+          doc.text(Number(perItemTaxRate).toFixed(0) + '%', cx, rowY, { width: cols.taxRate, align: 'center' }); cx += cols.taxRate;
+          doc.text(formatINR(itemTax),                      cx, rowY, { width: cols.taxAmt - P, align: 'right' }); cx += cols.taxAmt;
+        } else {
+          // Historical order: taxRate not persisted — cannot determine per-item rate
+          doc.fillColor('#9ca3af');
+          doc.text('-', cx, rowY, { width: cols.taxRate, align: 'center' }); cx += cols.taxRate;
           doc.text('-', cx, rowY, { width: cols.taxAmt - P, align: 'right' }); cx += cols.taxAmt;
         }
 
