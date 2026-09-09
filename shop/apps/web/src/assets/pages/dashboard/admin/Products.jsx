@@ -1248,39 +1248,39 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
             </label>
             {!isViewing && (
               <div className="mb-4">
-                <label className="block">
-                  <div
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition-colors"
-                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-500'); }}
-                    onDragLeave={(e) => { e.currentTarget.classList.remove('border-blue-500'); }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.currentTarget.classList.remove('border-blue-500');
-                      if (e.dataTransfer.files?.length) handleImageUpload(e.dataTransfer.files);
-                    }}
-                  >
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => handleImageUpload(e.target.files)}
-                      disabled={uploadingImages}
-                      className="hidden"
-                      id="imageUpload"
-                    />
-                    <div className="text-gray-700">
-                      {uploadingImages ? (
-                        <p className="text-blue-600 font-medium">📤 Uploading images...</p>
-                      ) : (
-                        <>
-                          <p className="font-medium">Click to upload images</p>
-                          <p className="text-xs mt-1">or drag and drop</p>
-                          <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 10MB</p>
-                        </>
-                      )}
-                    </div>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => handleImageUpload(e.target.files)}
+                  disabled={uploadingImages}
+                  className="hidden"
+                  id="imageUpload"
+                />
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                  onClick={() => !uploadingImages && document.getElementById('imageUpload').click()}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('border-blue-500', 'bg-blue-50'); }}
+                  onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) { e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50'); } }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
+                    if (!uploadingImages && e.dataTransfer.files?.length) handleImageUpload(e.dataTransfer.files);
+                  }}
+                >
+                  <div className="text-gray-700 pointer-events-none">
+                    {uploadingImages ? (
+                      <p className="text-blue-600 font-medium">📤 Uploading images...</p>
+                    ) : (
+                      <>
+                        <p className="font-medium">Click to upload images</p>
+                        <p className="text-xs mt-1">or drag and drop</p>
+                        <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 10MB</p>
+                      </>
+                    )}
                   </div>
-                </label>
+                </div>
               </div>
             )}
             
