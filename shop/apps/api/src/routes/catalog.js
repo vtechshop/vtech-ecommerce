@@ -124,7 +124,15 @@ router.get('/products/:slug', cacheMiddleware(600), async (req, res, next) => {
     // 1. Exact slug match
     let product = await Product.findOne({ slug, published: true }).populate(populate).lean();
 
-    // 2. Fallback: convert slug to keywords → $text search
+    // 2. Slug history redirect — 301 to current canonical URL (handles renamed products)
+    if (!product) {
+      const canonical = await Product.findOne({ slugHistory: slug, published: true }).select('slug').lean();
+      if (canonical) {
+        return res.redirect(301, `/api/catalog/products/${canonical.slug}`);
+      }
+    }
+
+    // 3. Fallback: convert slug to keywords → $text search
     //    e.g. "vegetable-cutting-machine-with-conveyor" finds
     //    "Automatic Vegetable Cutting Machine with Conveyor"
     if (!product) {

@@ -704,10 +704,24 @@ exports.updateProduct = async (req, res, next) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Product not found' } });
 
-    // Update fields from request body
+    // Update fields from request body — skip identity/audit fields to prevent accidental overwrites.
+    // slug is handled explicitly below so the pre-save hook can track history correctly.
+    const IMMUTABLE_ADMIN = new Set(['_id', '__v', 'vendorId', 'slug', 'slugHistory', 'createdAt', 'updatedAt']);
     Object.keys(req.body).forEach(key => {
-      product[key] = req.body[key];
+      if (!IMMUTABLE_ADMIN.has(key)) product[key] = req.body[key];
     });
+
+    // Explicit slug change: normalize and assign so pre-save hook captures old slug in history.
+    if (req.body.slug !== undefined) {
+      const normalized = String(req.body.slug)
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      if (normalized && normalized !== product.slug) {
+        product.slug = normalized;
+      }
+    }
 
     await product.save();
     logger.info(`Product updated by admin: ${product.title}`);

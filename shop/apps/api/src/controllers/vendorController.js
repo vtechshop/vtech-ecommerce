@@ -451,7 +451,8 @@ async function updateProduct(req, res, next) {
       }
     });
 
-    if (req.body.title) product.slug = slugify(req.body.title);
+    // Title edits must NOT regenerate the slug — that would break Google-indexed URLs.
+    // Slug is locked after creation. An admin can intentionally change it via adminController.
 
     await product.save();
     res.json({ success: true, data: product });

@@ -365,13 +365,20 @@ exports.renderPage = async (req, res, next) => {
 
     // Product page
     else if (pathParts[0] === 'product' && pathParts[1]) {
-      const product = await Product.findOne({ slug: pathParts[1], published: true })
+      const requestedSlug = pathParts[1];
+      const product = await Product.findOne({ slug: requestedSlug, published: true })
         .populate('vendorId', 'storeName')
         .populate('categoryIds', 'name slug')
         .lean();
 
-      // Product not found or unpublished — send 410 Gone so Google removes it from the index
+      // Product not found by exact slug — check slug history for a 301 redirect
       if (!product) {
+        const canonical = await Product.findOne({ slugHistory: requestedSlug, published: true })
+          .select('slug').lean();
+        if (canonical) {
+          return res.redirect(301, `${clientUrl}/product/${canonical.slug}`);
+        }
+        // Not in history either — send 410 Gone so Google removes it from the index
         return res.status(410).send(`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Product Not Found - V-Tech Kitchen</title><meta name="robots" content="noindex, nofollow"><link rel="canonical" href="${clientUrl}"></head><body><h1>Product Not Found</h1><p>This product is no longer available at V-Tech Kitchen.</p><p><a href="${clientUrl}/products">Browse all products</a></p></body></html>`);
       }
 

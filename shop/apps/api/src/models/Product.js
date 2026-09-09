@@ -107,6 +107,8 @@ const productSchema = new mongoose.Schema({
     label: { type: String, trim: true }, // e.g., "Weight", "Color", "Material"
     value: { type: String, trim: true }, // e.g., "2.5 kg", "Silver", "Stainless Steel"
   }],
+  // SEO: previous slugs that should 301-redirect to the current canonical slug
+  slugHistory: { type: [String], default: [] },
 }, { timestamps: true });
 
 // indexes (do not duplicate slug/sku uniques)
@@ -129,9 +131,18 @@ productSchema.index({ vendorId: 1, stock: 1, trackInventory: 1 }); // Low stock 
 
 // text index
 productSchema.index({ title: 'text', description: 'text', brand: 'text', tags: 'text' });
+// slugHistory index: enables efficient Product.findOne({ slugHistory: oldSlug }) redirect lookups
+productSchema.index({ slugHistory: 1 });
 
-// slug auto
+// Capture the persisted slug at document load time so the pre-save hook can detect changes.
+// _originalSlug is a transient JS property — not in schema, never sent to MongoDB.
+productSchema.post('init', function () {
+  this._originalSlug = this.slug;
+});
+
+// slug auto-generation (creation only) + slug history tracking (on intentional slug change)
 productSchema.pre('save', function (next) {
+  // Auto-generate slug only when creating a product with no slug yet
   if (this.isModified('title') && !this.slug) {
     this.slug = this.title
       .toLowerCase()
@@ -139,6 +150,16 @@ productSchema.pre('save', function (next) {
       .replace(/[\s_-]+/g, '-')
       .replace(/^-+|-+$/g, '');
   }
+
+  // When slug is explicitly changed on an existing document, preserve the old slug.
+  // _originalSlug is set by the post('init') hook when the doc was loaded from DB.
+  if (this.isModified('slug') && !this.isNew) {
+    const old = this._originalSlug;
+    if (old && old !== this.slug && !this.slugHistory.includes(old)) {
+      this.slugHistory.push(old);
+    }
+  }
+
   next();
 });
 
