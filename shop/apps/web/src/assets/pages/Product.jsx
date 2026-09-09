@@ -433,7 +433,33 @@ const Product = () => {
     );
   }
 
-  // Product not found (deleted, unpublished, or invalid slug)
+  // Transient error (network failure, 5xx, timeout) — do NOT apply noindex.
+  // A temporary API error must never cause Googlebot to deindex a live product page.
+  // Only a genuine 404 (product truly missing) warrants noindex.
+  if (productError && productError.response?.status !== 404) {
+    const titleFromSlug = slug
+      ? slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+      : 'Product';
+    return (
+      <>
+        <SEO
+          title={`${titleFromSlug} - VTech Kitchen`}
+          description={`Buy ${titleFromSlug} at VTech Kitchen.`}
+          url={`https://www.vtechkitchen.com/product/${slug}`}
+        />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-4xl md:text-5xl lg:text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Something went wrong</h2>
+            <p className="text-gray-700 mb-6">Could not load the product. Please try again.</p>
+            <button onClick={() => refetch()} className="btn btn-primary">Retry</button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Product not found (deleted, unpublished, or invalid slug — API returned 404)
   if (!product) {
     return (
       <>
