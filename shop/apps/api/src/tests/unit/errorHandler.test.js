@@ -41,8 +41,8 @@ describe('errorHandler Middleware', () => {
       success: false,
       error: {
         code: 'VALIDATION_ERROR',
-        message: 'Validation failed',
-        details: ['Email is required', 'Name is required'],
+        message: 'Please check your input and try again',
+        fields: { email: 'Email is required', name: 'Name is required' },
       },
     });
   });
@@ -52,6 +52,7 @@ describe('errorHandler Middleware', () => {
       code: 11000,
       message: 'duplicate key',
       keyPattern: { email: 1 },
+      // no keyValue — handler falls back to 'value'
     };
 
     errorHandler(err, req, res, next);
@@ -60,8 +61,9 @@ describe('errorHandler Middleware', () => {
     expect(res.json).toHaveBeenCalledWith({
       success: false,
       error: {
-        code: 'DUPLICATE_ERROR',
-        message: 'email already exists',
+        code: 'DUPLICATE_ENTRY',
+        message: "Email 'value' already exists. Please use a different email.",
+        field: 'email',
       },
     });
   });
@@ -70,6 +72,8 @@ describe('errorHandler Middleware', () => {
     const err = {
       name: 'CastError',
       message: 'Cast to ObjectId failed',
+      path: '_id',
+      value: 'bad-id',
     };
 
     errorHandler(err, req, res, next);
@@ -79,7 +83,7 @@ describe('errorHandler Middleware', () => {
       success: false,
       error: {
         code: 'INVALID_ID',
-        message: 'Invalid ID format',
+        message: 'Invalid _id: bad-id',
       },
     });
   });
@@ -97,7 +101,7 @@ describe('errorHandler Middleware', () => {
       success: false,
       error: {
         code: 'INVALID_TOKEN',
-        message: 'Invalid token',
+        message: 'Invalid authentication token. Please login again.',
       },
     });
   });
@@ -115,7 +119,7 @@ describe('errorHandler Middleware', () => {
       success: false,
       error: {
         code: 'TOKEN_EXPIRED',
-        message: 'Token expired',
+        message: 'Your session has expired. Please login again.',
       },
     });
   });
@@ -125,6 +129,7 @@ describe('errorHandler Middleware', () => {
       message: 'Not Found',
       statusCode: 404,
       code: 'NOT_FOUND',
+      isOperational: true,
     };
 
     errorHandler(err, req, res, next);

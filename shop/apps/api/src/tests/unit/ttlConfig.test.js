@@ -38,8 +38,8 @@ describe('TTL Configuration', () => {
     expect(ttl.CART_CACHE_TTL).toBe(ttl.ONE_WEEK);
   });
 
-  it('should have search cache TTL of 15 minutes', () => {
-    expect(ttl.SEARCH_CACHE_TTL).toBe(ttl.FIFTEEN_MINUTES);
+  it('should have search cache TTL of 30 minutes', () => {
+    expect(ttl.SEARCH_CACHE_TTL).toBe(30 * 60); // intentionally 30 min — search results are stable
   });
 
   it('should have all values as positive numbers', () => {

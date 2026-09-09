@@ -11,6 +11,7 @@ describe('Auth Validators (Joi Schemas)', () => {
       name: 'John Doe',
       email: 'john@example.com',
       password: 'MyPassword1!',
+      phone: '9876543210',
     };
 
     it('should validate correct registration data', () => {
