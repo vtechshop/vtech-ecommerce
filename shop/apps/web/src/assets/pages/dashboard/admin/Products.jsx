@@ -488,6 +488,8 @@ const Products = () => {
 const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave }) => {
   console.log('ProductModal Debug:', { product: !!product, isViewing, productId: product?._id });
 
+  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState({
     vendorId: product?.vendorId?._id || product?.vendorId || '',
     title: product?.title || '',
