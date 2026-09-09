@@ -176,3 +176,136 @@ describe('Case 9 – Historical order (taxRate not persisted)', () => {
     expect(perItemTaxRate).toBeNull();
   });
 });
+
+// ─── Display totals: computeDisplayTotals ────────────────────────────────────
+// Mirrors invoiceService.js totals section logic:
+//   hasItemTaxData → use item.taxRate to split productGST / shippingGST
+//   no taxData     → all tax attributed to displayProductTotal
+
+function computeDisplayTotals(order, items) {
+  const taxTotal  = order.totals?.tax      || 0;
+  const shippingAmt = order.totals?.shipping || 0;
+  const hasItemTaxData = items.some(i => (i.taxRate || 0) > 0 && i.taxable && !i.taxIncluded);
+  let displayProductTotal, displayShipping;
+  if (hasItemTaxData) {
+    const productGST = items.reduce((sum, item) => {
+      if (item.taxIncluded || !item.taxable || (item.taxRate || 0) <= 0) return sum;
+      return sum + (item.priceSnapshot || 0) * (item.qty || 1) * (item.taxRate / 100);
+    }, 0);
+    displayProductTotal = (order.totals?.subtotal || 0) + productGST;
+    displayShipping = shippingAmt + Math.max(0, taxTotal - productGST);
+  } else {
+    displayProductTotal = (order.totals?.subtotal || 0) + taxTotal;
+    displayShipping = shippingAmt;
+  }
+  return { displayProductTotal, displayShipping };
+}
+
+describe('Display Totals — Test 1: ₹38,000 @ 18% + ₹2,000 shipping', () => {
+  const order = { totals: { subtotal: 38000, shipping: 2000, tax: 7200, discount: 0, total: 47200 } };
+  const items = [{ priceSnapshot: 38000, qty: 1, taxRate: 18, taxable: true, taxIncluded: false }];
+
+  it('Product Total = ₹44,840', () => {
+    const { displayProductTotal } = computeDisplayTotals(order, items);
+    expect(displayProductTotal).toBeCloseTo(44840, 2);
+  });
+  it('Shipping & Delivery = ₹2,360', () => {
+    const { displayShipping } = computeDisplayTotals(order, items);
+    expect(displayShipping).toBeCloseTo(2360, 2);
+  });
+  it('Product Total + Shipping = Grand Total', () => {
+    const { displayProductTotal, displayShipping } = computeDisplayTotals(order, items);
+    expect(displayProductTotal + displayShipping).toBeCloseTo(order.totals.total, 2);
+  });
+});
+
+describe('Display Totals — Test 2: ₹32,000 @ 5% + ₹2,000 shipping', () => {
+  const order = { totals: { subtotal: 32000, shipping: 2000, tax: 1700, discount: 0, total: 35700 } };
+  const items = [{ priceSnapshot: 32000, qty: 1, taxRate: 5, taxable: true, taxIncluded: false }];
+
+  it('Product Total = ₹33,600', () => {
+    const { displayProductTotal } = computeDisplayTotals(order, items);
+    expect(displayProductTotal).toBeCloseTo(33600, 2);
+  });
+  it('Shipping & Delivery = ₹2,100', () => {
+    const { displayShipping } = computeDisplayTotals(order, items);
+    expect(displayShipping).toBeCloseTo(2100, 2);
+  });
+  it('reconciles to Grand Total ₹35,700', () => {
+    const { displayProductTotal, displayShipping } = computeDisplayTotals(order, items);
+    expect(displayProductTotal + displayShipping).toBeCloseTo(35700, 2);
+  });
+});
+
+describe('Display Totals — Test 3: Free shipping', () => {
+  const order = { totals: { subtotal: 32000, shipping: 0, tax: 5760, discount: 0, total: 37760 } };
+  const items = [{ priceSnapshot: 32000, qty: 1, taxRate: 18, taxable: true, taxIncluded: false }];
+
+  it('Product Total = ₹37,760', () => {
+    const { displayProductTotal } = computeDisplayTotals(order, items);
+    expect(displayProductTotal).toBeCloseTo(37760, 2);
+  });
+  it('displayShipping = 0 (shown as FREE)', () => {
+    const { displayShipping } = computeDisplayTotals(order, items);
+    expect(displayShipping).toBe(0);
+  });
+  it('reconciles to Grand Total ₹37,760', () => {
+    const { displayProductTotal, displayShipping } = computeDisplayTotals(order, items);
+    expect(displayProductTotal + displayShipping).toBeCloseTo(37760, 2);
+  });
+});
+
+describe('Display Totals — Test 4: Mixed GST rates ₹20k@18% + ₹10k@12% + ₹3k shipping', () => {
+  const order = { totals: { subtotal: 30000, shipping: 3000, tax: 5340, discount: 0, total: 38340 } };
+  const items = [
+    { priceSnapshot: 20000, qty: 1, taxRate: 18, taxable: true, taxIncluded: false },
+    { priceSnapshot: 10000, qty: 1, taxRate: 12, taxable: true, taxIncluded: false },
+  ];
+
+  it('Product Total = ₹34,800 (product prices + each item own GST)', () => {
+    const { displayProductTotal } = computeDisplayTotals(order, items);
+    expect(displayProductTotal).toBeCloseTo(34800, 2);  // 30000 + 3600 + 1200
+  });
+  it('Shipping & Delivery = ₹3,540 (3000 + 540 shipping GST at principal 18%)', () => {
+    const { displayShipping } = computeDisplayTotals(order, items);
+    expect(displayShipping).toBeCloseTo(3540, 2);
+  });
+  it('no GST double-counted: Product Total + Shipping = Grand Total', () => {
+    const { displayProductTotal, displayShipping } = computeDisplayTotals(order, items);
+    expect(displayProductTotal + displayShipping).toBeCloseTo(38340, 2);
+  });
+});
+
+describe('Display Totals — Test 5: Historical order (no item tax snapshot)', () => {
+  const order = { totals: { subtotal: 2700, shipping: 400, tax: 558, discount: 0, total: 3658 } };
+  const items = [{ priceSnapshot: 2700, qty: 1 }];  // no taxRate/taxable
+
+  it('PDF does not crash; displayProductTotal = subtotal + taxTotal', () => {
+    const { displayProductTotal } = computeDisplayTotals(order, items);
+    expect(displayProductTotal).toBeCloseTo(2700 + 558, 2);
+  });
+  it('displayShipping = raw shipping (no GST split possible)', () => {
+    const { displayShipping } = computeDisplayTotals(order, items);
+    expect(displayShipping).toBe(400);
+  });
+  it('still reconciles to Grand Total', () => {
+    const { displayProductTotal, displayShipping } = computeDisplayTotals(order, items);
+    expect(displayProductTotal + displayShipping).toBeCloseTo(3658, 2);
+  });
+});
+
+describe('Display Totals — Test 6: Discount', () => {
+  const order = { totals: { subtotal: 38000, shipping: 2000, tax: 7200, discount: 500, total: 46700 } };
+  const items = [{ priceSnapshot: 38000, qty: 1, taxRate: 18, taxable: true, taxIncluded: false }];
+
+  it('Product Total and Shipping unchanged by discount', () => {
+    const { displayProductTotal, displayShipping } = computeDisplayTotals(order, items);
+    expect(displayProductTotal).toBeCloseTo(44840, 2);
+    expect(displayShipping).toBeCloseTo(2360, 2);
+  });
+  it('Product Total + Shipping - Discount = Grand Total', () => {
+    const { displayProductTotal, displayShipping } = computeDisplayTotals(order, items);
+    const discount = order.totals.discount;
+    expect(displayProductTotal + displayShipping - discount).toBeCloseTo(order.totals.total, 2);
+  });
+});

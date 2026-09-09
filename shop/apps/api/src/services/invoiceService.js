@@ -5,8 +5,9 @@ const fs = require('fs');
 const QRCode = require('qrcode');
 const env = require('../config/env');
 
-const LOGO_PATH = path.resolve(__dirname, '../assets/logo.png');
+const LOGO_PATH  = path.resolve(__dirname, '../assets/logo.png');
 const ESIGN_PATH = path.resolve(__dirname, '../assets/e-sign.png');
+const ESEAL_PATH = path.resolve(__dirname, '../assets/e-seal-trimmed.png');
 
 // Default platform seller details
 const PLATFORM_SELLER = {
@@ -556,34 +557,31 @@ async function generateInvoicePDF(order, outputStream, seller) {
         ty = doc.y + 2;
       };
 
-      drawTotalRow('Subtotal', formatINR(order.totals?.subtotal || 0));
-
-      // Shipping & Delivery is shown BEFORE GST because GST is levied on the
-      // composite supply value (subtotal + shipping) per Section 8(a) CGST Act.
       const shippingAmt = order.totals?.shipping || 0;
+
+      // GST-inclusive display totals.
+      // New orders: item.taxRate persisted → split product GST from shipping GST exactly.
+      // Historical orders: no per-item tax snapshot → attribute all tax to Product Total.
+      const hasItemTaxData = items.some(i => (i.taxRate || 0) > 0 && i.taxable && !i.taxIncluded);
+      let displayProductTotal, displayShipping;
+      if (hasItemTaxData) {
+        const productGST = items.reduce((sum, item) => {
+          if (item.taxIncluded || !item.taxable || (item.taxRate || 0) <= 0) return sum;
+          return sum + (item.priceSnapshot || 0) * (item.qty || 1) * (item.taxRate / 100);
+        }, 0);
+        displayProductTotal = (order.totals?.subtotal || 0) + productGST;
+        displayShipping = shippingAmt + Math.max(0, taxTotal - productGST);
+      } else {
+        displayProductTotal = (order.totals?.subtotal || 0) + taxTotal;
+        displayShipping = shippingAmt;
+      }
+
+      drawTotalRow('Product Total', formatINR(displayProductTotal));
       if (shippingAmt > 0) {
-        drawTotalRow('Shipping & Delivery', formatINR(shippingAmt));
+        drawTotalRow('Shipping & Delivery', formatINR(displayShipping));
       } else {
         drawTotalRow('Shipping & Delivery', 'FREE', { valueColor: '#059669' });
       }
-
-      if (taxTotal > 0) {
-        // GST is on the taxable value = subtotal + shipping (composite supply)
-        const taxableBase = (order.totals?.subtotal || 0) + shippingAmt;
-        const effectiveRate = taxableBase > 0 ? ((taxTotal / taxableBase) * 100) : 0;
-
-        if (isIntraState) {
-          // Intra-state: split into CGST + SGST at half the effective rate each
-          const halfRate = effectiveRate > 0 ? ` @ ${(effectiveRate / 2).toFixed(0)}%` : '';
-          drawTotalRow(`CGST${halfRate}`, formatINR(taxTotal / 2));
-          drawTotalRow(`SGST${halfRate}`, formatINR(taxTotal / 2));
-        } else {
-          // Inter-state: single IGST line
-          const rateLabel = effectiveRate > 0 ? ` @ ${effectiveRate.toFixed(0)}%` : '';
-          drawTotalRow(`IGST${rateLabel}`, formatINR(taxTotal));
-        }
-      }
-
       if (order.totals?.discount > 0) {
         drawTotalRow('Discount', '-' + formatINR(order.totals.discount), { valueColor: '#059669' });
       }
@@ -638,26 +636,47 @@ async function generateInvoicePDF(order, outputStream, seller) {
         qrEndY = doc.y;
       }
 
-      // Right-aligned signature block
-      const sigX = R - 180;
-      doc.fontSize(8).font('Helvetica-Bold').fillColor('#111827')
-        .text(`For ${CO.name}`, sigX, sigSectionY, { width: 170, align: 'right' });
+      // Authorization block: all elements share authCenterX.
+      // e-seal-trimmed.png is cropped to the visible artwork (222×225px, no transparent margins).
+      // Y positions chain from actual measured text height so gaps are exactly 8pt.
+      const authCenterX = R - 80;
+      // Seal drawn at sealW wide; height is proportional to cropped image (222×225 ≈ 1.014 ratio)
+      const sealW = 97;
+      const sealH = Math.round(sealW * 225 / 222); // ≈ 98pt
+      const authTopY = sigSectionY;
 
-      // E-Signature image
-      if (fs.existsSync(ESIGN_PATH)) {
-        const signW = 80;
-        const signH = 35;
-        const signImgX = R - signW - 45;
-        doc.image(ESIGN_PATH, signImgX, sigSectionY + 14, { width: signW, height: signH, align: 'center' });
+      // 1. "For Vtech" — measure height before drawing so forVtechH is exact
+      const forVtechStr = `For ${CO.name}`;
+      doc.fontSize(8).font('Helvetica-Bold');
+      const forVtechStrW = doc.widthOfString(forVtechStr);
+      const forVtechH = doc.currentLineHeight();
+      doc.fillColor('#111827')
+        .text(forVtechStr, authCenterX - forVtechStrW / 2, authTopY, { lineBreak: false });
+
+      // 2. Seal: top of VISIBLE artwork is 8pt below bottom of "For Vtech"
+      const sealY = authTopY + forVtechH + 8;
+      if (fs.existsSync(ESEAL_PATH)) {
+        doc.image(ESEAL_PATH, authCenterX - sealW / 2, sealY, { width: sealW, height: sealH });
       }
 
-      // Authorized signatory label
-      const sigLineY = sigSectionY + 55;
-      doc.fontSize(7).font('Helvetica').fillColor('#6b7280')
-        .text('Authorized Signatory', sigX, sigLineY, { width: 170, align: 'right' });
+      // 3. E-sign centered within the seal — larger so it reads clearly at normal zoom
+      if (fs.existsSync(ESIGN_PATH)) {
+        const signW = 120;
+        const signH = 51; // 120×51 preserves original 7:3 aspect ratio (70×30)
+        const signX = authCenterX - signW / 2 + 6; // shifted 6pt right of seal center
+        doc.image(ESIGN_PATH, signX, sealY + (sealH - signH) / 2, { width: signW, height: signH });
+      }
+
+      // 4. "Authorized Signatory": 8pt below bottom of visible seal
+      const authorizedY = sealY + sealH + 8;
+      const authSigStr = 'Authorized Signatory';
+      doc.fontSize(7).font('Helvetica');
+      const authSigStrW = doc.widthOfString(authSigStr);
+      doc.fillColor('#6b7280')
+        .text(authSigStr, authCenterX - authSigStrW / 2, authorizedY, { lineBreak: false });
 
       // Move past both QR and signature sections
-      const sectionEndY = Math.max(qrEndY, sigLineY + 14) + 15;
+      const sectionEndY = Math.max(qrEndY, authorizedY + 14) + 15;
       doc.y = sectionEndY;
 
       // ═══════════════ FOOTER ═══════════════
