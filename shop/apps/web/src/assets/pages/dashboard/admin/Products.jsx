@@ -1249,7 +1249,16 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
             {!isViewing && (
               <div className="mb-4">
                 <label className="block">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition-colors">
+                  <div
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500 transition-colors"
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-500'); }}
+                    onDragLeave={(e) => { e.currentTarget.classList.remove('border-blue-500'); }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.currentTarget.classList.remove('border-blue-500');
+                      if (e.dataTransfer.files?.length) handleImageUpload(e.dataTransfer.files);
+                    }}
+                  >
                     <input
                       type="file"
                       multiple
