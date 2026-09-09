@@ -1219,6 +1219,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                 step="0.01"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 className="input w-full"
                 required
               />
@@ -1233,6 +1234,7 @@ const ProductFormModal = ({ product, onClose, onSave, showToast }) => {
                 step="0.01"
                 value={formData.compareAt}
                 onChange={(e) => setFormData({ ...formData, compareAt: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 className="input w-full"
               />
             </div>

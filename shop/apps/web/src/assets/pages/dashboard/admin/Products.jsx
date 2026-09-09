@@ -865,6 +865,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 step="0.01"
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 disabled={isViewing}
                 className="input w-full"
                 required
@@ -878,6 +879,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 step="0.01"
                 value={formData.compareAt}
                 onChange={(e) => setFormData({ ...formData, compareAt: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 disabled={isViewing}
                 className="input w-full"
               />
