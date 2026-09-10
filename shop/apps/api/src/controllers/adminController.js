@@ -904,7 +904,7 @@ exports.getOrderCounts = async (req, res, next) => {
 
 exports.getOrders = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status, vendorId, search } = req.query;
+    const { page = 1, limit = 20, status, vendorId, search, month, year } = req.query;
     const query = {};
     if (status) query.status = status;
     if (vendorId) query['items.vendorId'] = vendorId;
@@ -914,6 +914,14 @@ exports.getOrders = async (req, res, next) => {
         { 'shipTo.fullName': { $regex: search, $options: 'i' } },
         { guestEmail: { $regex: search, $options: 'i' } }
       ];
+    }
+    if (month && year) {
+      const m = parseInt(month) - 1; // 0-indexed
+      const y = parseInt(year);
+      query.createdAt = {
+        $gte: new Date(y, m, 1),
+        $lt: new Date(y, m + 1, 1),
+      };
     }
 
     const skip = (parseInt(page) - 1) * parseInt(limit);

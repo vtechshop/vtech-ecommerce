@@ -38,17 +38,36 @@ const Orders = () => {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [monthFilter, setMonthFilter] = useState('');
   const [expandedOrder, setExpandedOrder] = useState(null);
+
+  // Generate last 18 months as options: "2026-09", "2026-08", …
+  const monthOptions = (() => {
+    const options = [];
+    const now = new Date();
+    for (let i = 0; i < 18; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+      options.push({ value, label });
+    }
+    return options;
+  })();
 
   // Fetch orders with current filters
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-orders', page, statusFilter, searchTerm],
+    queryKey: ['admin-orders', page, statusFilter, searchTerm, monthFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('page', page);
       params.append('limit', '20');
       if (statusFilter) params.append('status', statusFilter);
       if (searchTerm) params.append('search', searchTerm);
+      if (monthFilter) {
+        const [y, m] = monthFilter.split('-');
+        params.append('year', y);
+        params.append('month', m);
+      }
 
       const response = await api.get(`/admin/orders?${params}`);
       return response.data;
@@ -140,9 +159,24 @@ const Orders = () => {
           <p className="text-sm text-gray-600 mt-1">View and manage all customer orders</p>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+          {/* Month filter */}
+          <div className="relative flex-shrink-0">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <select
+              value={monthFilter}
+              onChange={(e) => { setMonthFilter(e.target.value); setPage(1); }}
+              className="pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white appearance-none cursor-pointer"
+            >
+              <option value="">All Months</option>
+              {monthOptions.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Search */}
-          <div className="relative flex-1 sm:flex-none sm:w-72">
+          <div className="relative flex-1 sm:flex-none sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
