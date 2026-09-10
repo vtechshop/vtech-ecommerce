@@ -563,24 +563,30 @@ async function generateInvoicePDF(order, outputStream, seller) {
       // New orders: item.taxRate persisted → split product GST from shipping GST exactly.
       // Historical orders: no per-item tax snapshot → attribute all tax to Product Total.
       const hasItemTaxData = items.some(i => (i.taxRate || 0) > 0 && i.taxable && !i.taxIncluded);
-      let displayProductTotal, displayShipping;
       if (hasItemTaxData) {
         const productGST = items.reduce((sum, item) => {
           if (item.taxIncluded || !item.taxable || (item.taxRate || 0) <= 0) return sum;
           return sum + (item.priceSnapshot || 0) * (item.qty || 1) * (item.taxRate / 100);
         }, 0);
-        displayProductTotal = (order.totals?.subtotal || 0) + productGST;
-        displayShipping = shippingAmt + Math.max(0, taxTotal - productGST);
+        const displayProductTotal = (order.totals?.subtotal || 0) + productGST;
+        const displayShipping = shippingAmt + Math.max(0, taxTotal - productGST);
+        drawTotalRow('Product Total', formatINR(displayProductTotal));
+        if (shippingAmt > 0) {
+          drawTotalRow('Shipping & Delivery', formatINR(displayShipping));
+        } else {
+          drawTotalRow('Shipping & Delivery', 'FREE', { valueColor: '#059669' });
+        }
       } else {
-        displayProductTotal = (order.totals?.subtotal || 0) + taxTotal;
-        displayShipping = shippingAmt;
-      }
-
-      drawTotalRow('Product Total', formatINR(displayProductTotal));
-      if (shippingAmt > 0) {
-        drawTotalRow('Shipping & Delivery', formatINR(displayShipping));
-      } else {
-        drawTotalRow('Shipping & Delivery', 'FREE', { valueColor: '#059669' });
+        // Historical order: no per-item taxRate stored — show subtotal + GST + shipping separately
+        drawTotalRow('Product Subtotal', formatINR(order.totals?.subtotal || 0));
+        if (taxTotal > 0) {
+          drawTotalRow('GST', formatINR(taxTotal));
+        }
+        if (shippingAmt > 0) {
+          drawTotalRow('Shipping & Delivery', formatINR(shippingAmt));
+        } else {
+          drawTotalRow('Shipping & Delivery', 'FREE', { valueColor: '#059669' });
+        }
       }
       if (order.totals?.discount > 0) {
         drawTotalRow('Discount', '-' + formatINR(order.totals.discount), { valueColor: '#059669' });
