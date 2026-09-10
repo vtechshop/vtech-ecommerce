@@ -392,7 +392,8 @@ exports.renderPage = async (req, res, next) => {
           .catch(() => []);
 
         pageData.title = `${product.title} - V-Tech Kitchen`.substring(0, 70);
-        pageData.description = (product.description?.substring(0, 155) || `Buy ${product.title} at best price. ${product.shortDescription || ''}`).substring(0, 160);
+        const plainDesc = stripHtml(product.description || '');
+        pageData.description = (plainDesc.substring(0, 155) || `Buy ${product.title} at best price.`).substring(0, 160);
         pageData.image = product.images?.[0] || pageData.image;
         pageData.type = 'product';
         pageData.content = `
@@ -520,7 +521,7 @@ exports.renderPage = async (req, res, next) => {
 
       if (category) {
         pageData.title = `${category.name} - V-Tech Kitchen`;
-        pageData.description = category.description || `Shop ${category.name} at V-Tech Kitchen. Best prices, fast delivery.`;
+        pageData.description = stripHtml(category.description || '') || `Shop ${category.name} at V-Tech Kitchen. Best prices, fast delivery.`;
         pageData.image = category.image || pageData.image;
         pageData.content = `
           <h1>${category.name}</h1>
@@ -547,7 +548,7 @@ exports.renderPage = async (req, res, next) => {
 
       if (vendor) {
         pageData.title = `${vendor.storeName} - V-Tech Kitchen Vendor`;
-        pageData.description = vendor.description || `Shop products from ${vendor.storeName} at V-Tech Kitchen.`;
+        pageData.description = stripHtml(vendor.description || '') || `Shop products from ${vendor.storeName} at V-Tech Kitchen.`;
         pageData.image = vendor.logo || pageData.image;
         pageData.content = `
           <h1>${vendor.storeName}</h1>
@@ -569,7 +570,7 @@ exports.renderPage = async (req, res, next) => {
       if (post) {
         const blogSuffix = ' - V-Tech Kitchen Blog';
         pageData.title = (post.title + blogSuffix).length <= 70 ? post.title + blogSuffix : post.title.substring(0, 70 - blogSuffix.length) + blogSuffix;
-        pageData.description = (post.excerpt || post.content?.substring(0, 155) || `Read ${post.title} on V-Tech Kitchen Blog.`).substring(0, 155);
+        pageData.description = (stripHtml(post.excerpt || post.content || '').substring(0, 155) || `Read ${post.title} on V-Tech Kitchen Blog.`).substring(0, 155);
         pageData.image = post.featuredImage || pageData.image;
         pageData.type = 'article';
         pageData.content = `
@@ -716,23 +717,23 @@ exports.renderPage = async (req, res, next) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${pageData.title}</title>
-  <meta name="description" content="${pageData.description}">
+  <title>${escapeXml(pageData.title)}</title>
+  <meta name="description" content="${escapeXml(pageData.description)}">
   <meta name="robots" content="${pageData.noindex ? 'noindex, nofollow' : 'index, follow'}">
   <link rel="canonical" href="${fullUrl}">
 
   <!-- Open Graph -->
   <meta property="og:type" content="${pageData.type}">
   <meta property="og:url" content="${fullUrl}">
-  <meta property="og:title" content="${pageData.title}">
-  <meta property="og:description" content="${pageData.description}">
+  <meta property="og:title" content="${escapeXml(pageData.title)}">
+  <meta property="og:description" content="${escapeXml(pageData.description)}">
   <meta property="og:image" content="${pageData.image}">
   <meta property="og:site_name" content="V-Tech Kitchen">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${pageData.title}">
-  <meta name="twitter:description" content="${pageData.description}">
+  <meta name="twitter:title" content="${escapeXml(pageData.title)}">
+  <meta name="twitter:description" content="${escapeXml(pageData.description)}">
   <meta name="twitter:image" content="${pageData.image}">
 
   ${pageData.schema ? `<script type="application/ld+json">${JSON.stringify(pageData.schema)}</script>` : ''}
