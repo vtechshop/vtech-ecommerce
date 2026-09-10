@@ -577,15 +577,15 @@ async function generateInvoicePDF(order, outputStream, seller) {
           drawTotalRow('Shipping & Delivery', 'FREE', { valueColor: '#059669' });
         }
       } else {
-        // Historical order: no per-item taxRate stored — show subtotal + GST + shipping separately
+        // Historical order: no per-item taxRate stored — show subtotal + shipping + GST separately
         drawTotalRow('Product Subtotal', formatINR(order.totals?.subtotal || 0));
-        if (taxTotal > 0) {
-          drawTotalRow('GST', formatINR(taxTotal));
-        }
         if (shippingAmt > 0) {
           drawTotalRow('Shipping & Delivery', formatINR(shippingAmt));
         } else {
           drawTotalRow('Shipping & Delivery', 'FREE', { valueColor: '#059669' });
+        }
+        if (taxTotal > 0) {
+          drawTotalRow('GST', formatINR(taxTotal));
         }
       }
       if (order.totals?.discount > 0) {
