@@ -167,13 +167,14 @@ const Orders = () => {
               value={monthFilter}
               onChange={(e) => { setMonthFilter(e.target.value); setPage(1); }}
               className="pl-9 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white appearance-none cursor-pointer"
-              style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+              style={{ WebkitAppearance: 'none', MozAppearance: 'none', backgroundImage: 'none' }}
             >
               <option value="">All Months</option>
               {monthOptions.map(({ value, label }) => (
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
 
           {/* Search */}
