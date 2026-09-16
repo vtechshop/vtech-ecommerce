@@ -420,6 +420,7 @@ exports.renderPage = async (req, res, next) => {
             '@type': 'Offer',
             price: product.price || 0,
             priceCurrency: 'INR',
+            validFrom: (product.createdAt || new Date()).toISOString().split('T')[0],
             priceValidUntil,
             availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
             url: fullUrl,
