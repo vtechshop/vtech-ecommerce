@@ -842,14 +842,13 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
             {/* Vendor Assignment */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assign to Vendor <span className="text-red-500">*</span>
+                Assign to Vendor <span className="text-gray-400 text-xs">(optional — auto-assigned if blank)</span>
               </label>
               <select
                 value={formData.vendorId}
                 onChange={(e) => setFormData({ ...formData, vendorId: e.target.value })}
                 disabled={isViewing}
                 className="input w-full"
-                required
               >
                 <option value="">Select a vendor</option>
                 {vendors.map((v) => (
