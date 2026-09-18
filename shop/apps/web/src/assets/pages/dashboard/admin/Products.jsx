@@ -644,6 +644,15 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
     });
   };
 
+  const handleMoveImage = (fromIndex, toIndex) => {
+    setImages(prev => {
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated;
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -892,6 +901,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 type="number"
                 value={formData.stock}
                 onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 disabled={isViewing}
                 className="input w-full"
                 required
@@ -920,6 +930,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 placeholder="0"
                 value={formData.displayOrder}
                 onChange={(e) => setFormData({ ...formData, displayOrder: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 disabled={isViewing}
                 className={`input w-full ${parseInt(formData.displayOrder) > 0 && allProducts.some(p => p._id !== product?._id && parseInt(p.displayOrder) === parseInt(formData.displayOrder)) ? 'border-yellow-400 focus:border-yellow-500' : ''}`}
               />
@@ -944,6 +955,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 placeholder="e.g. 2.5"
                 value={formData.weight}
                 onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 disabled={isViewing}
                 className="input w-full"
               />
@@ -958,6 +970,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 placeholder="0 = auto calculate"
                 value={formData.shippingCharge}
                 onChange={(e) => setFormData({ ...formData, shippingCharge: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 disabled={isViewing}
                 className="input w-full"
               />
@@ -1034,6 +1047,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 max="100"
                 value={formData.vendorCommissionPercentage}
                 onChange={(e) => setFormData({ ...formData, vendorCommissionPercentage: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 disabled={isViewing}
                 className="input w-full"
                 placeholder="e.g., 15"
@@ -1052,6 +1066,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 max="100"
                 value={formData.affiliateCommissionPercentage}
                 onChange={(e) => setFormData({ ...formData, affiliateCommissionPercentage: e.target.value })}
+                onWheel={(e) => e.target.blur()}
                 disabled={isViewing}
                 className="input w-full"
                 placeholder="e.g., 5"
@@ -1089,6 +1104,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                       max="100"
                       value={formData.taxRate}
                       onChange={(e) => setFormData({ ...formData, taxRate: e.target.value })}
+                      onWheel={(e) => e.target.blur()}
                       disabled={isViewing}
                       className="input w-full"
                       placeholder="e.g., 18 for 18% GST"
@@ -1144,13 +1160,14 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-red-500">*</span></label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               disabled={isViewing}
               className="input w-full h-24"
               rows={4}
+              required
             />
           </div>
 
@@ -1289,7 +1306,26 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
             {images.length > 0 ? (
               <div className="space-y-3">
                 {images.map((image, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <div key={index} className={`flex items-start gap-3 p-3 rounded-lg border ${index === 0 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-200'}`}>
+                    {/* Reorder buttons */}
+                    {!isViewing && images.length > 1 && (
+                      <div className="flex flex-col gap-1 flex-shrink-0 mt-6">
+                        <button
+                          type="button"
+                          onClick={() => handleMoveImage(index, index - 1)}
+                          disabled={index === 0}
+                          className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 text-xs"
+                          title="Move up"
+                        >▲</button>
+                        <button
+                          type="button"
+                          onClick={() => handleMoveImage(index, index + 1)}
+                          disabled={index === images.length - 1}
+                          className="w-6 h-6 flex items-center justify-center rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 text-xs"
+                          title="Move down"
+                        >▼</button>
+                      </div>
+                    )}
                     <div className="relative group flex-shrink-0">
                       <img
                         src={image.url}
@@ -1299,6 +1335,9 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                           e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2VlZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5ObyBJbWFnZTwvdGV4dD48L3N2Zz4=';
                         }}
                       />
+                      {index === 0 && (
+                        <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap">Primary</span>
+                      )}
                       {!isViewing && (
                         <button
                           type="button"
@@ -1313,7 +1352,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <label className="block text-xs font-medium text-gray-700">
-                          Image {index + 1} Alt Tag (SEO)
+                          {index === 0 ? <span className="text-blue-700 font-semibold">Image 1 — Primary (shown first)</span> : `Image ${index + 1} Alt Tag (SEO)`}
                         </label>
                         {!isViewing && (
                           <button
@@ -1410,6 +1449,7 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                       ...formData,
                       warranty: { ...formData.warranty, duration: e.target.value }
                     })}
+                    onWheel={(e) => e.target.blur()}
                     disabled={isViewing}
                     className="input w-full"
                     placeholder="e.g., 12"
