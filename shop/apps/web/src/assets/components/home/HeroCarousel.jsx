@@ -81,13 +81,11 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             const src800  = normalizeImageUrl(rawUrl, { width: 800,  quality: 'auto', format: 'auto' });
             const src1200 = normalizeImageUrl(rawUrl, { width: 1200, quality: 'auto', format: 'auto' });
             const src1920 = normalizeImageUrl(rawUrl, { width: 1920, quality: 'auto', format: 'auto' });
-            if (index === 0) {
-              const mobileSrc = item.mobileImage
-                ? normalizeImageUrl(item.mobileImage, { width: 720, quality: 'auto', format: 'auto' })
-                : src640;
-              const mobileSrc2x = item.mobileImage
-                ? normalizeImageUrl(item.mobileImage, { width: 1080, quality: 'auto', format: 'auto' })
-                : src800;
+            const mobileSrc   = item.mobileImage ? normalizeImageUrl(item.mobileImage, { width: 720,  quality: 'auto', format: 'auto' }) : src640;
+            const mobileSrc2x = item.mobileImage ? normalizeImageUrl(item.mobileImage, { width: 1080, quality: 'auto', format: 'auto' }) : src800;
+            // First slide uses <picture> for LCP priority + mobile image;
+            // later slides use <picture> only when a mobileImage exists, plain <img> otherwise.
+            if (index === 0 || item.mobileImage) {
               return (
                 <picture>
                   <source media="(max-width: 767px)" srcSet={`${mobileSrc} 1x, ${mobileSrc2x} 2x`} />
@@ -98,8 +96,8 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
                     width={1920}
                     height={640}
                     className="w-full h-full object-cover block"
-                    loading="eager"
-                    fetchPriority="high"
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={index === 0 ? 'high' : 'auto'}
                   />
                 </picture>
               );
