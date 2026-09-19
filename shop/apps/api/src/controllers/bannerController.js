@@ -76,25 +76,32 @@ exports.fixBannerPlatforms = asyncHandler(async (req, res) => {
   res.json({ success: true, fixed: result.modifiedCount });
 });
 
+// Helper: upload a buffer to Cloudinary
+async function uploadToCloudinary(buffer) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'vtech/banners', resource_type: 'image' },
+      (error, result) => { if (error) reject(error); else resolve(result); }
+    );
+    stream.end(buffer);
+  });
+}
+
 // POST /api/banners - Admin: Create banner
 exports.createBanner = asyncHandler(async (req, res) => {
   const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition } = req.body;
 
   let imageUrl = req.body.image;
+  let mobileImageUrl = req.body.mobileImage || '';
 
-  // Handle file upload
-  if (req.file) {
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'vtech/banners', resource_type: 'image' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      stream.end(req.file.buffer);
-    });
+  // Handle file uploads (upload.fields gives req.files)
+  if (req.files?.image?.[0]) {
+    const result = await uploadToCloudinary(req.files.image[0].buffer);
     imageUrl = result.secure_url;
+  }
+  if (req.files?.mobileImage?.[0]) {
+    const result = await uploadToCloudinary(req.files.mobileImage[0].buffer);
+    mobileImageUrl = result.secure_url;
   }
 
   if (!imageUrl) {
@@ -106,6 +113,7 @@ exports.createBanner = asyncHandler(async (req, res) => {
     title,
     subtitle,
     image: imageUrl,
+    mobileImage: mobileImageUrl,
     link: link || '',
     isActive: isActive !== undefined ? isActive : true,
     order: order || 0,
@@ -127,21 +135,18 @@ exports.updateBanner = asyncHandler(async (req, res) => {
 
   const { title, subtitle, link, isActive, order, startDate, endDate, imagePosition, platform } = req.body;
 
-  // Handle new image upload
-  if (req.file) {
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'vtech/banners', resource_type: 'image' },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      stream.end(req.file.buffer);
-    });
+  // Handle new image uploads (upload.fields gives req.files)
+  if (req.files?.image?.[0]) {
+    const result = await uploadToCloudinary(req.files.image[0].buffer);
     banner.image = result.secure_url;
   } else if (req.body.image) {
     banner.image = req.body.image;
+  }
+  if (req.files?.mobileImage?.[0]) {
+    const result = await uploadToCloudinary(req.files.mobileImage[0].buffer);
+    banner.mobileImage = result.secure_url;
+  } else if (req.body.mobileImage !== undefined) {
+    banner.mobileImage = req.body.mobileImage || '';
   }
 
   if (title !== undefined) banner.title = title;

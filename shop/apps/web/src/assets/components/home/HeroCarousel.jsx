@@ -82,9 +82,15 @@ const HeroCarousel = ({ items = [], fallback = null }) => {
             const src1200 = normalizeImageUrl(rawUrl, { width: 1200, quality: 'auto', format: 'auto' });
             const src1920 = normalizeImageUrl(rawUrl, { width: 1920, quality: 'auto', format: 'auto' });
             if (index === 0) {
+              const mobileSrc = item.mobileImage
+                ? normalizeImageUrl(item.mobileImage, { width: 720, quality: 'auto', format: 'auto' })
+                : src640;
+              const mobileSrc2x = item.mobileImage
+                ? normalizeImageUrl(item.mobileImage, { width: 1080, quality: 'auto', format: 'auto' })
+                : src800;
               return (
                 <picture>
-                  <source media="(max-width: 767px)" srcSet={`${src640} 1x, ${src800} 2x`} />
+                  <source media="(max-width: 767px)" srcSet={`${mobileSrc} 1x, ${mobileSrc2x} 2x`} />
                   <source media="(min-width: 768px)" srcSet={`${src1200} 1x, ${src1920} 2x`} />
                   <img
                     src={src1200}

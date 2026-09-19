@@ -304,6 +304,8 @@ const BannerModal = ({ banner, onClose, onSave, defaultPlatform = 'website' }) =
   });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(banner?.image || '');
+  const [mobileImageFile, setMobileImageFile] = useState(null);
+  const [mobileImagePreview, setMobileImagePreview] = useState(banner?.mobileImage || '');
 
   const saveMutation = useMutation({
     mutationFn: async (data) => {
@@ -321,6 +323,11 @@ const BannerModal = ({ banner, onClose, onSave, defaultPlatform = 'website' }) =
         fd.append('image', imageFile);
       } else if (banner?.image) {
         fd.append('image', banner.image);
+      }
+      if (mobileImageFile) {
+        fd.append('mobileImage', mobileImageFile);
+      } else if (banner?.mobileImage) {
+        fd.append('mobileImage', banner.mobileImage);
       }
 
       if (banner?._id) {
@@ -345,6 +352,19 @@ const BannerModal = ({ banner, onClose, onSave, defaultPlatform = 'website' }) =
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
     }
+  };
+
+  const handleMobileImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setMobileImageFile(file);
+      setMobileImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleRemoveMobileImage = () => {
+    setMobileImageFile(null);
+    setMobileImagePreview('');
   };
 
   const handleSubmit = (e) => {
@@ -439,9 +459,33 @@ const BannerModal = ({ banner, onClose, onSave, defaultPlatform = 'website' }) =
             {/* Right column */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Banner Image *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Desktop Banner Image *</label>
                 <input type="file" accept="image/*" onChange={handleImageChange} className="w-full text-sm" />
-                <p className="text-xs text-gray-400 mt-1">Recommended: 1400×500px, JPG/PNG, max 2MB</p>
+                <p className="text-xs text-gray-400 mt-1">Recommended: 1920×640px (landscape) — shown on desktop & tablet</p>
+              </div>
+
+              {/* Mobile image */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mobile Banner Image <span className="text-gray-400 text-xs font-normal">(optional)</span>
+                </label>
+                {mobileImagePreview ? (
+                  <div className="relative inline-block mb-2">
+                    <img
+                      src={mobileImagePreview}
+                      alt="Mobile preview"
+                      className="w-24 h-32 object-cover rounded border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveMobileImage}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                    >×</button>
+                    <span className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] text-center py-0.5 rounded-b">Mobile</span>
+                  </div>
+                ) : null}
+                <input type="file" accept="image/*" onChange={handleMobileImageChange} className="w-full text-sm" />
+                <p className="text-xs text-gray-400 mt-1">Recommended: 720×900px (portrait) — shown on phones (&lt;768px). Falls back to desktop image if not set.</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
