@@ -19,7 +19,7 @@ function sanitizeSearch(q) {
 // GET /catalog/products?featured=true&limit=8&tag=electronics&vendor=demo-electronics
 router.get('/products', cacheMiddleware(300), async (req, res, next) => {
   try {
-    const { featured, q, tag, vendor, page = 1, limit = 20, sort = '-createdAt' } = req.query;
+    const { featured, q, tag, vendor, category, page = 1, limit = 20, sort = '-createdAt' } = req.query;
 
     // SECURITY: Cap limit to prevent large data retrieval (max 100 items per request)
     const cappedLimit = Math.min(parseInt(limit), 100);
@@ -27,6 +27,16 @@ router.get('/products', cacheMiddleware(300), async (req, res, next) => {
     const query = { published: true }; // Only show published products
     if (featured === 'true') query.featured = true;
     if (tag) query.tags = tag.toLowerCase(); // Filter by specific tag
+
+    // Filter by category slug
+    if (category) {
+      const categoryDoc = await Category.findOne({ slug: category, isActive: true }).select('_id').lean();
+      if (categoryDoc) {
+        query.categoryIds = { $in: [categoryDoc._id] };
+      } else {
+        return res.json({ success: true, data: [], meta: { total: 0, page: Number(page), limit: cappedLimit } });
+      }
+    }
 
     // Text search: multi-word uses AND logic (like Amazon) so only relevant products show
     let searchWords = [];
