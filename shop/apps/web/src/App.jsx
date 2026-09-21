@@ -39,6 +39,7 @@ const Page = lazy(() => import('./assets/pages/cms/Page'));
 const NotFound = lazy(() => import('./assets/pages/NotFound'));
 const WarrantyCheck = lazy(() => import('./assets/pages/WarrantyCheck'));
 const Hub = lazy(() => import('./assets/pages/Hub'));
+const Catalogue = lazy(() => import('./assets/pages/Catalogue'));
 
 // Lazy load info pages
 const TrackOrder = lazy(() => import('./assets/pages/info/TrackOrder'));
@@ -161,6 +162,7 @@ const MobileDevModules = lazy(() => import('./assets/pages/dashboard/admin/Mobil
 const AdminInventory = lazy(() => import('./assets/pages/dashboard/admin/Inventory'));
 const AdminApiKeys = lazy(() => import('./assets/pages/dashboard/admin/ApiKeys'));
 const HubManager = lazy(() => import('./assets/pages/dashboard/admin/HubManager'));
+const AdminCatalogueSettings = lazy(() => import('./assets/pages/dashboard/admin/CatalogueSettings'));
 const VendorKYC = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
 const AffiliateKYC = lazy(() => import('./assets/pages/dashboard/affiliate/AffiliateKYC'));
 
@@ -262,6 +264,7 @@ function App() {
             <Route path="/track-order" element={<TrackOrder />} />
             <Route path="/warranty-check" element={<WarrantyCheck />} />
             <Route path="/hub" element={<Hub />} />
+            <Route path="/catalog" element={<Catalogue />} />
             <Route path="/page/shipping" element={<Shipping />} />
             <Route path="/page/returns" element={<Returns />} />
             <Route path="/page/faq" element={<FAQ />} />
@@ -377,6 +380,7 @@ function App() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="share-catalog" element={<ShareCatalog />} />
+            <Route path="catalogue-settings" element={<AdminCatalogueSettings />} />
             <Route path="inventory" element={<AdminInventory />} />
             <Route path="categories" element={<AdminCategories />} />
             <Route path="orders" element={<AdminOrders />} />

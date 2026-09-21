@@ -43,6 +43,7 @@ const DashboardLayout = () => {
         { path: '/admin-dashboard/users', label: 'Users', icon: 'users' },
         { path: '/admin-dashboard/products', label: 'Products', icon: 'package' },
         { path: '/admin-dashboard/share-catalog', label: 'Share Catalog', icon: 'share-2' },
+        { path: '/admin-dashboard/catalogue-settings', label: 'Catalogue Settings', icon: 'layout' },
         { path: '/admin-dashboard/inventory', label: 'Inventory', icon: 'box' },
         { path: '/admin-dashboard/categories', label: 'Categories', icon: 'folder' },
         { path: '/admin-dashboard/orders', label: 'Orders', icon: 'shopping-bag' },
