@@ -157,6 +157,13 @@ const CustomerReviewsCarousel = ({ reviews, renderStars, onEdit, onDelete, curre
   );
 };
 
+// Extracts an 11-char YouTube video ID from watch, share, or embed URLs
+function getYouTubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 const Product = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -173,12 +180,16 @@ const Product = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [showBottomBar, setShowBottomBar] = useState(false);
+  const [ytActive, setYtActive] = useState(false);
   const addToCartRef = useRef(null);
 
   // Capture affiliate code from URL on page load
   useEffect(() => {
     captureAffiliateFromURL(searchParams);
   }, [searchParams]);
+
+  // Reset YouTube facade when navigating to a different product
+  useEffect(() => { setYtActive(false); }, [slug]);
 
   // Show mobile bottom bar when Add to Cart button scrolls out of view
   useEffect(() => {
@@ -900,17 +911,40 @@ const Product = () => {
                     </h2>
                   </div>
                   <div className="p-6 bg-blue-100">
-                    <div className="w-full" style={{height: '300px'}}>
-                      <iframe
-                        width="100%"
-                        height="300"
-                        src={product.videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                        title="Product Video"
-                        style={{ border: 0 }}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
-                        allowFullScreen
-                        className="rounded-lg shadow-md w-full"
-                      ></iframe>
+                    <div className="w-full rounded-lg overflow-hidden" style={{height: '300px'}}>
+                      {ytActive ? (
+                        <iframe
+                          width="100%"
+                          height="300"
+                          src={`https://www.youtube.com/embed/${getYouTubeId(product.videoUrl)}?autoplay=1&rel=0`}
+                          title="Product Video"
+                          style={{ border: 0 }}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="rounded-lg shadow-md w-full h-full"
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setYtActive(true)}
+                          aria-label="Play product video"
+                          className="relative w-full h-full rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 block"
+                        >
+                          <img
+                            src={`https://img.youtube.com/vi/${getYouTubeId(product.videoUrl)}/hqdefault.jpg`}
+                            alt="Product video thumbnail"
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <span className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200">
+                              <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </span>
+                          </span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -11,6 +11,12 @@ import { Plus, Edit, Trash2, Eye, Search, X, RefreshCw, TrendingUp } from 'lucid
 import ShippingRestrictionsWidget from '@/components/common/ShippingRestrictionsWidget';
 import toast from 'react-hot-toast';
 
+function getYouTubeId(url) {
+  if (!url) return null;
+  const m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+
 const Products = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
@@ -1251,9 +1257,36 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
               className="input w-full"
               placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Add a YouTube video URL to showcase your product (will be displayed at 300px height)
-            </p>
+            {/* Live thumbnail preview */}
+            {formData.videoUrl && (() => {
+              const ytId = getYouTubeId(formData.videoUrl);
+              if (ytId) {
+                return (
+                  <div className="mt-2 relative w-48 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+                    <img
+                      src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
+                      alt="Video thumbnail preview"
+                      className="w-full object-cover"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="w-10 h-10 bg-black/60 rounded-full flex items-center justify-center">
+                        <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </span>
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <p className="text-xs text-red-500 mt-1">Invalid YouTube URL — use a watch, share, or embed link</p>
+              );
+            })()}
+            {!formData.videoUrl && (
+              <p className="text-xs text-gray-500 mt-1">
+                Paste a YouTube watch, share, or embed URL to showcase this product
+              </p>
+            )}
           </div>
 
           {/* Image Upload */}
