@@ -931,10 +931,11 @@ const Product = () => {
                           className="relative w-full h-full rounded-lg overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 block"
                         >
                           <img
-                            src={`https://img.youtube.com/vi/${getYouTubeId(product.videoUrl)}/hqdefault.jpg`}
+                            src={`https://img.youtube.com/vi/${getYouTubeId(product.videoUrl)}/maxresdefault.jpg`}
                             alt="Product video thumbnail"
                             className="w-full h-full object-cover"
                             loading="lazy"
+                            onError={(e) => { e.target.src = `https://img.youtube.com/vi/${getYouTubeId(product.videoUrl)}/hqdefault.jpg`; e.target.onerror = null; }}
                           />
                           <span className="absolute inset-0 flex items-center justify-center">
                             <span className="w-16 h-16 bg-black/60 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors duration-200">

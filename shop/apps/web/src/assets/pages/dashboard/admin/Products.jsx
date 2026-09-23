@@ -1264,9 +1264,10 @@ const ProductModal = ({ product, allProducts = [], isViewing, onClose, onSave })
                 return (
                   <div className="mt-2 relative w-48 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
                     <img
-                      src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
+                      src={`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`}
                       alt="Video thumbnail preview"
                       className="w-full object-cover"
+                      onError={(e) => { e.target.src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`; e.target.onerror = null; }}
                     />
                     <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <span className="w-10 h-10 bg-black/60 rounded-full flex items-center justify-center">
