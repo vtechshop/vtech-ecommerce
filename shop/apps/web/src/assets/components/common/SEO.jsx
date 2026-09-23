@@ -6,7 +6,7 @@ const SEO = ({
   title = 'VTech Kitchen - Premium Kitchen Appliances & Utensils',
   description = 'Shop premium kitchen appliances and utensils at VTech Kitchen. Quality cookware, gadgets, and tools for your modern kitchen.',
   keywords = 'kitchen appliances, cookware, kitchen utensils, kitchen gadgets, cooking tools, premium kitchenware',
-  image = `${BASE_URL}/og-image.png`,
+  image = `${BASE_URL}/og-image.jpg`,
   url,
   type = 'website',
   noindex = false,
