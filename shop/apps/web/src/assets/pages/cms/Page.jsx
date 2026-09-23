@@ -6,6 +6,7 @@ import DOMPurify from 'dompurify';
 import api from '@/utils/api';
 import Spinner from '@/components/common/Spinner';
 import { updateMetaTags } from '@/utils/seo';
+import { NoIndex } from '@/components/common/SEO';
 
 const Page = () => {
   const { slug } = useParams();
@@ -38,12 +39,15 @@ const Page = () => {
 
   if (!page) {
     return (
+      <>
+      <NoIndex title="Page Not Found - VTech Kitchen" />
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-12 text-center">
         <h1 className="text-2xl font-bold mb-4">Page not found</h1>
         <Link to="/" className="text-blue-600 hover:underline">
           Back to Home
         </Link>
       </div>
+      </>
     );
   }
 

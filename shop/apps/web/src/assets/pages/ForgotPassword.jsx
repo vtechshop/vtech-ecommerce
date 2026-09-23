@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
+import { NoIndex } from '@/components/common/SEO';
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState('');
@@ -32,6 +33,8 @@ const ForgotPassword = () => {
   };
 
   return (
+    <>
+    <NoIndex title="Forgot Password - VTech Kitchen" />
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
@@ -126,6 +129,7 @@ const ForgotPassword = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

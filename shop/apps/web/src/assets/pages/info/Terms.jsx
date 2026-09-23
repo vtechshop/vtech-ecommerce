@@ -7,7 +7,7 @@ const Terms = () => {
   useEffect(() => {
     updateMetaTags({
       title: 'Terms of Service - VTech Kitchen',
-      description: 'Read VTech Kitchen terms of service covering account usage, orders, payments, shipping, returns, intellectual property, and user responsibilities on our platform.',
+      description: 'Read VTech Kitchen terms of service covering account usage, orders, payments, shipping, returns, intellectual property, and user responsibilities.',
       canonical: 'https://www.vtechkitchen.com/page/terms',
     });
   }, []);

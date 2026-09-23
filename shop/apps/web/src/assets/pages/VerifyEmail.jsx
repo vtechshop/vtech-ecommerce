@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import api from '@/utils/api';
+import { NoIndex } from '@/components/common/SEO';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
@@ -42,6 +43,8 @@ export default function VerifyEmail() {
   };
 
   return (
+    <>
+    <NoIndex title="Verify Email - VTech Kitchen" />
     <div className="min-h-screen bg-cream flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         {status === 'verifying' && (
@@ -120,5 +123,6 @@ export default function VerifyEmail() {
         )}
       </div>
     </div>
+    </>
   );
 }

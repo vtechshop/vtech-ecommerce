@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Home, Search, ArrowLeft, ShoppingBag } from 'lucide-react';
+import { NoIndex } from '@/components/common/SEO';
 
 const NotFound = () => {
   return (
+    <>
+      <NoIndex title="Page Not Found - VTech Kitchen" />
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
       <div className="text-center max-w-lg">
         {/* 404 Number */}
@@ -57,6 +60,7 @@ const NotFound = () => {
         </p>
       </div>
     </div>
+    </>
   );
 };
 

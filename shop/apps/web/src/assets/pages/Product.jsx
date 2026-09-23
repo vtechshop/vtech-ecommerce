@@ -455,7 +455,7 @@ const Product = () => {
       <>
         <SEO
           title={`${titleFromSlug} - VTech Kitchen`}
-          description={`Buy ${titleFromSlug} at VTech Kitchen.`}
+          description={`Buy ${titleFromSlug} at VTech Kitchen. Premium commercial kitchen and food processing equipment with fast shipping across India.`}
           url={`https://www.vtechkitchen.com/product/${slug}`}
         />
         <div className="min-h-screen flex items-center justify-center">

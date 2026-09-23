@@ -72,7 +72,7 @@ const Search = () => {
   useEffect(() => {
     updateMetaTags({
       title: view === 'categories' ? 'Shop by Category - VTech' : query ? `Search results for "${query}" - VTech` : 'Search Products - VTech',
-      description: 'Search for products from thousands of trusted vendors',
+      description: 'Search VTech Kitchen\'s full range of commercial kitchen and food processing machines. Filter by category, price, or keyword.',
     });
   }, [query, view]);
 

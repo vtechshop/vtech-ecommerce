@@ -200,6 +200,21 @@ const Footer = () => {
                 Contact Us
               </Link>
             </li>
+            <li>
+              <Link to="/catalog" className="flex items-center min-h-[44px] text-sm text-gray-300 hover:text-white transition-colors">
+                Product Catalogue
+              </Link>
+            </li>
+            <li>
+              <Link to="/hub" className="flex items-center min-h-[44px] text-sm text-gray-300 hover:text-white transition-colors">
+                Get a Quote
+              </Link>
+            </li>
+            <li>
+              <Link to="/page/vendor-guide" className="flex items-center min-h-[44px] text-sm text-gray-300 hover:text-white transition-colors">
+                Vendor Guide
+              </Link>
+            </li>
           </ul>
         </div>
 
@@ -243,6 +258,11 @@ const Footer = () => {
             <li>
               <Link to="/page/affiliate-terms" className="flex items-center min-h-[44px] text-sm text-gray-300 hover:text-white transition-colors">
                 Affiliate Terms
+              </Link>
+            </li>
+            <li>
+              <Link to="/page/affiliate-guide" className="flex items-center min-h-[44px] text-sm text-gray-300 hover:text-white transition-colors">
+                Affiliate Guide
               </Link>
             </li>
           </ul>
@@ -360,6 +380,21 @@ const Footer = () => {
                   Contact Us
                 </Link>
               </li>
+              <li>
+                <Link to="/catalog" className="hover:text-white transition-colors">
+                  Product Catalogue
+                </Link>
+              </li>
+              <li>
+                <Link to="/hub" className="hover:text-white transition-colors">
+                  Get a Quote
+                </Link>
+              </li>
+              <li>
+                <Link to="/page/vendor-guide" className="hover:text-white transition-colors">
+                  Vendor Guide
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -390,6 +425,11 @@ const Footer = () => {
               <li>
                 <Link to="/page/affiliate-terms" className="hover:text-white transition-colors">
                   Affiliate Terms
+                </Link>
+              </li>
+              <li>
+                <Link to="/page/affiliate-guide" className="hover:text-white transition-colors">
+                  Affiliate Guide
                 </Link>
               </li>
             </ul>

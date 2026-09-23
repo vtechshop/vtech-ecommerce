@@ -82,6 +82,7 @@ const Cart = () => {
   if (items.length === 0) {
     return (
       <div className="bg-white min-h-screen">
+        <NoIndex title="Shopping Cart - VTech Kitchen" />
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-12">
           <div className="max-w-xl mx-auto text-center bg-white rounded-lg border p-12 fade-in scale-in">
             <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 empty-state-icon">

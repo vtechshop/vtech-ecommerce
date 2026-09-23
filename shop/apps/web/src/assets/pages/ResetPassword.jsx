@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '@/utils/api';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
+import { NoIndex } from '@/components/common/SEO';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -52,6 +53,8 @@ const ResetPassword = () => {
 
   if (!token) {
     return (
+      <>
+      <NoIndex title="Reset Password - VTech Kitchen" />
       <div className="min-h-screen flex items-center justify-center py-12 px-4">
         <div className="max-w-md w-full text-center">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
@@ -83,10 +86,13 @@ const ResetPassword = () => {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   return (
+    <>
+    <NoIndex title="Reset Password - VTech Kitchen" />
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
@@ -173,6 +179,7 @@ const ResetPassword = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
