@@ -376,8 +376,19 @@ if (env.NODE_ENV === 'production') {
       }
     }));
 
+    // Cache index.html content in memory (cleared on server restart / new deploy)
+    let _indexHtml = null;
+    const getIndexHtml = () => {
+      if (!_indexHtml) _indexHtml = fs.readFileSync(path.join(frontendPath, 'index.html'), 'utf-8');
+      return _indexHtml;
+    };
+
+    // Per-slug preload HTML cache — avoids DB hit on every product page load
+    const _preloadCache = new Map();
+    const PRELOAD_TTL = 5 * 60 * 1000; // 5 minutes
+
     // Handle SPA routing - serve index.html for all non-API routes
-    app.get('*', (req, res, next) => {
+    app.get('*', async (req, res, next) => {
       // Skip if it's an API route
       if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
         return next();
@@ -388,6 +399,54 @@ if (env.NODE_ENV === 'production') {
       if (BOT_UA_PATTERN.test(userAgent)) {
         req.query.path = req.path;
         return seoController.renderPage(req, res, next);
+      }
+
+      // For product pages: inject hero image preload to beat the SPA waterfall.
+      // Without this, the browser must download JS → run it → call the API → discover the
+      // image URL before it can start fetching. The preload tag cuts ~1-2s from LCP.
+      const productMatch = req.path.match(/^\/product\/([^/?]+)$/);
+      if (productMatch) {
+        const slug = productMatch[1];
+        const now = Date.now();
+        const hit = _preloadCache.get(slug);
+
+        if (hit && now - hit.ts < PRELOAD_TTL) {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache');
+          return res.send(hit.html);
+        }
+
+        try {
+          const Product = require('./models/Product');
+          const product = await Product.findOne({ slug, published: true })
+            .select('images')
+            .lean();
+
+          if (product?.images?.[0]) {
+            let heroUrl = String(product.images[0]);
+            // Apply Cloudinary f_auto/q_auto/w_800 so browser gets WebP at ~800px width
+            if (heroUrl.includes('res.cloudinary.com')) {
+              const ui = heroUrl.indexOf('/upload/');
+              if (ui !== -1) {
+                const after = heroUrl.substring(ui + 8);
+                const vm = after.match(/^(.*?)(v\d+\/)/);
+                if (vm?.[1]) heroUrl = heroUrl.substring(0, ui + 8) + vm[2] + after.substring(vm[0].length);
+              }
+              heroUrl = heroUrl.replace('/upload/', '/upload/q_auto,f_auto,w_800/');
+            }
+            const safeUrl = heroUrl.replace(/"/g, '%22').replace(/[<>]/g, '');
+            const injected = getIndexHtml().replace(
+              '<head>',
+              `<head>\n  <link rel="preload" as="image" href="${safeUrl}" fetchpriority="high">`
+            );
+            _preloadCache.set(slug, { html: injected, ts: now });
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache');
+            return res.send(injected);
+          }
+        } catch (_err) {
+          // Fall through to normal index.html on any DB error
+        }
       }
 
       res.sendFile(path.join(frontendPath, 'index.html'));

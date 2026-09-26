@@ -4,6 +4,21 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, ZoomIn, Maximize2, X } from 'lucide-react';
 
+// Generate responsive srcSet for Cloudinary hero images (480/800/1200px breakpoints)
+const getHeroSrcSet = (url) => {
+  if (!url || !url.includes('res.cloudinary.com')) return null;
+  let base = url;
+  const idx = base.indexOf('/upload/');
+  if (idx !== -1) {
+    const after = base.substring(idx + 8);
+    const vm = after.match(/^(.*?)(v\d+\/)/);
+    if (vm?.[1]) base = base.substring(0, idx + 8) + vm[2] + after.substring(vm[0].length);
+  }
+  return [480, 800, 1200]
+    .map(w => `${base.replace('/upload/', `/upload/q_auto,f_auto,w_${w}/`)} ${w}w`)
+    .join(', ');
+};
+
 const ZOOM_FACTOR = 2.5;
 const LENS_SIZE = 180; // px
 const LIGHTBOX_ZOOM = 3; // zoom level in lightbox
@@ -276,6 +291,11 @@ const ProductImageCarousel = ({ images = [], productName = '' }) => {
                 alt={`${productName} - ${currentIndex + 1}`}
                 className="w-full h-full object-contain p-4"
                 draggable={false}
+                loading={currentIndex === 0 ? 'eager' : 'lazy'}
+                fetchPriority={currentIndex === 0 ? 'high' : 'auto'}
+                decoding="async"
+                srcSet={getHeroSrcSet(images[currentIndex]) || undefined}
+                sizes="(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 600px"
               />
             </AnimatePresence>
 
@@ -356,6 +376,7 @@ const ProductImageCarousel = ({ images = [], productName = '' }) => {
                     src={image}
                     alt={`${productName} thumbnail ${index + 1}`}
                     className="w-full h-full object-contain p-0.5 bg-white"
+                    loading="lazy"
                   />
                 </button>
               ))}
