@@ -461,6 +461,49 @@ if (env.NODE_ENV === 'production') {
         }
       }
 
+      // Home page: inject first banner image into skeleton to eliminate element render delay.
+      // Without this, the LCP <img> doesn't exist until React mounts + banner API resolves (~5s).
+      if (req.path === '/' || req.path === '') {
+        const BANNER_CACHE_KEY = '__home_banner__';
+        const now = Date.now();
+        const hit = _preloadCache.get(BANNER_CACHE_KEY);
+        if (hit && now - hit.ts < PRELOAD_TTL) {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache');
+          return res.send(hit.html);
+        }
+        try {
+          const Banner = require('./models/Banner');
+          const banner = await Banner.findOne({ platform: 'website', isActive: true })
+            .sort({ order: 1 })
+            .select('image')
+            .lean();
+          const rawUrl = banner?.image;
+          if (rawUrl && String(rawUrl).includes('res.cloudinary.com')) {
+            let bannerUrl = String(rawUrl);
+            const ui = bannerUrl.indexOf('/upload/');
+            if (ui !== -1) {
+              const after = bannerUrl.substring(ui + 8);
+              const vm = after.match(/^(.*?)(v\d+\/)/);
+              if (vm?.[1]) bannerUrl = bannerUrl.substring(0, ui + 8) + vm[2] + after.substring(vm[0].length);
+            }
+            const mkUrl = (w) => bannerUrl.replace('/upload/', `/upload/q_auto,f_auto,w_${w}/`).replace(/"/g, '%22').replace(/[<>]/g, '');
+            const srcset = `${mkUrl(480)} 480w, ${mkUrl(800)} 800w, ${mkUrl(1200)} 1200w`;
+            const preloadTag = `<link rel="preload" as="image" imagesrcset="${srcset}" imagesizes="100vw" fetchpriority="high">`;
+            const bannerImgDiv = `<div style="width:100%;aspect-ratio:2/1;max-height:500px;overflow:hidden;background:#d1d5db"><img src="${mkUrl(800)}" srcset="${srcset}" sizes="100vw" alt="" style="width:100%;height:100%;object-fit:cover;display:block" width="800" height="400" fetchpriority="high" decoding="async"></div>`;
+            const injected = getIndexHtml()
+              .replace('<head>', `<head>\n  ${preloadTag}`)
+              .replace('<div id="hero-slot-placeholder" style="width:100%;aspect-ratio:2/1;max-height:500px;background:#d1d5db;"></div>', bannerImgDiv);
+            _preloadCache.set(BANNER_CACHE_KEY, { html: injected, ts: now });
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.setHeader('Cache-Control', 'no-cache');
+            return res.send(injected);
+          }
+        } catch (_err) {
+          // Fall through to normal index.html on any DB error
+        }
+      }
+
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
   }

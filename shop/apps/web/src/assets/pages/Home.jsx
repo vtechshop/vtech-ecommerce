@@ -197,7 +197,17 @@ const Home = React.memo(() => {
                       <div className="bg-white rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-200 hover:-translate-y-1">
                         <div className="aspect-square w-full bg-gray-50 overflow-hidden">
                           {category.image ? (
-                            <img src={normalizeImageUrl(category.image, { width: 400 })} alt={category.name} width={400} height={400} loading="lazy" decoding="async" className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500" />
+                            <img
+                              src={normalizeImageUrl(category.image, { width: 320 })}
+                              srcSet={`${normalizeImageUrl(category.image, { width: 160 })} 160w, ${normalizeImageUrl(category.image, { width: 320 })} 320w, ${normalizeImageUrl(category.image, { width: 400 })} 400w`}
+                              sizes="(max-width: 767px) 45vw, 200px"
+                              alt={category.name}
+                              width={320}
+                              height={320}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500"
+                            />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <svg className="w-16 h-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
