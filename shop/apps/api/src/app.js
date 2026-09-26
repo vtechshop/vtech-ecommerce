@@ -379,7 +379,18 @@ if (env.NODE_ENV === 'production') {
     // Cache index.html content in memory (cleared on server restart / new deploy)
     let _indexHtml = null;
     const getIndexHtml = () => {
-      if (!_indexHtml) _indexHtml = fs.readFileSync(path.join(frontendPath, 'index.html'), 'utf-8');
+      if (!_indexHtml) {
+        let html = fs.readFileSync(path.join(frontendPath, 'index.html'), 'utf-8');
+        // Make the Tailwind CSS bundle non-blocking so FCP fires at TTFB instead of
+        // waiting ~1s for the CSS download. The skeleton uses only inline styles so it
+        // renders correctly before the CSS arrives. CSS loads in ~200ms and is fully
+        // available long before React hydrates (~3s), so there is no unstyled flash.
+        html = html.replace(
+          /<link rel="stylesheet" crossorigin href="(\/assets\/css\/[^"]+\.css)">/,
+          (_, href) => `<link rel="preload" as="style" href="${href}"><link rel="stylesheet" href="${href}" media="print" onload="this.media='all'">`
+        );
+        _indexHtml = html;
+      }
       return _indexHtml;
     };
 
