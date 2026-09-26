@@ -82,18 +82,20 @@ try {
 
 // Prefetch hero banners — on fresh visits this starts the API call before React renders.
 // On repeat visits with warm cache the setQueryData above makes this a no-op.
-// Also injects a <link rel="preload"> when the API responds, overlapping image download
-// with any remaining React render time.
-queryClient.prefetchQuery({
-  queryKey: ['hero-banners'],
-  queryFn: () =>
-    axios.get('/banners?platform=website').then(r => {
-      const banners = r.data.data || [];
-      _injectBannerPreload(banners);
-      return banners;
-    }),
-  staleTime: BANNER_STALE_MS,
-});
+// Skip on product pages: the server already injected a hero <img> + preload for the product
+// image, so a banner preload here would waste bandwidth and risk overriding it.
+if (!window.location.pathname.startsWith('/product/')) {
+  queryClient.prefetchQuery({
+    queryKey: ['hero-banners'],
+    queryFn: () =>
+      axios.get('/banners?platform=website').then(r => {
+        const banners = r.data.data || [];
+        _injectBannerPreload(banners);
+        return banners;
+      }),
+    staleTime: BANNER_STALE_MS,
+  });
+}
 
 const rootElement = document.getElementById('root');
 

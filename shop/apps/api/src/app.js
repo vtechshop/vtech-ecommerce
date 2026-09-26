@@ -444,10 +444,13 @@ if (env.NODE_ENV === 'production') {
               const safeUrl = heroUrl.replace(/"/g, '%22').replace(/[<>]/g, '');
               preloadTag = `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high">`;
             }
-            const injected = getIndexHtml().replace(
-              '<head>',
-              `<head>\n  ${preloadTag}`
-            );
+            // Also replace the generic 2:1 banner skeleton with a 1:1 product
+            // hero img. The browser paints this the moment the image downloads
+            // (before React hydrates), so LCP fires ~1-2s earlier on mobile.
+            const heroImgDiv = `<div style="aspect-ratio:1;width:min(100%,500px);overflow:hidden;border-radius:12px;background:#f9fafa;border:1px solid #e5e7eb;margin:12px auto"><img src="${mkUrl(480)}" srcset="${srcset}" sizes="(max-width:767px) 100vw,(max-width:1199px) 50vw,600px" alt="" style="width:100%;height:100%;object-fit:contain;padding:16px;display:block" width="480" height="480" fetchpriority="high" decoding="async"></div>`;
+            const injected = getIndexHtml()
+              .replace('<head>', `<head>\n  ${preloadTag}`)
+              .replace('<div id="hero-slot-placeholder" style="width:100%;aspect-ratio:2/1;max-height:500px;background:#d1d5db;"></div>', heroImgDiv);
             _preloadCache.set(slug, { html: injected, ts: now });
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.setHeader('Cache-Control', 'no-cache');
