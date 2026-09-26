@@ -424,20 +424,29 @@ if (env.NODE_ENV === 'production') {
 
           if (product?.images?.[0]) {
             let heroUrl = String(product.images[0]);
-            // Apply Cloudinary f_auto/q_auto/w_800 so browser gets WebP at ~800px width
+            let preloadTag;
             if (heroUrl.includes('res.cloudinary.com')) {
+              // Strip existing transforms to get a clean base URL
               const ui = heroUrl.indexOf('/upload/');
               if (ui !== -1) {
                 const after = heroUrl.substring(ui + 8);
                 const vm = after.match(/^(.*?)(v\d+\/)/);
                 if (vm?.[1]) heroUrl = heroUrl.substring(0, ui + 8) + vm[2] + after.substring(vm[0].length);
               }
-              heroUrl = heroUrl.replace('/upload/', '/upload/q_auto,f_auto,w_800/');
+              // Build srcset variants matching the carousel's sizes exactly
+              // imagesrcset/imagesizes lets the browser preload the SAME URL it picks from srcSet,
+              // avoiding a double-download (w_800 preloaded but w_480 actually used on mobile).
+              const mkUrl = (w) => heroUrl.replace('/upload/', `/upload/q_auto,f_auto,w_${w}/`).replace(/"/g, '%22').replace(/[<>]/g, '');
+              const srcset = `${mkUrl(480)} 480w, ${mkUrl(800)} 800w, ${mkUrl(1200)} 1200w`;
+              const sizes = '(max-width: 767px) 100vw, (max-width: 1199px) 50vw, 600px';
+              preloadTag = `<link rel="preload" as="image" imagesrcset="${srcset}" imagesizes="${sizes}" fetchpriority="high">`;
+            } else {
+              const safeUrl = heroUrl.replace(/"/g, '%22').replace(/[<>]/g, '');
+              preloadTag = `<link rel="preload" as="image" href="${safeUrl}" fetchpriority="high">`;
             }
-            const safeUrl = heroUrl.replace(/"/g, '%22').replace(/[<>]/g, '');
             const injected = getIndexHtml().replace(
               '<head>',
-              `<head>\n  <link rel="preload" as="image" href="${safeUrl}" fetchpriority="high">`
+              `<head>\n  ${preloadTag}`
             );
             _preloadCache.set(slug, { html: injected, ts: now });
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
