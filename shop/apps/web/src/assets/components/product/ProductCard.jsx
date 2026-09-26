@@ -9,7 +9,7 @@ import { normalizeImageUrl, getResponsiveImageUrls } from '@/utils/placeholders'
 import { useAddToCartAnimation } from '@/components/animations/AddToCartAnimation';
 import { playAddToCart, playError } from '@/utils/sounds';
 
-const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
+const ProductCard = React.memo(({ product, onClick, onQuickView, priority = false }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const addToCartButtonRef = useRef(null);
@@ -110,7 +110,8 @@ const ProductCard = React.memo(({ product, onClick, onQuickView }) => {
                   alt={product.seo?.title || product.title}
                   width={150}
                   height={150}
-                  loading="lazy"
+                  loading={priority ? 'eager' : 'lazy'}
+                  fetchPriority={priority ? 'high' : 'auto'}
                   decoding="async"
                   className={`w-full h-full object-contain p-3 transition-all duration-500 ${hasSecondImage ? 'group-hover:opacity-0' : 'group-hover:scale-105'}`}
                 />

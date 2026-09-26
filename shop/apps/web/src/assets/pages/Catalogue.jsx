@@ -14,7 +14,7 @@ import SEO from '@/components/common/SEO';
 const DEFAULT_LIMIT = 48; // divisible by 4, 6, 8 so every row is full across all breakpoints
 
 // ─── Compact catalogue card ─────────────────────────────────────────────────
-const CatalogueCard = ({ product }) => {
+const CatalogueCard = ({ product, priority = false }) => {
   const imgSrc = normalizeImageUrl(product.images?.[0], {
     width: 200,
     quality: 'auto',
@@ -34,7 +34,8 @@ const CatalogueCard = ({ product }) => {
           width={200}
           height={200}
           className="w-full h-full object-contain group-hover:scale-[1.05] transition-transform duration-200"
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : 'auto'}
           decoding="async"
           onError={(e) => {
             e.target.src = PLACEHOLDER_IMAGE_MD;
@@ -327,8 +328,8 @@ const Catalogue = () => {
             </div>
           ) : (
             <div className={`grid grid-cols-4 sm:grid-cols-6 xl:grid-cols-8 gap-1 sm:gap-1.5 xl:gap-2 transition-opacity duration-200 ${isFetching && !isManual ? 'opacity-60' : 'opacity-100'}`}>
-              {products.map((product) => (
-                <CatalogueCard key={product._id} product={product} />
+              {products.map((product, index) => (
+                <CatalogueCard key={product._id} product={product} priority={index < 8} />
               ))}
             </div>
           )}

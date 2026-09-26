@@ -211,6 +211,7 @@ const Category = () => {
                         <ProductCard
                           product={{ _id: product._id ?? product.id, ...product }}
                           onClick={product._isSponsored ? () => handleAdClick(product._adData) : undefined}
+                          priority={index < 4}
                         />
                         {product._isSponsored && (
                           <div className="absolute top-2 left-2 z-10">
