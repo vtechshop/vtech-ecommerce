@@ -2,64 +2,34 @@
 const shippingService = require('./shippingService');
 const logger = require('../config/logger');
 
+// Order statuses as defined in models/Order.js, in the order a shipment moves through them
+const STATUS_ORDER = ['pending', 'pending_payment', 'placed', 'paid', 'packed', 'shipped', 'out_for_delivery', 'delivered'];
+const FINAL_STATUSES = ['delivered', 'cancelled', 'returned'];
+
 /**
  * Automatic Tracking Synchronization Service
  * Syncs order status from carrier APIs automatically
  */
 class TrackingSyncService {
   /**
-   * Map carrier tracking status to order status
+   * Map a carrier's tracking status to an Order status.
+   * Returns one of the values in the Order schema ('shipped', 'out_for_delivery', 'delivered'),
+   * or null when the carrier status should not change the order (created, pending, unknown,
+   * and also RTO / cancelled / undelivered: those need a person, because cancelling an order
+   * has stock and refund consequences).
    */
   mapCarrierStatusToOrderStatus(carrierStatus) {
-    const statusMap = {
-      // Delhivery statuses
-      'Shipment Created': 'Processing',
-      'In Transit': 'Shipped',
-      'Out For Delivery': 'Shipped',
-      'Delivered': 'Delivered',
-      'RTO': 'Cancelled',
-      'RTO-Delivered': 'Cancelled',
-      'Cancelled': 'Cancelled',
+    if (carrierStatus === null || carrierStatus === undefined) return null;
+    const normalized = String(carrierStatus).toLowerCase().trim().replace(/[_-]+/g, ' ');
 
-      // Shiprocket statuses
-      'NEW': 'Processing',
-      'SHIPPED': 'Shipped',
-      'DELIVERED': 'Delivered',
-      'CANCELED': 'Cancelled',
-      'RTO_DELIVERED': 'Cancelled',
+    // Never auto-advance on a return, a failed delivery or a cancellation
+    if (/\b(rto|return|undelivered|not delivered|cancel|cancell?ed|lost|damaged)\b/.test(normalized)) return null;
 
-      // BlueDart statuses
-      'BOOKED': 'Processing',
-      'INTRANSIT': 'Shipped',
-      'DELIVERED': 'Delivered',
-      'UNDELIVERED': 'Processing',
+    if (normalized === 'delivered') return 'delivered';
+    if (normalized === 'out for delivery') return 'out_for_delivery';
+    if (['in transit', 'intransit', 'shipped', 'dispatched'].includes(normalized)) return 'shipped';
 
-      // Generic statuses
-      'created': 'Processing',
-      'in_transit': 'Shipped',
-      'delivered': 'Delivered',
-      'cancelled': 'Cancelled',
-      'pending': 'Pending'
-    };
-
-    // Normalize status string
-    const normalized = carrierStatus.toLowerCase().trim();
-
-    // Check exact matches first
-    for (const [carrierStat, orderStat] of Object.entries(statusMap)) {
-      if (carrierStat.toLowerCase() === normalized) {
-        return orderStat;
-      }
-    }
-
-    // Check partial matches for flexibility
-    if (normalized.includes('deliver')) return 'Delivered';
-    if (normalized.includes('transit') || normalized.includes('ship')) return 'Shipped';
-    if (normalized.includes('cancel') || normalized.includes('rto')) return 'Cancelled';
-    if (normalized.includes('pending') || normalized.includes('await')) return 'Pending';
-
-    // Default to Processing if unknown
-    return 'Processing';
+    return null;
   }
 
   /**
@@ -68,8 +38,10 @@ class TrackingSyncService {
    */
   async syncOrderTracking(order) {
     try {
-      // Only sync if order has AWB and carrier assigned
-      if (!order.awb || !order.carrier) {
+      // Only sync if order has AWB and carrier assigned (stored under order.shipment)
+      const awb = order.shipment?.awb;
+      const carrier = order.shipment?.carrier;
+      if (!awb || !carrier) {
         return {
           success: false,
           message: 'Order missing AWB or carrier information'
@@ -77,17 +49,17 @@ class TrackingSyncService {
       }
 
       // Don't sync already delivered or cancelled orders
-      if (['Delivered', 'Cancelled'].includes(order.status)) {
+      if (FINAL_STATUSES.includes(order.status)) {
         return {
           success: false,
-          message: `Order already ${order.status.toLowerCase()}`
+          message: `Order already ${order.status}`
         };
       }
 
-      logger.info(`🔄 Syncing tracking for order ${order.orderId} (AWB: ${order.awb})`);
+      logger.info(`🔄 Syncing tracking for order ${order.orderId} (AWB: ${awb})`);
 
       // Fetch tracking data from carrier
-      const tracking = await shippingService.trackShipment(order.awb, order.carrier);
+      const tracking = await shippingService.trackShipment(awb, carrier);
 
       if (!tracking || !tracking.status) {
         return {
@@ -96,11 +68,14 @@ class TrackingSyncService {
         };
       }
 
-      // Map carrier status to order status
-      const newOrderStatus = this.mapCarrierStatusToOrderStatus(tracking.status);
+      // Map carrier status to order status. The order only ever moves forward:
+      // a late "in transit" scan cannot pull a delivered order back.
+      const mappedStatus = this.mapCarrierStatusToOrderStatus(tracking.status);
+      const statusChanged = mappedStatus !== null
+        && STATUS_ORDER.indexOf(mappedStatus) > STATUS_ORDER.indexOf(order.status);
+      const newOrderStatus = statusChanged ? mappedStatus : order.status;
 
       // Log if status changed
-      const statusChanged = order.status !== newOrderStatus;
       if (statusChanged) {
         logger.info(`📦 Order ${order.orderId} status changed: ${order.status} → ${newOrderStatus}`);
       }
@@ -167,18 +142,19 @@ class TrackingSyncService {
    * Don't sync too frequently to avoid rate limits
    */
   shouldSyncOrder(order, minIntervalMinutes = 30) {
-    // Always sync if never synced before
-    if (!order.trackingLastSynced) {
-      return true;
-    }
-
-    // Don't sync delivered or cancelled orders
-    if (['Delivered', 'Cancelled'].includes(order.status)) {
+    // Don't sync delivered, cancelled or returned orders
+    if (FINAL_STATUSES.includes(order.status)) {
       return false;
     }
 
+    // Always sync if never synced before
+    const lastSynced = order.shipment?.trackingLastSynced;
+    if (!lastSynced) {
+      return true;
+    }
+
     // Check if enough time has passed since last sync
-    const lastSyncTime = new Date(order.trackingLastSynced);
+    const lastSyncTime = new Date(lastSynced);
     const minutesSinceSync = (Date.now() - lastSyncTime) / 1000 / 60;
 
     return minutesSinceSync >= minIntervalMinutes;
