@@ -1692,6 +1692,10 @@ async function updateOrderStatus(req, res, next) {
 
     await order.save();
 
+    // CRM order event (never throws; ignored unless the order had a verified payment)
+    const crmEvent = { shipped: 'order.shipped', delivered: 'order.delivered', cancelled: 'order.cancelled' }[status];
+    if (crmEvent) await require('../services/crmEventService').recordOrderEvent(crmEvent, order);
+
     // Auto-approve commissions on delivery (money stays on hold until admin releases)
     if (status === 'delivered') {
       const payoutService = require('../services/payoutService');

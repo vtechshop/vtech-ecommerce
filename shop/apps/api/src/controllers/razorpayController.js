@@ -18,6 +18,7 @@ const notificationService = require('../services/notificationService');
 const { activateWarrantiesForOrder } = require('./adminController');
 const socketService = require('../services/socketService');
 const whatsappService = require('../services/whatsappService');
+const crmEventService = require('../services/crmEventService');
 
 // Unique identifier for this process instance — used as the claimedBy field in
 // notification atomic claims so optimistic lock checks can distinguish instances
@@ -33,6 +34,10 @@ const MAX_WEBHOOK_AGE_MS = 25 * 60 * 60 * 1000;
  */
 async function sendPostPaymentNotifications(order) {
   const now = new Date();
+
+  // CRM order event. One outbox row per order (unique key), written only when the payment status
+  // on the order is a verified one. Never throws and never calls the network.
+  await crmEventService.recordOrderEvent('order.confirmed', order);
 
   // Customer confirmation email (atomic claim)
   await _claimAndSendCustomerEmail(order._id, now);

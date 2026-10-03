@@ -105,6 +105,16 @@ const orderSchema = new mongoose.Schema({
   source: { type: String, enum: ['online', 'in-store', 'phone'], default: 'online' },
   customerPhone: String, // For in-store/phone orders - warranty lookup
   customerNotes: { type: String, maxlength: 500 },
+  // What the customer chose at the optional "offers on WhatsApp" tick box at checkout.
+  // Absent when the question was not asked. Separate from order updates.
+  marketingConsent: {
+    whatsapp: {
+      optedIn: { type: Boolean },
+      at: { type: Date },
+      source: { type: String },
+      policyVersion: { type: String },
+    },
+  },
   internalNotes: String,
   cancellation: {
     reason: String,

@@ -67,6 +67,8 @@ const Checkout = () => {
   const [saveAddress, setSaveAddress] = useState(true); // Save address to account by default
   const [orderPlaced, setOrderPlaced] = useState(false); // Flag to prevent redirect after order success
   const [guestEmail, setGuestEmail] = useState(''); // Email for guest checkout
+  // Marketing consent is separate from order updates and starts unticked
+  const [whatsappOffers, setWhatsappOffers] = useState(false);
 
   useEffect(() => {
     // Don't redirect if order was just placed (cart will be empty but that's expected)
@@ -278,6 +280,8 @@ const Checkout = () => {
       ...((!user && guestEmail) && { guestEmail: guestEmail.trim() }),
       // Include affiliate code for commission tracking
       ...(affiliateCode && { affiliateCode }),
+      // Always an explicit true/false; the server records consent only for true
+      marketingConsent: { whatsappOffers: whatsappOffers === true },
     };
 
     // For Razorpay, create order first then initiate payment
@@ -692,6 +696,26 @@ const Checkout = () => {
                       </svg>
                       <span>Your payment information is encrypted and secure</span>
                     </div>
+                  </div>
+
+                  {/* Optional marketing consent — not required to place the order */}
+                  <div className="mb-6">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="whatsappOffers"
+                        data-testid="whatsapp-offers-consent"
+                        checked={whatsappOffers}
+                        onChange={(e) => setWhatsappOffers(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        Send me offers and promotions on WhatsApp
+                        <span className="block text-xs text-gray-500 mt-0.5">
+                          Optional. You can stop at any time by replying STOP.
+                        </span>
+                      </span>
+                    </label>
                   </div>
 
                   <div className="flex gap-3">

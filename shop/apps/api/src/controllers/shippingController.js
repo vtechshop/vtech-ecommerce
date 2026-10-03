@@ -6,6 +6,7 @@ const logger = require('../config/logger');
 const shippingService = require('../services/shippingService');
 const delhiveryService = require('../services/delhiveryService');
 const trackingSyncService = require('../services/trackingSyncService');
+const crmEventService = require('../services/crmEventService');
 const socketService = require('../services/socketService');
 const whatsappService = require('../services/whatsappService');
 
@@ -440,6 +441,9 @@ exports.markAsShipped = async (req, res, next) => {
 
     logger.info(`Order marked as shipped: ${orderId}`);
 
+    // CRM order event (never throws; ignored unless the order had a verified payment)
+    await crmEventService.recordOrderEvent('order.shipped', order);
+
     // Socket + WhatsApp notifications (fire-and-forget)
     try {
       const awb = order.shipment?.awb || 'N/A';
@@ -630,6 +634,10 @@ exports.syncTrackingData = async (req, res, next) => {
     }
 
     await order.save();
+
+    if (syncResult.statusChanged && syncResult.newStatus === 'delivered') {
+      await crmEventService.recordOrderEvent('order.delivered', order);
+    }
 
     res.json({
       success: true,

@@ -8,6 +8,7 @@ const AdEvent = require('../models/AdEvent');
 const { generateOrderId } = require('../utils/helpers');
 const { getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
+const crmEventService = require('../services/crmEventService');
 const env = require('../config/env');
 // Payment is now handled by Razorpay controller directly
 const warrantyService = require('../services/warrantyService');
@@ -91,6 +92,35 @@ const activateWarranties = async (order) => {
 exports.createOrder = async (req, res, next) => {
   try {
     const { items, shipTo, shippingMethod, paymentMethod, paymentDetails, guestEmail, notes } = req.body;
+
+    // Optional marketing consent (the "offers on WhatsApp" tick box). Only a real boolean is
+    // accepted; a missing field records nothing. Time, source and policy version are set here,
+    // never taken from the request.
+    let marketingConsent;
+    if (req.body.marketingConsent !== undefined) {
+      const input = req.body.marketingConsent;
+      const isObject = input !== null && typeof input === 'object' && !Array.isArray(input);
+      const hasChoice = isObject && Object.prototype.hasOwnProperty.call(input, 'whatsappOffers');
+      if (!isObject || (hasChoice && typeof input.whatsappOffers !== 'boolean')) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_MARKETING_CONSENT',
+            message: 'Marketing consent must be true or false',
+          },
+        });
+      }
+      if (hasChoice) {
+        marketingConsent = {
+          whatsapp: {
+            optedIn: input.whatsappOffers,
+            at: new Date(),
+            source: 'checkout_whatsapp_offers_checkbox',
+            policyVersion: process.env.MARKETING_CONSENT_POLICY_VERSION || '2026-10',
+          },
+        };
+      }
+    }
 
     // Check if this is guest checkout (ensure boolean, not truthy value)
     const isGuest = !req.user && !!guestEmail;
@@ -413,6 +443,7 @@ exports.createOrder = async (req, res, next) => {
           },
           shipTo,
           ...(notes && { customerNotes: notes.trim().slice(0, 500) }),
+          ...(marketingConsent && { marketingConsent }),
           status: initialStatus,
           events: [{
             status: initialStatus,
@@ -930,6 +961,9 @@ exports.cancelOrder = async (req, res, next) => {
     await order.save();
 
     logger.info(`Order cancelled: ${order.orderId}`);
+
+    // CRM order event (never throws; ignored unless the order had a verified payment)
+    await crmEventService.recordOrderEvent('order.cancelled', order);
 
     // Send cancellation notifications (async - don't block response)
     (async () => {

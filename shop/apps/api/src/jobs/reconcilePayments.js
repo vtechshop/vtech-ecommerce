@@ -2,6 +2,7 @@ require('dotenv').config();
 const Razorpay = require('razorpay');
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
+const crmEventService = require('../services/crmEventService');
 
 // Initialize Razorpay with your environment variables
 const razorpay = new Razorpay({
@@ -87,6 +88,9 @@ const reconcilePayments = async () => {
 
           await order.save();
           console.log(`Order ${order.orderId} confirmed automatically.`);
+
+          // CRM order event (payment was just confirmed against Razorpay; never throws)
+          await crmEventService.recordOrderEvent('order.confirmed', order);
           
           // 5. Send Order Confirmation Email
           try {

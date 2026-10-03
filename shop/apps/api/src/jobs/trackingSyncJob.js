@@ -2,6 +2,7 @@
 const cron = require('node-cron');
 const Order = require('../models/Order');
 const trackingSyncService = require('../services/trackingSyncService');
+const crmEventService = require('../services/crmEventService');
 const logger = require('../config/logger');
 
 /**
@@ -113,6 +114,10 @@ class TrackingSyncJob {
             }
 
             await order.save();
+
+            if (syncResult.statusChanged && syncResult.newStatus === 'delivered') {
+              await crmEventService.recordOrderEvent('order.delivered', order);
+            }
           } else {
             this.stats.failedSyncs++;
             logger.warn(`⚠️  Failed to sync order ${order.orderId}: ${syncResult.message}`);

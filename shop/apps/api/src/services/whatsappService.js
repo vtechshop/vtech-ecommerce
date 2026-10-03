@@ -22,6 +22,11 @@ function normalizePhone(phone) {
 }
 
 async function sendTemplate(to, templateName, components = []) {
+  // Set WHATSAPP_DIRECT_ENABLED=false when the CRM sends order updates, so a customer
+  // is never messaged twice. Any other value keeps the previous behaviour.
+  if (process.env.WHATSAPP_DIRECT_ENABLED === 'false') {
+    return;
+  }
   if (!isConfigured()) {
     logger.warn('[WhatsApp] Not configured — skipping message');
     return;

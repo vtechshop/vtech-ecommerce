@@ -176,6 +176,24 @@ function setupCronJobs() {
       logger.error('CRITICAL: Webhook worker cron failed to register:', webhookCronErr);
     }
 
+    // CRM outbox worker — delivers order events to the WhatsApp CRM. Registered only when enabled.
+    try {
+      const crmEventService = require('./services/crmEventService');
+      if (crmEventService.isEnabled()) {
+        const crmOutboxWorker = require('./jobs/crmOutboxWorker');
+        cron.schedule('*/30 * * * * *', () => {
+          crmOutboxWorker.runOneTick().catch(err =>
+            logger.error('[Cron] CRM outbox worker tick failed:', err)
+          );
+        });
+        logger.info('✅ CRM outbox worker cron registered (every 30s)');
+      } else {
+        logger.info('CRM order events are disabled (CRM_EVENTS_ENABLED is not "true" or URL/secret missing)');
+      }
+    } catch (crmCronErr) {
+      logger.error('CRM outbox worker cron failed to register:', crmCronErr);
+    }
+
     // One-time cleanup: delete "Kitchen Machinary" (typo duplicate of "Kitchen Machinery")
     try {
       const Category = require('./models/Category');

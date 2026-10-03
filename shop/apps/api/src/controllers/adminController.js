@@ -1034,6 +1034,12 @@ exports.updateOrderStatus = async (req, res, next) => {
     order.events.push({ status, description: description || `Order status updated to ${status}`, timestamp: new Date() });
     await order.save();
 
+    // CRM order event for shipped / delivered / cancelled. Deliberately nothing for "paid":
+    // a status set by hand is not a verified payment, and recordOrderEvent also ignores any
+    // order whose payment was never verified.
+    const crmEvent = { shipped: 'order.shipped', delivered: 'order.delivered', cancelled: 'order.cancelled' }[status];
+    if (crmEvent) await require('../services/crmEventService').recordOrderEvent(crmEvent, order);
+
     // Activate warranties when order is paid
     if (status === 'paid') {
       await activateWarrantiesForOrder(order);
