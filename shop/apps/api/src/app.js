@@ -9,6 +9,7 @@ const logger = require('./config/logger');
 const env = require('./config/env');
 const { xssSanitize, mongoSanitize } = require('./middleware/sanitize');
 const { doubleCsrfProtection, csrfErrorHandler, getCsrfToken } = require('./middleware/csrf');
+const cache = require('./utils/cache');
 
 const app = express();
 
@@ -394,10 +395,6 @@ if (env.NODE_ENV === 'production') {
       return _indexHtml;
     };
 
-    // Per-slug preload HTML cache — avoids DB hit on every product page load
-    const _preloadCache = new Map();
-    const PRELOAD_TTL = 5 * 60 * 1000; // 5 minutes
-
     // Handle SPA routing - serve index.html for all non-API routes
     app.get('*', async (req, res, next) => {
       // Skip if it's an API route
@@ -418,13 +415,13 @@ if (env.NODE_ENV === 'production') {
       const productMatch = req.path.match(/^\/product\/([^/?]+)$/);
       if (productMatch) {
         const slug = productMatch[1];
-        const now = Date.now();
-        const hit = _preloadCache.get(slug);
+        const cacheKey = `html:product:${slug}`;
 
-        if (hit && now - hit.ts < PRELOAD_TTL) {
+        const cached = await cache.get(cacheKey);
+        if (cached) {
           res.setHeader('Content-Type', 'text/html; charset=utf-8');
           res.setHeader('Cache-Control', 'no-cache');
-          return res.send(hit.html);
+          return res.send(cached);
         }
 
         try {
@@ -462,7 +459,7 @@ if (env.NODE_ENV === 'production') {
             const injected = getIndexHtml()
               .replace('<head>', `<head>\n  ${preloadTag}`)
               .replace('<div id="hero-slot-placeholder" style="width:100%;aspect-ratio:2/1;max-height:500px;background:#d1d5db;"></div>', heroImgDiv);
-            _preloadCache.set(slug, { html: injected, ts: now });
+            await cache.set(cacheKey, injected, 300);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.setHeader('Cache-Control', 'no-cache');
             return res.send(injected);
@@ -475,13 +472,13 @@ if (env.NODE_ENV === 'production') {
       // Home page: inject first banner image into skeleton to eliminate element render delay.
       // Without this, the LCP <img> doesn't exist until React mounts + banner API resolves (~5s).
       if (req.path === '/' || req.path === '') {
-        const BANNER_CACHE_KEY = '__home_banner__';
-        const now = Date.now();
-        const hit = _preloadCache.get(BANNER_CACHE_KEY);
-        if (hit && now - hit.ts < PRELOAD_TTL) {
+        const BANNER_CACHE_KEY = 'html:home:banner';
+
+        const cachedBanner = await cache.get(BANNER_CACHE_KEY);
+        if (cachedBanner) {
           res.setHeader('Content-Type', 'text/html; charset=utf-8');
           res.setHeader('Cache-Control', 'no-cache');
-          return res.send(hit.html);
+          return res.send(cachedBanner);
         }
         try {
           const Banner = require('./models/Banner');
@@ -505,7 +502,7 @@ if (env.NODE_ENV === 'production') {
             const injected = getIndexHtml()
               .replace('<head>', `<head>\n  ${preloadTag}`)
               .replace('<div id="hero-slot-placeholder" style="width:100%;aspect-ratio:2/1;max-height:500px;background:#d1d5db;"></div>', bannerImgDiv);
-            _preloadCache.set(BANNER_CACHE_KEY, { html: injected, ts: now });
+            await cache.set(BANNER_CACHE_KEY, injected, 300);
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.setHeader('Cache-Control', 'no-cache');
             return res.send(injected);

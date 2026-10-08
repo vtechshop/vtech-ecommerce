@@ -362,6 +362,38 @@ exports.setCarrierAndAwb = async (req, res, next) => {
 };
 
 // ============================================
+// Clear carrier / reassign
+// ============================================
+exports.clearCarrier = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        error: { code: 'NOT_FOUND', message: 'Order not found' },
+      });
+    }
+
+    order.shipment = undefined;
+    order.events = (order.events || []).concat([{
+      code: 'CARRIER_CLEARED',
+      description: `Carrier cleared by ${req.user.role} for reassignment`,
+      timestamp: new Date(),
+    }]);
+
+    await order.save();
+
+    logger.info(`Carrier cleared for order: ${orderId}`);
+
+    res.json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ============================================
 // Mark as packed
 // ============================================
 exports.markAsPacked = async (req, res, next) => {

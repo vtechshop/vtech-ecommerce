@@ -23,6 +23,15 @@ router.post(
   shippingController.setCarrierAndAwb
 );
 
+// Clear carrier for reassignment (Admin only)
+router.delete(
+  '/orders/:orderId/carrier',
+  authenticate,
+  authorize(['admin']),
+  validateObjectId('orderId'),
+  shippingController.clearCarrier
+);
+
 // Mark as packed - SECURITY: Added ObjectId validation
 router.post(
   '/orders/:orderId/packed',

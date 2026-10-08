@@ -72,6 +72,24 @@ const AdminOrderDetail = () => {
     },
   });
 
+  // Clear carrier for reassignment
+  const clearCarrierMutation = useMutation({
+    mutationFn: async () => {
+      const response = await api.delete(`/shipping/orders/${id}/carrier`);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success('Carrier cleared — you can now reassign');
+      queryClient.invalidateQueries({ queryKey: ['admin-order', id] });
+      queryClient.invalidateQueries({ queryKey: ['tracking', order?.orderId] });
+      setAwbNumber('');
+      setCarrier('Shiprocket');
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error?.message || 'Failed to clear carrier');
+    },
+  });
+
   // Auto carrier assignment via API (Delhivery etc)
   const autoCarrierMutation = useMutation({
     mutationFn: async (carrierName) => {
@@ -483,7 +501,20 @@ const AdminOrderDetail = () => {
       {/* Show Assigned Carrier Info */}
       {order.shipment?.awb && (
         <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">Carrier Assigned</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-gray-900">Carrier Assigned</h2>
+            <button
+              onClick={() => {
+                if (window.confirm('Clear this carrier assignment? You can reassign after.')) {
+                  clearCarrierMutation.mutate();
+                }
+              }}
+              disabled={clearCarrierMutation.isPending}
+              className="text-sm text-red-600 hover:text-red-800 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {clearCarrierMutation.isPending ? 'Clearing...' : 'Reassign'}
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <span className="text-sm font-medium text-gray-700">Carrier:</span>
