@@ -28,9 +28,14 @@ async function resolveSellerForOrder(order) {
 /**
  * Assign invoice number to an order if it doesn't have one.
  * Website orders: W-00001, Manual orders: M-00001
+ * Only assigns for paid/fulfilled orders to keep GST sequence clean.
  */
 async function ensureInvoiceNumber(order) {
   if (order.invoiceNumber) return order.invoiceNumber;
+
+  if (!INVOICE_STATUSES.includes(order.status)) {
+    throw Object.assign(new Error('Invoice number can only be assigned to paid orders'), { statusCode: 400 });
+  }
 
   const isManual = order.source === 'in-store' || order.source === 'phone';
   const prefix = isManual ? 'M' : 'W';
@@ -113,8 +118,12 @@ exports.downloadInvoiceAdmin = async (req, res, next) => {
       });
     }
 
-    // Assign invoice number if not already assigned
-    await ensureInvoiceNumber(order);
+    // Assign invoice number if not already assigned (only for paid orders)
+    try {
+      await ensureInvoiceNumber(order);
+    } catch (e) {
+      return res.status(400).json({ success: false, error: { code: 'INVOICE_NOT_AVAILABLE', message: e.message } });
+    }
 
     // Resolve seller: vendor details for vendor orders, platform details for own orders
     const seller = await resolveSellerForOrder(order);
