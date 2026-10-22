@@ -706,7 +706,7 @@ exports.updateProduct = async (req, res, next) => {
 
     // Update fields from request body — skip identity/audit fields to prevent accidental overwrites.
     // slug is handled explicitly below so the pre-save hook can track history correctly.
-    const IMMUTABLE_ADMIN = new Set(['_id', '__v', 'vendorId', 'slug', 'slugHistory', 'createdAt', 'updatedAt']);
+    const IMMUTABLE_ADMIN = new Set(['_id', '__v', 'slug', 'slugHistory', 'createdAt', 'updatedAt']);
     Object.keys(req.body).forEach(key => {
       if (!IMMUTABLE_ADMIN.has(key)) product[key] = req.body[key];
     });
