@@ -191,6 +191,13 @@ const Product = () => {
   // Reset YouTube facade when navigating to a different product
   useEffect(() => { setYtActive(false); }, [slug]);
 
+  // Redirect old/renamed slugs to canonical URL so Google indexes the correct page
+  useEffect(() => {
+    if (product && product.slug && product.slug !== slug) {
+      navigate(`/product/${product.slug}`, { replace: true });
+    }
+  }, [product, slug, navigate]);
+
   // Show mobile bottom bar when Add to Cart button scrolls out of view
   useEffect(() => {
     const node = addToCartRef.current;
