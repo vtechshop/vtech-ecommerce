@@ -696,7 +696,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
           .text('Warranty Information', L, doc.y, { align: 'center', width: W });
         doc.moveDown(0.2);
         doc.fontSize(6).font('Helvetica').fillColor('#6b7280')
-          .text('For warranty claims, contact us with your invoice number and product details. Warranty covers manufacturing defects only and does not cover damage caused by misuse, accidents, or unauthorized modifications. Keep this invoice as proof of purchase for all warranty claims.', L, doc.y, {
+          .text('For warranty claims, contact us with your invoice number and product details. Warranty covers manufacturing defects only and excludes damage caused by misuse, accidents, or unauthorized modifications. For warranty service, the machine must be sent to our Vtech store in Coimbatore. Service will be provided only at our Coimbatore store. Keep this invoice as proof of purchase.', L, doc.y, {
             align: 'center', width: W,
           });
         doc.moveDown(0.4);
