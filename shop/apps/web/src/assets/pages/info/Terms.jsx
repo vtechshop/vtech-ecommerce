@@ -98,30 +98,30 @@ const Terms = () => {
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">7.2 Service Centre Availability</h3>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 mb-4">
-                <p className="text-amber-900 font-semibold mb-2">Important Notice — Limited Service Centre Coverage</p>
+                <p className="text-amber-900 font-semibold mb-2">Important Notice — Service Centre Location</p>
                 <p className="text-amber-800 text-sm leading-relaxed">
-                  VTech Kitchen does <strong>not</strong> operate service stations across all of India. We currently have our authorised service centre only in <strong>Coimbatore, Tamil Nadu</strong>. All warranty service requires products to be sent to Coimbatore — however, we cover the full transport charges both ways for all customers across India at no cost to you.
+                  VTech Kitchen does <strong>not</strong> operate service stations across all of India. We currently have our authorised service centre only in <strong>Coimbatore, Tamil Nadu</strong>. All warranty service requires the product to be sent to our Coimbatore store.
                 </p>
               </div>
 
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">7.3 Transport Charges — We Cover Both Ways</h3>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-5 mb-4">
-                <p className="text-green-900 font-semibold mb-2">Free Pickup &amp; Drop for Warranty Service — Anywhere in India</p>
-                <p className="text-green-800 text-sm leading-relaxed">
-                  VTech Kitchen will bear the full transport charges for sending the product to our service centre <strong>and</strong> returning it back to you after repair or replacement — at <strong>no cost to you</strong>, regardless of your location across India. Simply initiate a warranty claim and we will coordinate the courier pickup from your doorstep.
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">7.3 Transport Charges</h3>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-5 mb-4">
+                <p className="text-red-900 font-semibold mb-2">Transport Charges Are Not Covered</p>
+                <p className="text-red-800 text-sm leading-relaxed">
+                  Transport charges for sending the product to our Coimbatore service centre are <strong>not covered</strong> under the warranty. The customer is responsible for arranging and bearing the cost of shipping the machine to our store. We will return the repaired or replaced product back to the customer after service.
                 </p>
               </div>
 
               <h3 className="text-xl font-semibold text-gray-900 mb-3">7.4 Warranty Service Process</h3>
               <p className="text-gray-700 leading-relaxed mb-3">
-                For warranty claims, products must be sent to our service centre in Coimbatore. Contact our support team to initiate the process — we will arrange courier pickup from your location and cover the transport costs both ways.
+                For warranty claims, products must be sent to our service centre in Coimbatore. Contact our support team to initiate the process before shipping.
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
                 <li>Contact our support team to initiate a warranty claim</li>
-                <li>We will schedule a courier pickup from your address at no charge</li>
                 <li>Pack the product securely with all original accessories</li>
+                <li>Ship the product to our Coimbatore service centre at your own cost</li>
                 <li>Product will be inspected and repaired/replaced at our Coimbatore centre</li>
-                <li>We will deliver the repaired/replaced product back to your address, transport-free</li>
+                <li>We will deliver the repaired/replaced product back to your address</li>
                 <li>Estimated turnaround is 7–15 business days from receipt at the service centre</li>
               </ul>
 
