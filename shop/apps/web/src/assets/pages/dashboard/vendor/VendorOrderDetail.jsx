@@ -507,7 +507,7 @@ const VendorOrderDetail = () => {
                 </div>
               )}
               <div className="flex justify-between text-gray-700">
-                <span>Shipping:</span>
+                <span>Packaging & Freight:</span>
                 <span>{formatCurrency(order.totals?.shipping || 0)}</span>
               </div>
               {order.totals?.tax > 0 && (

@@ -255,7 +255,7 @@ const OrderConfirmation = () => {
               <span>{formatCurrency(order.totals.subtotal)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-700">Shipping:</span>
+              <span className="text-gray-700">Packaging & Freight:</span>
               <span>{formatCurrency(order.totals.shipping)}</span>
             </div>
             <div className="flex justify-between text-sm">

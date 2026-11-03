@@ -793,7 +793,7 @@ const Checkout = () => {
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-gray-700">Shipping:</span>
+                <span className="text-gray-700">Packaging & Freight:</span>
                 {step < 2 ? (
                   <span className="text-gray-400 italic">Select a shipping method</span>
                 ) : shippingMethod.cost === 0 ? (

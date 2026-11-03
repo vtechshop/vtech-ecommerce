@@ -572,17 +572,17 @@ async function generateInvoicePDF(order, outputStream, seller) {
         const displayShipping = shippingAmt + Math.max(0, taxTotal - productGST);
         drawTotalRow('Product Total', formatINR(displayProductTotal));
         if (shippingAmt > 0) {
-          drawTotalRow('Shipping & Delivery', formatINR(displayShipping));
+          drawTotalRow('Packaging & Freight', formatINR(displayShipping));
         } else {
-          drawTotalRow('Shipping & Delivery', 'FREE', { valueColor: '#059669' });
+          drawTotalRow('Packaging & Freight', 'FREE', { valueColor: '#059669' });
         }
       } else {
         // Historical order: no per-item taxRate stored — show subtotal + shipping + GST separately
         drawTotalRow('Product Subtotal', formatINR(order.totals?.subtotal || 0));
         if (shippingAmt > 0) {
-          drawTotalRow('Shipping & Delivery', formatINR(shippingAmt));
+          drawTotalRow('Packaging & Freight', formatINR(shippingAmt));
         } else {
-          drawTotalRow('Shipping & Delivery', 'FREE', { valueColor: '#059669' });
+          drawTotalRow('Packaging & Freight', 'FREE', { valueColor: '#059669' });
         }
         if (taxTotal > 0) {
           drawTotalRow('GST', formatINR(taxTotal));
