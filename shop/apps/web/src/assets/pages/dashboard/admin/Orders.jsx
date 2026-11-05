@@ -10,6 +10,7 @@ import { formatCurrency } from '@/utils/format';
 import { getNewItemClasses, formatRelativeTime } from '@/utils/dateHelpers';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import { playNewOrder } from '@/utils/sounds';
+import { STOREFRONTS, storefrontName } from '@/utils/storefronts';
 import {
   Package,
   Truck,
@@ -39,6 +40,7 @@ const Orders = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
+  const [sourceFilter, setSourceFilter] = useState('');
   const [expandedOrder, setExpandedOrder] = useState(null);
 
   // Generate last 18 months as options: "2026-09", "2026-08", …
@@ -56,13 +58,14 @@ const Orders = () => {
 
   // Fetch orders with current filters
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['admin-orders', page, statusFilter, searchTerm, monthFilter],
+    queryKey: ['admin-orders', page, statusFilter, searchTerm, monthFilter, sourceFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append('page', page);
       params.append('limit', '20');
       if (statusFilter) params.append('status', statusFilter);
       if (searchTerm) params.append('search', searchTerm);
+      if (sourceFilter) params.append('itemSource', sourceFilter);
       if (monthFilter) {
         const [y, m] = monthFilter.split('-');
         params.append('year', y);
@@ -176,6 +179,21 @@ const Orders = () => {
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
           </div>
+
+          {/* Item source filter */}
+          <select
+            value={sourceFilter}
+            onChange={(e) => { setSourceFilter(e.target.value); setPage(1); }}
+            aria-label="Filter by item source"
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
+          >
+            <option value="">All sources</option>
+            <option value="external">Any WooCommerce store</option>
+            {Object.entries(STOREFRONTS).map(([key, { name }]) => (
+              <option key={key} value={key}>{name}</option>
+            ))}
+            <option value="vtech">VTech Kitchen items</option>
+          </select>
 
           {/* Search */}
           <div className="relative flex-1 sm:flex-none sm:w-64">
@@ -303,6 +321,9 @@ const Orders = () => {
                       </div>
                       <div className="text-sm text-gray-600">
                         <span className="font-medium">{order?.items?.length || 0}</span> items
+                        {[...new Set((order.items || []).map(i => i.externalSource).filter(Boolean))].map(src => (
+                          <span key={src} className="block text-xs text-gray-500">via {storefrontName(src)}</span>
+                        ))}
                       </div>
                     </div>
 
@@ -360,6 +381,7 @@ const Orders = () => {
                                 <p className="text-xs text-gray-600">
                                   {item.qty} × {formatCurrency(item.priceSnapshot || 0)}
                                 </p>
+                                <p className="text-xs text-gray-500">{storefrontName(item.externalSource)}</p>
                               </div>
                             </div>
                           ))}

@@ -64,7 +64,7 @@ const WhatsAppButton = () => {
         <div className="relative" style={{ animation: 'waBtnIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards' }}>
           {/* Pulse ring */}
           {!showNumbers && (
-            <span className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-30" />
+            <span className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-30 pointer-events-none" />
           )}
           <button
             onClick={() => setShowNumbers(!showNumbers)}

@@ -1,6 +1,7 @@
 // FILE: apps/api/src/models/Cart.js
 const mongoose = require('mongoose');
 const env = require('../config/env');
+const { EXTERNAL_SOURCES } = require('./WooProductMapping');
 
 const cartSchema = new mongoose.Schema({
   userId: {
@@ -30,7 +31,28 @@ const cartSchema = new mongoose.Schema({
     taxIncluded: { type: Boolean, default: false },
     taxable: { type: Boolean, default: false },
     taxRate: { type: Number, default: 0 },
+    // Storefront the line was transferred from; null = added on VTech.
+    // Set only by the server-side WooCommerce import, never by cart/add.
+    externalSource: { type: String, enum: EXTERNAL_SOURCES, default: null },
   }],
+  // Contact and delivery details from the latest verified WooCommerce handoff,
+  // used only to pre-fill checkout for this cart's owner.
+  wooContact: {
+    type: {
+      externalSource: { type: String, enum: EXTERNAL_SOURCES },
+      fullName: String,
+      email: String,
+      phone: String,
+      addressLine1: String,
+      addressLine2: String,
+      city: String,
+      state: String,
+      zipCode: String,
+      country: String,
+      importedAt: Date,
+    },
+    default: undefined,
+  },
   totals: {
     subtotal: {
       type: Number,

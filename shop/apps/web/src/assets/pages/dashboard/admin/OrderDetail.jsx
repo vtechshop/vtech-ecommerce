@@ -10,6 +10,7 @@ import { useToast } from '@/components/common/ToastContainer';
 import CustomSelect from '@/components/common/CustomSelect';
 import TrackingTimeline from '@/components/common/TrackingTimeline';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
+import { storefrontName } from '@/utils/storefronts';
 
 const AdminOrderDetail = () => {
   const { id } = useParams();
@@ -278,6 +279,7 @@ const AdminOrderDetail = () => {
                   {item?.variantName && (
                     <p className="text-sm text-gray-600">{item.variantName}</p>
                   )}
+                  <p className="text-sm text-gray-600">Source: {storefrontName(item?.externalSource)}</p>
                   <p className="text-sm text-gray-600">Quantity: {item?.qty || 0}</p>
                   <p className="font-semibold text-gray-900">{formatCurrency(item?.priceSnapshot || 0)}</p>
                 </div>

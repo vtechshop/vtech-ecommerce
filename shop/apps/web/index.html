@@ -124,38 +124,92 @@
 
     <title>V-Tech Kitchen - Premium Kitchen Appliances & Commercial Equipment</title>
 
-    <!-- Analytics - Deferred until well after page load to avoid TBT impact -->
+    <!-- Analytics - loaded only after the visitor accepts analytics cookies (see useAnalytics),
+         only on the production domain, and deferred well after page load to avoid TBT impact -->
     <script>
       // Initialize gtag early (just the queue, no network requests)
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       window.gtag = gtag;
+      // Nothing may be stored until the visitor accepts analytics
+      gtag('consent', 'default', { analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
 
-      function loadAnalytics() {
-        // Google Analytics
-        var ga = document.createElement('script');
-        ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-MGV9FDZXSL';
-        ga.async = true;
-        document.head.appendChild(ga);
-        gtag('js', new Date());
-        gtag('config', 'G-MGV9FDZXSL');
+      window.vtechAnalytics = (function () {
+        var GA_ID = 'G-MGV9FDZXSL';
+        var CLARITY_ID = 'vk9crjp0w8';
+        // Production analytics only: local, staging and preview copies must not report into these properties
+        var isProductionHost = /^(www\.)?vtechkitchen\.com$/.test(location.hostname);
+        var granted = false;
+        var scheduled = false;
+        var loaded = false;
 
-        // Microsoft Clarity - load 3s after GA to stagger CPU usage
-        setTimeout(function() {
-          (function(c,l,a,r,i,t,y){
-            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i+"?ref=bwt";
-            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-          })(window, document, "clarity", "script", "vk9crjp0w8");
-        }, 3000);
-      }
-      // Wait for load event + 5s delay to ensure we're past TBT measurement window
-      function scheduleAnalytics() { setTimeout(loadAnalytics, 5000); }
-      if (document.readyState === 'complete') {
-        scheduleAnalytics();
-      } else {
-        window.addEventListener('load', scheduleAnalytics);
-      }
+        function loadAnalytics() {
+          scheduled = false;
+          if (!granted || loaded) return;
+          loaded = true;
+
+          // Google Analytics
+          var ga = document.createElement('script');
+          ga.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+          ga.async = true;
+          document.head.appendChild(ga);
+          gtag('js', new Date());
+          gtag('config', GA_ID);
+
+          // Microsoft Clarity - load 3s after GA to stagger CPU usage
+          setTimeout(function() {
+            if (!granted) return;
+            (function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i+"?ref=bwt";
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", CLARITY_ID);
+          }, 3000);
+        }
+
+        // Wait for load event + 5s delay to ensure we're past TBT measurement window
+        function scheduleAnalytics() { setTimeout(loadAnalytics, 5000); }
+
+        function clearAnalyticsCookies() {
+          var host = location.hostname;
+          var base = host.replace(/^www\./, '');
+          document.cookie.split(';').forEach(function (c) {
+            var name = c.split('=')[0].trim();
+            if (!/^(_ga|_gid|_gat|_clck|_clsk)/.test(name)) return;
+            ['', '; domain=' + host, '; domain=.' + base].forEach(function (domain) {
+              document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/' + domain;
+            });
+          });
+        }
+
+        return {
+          get granted() { return granted; },
+          enable: function () {
+            if (!isProductionHost) return;
+            granted = true;
+            window['ga-disable-' + GA_ID] = false;
+            gtag('consent', 'update', { analytics_storage: 'granted' });
+            if (loaded) {
+              if (window.clarity) window.clarity('consent');
+              return;
+            }
+            if (scheduled) return;
+            scheduled = true;
+            if (document.readyState === 'complete') scheduleAnalytics();
+            else window.addEventListener('load', scheduleAnalytics);
+          },
+          // Consent withdrawn: stop GA (official opt-out flag + consent mode), stop Clarity, drop their cookies
+          disable: function () {
+            granted = false;
+            window['ga-disable-' + GA_ID] = true;
+            gtag('consent', 'update', { analytics_storage: 'denied' });
+            if (window.clarity) {
+              try { window.clarity('consent', false); } catch (e) { /* Clarity not ready */ }
+            }
+            clearAnalyticsCookies();
+          },
+        };
+      })();
     </script>
 
     <!-- Structured Data (Schema.org) -->

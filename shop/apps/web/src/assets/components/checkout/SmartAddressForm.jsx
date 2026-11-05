@@ -1,5 +1,5 @@
 // FILE: apps/web/src/components/checkout/SmartAddressForm.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, MapPin, CheckCircle, AlertCircle, LocateFixed } from 'lucide-react';
 import Input from '@/components/common/Input';
 
@@ -82,13 +82,29 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
   }, []);
 
   // ─── India: Pincode lookup ──────────────────────────────────
-  const lookupPincode = useCallback(async (pincode, currentAddress) => {
+  // The lookup is async: the customer may keep typing, or change the pincode, before it
+  // answers. So it merges its fields into the latest address (not a copy taken when it
+  // started), and only the most recent lookup may change the form.
+  const latestAddress = useRef(address);
+  latestAddress.current = address;
+  const lookupSeq = useRef(0);
+
+  const cancelPincodeLookup = useCallback(() => {
+    lookupSeq.current += 1;
+    setPincodeLoading(false);
+  }, []);
+
+  const lookupPincode = useCallback(async (pincode) => {
     if (!pincode || pincode.length !== 6 || !/^\d{6}$/.test(pincode)) {
+      cancelPincodeLookup();
       setPincodeError(pincode.length === 6 ? 'Enter a valid 6-digit pincode' : '');
       setPincodeSuccess('');
       setPostOffices([]);
       return;
     }
+
+    const seq = ++lookupSeq.current;
+    const isCurrent = () => seq === lookupSeq.current && latestAddress.current.zipCode === pincode;
 
     setPincodeLoading(true);
     setPincodeError('');
@@ -98,6 +114,7 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
     try {
       const res = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
       const data = await res.json();
+      if (!isCurrent()) return;
 
       if (data[0]?.Status === 'Success' && data[0]?.PostOffice?.length > 0) {
         const offices = data[0].PostOffice;
@@ -105,10 +122,9 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
         setPostOffices(offices);
         setPincodeSuccess(`${first.District}, ${first.State}`);
 
-        // Auto-fill state, district, city - use currentAddress to avoid stale closure
+        // Fill only the location fields; everything the customer typed stays as it is
         onChange({
-          ...currentAddress,
-          zipCode: pincode, // Ensure pincode is preserved
+          ...latestAddress.current,
           state: first.State,
           city: first.District,
           district: first.District,
@@ -119,11 +135,21 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
         setPincodeError('Invalid pincode. Please check and try again.');
       }
     } catch {
-      setPincodeError('Could not verify pincode. Please fill details manually.');
+      if (isCurrent()) setPincodeError('Could not verify pincode. Please fill details manually.');
     } finally {
-      setPincodeLoading(false);
+      if (seq === lookupSeq.current) setPincodeLoading(false);
     }
-  }, [onChange]);
+  }, [onChange, cancelPincodeLookup]);
+
+  // A pincode filled in for the customer (e.g. from a store cart transfer) never fires the
+  // input's onChange, so district would stay empty; look it up once, as if typed. Only the
+  // first pincode seen counts — typing starts at one digit and goes through onChange.
+  const firstPincodeSeen = useRef(false);
+  useEffect(() => {
+    if (firstPincodeSeen.current || !isIndia || !address.zipCode) return;
+    firstPincodeSeen.current = true;
+    if (/^\d{6}$/.test(address.zipCode) && !address.district) lookupPincode(address.zipCode);
+  }, [isIndia, address, lookupPincode]);
 
   // ─── International: Load states when country changes ────────
   useEffect(() => {
@@ -202,6 +228,7 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
       area: '',
       zipCode: '',
     });
+    cancelPincodeLookup();
     setPincodeError('');
     setPincodeSuccess('');
     setPostOffices([]);
@@ -213,8 +240,9 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
     const updatedAddress = { ...address, zipCode: cleaned };
     onChange(updatedAddress);
     if (cleaned.length === 6) {
-      lookupPincode(cleaned, updatedAddress);
+      lookupPincode(cleaned);
     } else {
+      cancelPincodeLookup();
       setPincodeError('');
       setPincodeSuccess('');
       setPostOffices([]);
@@ -280,7 +308,7 @@ const SmartAddressForm = ({ address, onChange, guestEmail, onGuestEmailChange, u
 
         // For India: trigger pincode lookup for post office list
         if (countryCode === INDIA_CODE && pincode && /^\d{6}$/.test(pincode)) {
-          lookupPincode(pincode, updatedAddress);
+          lookupPincode(pincode);
         }
       } else {
         setLocationError('Could not determine address from your location');

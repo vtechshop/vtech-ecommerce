@@ -9,6 +9,7 @@ const { generateOrderId } = require('../utils/helpers');
 const { getPaginationMeta } = require('../utils/helpers');
 const logger = require('../config/logger');
 const crmEventService = require('../services/crmEventService');
+const { attributeOrderItems } = require('../services/orderSourceAttribution');
 const env = require('../config/env');
 // Payment is now handled by Razorpay controller directly
 const warrantyService = require('../services/warrantyService');
@@ -199,7 +200,9 @@ exports.createOrder = async (req, res, next) => {
       }
     }
 
-    // Validate stock for all items
+    // Validate stock for all items. Quantities are summed per product/variant because the
+    // same product can be on two lines (native and WooCommerce-transferred).
+    const requestedQtyByStockKey = new Map();
     for (const item of items) {
       const product = await Product.findById(item.productId);
       if (!product) {
@@ -226,8 +229,11 @@ exports.createOrder = async (req, res, next) => {
       }
 
       const stock = variant ? variant.stock : product.stock;
+      const stockKey = `${product._id}|${variant ? variant._id : ''}`;
+      const requestedQty = (requestedQtyByStockKey.get(stockKey) || 0) + item.qty;
+      requestedQtyByStockKey.set(stockKey, requestedQty);
 
-      if (stock < item.qty) {
+      if (stock < requestedQty) {
         return res.status(400).json({
           success: false,
           error: {
@@ -255,11 +261,23 @@ exports.createOrder = async (req, res, next) => {
     // Get discount from cart (coupons), other totals will be calculated from items
     const cartDiscount = userCart?.totals?.discount || 0;
 
+    // Storefront attribution comes from the server-side cart, never from the request
+    const attribution = attributeOrderItems(items, userCart?.items || []);
+    if (attribution.hasExternal && !attribution.wholeCart) {
+      return res.status(409).json({
+        success: false,
+        error: {
+          code: 'CART_MISMATCH',
+          message: 'Your cart has changed. Please refresh the checkout page and try again.',
+        },
+      });
+    }
+
     // Build order items and calculate subtotal for validation
     let subtotal = 0;
     const orderItems = [];
 
-    for (const item of items) {
+    for (const [itemIndex, item] of items.entries()) {
       const product = await Product.findById(item.productId);
       const variant = item.variantId ? product.variants.id(item.variantId) : null;
       const price = variant ? variant.price : product.price;
@@ -297,6 +315,7 @@ exports.createOrder = async (req, res, next) => {
         taxIncluded: product.taxIncluded || false,
         taxable: product.taxable || false,
         taxRate: product.taxRate || 0,
+        externalSource: attribution.sources[itemIndex],
       });
     }
 
@@ -354,6 +373,18 @@ exports.createOrder = async (req, res, next) => {
         vendorGroups[vendorIdStr] = [];
       }
       vendorGroups[vendorIdStr].push(item);
+    }
+
+    // Checkout pays one order through Razorpay, so a transferred cart that would split into
+    // several vendor orders could not be paid as a whole. Refuse it before reserving stock.
+    if (attribution.hasExternal && Object.keys(vendorGroups).length > 1) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MULTI_SELLER_CART_UNSUPPORTED',
+          message: 'This cart has products from more than one seller and cannot be paid in one checkout yet. Please contact us to complete your order.',
+        },
+      });
     }
 
     logger.info(`Order split into ${Object.keys(vendorGroups).length} vendor orders`);
@@ -470,12 +501,22 @@ exports.createOrder = async (req, res, next) => {
           let updateResult;
 
           if (item.variantId) {
-            // Atomic update for variant stock - ensures no overselling
+            // Validate variantId is a castable ObjectId before querying
+            if (!mongoose.Types.ObjectId.isValid(item.variantId)) {
+              throw new Error(`Invalid variant ID for product ${item.name}.`);
+            }
+            // $elemMatch ensures both _id and stock conditions apply to the SAME
+            // variant subdocument, preventing a cross-element match where _id matches
+            // one variant and stock matches a different variant with enough stock.
             updateResult = await Product.findOneAndUpdate(
               {
                 _id: item.productId,
-                'variants._id': item.variantId,
-                'variants.stock': { $gte: item.qty } // Only update if enough stock
+                variants: {
+                  $elemMatch: {
+                    _id: new mongoose.Types.ObjectId(item.variantId),
+                    stock: { $gte: item.qty },
+                  },
+                },
               },
               {
                 $inc: {
@@ -526,6 +567,9 @@ exports.createOrder = async (req, res, next) => {
       } else {
         await Cart.deleteOne({ userId: req.user._id });
       }
+    } else if (userCart?.wooContact) {
+      // Guest carts are kept (existing behaviour); drop the transferred contact details
+      await Cart.updateOne({ _id: userCart._id }, { $unset: { wooContact: 1 } }, sessionOpt);
     }
 
     // ===== COMMIT TRANSACTION (if using transactions) =====

@@ -11,6 +11,7 @@ import { formatCurrency } from '@/utils/format';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import { NoIndex } from '@/components/common/SEO';
 import { trackRemoveFromCart } from '@/utils/analytics';
+import { storefrontName } from '@/utils/storefronts';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -154,6 +155,12 @@ const Cart = () => {
                           ? JSON.parse(item.variant).join(', ')
                           : Object.values(item.variant).join(', ')}
                       </p>
+                    )}
+                    {!item.variant && item.variantName && (
+                      <p className="text-xs text-gray-700 mt-1">{item.variantName}</p>
+                    )}
+                    {item.externalSource && (
+                      <p className="text-xs text-gray-500 mt-1">From {storefrontName(item.externalSource)}</p>
                     )}
 
                     <div className="mt-3 flex items-center justify-between">

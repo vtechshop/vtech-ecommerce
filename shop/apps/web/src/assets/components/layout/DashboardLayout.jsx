@@ -72,6 +72,7 @@ const DashboardLayout = () => {
           { path: '/admin-dashboard/mobile-modules', tab: 'app-config', label: 'App Config', icon: 'settings' },
         ]},
         { path: '/admin-dashboard/hub-manager', label: 'Hub Manager', icon: 'layout' },
+        { path: '/admin-dashboard/woo-mappings', label: 'Woo Mappings', icon: 'link' },
         { path: '/admin-dashboard/api-keys', label: 'API Keys', icon: 'key' },
         { path: '/admin-dashboard/settings', label: 'Settings', icon: 'settings' },
       ];

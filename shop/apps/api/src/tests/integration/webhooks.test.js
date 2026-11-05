@@ -374,3 +374,75 @@ describe('Webhooks Integration Tests', () => {
     });
   });
 });
+
+// ── Regression: the raw webhook body must reach signature verification unchanged ──
+// The global XSS sanitizer used to rebuild the express.raw Buffer as a plain object, so
+// every webhook threw during HMAC computation and never got a response.
+describe('Webhook raw body preservation', () => {
+  // Pretty-printed, with strings the XSS sanitizer strips and non-ASCII text: any parse,
+  // re-serialise or sanitise step changes these bytes and breaks the signature.
+  const RAW_BODY = [
+    '{',
+    '  "event": "payment.captured",',
+    `  "created_at": ${Math.floor(Date.now() / 1000)},`,
+    '  "payload": { "payment": { "entity": {',
+    '    "id": "pay_raw_regression",',
+    '    "notes": {',
+    '      "script": "<script>alert(1)</script>",',
+    '      "proto": "javascript:void(0)",',
+    '      "handler": "<b onclick=\'x()\'>hi</b>",',
+    '      "tamil": "முருகன்"',
+    '    }',
+    '  } } }',
+    '}',
+  ].join('\n');
+  const sign = (bytes) => crypto.createHmac('sha256', WEBHOOK_SECRET).update(bytes).digest('hex');
+  const post = (body, signature, eventId) => request(app)
+    .post('/api/payment/razorpay/webhook')
+    .set('Content-Type', 'application/json')
+    .set('x-razorpay-signature', signature)
+    .set('x-razorpay-event-id', eventId)
+    .send(body);
+
+  beforeAll(() => { process.env.RAZORPAY_WEBHOOK_SECRET = WEBHOOK_SECRET; });
+  afterEach(() => WebhookEvent.deleteMany({}));
+
+  test('R1: signature over the exact raw bytes is accepted and the event is stored unsanitised', async () => {
+    const eventId = makeEventId();
+    const res = await post(RAW_BODY, sign(RAW_BODY), eventId);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    const evt = await WebhookEvent.findOne({ eventId }).lean();
+    expect(evt).toMatchObject({ event: 'payment.captured', status: 'pending' });
+    expect(evt.payload.payment.entity.notes).toEqual({
+      script: '<script>alert(1)</script>',
+      proto: 'javascript:void(0)',
+      handler: "<b onclick='x()'>hi</b>",
+      tamil: 'முருகன்',
+    });
+  });
+
+  test('R2: a signature over re-serialised JSON is rejected (verification uses the original bytes)', async () => {
+    const eventId = makeEventId();
+    const res = await post(RAW_BODY, sign(JSON.stringify(JSON.parse(RAW_BODY))), eventId);
+    expect(res.status).toBe(400);
+    expect(await WebhookEvent.countDocuments({ eventId })).toBe(0);
+  });
+
+  test('R3: one changed byte after signing is rejected and nothing is stored', async () => {
+    const eventId = makeEventId();
+    const res = await post(RAW_BODY.replace('alert(1)', 'alert(2)'), sign(RAW_BODY), eventId);
+    expect(res.status).toBe(400);
+    expect(await WebhookEvent.countDocuments({ eventId })).toBe(0);
+  });
+
+  test('R4: XSS sanitisation still applies to other endpoints', async () => {
+    const res = await request(app).post('/api/address/validate').send({
+      fullName: '<script>alert(1)</script>Asha', phone: '9876543210', addressLine1: '1 Test St',
+      city: 'Coimbatore', state: 'Tamil Nadu', zipCode: '641006', country: 'IN',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.data.fullName).toBe('Asha');
+  });
+});

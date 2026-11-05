@@ -41,7 +41,6 @@ function setupCronJobs() {
     const inventoryAlertService = require('./services/inventoryAlertService');
     const loyaltyService = require('./services/loyaltyService');
     const gdprService = require('./services/gdprService');
-    const reconcilePayments = require('./jobs/reconcilePayments');
 
     // Every 14 minutes - Self-ping to keep server awake (prevents Render sleep)
     // Also pings MongoDB to keep database connection alive
@@ -110,16 +109,6 @@ function setupCronJobs() {
       }
     });
 
-    // Every 5 minutes - Reconcile stuck payments (payments that succeeded on Razorpay but failed to update in DB)
-    cron.schedule('*/5 * * * *', async () => {
-      try {
-        logger.info('[Cron] Running payment reconciliation...');
-        await reconcilePayments();
-      } catch (error) {
-        logger.error('[Cron] Payment reconciliation failed:', error);
-      }
-    });
-
     // Daily at 10 AM - Auto-release held Razorpay Route transfers after 7-day return window
     cron.schedule('0 10 * * *', async () => {
       try {
@@ -142,9 +131,10 @@ function setupCronJobs() {
       }
     });
 
-    logger.info('✅ Cron jobs scheduled: Abandoned carts (hourly), Inventory alerts (9 AM), Loyalty expiration (2 AM), GDPR deletions (3 AM), Payment reconciliation (every 5 min), Auto-release transfers (10 AM), Review requests (10:30 AM)');
+    logger.info('✅ Cron jobs scheduled: Abandoned carts (hourly), Inventory alerts (9 AM), Loyalty expiration (2 AM), GDPR deletions (3 AM), Auto-release transfers (10 AM), Review requests (10:30 AM)');
   } catch (error) {
-    logger.error('Failed to set up cron jobs:', error);
+    // pino drops a trailing error argument; pass it as { err } so the cause is logged
+    logger.error({ err: error }, 'Failed to set up cron jobs');
   }
 }
 
@@ -174,6 +164,28 @@ function setupCronJobs() {
       logger.info('✅ Webhook worker cron registered (every 30s)');
     } catch (webhookCronErr) {
       logger.error('CRITICAL: Webhook worker cron failed to register:', webhookCronErr);
+    }
+
+    // Payment reconciliation registered independently — a failure in setupCronJobs() must never
+    // leave paid orders stuck in "Awaiting Payment".
+    try {
+      const reconcilePayments = require('./jobs/reconcilePayments');
+      let reconcileRunning = false;
+      cron.schedule('*/5 * * * *', async () => {
+        if (reconcileRunning) return; // a slow run must not overlap the next one
+        reconcileRunning = true;
+        try {
+          logger.info('[Cron] Running payment reconciliation...');
+          await reconcilePayments();
+        } catch (error) {
+          logger.error({ err: error }, '[Cron] Payment reconciliation failed');
+        } finally {
+          reconcileRunning = false;
+        }
+      });
+      logger.info('✅ Payment reconciliation cron registered (every 5 min)');
+    } catch (reconcileCronErr) {
+      logger.error({ err: reconcileCronErr }, 'CRITICAL: Payment reconciliation cron failed to register');
     }
 
     // CRM outbox worker — delivers order events to the WhatsApp CRM. Registered only when enabled.

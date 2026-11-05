@@ -5,6 +5,7 @@ const adminAds = require('../controllers/adminAdsController');
 const crm = require('../controllers/crmController');
 const invoiceController = require('../controllers/invoiceController');
 const sitemapController = require('../controllers/sitemapController');
+const wooMapping = require('../controllers/wooMappingController');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validate');
 const { getSecurityStats } = require('../middleware/advancedSecurity');
@@ -247,5 +248,12 @@ router.post('/inventory/:productId/restock-reminder', validateObjectId('productI
 
 // SEO - IndexNow bulk URL submission
 router.post('/seo/indexnow/submit', sitemapController.submitIndexNow);
+
+// WooCommerce Product Mappings
+router.post('/woo-mappings', wooMapping.createMapping);
+router.get('/woo-mappings', wooMapping.getMappings);
+router.get('/woo-mappings/:id', validateObjectId('id'), wooMapping.getMappingById);
+router.put('/woo-mappings/:id', validateObjectId('id'), wooMapping.updateMapping);
+router.put('/woo-mappings/:id/deactivate', validateObjectId('id'), wooMapping.deactivateMapping);
 
 module.exports = router;

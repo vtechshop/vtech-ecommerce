@@ -17,8 +17,11 @@ export const loadGA4 = (measurementId) => {
   gtag('config', measurementId);
 };
 
+// Same rule as GA/Clarity in index.html: local, staging and preview copies never report
+const isProductionHost = () => /^(www\.)?vtechkitchen\.com$/.test(window.location.hostname);
+
 export const loadMetaPixel = (pixelId) => {
-  if (window.fbq) return; // Already loaded
+  if (window.fbq || !isProductionHost()) return; // Already loaded, or not the production site
 
   !(function(f,b,e,v,n,t,s) {
     if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -34,9 +37,12 @@ export const loadMetaPixel = (pixelId) => {
   window.fbq('track', 'PageView');
 };
 
+// gtag is always defined by index.html as a queue; only send while analytics consent is granted
+const analyticsAllowed = () => !!(window.gtag && window.vtechAnalytics?.granted);
+
 // GA4 only — Meta standard events use different names, tracked separately below
 export const trackEvent = (eventName, params = {}) => {
-  if (window.gtag) {
+  if (analyticsAllowed()) {
     window.gtag('event', eventName, params);
   }
 };
@@ -49,7 +55,7 @@ const fbqTrack = (eventName, params) => {
 };
 
 export const trackPageView = (path) => {
-  if (window.gtag) {
+  if (analyticsAllowed()) {
     window.gtag('config', window.GA_MEASUREMENT_ID, {
       page_path: path,
     });

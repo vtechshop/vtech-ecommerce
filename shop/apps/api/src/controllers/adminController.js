@@ -5,6 +5,7 @@ const Affiliate = require('../models/Affiliate');
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Order = require('../models/Order');
+const { EXTERNAL_SOURCES } = require('../models/WooProductMapping');
 const Commission = require('../models/Commission');
 const AdCampaign = require('../models/AdCampaign');
 const AdCreative = require('../models/AdCreative');
@@ -904,10 +905,15 @@ exports.getOrderCounts = async (req, res, next) => {
 
 exports.getOrders = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status, vendorId, search, month, year } = req.query;
+    const { page = 1, limit = 20, status, vendorId, search, month, year, itemSource } = req.query;
     const query = {};
     if (status) query.status = status;
     if (vendorId) query['items.vendorId'] = vendorId;
+    // itemSource: 'external' (any storefront), a storefront key, or 'vtech' (has a native item).
+    // Older orders have no externalSource on items and count as native.
+    if (itemSource === 'external') query['items.externalSource'] = { $in: EXTERNAL_SOURCES };
+    else if (EXTERNAL_SOURCES.includes(itemSource)) query['items.externalSource'] = itemSource;
+    else if (itemSource === 'vtech') query.items = { $elemMatch: { externalSource: null } };
     if (search) {
       query.$or = [
         { orderId: { $regex: search, $options: 'i' } },

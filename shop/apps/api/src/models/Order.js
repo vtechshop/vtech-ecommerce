@@ -1,5 +1,6 @@
 // FILE: apps/api/src/models/Order.js
 const mongoose = require('mongoose');
+const { EXTERNAL_SOURCES } = require('./WooProductMapping');
 
 const orderSchema = new mongoose.Schema({
   orderId: { type: String, unique: true, required: true }, // unique index
@@ -21,6 +22,9 @@ const orderSchema = new mongoose.Schema({
     adCampaignId: { type: mongoose.Schema.Types.ObjectId, ref: 'AdCampaign' },
     adCreativeId: { type: mongoose.Schema.Types.ObjectId, ref: 'AdCreative' },
     affiliateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Affiliate' },
+    // Storefront the item was transferred from; null (or absent on older orders) = native VTech.
+    // Copied from the server-side cart line at order creation, never from the request.
+    externalSource: { type: String, enum: EXTERNAL_SOURCES, default: null },
     // Warranty information (copied from product at purchase time)
     warranty: {
       hasWarranty: { type: Boolean, default: false },
@@ -64,7 +68,9 @@ const orderSchema = new mongoose.Schema({
     cardDetails: {
       network: String,
       last4: String,
-      type: String,
+      // Must be { type: String }: a bare `type: String` makes Mongoose treat the whole
+      // cardDetails as a String, so every card payment failed to save.
+      type: { type: String },
     },
     // Contact details from payment
     email: String,
@@ -163,6 +169,7 @@ orderSchema.index({ 'items.vendorId': 1, status: 1, createdAt: -1 }); // Vendor 
 orderSchema.index({ parentOrderId: 1 }); // Parent/child order relationship lookup
 orderSchema.index({ 'payment.razorpayOrderId': 1 }); // Performance: Fast lookup for reconciliation
 orderSchema.index({ isVendorOrder: 1 }); // Vendor-specific orders
+orderSchema.index({ 'items.externalSource': 1, createdAt: -1 }); // Admin storefront filter
 
 // RECONCILIATION: Helper to find orders where payment might be stuck
 // Usage: const stuckOrders = await Order.findStuckRazorpayOrders(15);

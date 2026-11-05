@@ -25,6 +25,8 @@ const getOrCreateGuestId = (req, res) => {
   return guestId;
 };
 
+exports.getOrCreateGuestId = getOrCreateGuestId;
+
 // Get cart
 exports.getCart = async (req, res, next) => {
   try {
@@ -124,12 +126,13 @@ exports.addItem = async (req, res, next) => {
       });
     }
 
-    // Try atomic increment first (fastest path for existing items)
+    // Try atomic increment first (fastest path for existing items).
+    // $elemMatch keeps all three conditions on the same line, and externalSource: null
+    // keeps native adds off lines transferred from a WooCommerce storefront.
     let cart = await Cart.findOneAndUpdate(
       {
         ...query,
-        'items.productId': productId,
-        'items.variantId': normalizedVariantId,
+        items: { $elemMatch: { productId, variantId: normalizedVariantId, externalSource: null } },
       },
       {
         $inc: { 'items.$.qty': quantity },

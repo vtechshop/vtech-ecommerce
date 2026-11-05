@@ -1,5 +1,5 @@
 ﻿// FILE: apps/web/src/pages/Checkout.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -20,6 +20,9 @@ import AnimatedDiv from '@/components/common/AnimatedDiv';
 import { getAffiliateCode, clearAffiliateCode } from '@/utils/affiliateTracking';
 import { NoIndex } from '@/components/common/SEO';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import { storefrontName } from '@/utils/storefronts';
+
+const PREFILL_ADDRESS_FIELDS = ['fullName', 'phone', 'addressLine1', 'addressLine2', 'city', 'state', 'zipCode', 'country'];
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -98,6 +101,28 @@ const Checkout = () => {
     },
     enabled: !!user,
   });
+
+  // Details from a verified WooCommerce cart transfer (null when the cart wasn't transferred)
+  const { data: wooContact } = useQuery({
+    queryKey: ['woo-cart-contact', user?._id || 'guest'],
+    queryFn: async () => (await api.get('/woo/cart/contact')).data.data,
+    staleTime: Infinity,
+  });
+
+  // Fill only empty fields, once, so anything the customer has typed is never overwritten
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (!wooContact || prefilled.current) return;
+    prefilled.current = true;
+    setNewAddress((current) => {
+      const next = { ...current };
+      for (const field of PREFILL_ADDRESS_FIELDS) {
+        if (wooContact[field] && !current[field]?.trim?.()) next[field] = wooContact[field];
+      }
+      return next;
+    });
+    if (!user && wooContact.email) setGuestEmail((current) => current || wooContact.email);
+  }, [wooContact, user]);
 
   const fetchShippingQuotes = async (address) => {
     setLoadingQuotes(true);
@@ -263,6 +288,8 @@ const Checkout = () => {
         }
 
         return {
+          // Lets the server match each item to its cart line (store attribution, whole-cart check)
+          cartItemId: item._id,
           productId,
           variantId: item.variantId,
           qty: item.qty || item.quantity,
@@ -555,6 +582,12 @@ const Checkout = () => {
                   </div>
                 )}
 
+                {wooContact && (
+                  <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                    We've filled in your details from {storefrontName(wooContact.externalSource)}. Check them and edit anything before continuing.
+                  </div>
+                )}
+
                 {/* New Address Form */}
                 <form onSubmit={handleAddressSubmit}>
                   <SmartAddressForm
@@ -758,6 +791,10 @@ const Checkout = () => {
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.name}</p>
+                    {item.variantName && <p className="text-xs text-gray-600">{item.variantName}</p>}
+                    {item.externalSource && (
+                      <p className="text-xs text-gray-500">From {storefrontName(item.externalSource)}</p>
+                    )}
                     <p className="text-xs text-gray-700">Qty: {item.qty}</p>
                     <p className="text-sm font-semibold">{formatCurrency(item.priceSnapshot)}</p>
                     {item.taxIncluded ? (

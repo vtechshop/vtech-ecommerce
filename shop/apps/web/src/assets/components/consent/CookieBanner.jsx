@@ -1,7 +1,7 @@
 // FILE: apps/web/src/components/consent/CookieBanner.jsx
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { acceptAll, rejectNonEssential, showBanner } from '@/store/slices/consentSlice';
+import { acceptAll, rejectNonEssential, setConsent } from '@/store/slices/consentSlice';
 import { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
@@ -9,7 +9,7 @@ import useAuth from '@/hooks/useAuth';
 
 const CookieBanner = () => {
   const dispatch = useDispatch();
-  const { bannerVisible } = useSelector((state) => state.consent);
+  const { bannerVisible, preferences: savedPreferences } = useSelector((state) => state.consent);
   const { isAdmin } = useAuth();
   const [showPreferences, setShowPreferences] = useState(false);
   const [preferences, setPreferences] = useState({
@@ -51,16 +51,23 @@ const CookieBanner = () => {
     dispatch(rejectNonEssential());
   };
 
+  const handleCustomize = () => {
+    setPreferences({ essential: true, analytics: !!savedPreferences.analytics, marketing: !!savedPreferences.marketing });
+    setShowPreferences(true);
+  };
+
   const handleSavePreferences = () => {
-    dispatch(acceptAll()); // In real app, would use setConsent with preferences
+    dispatch(setConsent({ analytics: preferences.analytics, marketing: preferences.marketing }));
     setShowPreferences(false);
   };
 
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 p-6">
+      {/* pb-24 on small screens lifts the stacked buttons above the floating WhatsApp button */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50 p-6 pb-24 md:pb-6">
         <div className="container mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          {/* md:pr-24 keeps the buttons clear of the floating WhatsApp button (bottom-right) */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 md:pr-24">
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-2">We value your privacy</h3>
               <p className="text-gray-700 text-sm">
@@ -72,7 +79,7 @@ const CookieBanner = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="md" onClick={() => setShowPreferences(true)} data-testid="cookie-customize">
+              <Button variant="outline" size="md" onClick={handleCustomize} data-testid="cookie-customize">
                 Customize
               </Button>
               <Button variant="secondary" size="md" onClick={handleRejectAll} data-testid="cookie-reject">

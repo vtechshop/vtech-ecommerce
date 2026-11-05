@@ -1,0 +1,156 @@
+{
+  "_comment": "Shared HMAC test vectors. Both PHP and Node.js must produce identical canonical strings for each vector. The 'canonical' field is the expected canonical string produced by both implementations.",
+  "testSecret": "vtech-shared-test-vector-secret-NOT-FOR-PRODUCTION",
+  "vectors": [
+    {
+      "id": "v1-simple-product",
+      "description": "Simple product (no variant), one item, standard address",
+      "input": {
+        "method": "POST",
+        "path": "/api/woo/handoff",
+        "externalSource": "woo_vegetablecuttingmachine",
+        "nonce": "abc123def45678",
+        "timestamp": 1700000000,
+        "items": [
+          {
+            "wooProductId": "101",
+            "wooVariantId": null,
+            "qty": 2
+          }
+        ],
+        "address": {
+          "fullName": "Test User",
+          "phone": "9999999999",
+          "addressLine1": "123 Main St",
+          "city": "Chennai",
+          "state": "Tamil Nadu",
+          "zipCode": "600001",
+          "country": "IN"
+        }
+      },
+      "expectedCanonical": "POST\n/api/woo/handoff\nwoo_vegetablecuttingmachine\nabc123def45678\n1700000000\n[{\"qty\":2,\"wooProductId\":\"101\",\"wooVariantId\":null}]\n{\"addressLine1\":\"123 Main St\",\"city\":\"Chennai\",\"country\":\"IN\",\"fullName\":\"Test User\",\"phone\":\"9999999999\",\"state\":\"Tamil Nadu\",\"zipCode\":\"600001\"}",
+      "expectedSignature": "1b598b9eae99c83c2e287fa77ad30a01c2cc0acb94bf325b6e149630b80b9ac7"
+    },
+    {
+      "id": "v2-variable-product",
+      "description": "Variable product with variant ID",
+      "input": {
+        "method": "POST",
+        "path": "/api/woo/handoff",
+        "externalSource": "woo_styleyourlyf",
+        "nonce": "xyz789mno456ab",
+        "timestamp": 1700001234,
+        "items": [
+          {
+            "wooProductId": "202",
+            "wooVariantId": "55",
+            "qty": 1
+          }
+        ],
+        "address": {
+          "addressLine1": "456 Park Ave",
+          "city": "Mumbai",
+          "country": "IN",
+          "fullName": "Jane Doe",
+          "phone": "8888888888",
+          "state": "Maharashtra",
+          "zipCode": "400001"
+        }
+      },
+      "expectedCanonical": "POST\n/api/woo/handoff\nwoo_styleyourlyf\nxyz789mno456ab\n1700001234\n[{\"qty\":1,\"wooProductId\":\"202\",\"wooVariantId\":\"55\"}]\n{\"addressLine1\":\"456 Park Ave\",\"city\":\"Mumbai\",\"country\":\"IN\",\"fullName\":\"Jane Doe\",\"phone\":\"8888888888\",\"state\":\"Maharashtra\",\"zipCode\":\"400001\"}",
+      "expectedSignature": "01e8b49b57f2af1be742b56d9dca986befe9029a10cfb6101cc74d9e14234b67"
+    },
+    {
+      "id": "v3-multi-item-sort",
+      "description": "Multiple items — must be sorted by wooProductId then wooVariantId",
+      "input": {
+        "method": "POST",
+        "path": "/api/woo/handoff",
+        "externalSource": "woo_vegetablecuttingmachine",
+        "nonce": "nonce00112233aa",
+        "timestamp": 1700002000,
+        "items": [
+          {
+            "wooProductId": "300",
+            "wooVariantId": "b",
+            "qty": 1
+          },
+          {
+            "wooProductId": "100",
+            "wooVariantId": null,
+            "qty": 3
+          },
+          {
+            "wooProductId": "300",
+            "wooVariantId": "a",
+            "qty": 2
+          }
+        ],
+        "address": {
+          "city": "Delhi",
+          "country": "IN",
+          "fullName": "Ram Kumar",
+          "phone": "7777777777",
+          "addressLine1": "789 Ring Road",
+          "state": "Delhi",
+          "zipCode": "110001"
+        }
+      },
+      "expectedCanonical": "POST\n/api/woo/handoff\nwoo_vegetablecuttingmachine\nnonce00112233aa\n1700002000\n[{\"qty\":3,\"wooProductId\":\"100\",\"wooVariantId\":null},{\"qty\":2,\"wooProductId\":\"300\",\"wooVariantId\":\"a\"},{\"qty\":1,\"wooProductId\":\"300\",\"wooVariantId\":\"b\"}]\n{\"addressLine1\":\"789 Ring Road\",\"city\":\"Delhi\",\"country\":\"IN\",\"fullName\":\"Ram Kumar\",\"phone\":\"7777777777\",\"state\":\"Delhi\",\"zipCode\":\"110001\"}",
+      "expectedSignature": "a7bcee8bc35ffa6cec5cfae6ffe0b4bd458725a4a6d4a8004f2e1fa000d1871e"
+    },
+    {
+      "id": "v4-unicode-and-special-chars",
+      "description": "Tamil text, slash, ampersand and email must encode identically (no \\u or \\/ escaping)",
+      "input": {
+        "method": "POST",
+        "path": "/api/woo/handoff",
+        "externalSource": "woo_styleyourlyf",
+        "nonce": "unicodenonce0001",
+        "timestamp": 1700003000,
+        "items": [
+          {
+            "wooProductId": "77",
+            "wooVariantId": null,
+            "qty": 1
+          }
+        ],
+        "address": {
+          "zipCode": "641006",
+          "fullName": "முருகன் S/O Raj",
+          "email": "a@b.in",
+          "city": "Coimbatore",
+          "addressLine1": "12/4 R&D Street"
+        }
+      },
+      "expectedCanonical": "POST\n/api/woo/handoff\nwoo_styleyourlyf\nunicodenonce0001\n1700003000\n[{\"qty\":1,\"wooProductId\":\"77\",\"wooVariantId\":null}]\n{\"addressLine1\":\"12/4 R&D Street\",\"city\":\"Coimbatore\",\"email\":\"a@b.in\",\"fullName\":\"முருகன் S/O Raj\",\"zipCode\":\"641006\"}",
+      "expectedSignature": "9392f541ea43780135ebcfddeb3658cf4e68036a8216b77b5c58802f93664550"
+    },
+    {
+      "id": "v5-empty-address",
+      "description": "Empty address must encode as {} in both languages (PHP would otherwise emit [])",
+      "input": {
+        "method": "POST",
+        "path": "/api/woo/handoff",
+        "externalSource": "woo_vegetablecuttingmachine",
+        "nonce": "emptyaddrnonce01",
+        "timestamp": 1700004000,
+        "items": [
+          {
+            "wooProductId": "20",
+            "wooVariantId": null,
+            "qty": 1
+          },
+          {
+            "wooProductId": "100",
+            "wooVariantId": null,
+            "qty": 1
+          }
+        ],
+        "address": {}
+      },
+      "expectedCanonical": "POST\n/api/woo/handoff\nwoo_vegetablecuttingmachine\nemptyaddrnonce01\n1700004000\n[{\"qty\":1,\"wooProductId\":\"100\",\"wooVariantId\":null},{\"qty\":1,\"wooProductId\":\"20\",\"wooVariantId\":null}]\n{}",
+      "expectedSignature": "46d23c0415be5af7205607ddd950b7596d4c59a75d75b207685b936725aa5491"
+    }
+  ]
+}

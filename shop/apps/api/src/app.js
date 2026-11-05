@@ -127,6 +127,11 @@ app.use(cookieParser());
 // Security: NoSQL injection protection (always applied)
 app.use(mongoSanitize);
 
+// Exact paths whose body must reach the handler byte-for-byte. The Razorpay webhook's HMAC is
+// computed over the raw Buffer from express.raw above; the XSS sanitizer would rebuild it as a
+// plain object and break signature verification.
+const RAW_BODY_PATHS = ['/api/payment/razorpay/webhook'];
+
 // Security: XSS sanitization (skip for auth routes to preserve email format)
 app.use((req, res, next) => {
   const skipPatterns = [
@@ -138,7 +143,7 @@ app.use((req, res, next) => {
   // Check if URL starts with any skip pattern
   const shouldSkip = skipPatterns.some(pattern => req.url.startsWith(pattern));
 
-  if (shouldSkip) {
+  if (shouldSkip || RAW_BODY_PATHS.includes(req.path.replace(/\/+$/, ''))) {
     return next();
   }
 
@@ -181,6 +186,7 @@ app.use((req, res, next) => {
     '/api/shipping',   // Shipping/carrier operations - protected by JWT + role check
     '/api/products',   // Product reviews - protected by JWT authentication
     '/api/banners',    // Banner management - protected by JWT + admin role check
+    '/api/woo',        // WooCommerce HMAC handoff — has its own HMAC authentication
     '/health',         // Health check
   ];
 

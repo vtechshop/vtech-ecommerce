@@ -1,6 +1,7 @@
 ﻿import { useEffect } from 'react';
 import { updateMetaTags } from '@/utils/seo';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import ConsentPreferences from '@/components/consent/ConsentPreferences';
 
 const CookiePolicy = () => {
   useEffect(() => {
@@ -116,6 +117,9 @@ const CookiePolicy = () => {
                 When you first visit our website, you'll see a cookie banner asking for your consent. You can choose to accept all cookies or customize your preferences.
                 You can change your cookie preferences at any time through our cookie settings.
               </p>
+              <div id="cookie-settings" className="mt-6 border border-gray-200 rounded-lg">
+                <ConsentPreferences />
+              </div>
             </section>
 
             <section>

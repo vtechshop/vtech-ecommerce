@@ -38,6 +38,7 @@ const couponRoutes = require('./coupons');
 const gamificationRoutes = require('./gamification');
 const appConfigRoutes = require('./appConfig');
 const hubRoutes = require('./hub');
+const wooRoutes = require('./woo');
 
 // Mount routes
 router.use('/auth', authRoutes);
@@ -76,6 +77,7 @@ router.use('/coupons', couponRoutes);
 router.use('/gamification', gamificationRoutes);
 router.use('/config', appConfigRoutes);
 router.use('/hub', hubRoutes);
+router.use('/woo', wooRoutes);
 
 // Chatbot routes - with optional authentication for personalized responses
 const { optionalAuth } = require('../middleware/auth');

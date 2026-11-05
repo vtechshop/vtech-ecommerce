@@ -1,5 +1,5 @@
 // FILE: apps/web/src/components/consent/ConsentPreferences.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setConsent } from '@/store/slices/consentSlice';
 import Button from '../common/Button';
@@ -8,6 +8,9 @@ const ConsentPreferences = () => {
   const dispatch = useDispatch();
   const { preferences } = useSelector((state) => state.consent);
   const [localPreferences, setLocalPreferences] = useState(preferences);
+
+  // Reflect choices made elsewhere (e.g. the banner) while this panel is open
+  useEffect(() => { setLocalPreferences(preferences); }, [preferences]);
 
   const handleSave = () => {
     dispatch(setConsent(localPreferences));
@@ -50,7 +53,7 @@ const ConsentPreferences = () => {
                 and provide better user experiences.
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                Services: Google Analytics
+                Services: Google Analytics, Microsoft Clarity
               </p>
             </div>
             <div className="ml-4 pt-1">

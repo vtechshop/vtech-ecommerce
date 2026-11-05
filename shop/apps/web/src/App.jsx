@@ -26,6 +26,7 @@ const Category = lazy(() => import('./assets/pages/Category'));
 const Product = lazy(() => import('./assets/pages/Product'));
 const Cart = lazy(() => import('./assets/pages/Cart'));
 const Checkout = lazy(() => import('./assets/pages/Checkout'));
+const WooCheckout = lazy(() => import('./assets/pages/WooCheckout'));
 const OrderConfirmation = lazy(() => import('./assets/pages/OrderConfirmation'));
 const Login = lazy(() => import('./assets/pages/Login'));
 const Register = lazy(() => import('./assets/pages/Register'));
@@ -161,6 +162,7 @@ const AppConfigManagement = lazy(() => import('./assets/pages/dashboard/admin/Ap
 const MobileDevModules = lazy(() => import('./assets/pages/dashboard/admin/MobileDevModules'));
 const AdminInventory = lazy(() => import('./assets/pages/dashboard/admin/Inventory'));
 const AdminApiKeys = lazy(() => import('./assets/pages/dashboard/admin/ApiKeys'));
+const WooMappings = lazy(() => import('./assets/pages/dashboard/admin/WooMappings'));
 const HubManager = lazy(() => import('./assets/pages/dashboard/admin/HubManager'));
 const AdminCatalogueSettings = lazy(() => import('./assets/pages/dashboard/admin/CatalogueSettings'));
 const VendorKYC = lazy(() => import('./assets/pages/dashboard/vendor/VendorKYC'));
@@ -289,6 +291,7 @@ function App() {
 
           {/* Checkout (can be guest or logged in) */}
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/woo-checkout" element={<WooCheckout />} />
           <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
 
           {/* Customer dashboard */}
@@ -411,6 +414,7 @@ function App() {
             <Route path="mobile-modules" element={<MobileDevModules />} />
             <Route path="hub-manager" element={<HubManager />} />
             <Route path="api-keys" element={<AdminApiKeys />} />
+            <Route path="woo-mappings" element={<WooMappings />} />
             <Route path="settings" element={<AdminSettings />} />
           </Route>
 

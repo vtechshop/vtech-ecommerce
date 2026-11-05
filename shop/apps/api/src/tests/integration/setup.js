@@ -21,6 +21,7 @@ beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create({
       instance: {
         dbName: 'test',
+        startupTimeout: 60000, // allow up to 60s on slow/Windows environments
       },
       binary: {
         // Increase download timeout for slow connections
