@@ -167,11 +167,10 @@ describe('Mixed carts in the cart', () => {
 });
 
 describe('Orders through the existing checkout', () => {
-  test('guest, mixed cart (native + both storefronts): one order, per-item attribution, DB prices and GST', async () => {
+  test('guest, mixed cart (native + store): one order, per-item attribution, DB prices and GST', async () => {
     const guestId = 'guest_order';
     await nativeAdd({ productId: peeler._id, quantity: 1, guestId });
     await transfer({ source: VEG, items: [{ wooProductId: '101', wooVariantId: null, qty: 2 }], guestId });
-    await transfer({ source: STYLE, items: [{ wooProductId: '202', wooVariantId: '55', qty: 1 }], guestId });
     const cart = await Cart.findOne({ guestId });
 
     const res = await placeOrder(linesFromCart(cart), { guestId });
@@ -180,15 +179,29 @@ describe('Orders through the existing checkout', () => {
 
     const order = await Order.findById(res.body.data.vendorOrders[0]._id).lean();
     expect(order.source).toBe('online');
-    expect(sourceOf(order)).toEqual([['Kurta', STYLE], ['Peeler', null], ['Veg Cutter', VEG]]);
-    const kurtaItem = order.items.find(i => i.name === 'Kurta');
-    expect(kurtaItem).toMatchObject({ priceSnapshot: 1200, variantName: 'Red' });
-    // 500 + 2×1500 + 1200 = 4700; GST 18% on the cutter only = 540
-    expect(order.totals).toMatchObject({ subtotal: 4700, tax: 540, total: 5240 });
+    expect(sourceOf(order)).toEqual([['Peeler', null], ['Veg Cutter', VEG]]);
+    // 500 + 2×1500 = 3500; GST 18% on the cutter only = 540
+    expect(order.totals).toMatchObject({ subtotal: 3500, tax: 540, total: 4040 });
 
     expect((await Product.findById(cutter._id)).stock).toBe(18);
-    expect((await Product.findById(kurta._id)).variants[0].stock).toBe(4);
     expect((await Cart.findOne({ guestId })).wooContact).toBeUndefined();
+  });
+
+  test('a transfer from the other store replaces the first store items before ordering', async () => {
+    const guestId = 'guest_switch_store';
+    await nativeAdd({ productId: peeler._id, quantity: 1, guestId });
+    await transfer({ source: VEG, items: [{ wooProductId: '101', wooVariantId: null, qty: 2 }], guestId });
+    await transfer({ source: STYLE, items: [{ wooProductId: '202', wooVariantId: '55', qty: 1 }], guestId });
+    const cart = await Cart.findOne({ guestId });
+    expect(cart.items.map(i => i.externalSource ?? null).sort()).toEqual([null, STYLE].sort());
+
+    const res = await placeOrder(linesFromCart(cart), { guestId });
+    expect(res.status).toBe(201);
+    const order = await Order.findById(res.body.data.vendorOrders[0]._id).lean();
+    expect(sourceOf(order)).toEqual([['Kurta', STYLE], ['Peeler', null]]);
+    expect(order.items.find(i => i.name === 'Kurta')).toMatchObject({ priceSnapshot: 1200, variantName: 'Red' });
+    expect((await Product.findById(cutter._id)).stock).toBe(20);
+    expect((await Product.findById(kurta._id)).variants[0].stock).toBe(4);
   });
 
   test('logged-in customer: attribution recorded and account cart cleared as before', async () => {

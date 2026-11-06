@@ -181,9 +181,11 @@ async function resolveItems(externalSource, rawItems) {
  * The write is guarded on updatedAt; if any other cart write lands between our read
  * and our write, we re-read and re-validate rather than overwrite it.
  *
- * Imported lines are kept separate from native lines (and from the other storefront's
- * lines) for the same product, so every cart line — and later every order item — has
- * exactly one source.
+ * The store cart is the whole truth for store items: every import replaces all store
+ * lines already in the cart (from either storefront), so a repeated or abandoned handoff
+ * never adds quantities up or leaves another store's items behind. Lines the customer
+ * added on VTech itself stay. Imported lines are kept separate from native lines for the
+ * same product, so every cart line — and later every order item — has exactly one source.
  *
  * Returns { ok: true, cart } | { ok: false, errors } | { ok: false, busy: true }.
  */
@@ -198,7 +200,7 @@ async function importIntoCart(cartQuery, lines, { externalSource, contact }) {
     }
     const readAt = cart.updatedAt;
 
-    const merged = cart.items.map(i => i.toObject());
+    const merged = cart.items.filter(i => !i.externalSource).map(i => i.toObject());
     const errors = [];
     for (const line of lines) {
       const idx = merged.findIndex(i => sameProduct(i, line) && (i.externalSource ?? null) === externalSource);

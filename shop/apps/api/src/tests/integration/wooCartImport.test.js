@@ -294,11 +294,23 @@ describe('Cart import', () => {
     expect(cart.items.map(i => [i.qty, i.externalSource])).toEqual([[4, null], [2, VEG]]);
   });
 
-  test('a second transfer from the same storefront increments that storefront line', async () => {
+  test('a second transfer from the same storefront replaces that storefront line (no adding up)', async () => {
     await importCart(await issueToken({ items: [item('101', 1)] }), { guestId: 'guest_twice' });
     await importCart(await issueToken({ items: [item('101', 2)] }), { guestId: 'guest_twice' });
     const cart = await Cart.findOne({ guestId: 'guest_twice' });
-    expect(cart.items.map(i => [i.qty, i.externalSource])).toEqual([[3, VEG]]);
+    expect(cart.items.map(i => [i.qty, i.externalSource])).toEqual([[2, VEG]]);
+  });
+
+  test('a transfer replaces every earlier store line but keeps items added on VTech', async () => {
+    await Cart.create({ guestId: 'guest_switch', items: [{ productId: simple._id, variantId: null, qty: 1, priceSnapshot: 1500, name: 'Veg Cutter' }] });
+    await importCart(await issueToken({ items: [item('101', 2)] }), { guestId: 'guest_switch' });
+    let cart = await Cart.findOne({ guestId: 'guest_switch' });
+    expect(cart.items.map(i => [i.qty, i.externalSource ?? null])).toEqual([[1, null], [2, VEG]]);
+
+    // The same transfer again (e.g. the shopper went back and pressed the button twice)
+    await importCart(await issueToken({ items: [item('101', 2)] }), { guestId: 'guest_switch' });
+    cart = await Cart.findOne({ guestId: 'guest_switch' });
+    expect(cart.items.map(i => [i.qty, i.externalSource ?? null])).toEqual([[1, null], [2, VEG]]);
   });
 
   test('stock covers native and transferred lines of the same product together', async () => {
