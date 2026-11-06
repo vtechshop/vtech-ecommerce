@@ -202,6 +202,23 @@ describe('Landing page — relays the token without putting it in a URL', () => 
     expect((await importCart(token, { guestId: 'guest_landing' })).status).toBe(200);
   });
 
+  test('accepts the form POST from a store page (browser sends the store Origin)', async () => {
+    const token = await issueToken({ items: [item('101', 1)] });
+    for (const origin of ['https://vegetablecuttingmachine.com', 'https://styleyourlyf.com']) {
+      const res = await request(app).post('/api/woo/landing').set('Origin', origin).type('form').send({ token });
+      expect(res.status).toBe(200);
+      expect(res.text).toContain("location.replace('/woo-checkout')");
+      // A navigation needs no CORS headers; none are added for the store
+      expect(res.headers['access-control-allow-origin']).toBeUndefined();
+    }
+  });
+
+  test('other API routes still refuse unknown origins', async () => {
+    const res = await request(app).post('/api/woo/cart/import').set('Origin', 'https://vegetablecuttingmachine.com').send({});
+    expect(res.status).not.toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   test('never reflects a malformed token into the page', async () => {
     const evil = '</script><script>alert(1)</script>';
     const res = await request(app).post('/api/woo/landing').type('form').send({ token: evil });

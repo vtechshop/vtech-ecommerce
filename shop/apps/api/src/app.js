@@ -83,7 +83,12 @@ if (env.CLIENT_URL && !allowedOrigins.includes(env.CLIENT_URL)) {
   allowedOrigins.push(env.CLIENT_URL);
 }
 
-app.use(cors({
+// The WooCommerce stores send shoppers here with a normal form POST (a page navigation, not
+// a script call), so the browser adds the store's Origin header. CORS does not apply to
+// navigations; checking it would reject every store handoff with a 500.
+const CORS_EXEMPT_PATHS = ['/api/woo/landing'];
+
+const corsMiddleware = cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, Postman, etc.)
     if (!origin) return callback(null, true);
@@ -113,7 +118,8 @@ app.use(cors({
     return callback(null, true);
   },
   credentials: true,
-}));
+});
+app.use((req, res, next) => (CORS_EXEMPT_PATHS.includes(req.path) ? next() : corsMiddleware(req, res, next)));
 
 // Raw body for Razorpay webhook HMAC verification — must be registered before express.json
 // so the webhook route receives a Buffer rather than a parsed object
