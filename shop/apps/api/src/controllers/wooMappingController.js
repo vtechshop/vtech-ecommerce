@@ -275,3 +275,67 @@ exports.deactivateMapping = async (req, res) => {
     return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to deactivate mapping' } });
   }
 };
+
+// ---------------------------------------------------------------------------
+// GET /admin/woo-store-products?externalSource=...
+// Read-only list of a storefront's public WooCommerce products (Store API), so the admin can
+// pick products by name instead of typing IDs. Browsers cannot call the stores directly (CORS).
+// ---------------------------------------------------------------------------
+
+const STORE_URLS = {
+  woo_vegetablecuttingmachine: () => process.env.WOO_STORE_URL_VEGETABLE || 'https://vegetablecuttingmachine.com',
+  woo_styleyourlyf:            () => process.env.WOO_STORE_URL_STYLE || 'https://styleyourlyf.com',
+};
+const STORE_CACHE_MS = 5 * 60 * 1000;
+const storeCache = new Map();
+
+const decodeEntities = (s) => String(s || '')
+  .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+  .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#039;|&apos;/g, "'")
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+
+async function fetchStoreProducts(baseUrl) {
+  const items = [];
+  for (let page = 1; page <= 10; page++) {
+    const res = await fetch(`${baseUrl}/wp-json/wc/store/v1/products?per_page=100&page=${page}`, {
+      headers: { Accept: 'application/json', 'User-Agent': 'VTechKitchen-Admin/1.0' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) throw new Error(`store responded ${res.status}`);
+    const batch = await res.json();
+    if (!Array.isArray(batch) || batch.length === 0) break;
+    for (const p of batch) {
+      const minor = Number(p.prices?.currency_minor_unit ?? 2);
+      const price = p.prices?.price != null ? Number(p.prices.price) / 10 ** minor : null;
+      const name = decodeEntities(p.name);
+      items.push({ wooProductId: String(p.id), wooVariantId: null, name, type: p.type, sku: p.sku || '', price });
+      for (const v of p.variations || []) {
+        const label = (v.attributes || []).map(a => decodeEntities(a.value)).filter(Boolean).join(' / ');
+        items.push({ wooProductId: String(p.id), wooVariantId: String(v.id), name: `${name} — ${label || 'variation ' + v.id}`, type: 'variation', sku: '', price: null });
+      }
+    }
+    if (batch.length < 100) break;
+  }
+  return items;
+}
+
+exports.getWooStoreProducts = async (req, res) => {
+  const { externalSource } = req.query;
+  const urlFor = STORE_URLS[externalSource];
+  if (!urlFor) {
+    return res.status(400).json({ success: false, error: { code: 'INVALID_EXTERNAL_SOURCE', message: 'Unknown storefront' } });
+  }
+  const refresh = req.query.refresh === '1';
+  const cached = storeCache.get(externalSource);
+  if (!refresh && cached && Date.now() - cached.at < STORE_CACHE_MS) {
+    return res.json({ success: true, data: cached.items, cached: true });
+  }
+  try {
+    const items = await fetchStoreProducts(urlFor());
+    storeCache.set(externalSource, { at: Date.now(), items });
+    return res.json({ success: true, data: items });
+  } catch (err) {
+    logger.warn({ err: { message: err.message } }, `Woo store product list failed for ${externalSource}`);
+    return res.status(502).json({ success: false, error: { code: 'STORE_UNREACHABLE', message: 'Could not load products from the store. Try again in a minute.' } });
+  }
+};

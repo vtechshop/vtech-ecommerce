@@ -252,6 +252,7 @@ router.post('/seo/indexnow/submit', sitemapController.submitIndexNow);
 // WooCommerce Product Mappings
 router.post('/woo-mappings', wooMapping.createMapping);
 router.get('/woo-mappings', wooMapping.getMappings);
+router.get('/woo-store-products', wooMapping.getWooStoreProducts);
 router.get('/woo-mappings/:id', validateObjectId('id'), wooMapping.getMappingById);
 router.put('/woo-mappings/:id', validateObjectId('id'), wooMapping.updateMapping);
 router.put('/woo-mappings/:id/deactivate', validateObjectId('id'), wooMapping.deactivateMapping);

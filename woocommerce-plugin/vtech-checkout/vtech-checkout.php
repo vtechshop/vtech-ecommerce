@@ -3,7 +3,7 @@
  * Plugin Name: VTech Central Checkout
  * Plugin URI: https://www.vtechkitchen.com/
  * Description: Sends the whole WooCommerce cart to VTech Kitchen central checkout via an HMAC-signed handoff.
- * Version: 1.1.0
+ * Version: 1.2.1
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * WC requires at least: 7.0
@@ -13,7 +13,7 @@
 
 defined('ABSPATH') || exit;
 
-define('VTC_VERSION', '1.1.0');
+define('VTC_VERSION', '1.2.1');
 define('VTC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('VTC_PLUGIN_URL', plugin_dir_url(__FILE__));
 // Overridable in wp-config.php for a staging VTech environment
@@ -51,7 +51,7 @@ function vtc_button(string $extraClass = ''): string {
         . '<button type="button" class="button alt vtc-proceed ' . esc_attr($extraClass) . '">'
         . esc_html__('Proceed to VTech Checkout', 'vtech-checkout')
         . '</button>'
-        . '<div class="vtc-error woocommerce-error" role="alert" hidden></div>'
+        . '<div class="vtc-error" role="alert" hidden></div>'
         . '</div>';
 }
 
@@ -97,6 +97,37 @@ add_filter('render_block_woocommerce/mini-cart-checkout-button-block', function 
     return $html . '<div class="vtc-mini-cart-action">' . vtc_button('wp-element-button wc-block-components-button') . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput
 });
 
+/**
+ * "VTech checkout only" mode, off by default. Turn it on in wp-config.php once every product
+ * sold here is mapped in VTech admin:
+ *   define('VTC_VTECH_CHECKOUT_ONLY', true);
+ * It removes WooCommerce's own checkout buttons and sends visits to the checkout page back to the
+ * cart. Order pay / order received pages keep working for older orders.
+ */
+function vtc_checkout_only(): bool {
+    return defined('VTC_VTECH_CHECKOUT_ONLY') && VTC_VTECH_CHECKOUT_ONLY && !empty(vtc_get_config());
+}
+
+add_action('wp', function () {
+    if (!vtc_checkout_only()) return;
+    remove_action('woocommerce_proceed_to_checkout', 'woocommerce_button_proceed_to_checkout', 20);
+    remove_action('woocommerce_widget_shopping_cart_buttons', 'woocommerce_widget_shopping_cart_proceed_to_checkout', 20);
+});
+
+add_action('template_redirect', function () {
+    if (!vtc_checkout_only() || !function_exists('is_checkout') || !is_checkout() || is_wc_endpoint_url()) return;
+    wp_safe_redirect(wc_get_cart_url());
+    exit;
+});
+
+// Block cart, Mini-Cart drawer and page builders draw their own checkout buttons; hide those too
+function vtc_checkout_only_css(): string {
+    return '.wc-block-cart__submit,.wc-block-mini-cart__footer-checkout,'
+        . '.wc-proceed-to-checkout a.checkout-button:not(.vtc-proceed),'
+        . '.woocommerce-mini-cart__buttons a.checkout:not(.vtc-proceed){display:none!important}'
+        . '.wc-proceed-to-checkout .vtc-proceed{width:100%}';
+}
+
 add_action('wp_enqueue_scripts', function () {
     if (empty(vtc_get_config()) || is_admin()) return;
 
@@ -104,7 +135,12 @@ add_action('wp_enqueue_scripts', function () {
     // The Mini-Cart drawer lays its buttons out in a row; give ours its own full-width line
     wp_register_style('vtc-checkout', false, [], VTC_VERSION);
     wp_enqueue_style('vtc-checkout');
-    wp_add_inline_style('vtc-checkout', '.vtc-mini-cart-action{flex-basis:100%;width:100%}.vtc-mini-cart-action .vtc-proceed{width:100%}');
+    // Own error box style: themes restyle .woocommerce-error and some (OceanWP) override [hidden]
+    wp_add_inline_style('vtc-checkout', '.vtc-mini-cart-action{flex-basis:100%;width:100%}.vtc-mini-cart-action .vtc-proceed{width:100%}'
+        . '.vtc-error[hidden]{display:none!important}'
+        . '.vtc-error{margin:10px 0;padding:10px 14px;border:1px solid #e2401c;border-left-width:4px;background:#fff5f2;color:#8a1f05;font-size:14px;line-height:1.5;text-transform:none;text-align:left}'
+        . '.vtc-error p{margin:0}.vtc-error ul{margin:6px 0 0 18px;padding:0}'
+        . (vtc_checkout_only() ? vtc_checkout_only_css() : ''));
     wp_localize_script('vtc-checkout', 'vtcCheckout', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'nonce'   => wp_create_nonce('vtc-handoff'),
