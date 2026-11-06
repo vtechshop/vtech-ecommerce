@@ -714,3 +714,9 @@ a:active,
     background-position: 1000px 0;
   }
 }
+
+/* Password fields have their own show/hide button: hide Edge's built-in reveal eye */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}

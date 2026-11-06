@@ -83,8 +83,12 @@ const Input = ({
         {isPasswordField && (
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-600 focus:outline-none transition-colors"
+            // Keep focus (and the mobile keyboard) in the password box while toggling
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setShowPassword((s) => !s)}
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-pressed={showPassword}
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors"
             tabIndex={-1}
           >
             {showPassword ? (
