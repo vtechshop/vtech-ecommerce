@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addToCart } from '@/store/slices/cartSlice';
 import { useToast } from '@/components/common/ToastContainer';
 import api from '@/utils/api';
+import LogisticsPickupNotice, { needsLogisticsPickup } from '@/components/common/LogisticsPickupNotice';
 import { Star, Heart, ShoppingCart, Truck, Shield, RotateCcw, Minus, Plus, Check, ChevronLeft, ChevronRight, Edit2, Trash2 } from 'lucide-react';
 import ShareProduct from '@/components/common/ShareProduct';
 import { formatCurrency } from '@/utils/format';
@@ -777,6 +778,8 @@ const Product = () => {
               <p className="text-red-600 font-medium">✗ Out of Stock</p>
             )}
           </div>
+
+          {needsLogisticsPickup(product) && <LogisticsPickupNotice />}
 
           {product.variants && Object.keys(product.variants).length > 0 && (
             <div className="space-y-3">

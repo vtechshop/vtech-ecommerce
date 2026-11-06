@@ -12,6 +12,7 @@ import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import { NoIndex } from '@/components/common/SEO';
 import { trackRemoveFromCart } from '@/utils/analytics';
 import { storefrontName } from '@/utils/storefronts';
+import LogisticsPickupNotice, { needsLogisticsPickup } from '@/components/common/LogisticsPickupNotice';
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -162,6 +163,7 @@ const Cart = () => {
                     {item.externalSource && (
                       <p className="text-xs text-gray-500 mt-1">From {storefrontName(item.externalSource)}</p>
                     )}
+                    {needsLogisticsPickup(item) && <LogisticsPickupNotice compact className="mt-2" />}
 
                     <div className="mt-3 flex items-center justify-between">
                       {/* Quantity Controls */}
