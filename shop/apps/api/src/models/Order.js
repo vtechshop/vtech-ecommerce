@@ -106,6 +106,18 @@ const orderSchema = new mongoose.Schema({
     events: [{ code: String, description: String, location: String, timestamp: Date }],
   },
   invoiceNumber: { type: String, unique: true, sparse: true }, // e.g., W-00001, M-00001
+  // Admin edits for the tax invoice only (the order's own address and items stay as they are).
+  // Editable until the invoice is generated; locked after that.
+  invoiceDetails: {
+    billTo: {
+      name: String, company: String, gstin: String,
+      addressLine1: String, addressLine2: String, city: String, state: String, zipCode: String,
+      phone: String, email: String,
+    },
+    items: [{ itemId: mongoose.Schema.Types.ObjectId, name: String, hsnCode: String }],
+    updatedAt: Date,
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  },
   invoices: [{ url: String, generatedAt: Date }],
   affiliateCode: String, // Affiliate code used during order placement
   source: { type: String, enum: ['online', 'in-store', 'phone'], default: 'online' },

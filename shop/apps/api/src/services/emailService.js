@@ -2,6 +2,7 @@
 const { MailerSend, EmailParams, Sender, Recipient } = require('mailersend');
 const env = require('../config/env');
 const logger = require('../config/logger');
+const { describeMailError } = require('../utils/mailError');
 
 class EmailService {
   constructor() {
@@ -261,8 +262,9 @@ class EmailService {
       });
       return { success: true, messageId: response.headers?.['x-message-id'] };
     } catch (error) {
-      logger.error('Email sending failed:', error);
-      throw new Error('Failed to send email');
+      const mailError = describeMailError(error);
+      logger.error({ mailError, to: emailData.to, subject: emailData.subject }, `Email sending failed: ${mailError.message}`);
+      throw new Error(`Failed to send email: ${mailError.message}`);
     }
   }
 }

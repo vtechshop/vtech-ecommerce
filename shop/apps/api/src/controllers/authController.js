@@ -141,7 +141,7 @@ exports.register = async (req, res, next) => {
       await emailService.sendVerificationEmail(user, verificationToken);
       logger.info(`Verification email sent to: ${email}`);
     } catch (emailError) {
-      logger.error('Failed to send verification email:', emailError);
+      logger.error(`Failed to send verification email: ${emailError.message}`);
       // Continue with registration even if email fails
     }
 

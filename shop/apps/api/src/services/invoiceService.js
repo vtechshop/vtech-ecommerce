@@ -144,8 +144,32 @@ function drawLabelValue(doc, label, value, x, y, opts = {}) {
 /**
  * Generate Amazon-style professional tax invoice PDF.
  */
+/**
+ * Apply the admin's invoice edits (billing details, item names, HSN codes) to a copy of the order.
+ * Prices, quantities and tax always come from the order itself.
+ */
+function applyInvoiceDetails(order) {
+  const details = order.invoiceDetails;
+  if (!details) return order;
+  const byItem = new Map((details.items || []).map(e => [String(e.itemId), e]));
+  const items = (order.items || []).map((item) => {
+    const e = byItem.get(String(item._id));
+    if (!e) return item;
+    const copy = typeof item.toObject === 'function' ? item.toObject() : { ...item };
+    if (e.name) copy.name = e.name;
+    if (e.hsnCode) copy.hsnCode = e.hsnCode;
+    return copy;
+  });
+  const plain = typeof order.toObject === 'function' ? order.toObject() : order;
+  return { ...plain, userId: order.userId, items };
+}
+
 async function generateInvoicePDF(order, outputStream, seller) {
+  order = applyInvoiceDetails(order);
   const CO = seller || PLATFORM_SELLER;
+  // Before the admin generates the tax invoice the PDF is an order summary (payment receipt):
+  // same details, no invoice number, clearly marked as not a tax invoice.
+  const isSummary = !order.invoiceNumber;
 
   // Generate QR code buffer (WhatsApp support link)
   const whatsappPhone = (CO.phone || '').replace(/[^0-9]/g, '');
@@ -164,9 +188,9 @@ async function generateInvoicePDF(order, outputStream, seller) {
         margins: { top: 40, bottom: 40, left: 45, right: 45 },
         bufferPages: true,
         info: {
-          Title: `Invoice - ${order.orderId}`,
+          Title: isSummary ? `Order Summary - ${order.orderId}` : `Invoice ${order.invoiceNumber} - ${order.orderId}`,
           Author: CO.tradeName,
-          Subject: `Tax Invoice for Order ${order.orderId}`,
+          Subject: isSummary ? `Order Summary for Order ${order.orderId} (not a tax invoice)` : `Tax Invoice for Order ${order.orderId}`,
         },
       });
 
@@ -210,9 +234,9 @@ async function generateInvoicePDF(order, outputStream, seller) {
 
       // "Tax Invoice" label (right-aligned)
       doc.fontSize(12).font('Helvetica-Bold').fillColor('#4f46e5')
-        .text('TAX INVOICE', L, y + 2, { align: 'right', width: W });
+        .text(isSummary ? 'ORDER SUMMARY' : 'TAX INVOICE', L, y + 2, { align: 'right', width: W });
       doc.fontSize(7.5).font('Helvetica').fillColor('#6b7280')
-        .text('Original for Recipient', L, y + 18, { align: 'right', width: W });
+        .text(isSummary ? 'Payment receipt - not a tax invoice' : 'Original for Recipient', L, y + 18, { align: 'right', width: W });
 
       y = Math.max(y + logoSize + 10, doc.y + 14);
 
@@ -243,7 +267,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
       const sellerEndY = doc.y;
 
       // Right column - Order & Invoice details
-      doc.fontSize(7).font('Helvetica-Bold').fillColor('#4f46e5').text('ORDER & INVOICE DETAILS', metaRightX, metaY);
+      doc.fontSize(7).font('Helvetica-Bold').fillColor('#4f46e5').text(order.invoiceNumber ? 'ORDER & INVOICE DETAILS' : 'ORDER DETAILS', metaRightX, metaY);
       let iy = doc.y + 3;
 
       // Payment mode display
@@ -291,7 +315,7 @@ async function generateInvoicePDF(order, outputStream, seller) {
 
       const invoiceRows = [
         ['Order ID', `#${order.orderId}`],
-        ['Invoice No', order.invoiceNumber || order.orderId],
+        ...(isSummary ? [] : [['Invoice No', order.invoiceNumber]]),
         ['Order Date', formatDate(order.createdAt)],
         ['Place of Supply', placeOfSupply],
         ['Payment Mode', paymentDisplay],
@@ -321,24 +345,40 @@ async function generateInvoicePDF(order, outputStream, seller) {
       drawLine(doc, L, y, R, y, '#e5e7eb', 0.5);
       y += 10;
 
-      // Billing Address
+      // Billing Address (admin invoice edits win over the shipping address)
       doc.fontSize(7).font('Helvetica-Bold').fillColor('#4f46e5').text('BILLING ADDRESS', L, y);
       let ay = doc.y + 3;
       doc.fontSize(8).font('Helvetica-Bold').fillColor('#111827');
-      if (order.shipTo) {
-        doc.text(order.shipTo.fullName || 'N/A', L, ay, { width: halfW - 15 });
+      const billEdit = order.invoiceDetails?.billTo || {};
+      const hasBillEdit = Object.values(billEdit).some(v => typeof v === 'string' && v.trim());
+      const bill = order.shipTo || hasBillEdit ? {
+        fullName: billEdit.name || order.shipTo?.fullName,
+        company: billEdit.company,
+        gstin: billEdit.gstin,
+        addressLine1: billEdit.addressLine1 || order.shipTo?.addressLine1,
+        addressLine2: hasBillEdit && billEdit.addressLine1 ? billEdit.addressLine2 : order.shipTo?.addressLine2,
+        city: billEdit.city || order.shipTo?.city,
+        district: hasBillEdit && billEdit.city ? '' : order.shipTo?.district,
+        state: billEdit.state || order.shipTo?.state,
+        zipCode: billEdit.zipCode || order.shipTo?.zipCode,
+        country: order.shipTo?.country,
+        phone: billEdit.phone || order.shipTo?.phone,
+        email: billEdit.email || order.customerEmail || order.guestEmail || (order.userId?.email),
+      } : null;
+      if (bill) {
+        doc.text(bill.company || bill.fullName || 'N/A', L, ay, { width: halfW - 15 });
         doc.font('Helvetica').fillColor('#374151').fontSize(7.5);
-        if (order.shipTo.addressLine1) doc.text(order.shipTo.addressLine1, { width: halfW - 15 });
-        if (order.shipTo.addressLine2) doc.text(order.shipTo.addressLine2, { width: halfW - 15 });
-        const cityLine = [order.shipTo.city, order.shipTo.district].filter(Boolean).join(', ');
+        if (bill.company && bill.fullName) doc.text(bill.fullName, { width: halfW - 15 });
+        if (bill.addressLine1) doc.text(bill.addressLine1, { width: halfW - 15 });
+        if (bill.addressLine2) doc.text(bill.addressLine2, { width: halfW - 15 });
+        const cityLine = [bill.city, bill.district].filter(Boolean).join(', ');
         if (cityLine) doc.text(cityLine, { width: halfW - 15 });
-        const stateLine = [order.shipTo.state, order.shipTo.zipCode].filter(Boolean).join(' - ');
+        const stateLine = [bill.state, bill.zipCode].filter(Boolean).join(' - ');
         if (stateLine) doc.text(stateLine, { width: halfW - 15 });
-        doc.text(formatCountry(order.shipTo.country), { width: halfW - 15 });
-        if (order.shipTo.phone) doc.text(`Phone: ${order.shipTo.phone}`);
-        // Customer email
-        const customerEmail = order.customerEmail || order.guestEmail || (order.userId?.email);
-        if (customerEmail) doc.text(`Email: ${customerEmail}`);
+        doc.text(formatCountry(bill.country), { width: halfW - 15 });
+        if (bill.phone) doc.text(`Phone: ${bill.phone}`);
+        if (bill.email) doc.text(`Email: ${bill.email}`);
+        if (bill.gstin) doc.font('Helvetica-Bold').fillColor('#111827').text(`GSTIN: ${bill.gstin}`);
       }
       const billEndY = doc.y;
 
@@ -710,7 +750,9 @@ async function generateInvoicePDF(order, outputStream, seller) {
       doc.moveDown(0.4);
 
       doc.fontSize(6.5).font('Helvetica').fillColor('#9ca3af');
-      doc.text('This is a computer-generated invoice with an electronic signature.', L, doc.y, {
+      doc.text(isSummary
+        ? 'This is an order summary and payment receipt, not a tax invoice. Your tax invoice will be shared once the order is confirmed.'
+        : 'This is a computer-generated invoice with an electronic signature.', L, doc.y, {
         align: 'center', width: W,
       });
       doc.moveDown(0.3);

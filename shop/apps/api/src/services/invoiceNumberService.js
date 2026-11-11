@@ -53,11 +53,12 @@ function supportsTransactions() {
  * the order are updated in one transaction, so a number is never used twice or skipped.
  * @returns {Promise<string|null>} the invoice number, or null when the order is not paid
  */
-async function assignInvoiceNumber(orderId) {
+async function assignInvoiceNumber(orderId, { ignoreSeriesStart = false } = {}) {
   const order = await Order.findById(orderId).select('invoiceNumber status payment.status payment.paidAt source createdAt').lean();
   if (!order) return null;
   if (order.invoiceNumber) return order.invoiceNumber;
-  if (!isInvoiceable(order) || isBeforeSeriesStart(order)) return null;
+  if (!isInvoiceable(order)) return null;
+  if (!ignoreSeriesStart && isBeforeSeriesStart(order)) return null;
 
   const counterId = `invoice_${invoicePrefix(order)}`;
   const prefix = invoicePrefix(order);

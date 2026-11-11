@@ -11,17 +11,12 @@ const razorpay = new Razorpay({
 });
 
 /**
- * Helper to send order confirmation email
- * Replace the console.log with your actual email service (e.g., Nodemailer, SendGrid)
+ * Same post-payment steps as a normal Razorpay payment: customer confirmation email (sent once,
+ * guarded by an atomic claim), admin notification and WhatsApp.
  */
 const sendConfirmationEmail = async (order) => {
-  const customerEmail = order.guestEmail || order.payment.email || (order.userId && order.userId.email);
-  if (!customerEmail) {
-    console.warn(`No email found for Order ${order.orderId}, skipping confirmation email.`);
-    return;
-  }
-  // Example: await emailService.sendOrderConfirmation(customerEmail, order);
-  console.log(`[Email Service] Sending Order Confirmation for ${order.orderId} to ${customerEmail}`);
+  const { sendPostPaymentNotifications } = require('../controllers/razorpayController');
+  await sendPostPaymentNotifications(order);
 };
 
 /**
@@ -92,10 +87,6 @@ const reconcilePayments = async () => {
           // CRM order event (payment was just confirmed against Razorpay; never throws)
           await crmEventService.recordOrderEvent('order.confirmed', order);
           
-          // GST invoice number, given in payment order (before the email so its PDF carries it)
-          const invoiceNumber = await require('../services/invoiceNumberService').assignInvoiceNumberSafe(order._id);
-          if (invoiceNumber) order.invoiceNumber = invoiceNumber;
-
           // 5. Send Order Confirmation Email
           try {
             await sendConfirmationEmail(order);

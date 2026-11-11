@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/utils/api';
+import { needsInvoiceApproval } from '@/utils/orderPayment';
 import Pagination from '@/components/common/Pagination';
 import Spinner from '@/components/common/Spinner';
 import NewBadge from '@/components/common/NewBadge';
@@ -285,6 +286,11 @@ const Orders = () => {
                         {order?.paymentMethod === 'cod' && (
                           <span className="px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-medium">COD</span>
                         )}
+                        {order?.invoiceNumber ? (
+                          <span className="px-2 py-0.5 bg-green-50 text-green-800 rounded text-xs font-medium tabular-nums">Invoice {order.invoiceNumber}</span>
+                        ) : needsInvoiceApproval(order) ? (
+                          <span className="px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-xs font-medium">Invoice pending</span>
+                        ) : null}
                       </div>
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
                         <span className="flex items-center gap-1">

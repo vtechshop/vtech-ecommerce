@@ -3,6 +3,7 @@ const { MailerSend, EmailParams, Sender, Recipient, Attachment } = require('mail
 const env = require('../config/env');
 const logger = require('../config/logger');
 const { generateInvoiceBuffer, buildSellerFromVendor } = require('./invoiceService');
+const { describeMailError } = require('../utils/mailError');
 
 class NotificationService {
   constructor() {
@@ -65,15 +66,17 @@ class NotificationService {
       logger.info(`Email sent successfully to ${to}${attachments?.length ? ` with ${attachments.length} attachment(s)` : ''}`);
       return { success: true, messageId: response.headers?.['x-message-id'] || 'sent' };
     } catch (error) {
-      logger.error('Email send failed:', error);
-      return { success: false, error: error.message, messageId: null };
+      const mailError = describeMailError(error);
+      logger.error({ mailError, to, subject }, `Email send failed: ${mailError.message}`);
+      return { success: false, error: mailError.message, messageId: null };
     }
   }
 
   async sendOrderConfirmation(user, order) {
     // Generate invoice PDF attachment with correct seller details
     let attachments = [];
-    try {
+    // Tax invoice goes out only after the admin generates it (it then has an invoice number)
+    if (order.invoiceNumber) try {
       let seller = null;
       if (order.isVendorOrder && order.items?.[0]?.vendorId) {
         const Vendor = require('../models/Vendor');
@@ -83,7 +86,7 @@ class NotificationService {
       const invoiceBuffer = await generateInvoiceBuffer(order, seller);
       const attachment = new Attachment(
         invoiceBuffer.toString('base64'),
-        `Invoice-${order.orderId}.pdf`
+        `Invoice-${order.invoiceNumber}.pdf`
       );
       attachments.push(attachment);
     } catch (err) {
@@ -195,6 +198,30 @@ class NotificationService {
     return this.sendEmail(user.email, `Order Confirmation - ${order.orderId}`, html, null, attachments);
   }
 
+  /** Email the tax invoice PDF once the admin has generated it (order has an invoice number). */
+  async sendInvoiceEmail(user, order) {
+    let seller = null;
+    if (order.isVendorOrder && order.items?.[0]?.vendorId) {
+      const Vendor = require('../models/Vendor');
+      const vendor = await Vendor.findById(order.items[0].vendorId).populate('userId', 'email').lean();
+      if (vendor) seller = buildSellerFromVendor(vendor);
+    }
+    const invoiceBuffer = await generateInvoiceBuffer(order, seller);
+    const attachments = [new Attachment(invoiceBuffer.toString('base64'), `Invoice-${order.invoiceNumber}.pdf`)];
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <h2 style="color: #1e3a5f;">Your tax invoice is ready</h2>
+        <p>Hi ${user.name || 'there'},</p>
+        <p>The tax invoice for your order <strong>${order.orderId}</strong> is attached.</p>
+        <p>Invoice number: <strong>${order.invoiceNumber}</strong></p>
+        <p>You can also download it any time from your order page:<br>
+          <a href="${env.CLIENT_URL}/dashboard/orders/${order._id}">${env.CLIENT_URL}/dashboard/orders/${order._id}</a></p>
+        <p>Thank you for shopping with VTech Kitchen.</p>
+      </div>
+    `;
+    return this.sendEmail(user.email, `Tax Invoice ${order.invoiceNumber} - Order ${order.orderId}`, html, null, attachments);
+  }
+
   async sendMultiVendorOrderConfirmation(user, vendorOrders, totalAmount) {
     // Guard against empty vendorOrders
     if (!vendorOrders || vendorOrders.length === 0) {
@@ -206,6 +233,7 @@ class NotificationService {
     const Vendor = require('../models/Vendor');
     const attachments = [];
     for (const vOrder of vendorOrders) {
+      if (!vOrder.invoiceNumber) continue; // tax invoice only after the admin generates it
       try {
         let seller = null;
         if (vOrder.isVendorOrder && vOrder.items?.[0]?.vendorId) {
@@ -215,7 +243,7 @@ class NotificationService {
         const invoiceBuffer = await generateInvoiceBuffer(vOrder, seller);
         attachments.push(new Attachment(
           invoiceBuffer.toString('base64'),
-          `Invoice-${vOrder.orderId}.pdf`
+          `Invoice-${vOrder.invoiceNumber}.pdf`
         ));
       } catch (err) {
         logger.warn(`Failed to generate invoice PDF for order ${vOrder.orderId}:`, err.message);

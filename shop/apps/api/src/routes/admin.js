@@ -90,6 +90,8 @@ router.get('/orders/counts', admin.getOrderCounts);
 router.get('/orders', admin.getOrders);
 router.get('/orders/:id', validateObjectId('id'), admin.getOrderById);
 router.get('/orders/:id/invoice', validateObjectId('id'), invoiceController.downloadInvoiceAdmin);
+router.post('/orders/:id/invoice', validateObjectId('id'), invoiceController.generateInvoiceAdmin);
+router.put('/orders/:id/invoice-details', validateObjectId('id'), invoiceController.updateInvoiceDetails);
 router.put('/orders/:id/status', validateObjectId('id'), admin.updateOrderStatus);
 router.put('/orders/:id/address', validateObjectId('id'), admin.updateOrderAddress);
 

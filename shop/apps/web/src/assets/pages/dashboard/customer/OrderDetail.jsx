@@ -3,6 +3,8 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import api from '@/utils/api';
+import { blobErrorMessage } from '@/utils/blobError';
+import { isOrderPaid } from '@/utils/orderPayment';
 import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -92,14 +94,13 @@ const OrderDetail = () => {
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Invoice-${order.orderId}.pdf`);
+      link.setAttribute('download', order.invoiceNumber ? `Invoice-${order.invoiceNumber}.pdf` : `Order-Summary-${order.orderId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      toast.success('Invoice downloaded');
     } catch (error) {
-      toast.error('Failed to download invoice');
+      toast.error(await blobErrorMessage(error, 'Failed to download'));
     } finally {
       setDownloadingInvoice(false);
     }
@@ -138,7 +139,8 @@ const OrderDetail = () => {
 
   // Allow cancellation for pending_payment, placed, and paid orders (before shipping)
   const canCancel = ['pending_payment', 'placed', 'paid'].includes(order.status);
-  const canDownloadInvoice = ['paid', 'packed', 'shipped', 'out_for_delivery', 'delivered'].includes(order.status);
+  // Tax invoice once the admin generates it; before that a paid order downloads as an order summary
+  const canDownloadInvoice = Boolean(order.invoiceNumber) || isOrderPaid(order);
 
   return (
     <div>
@@ -321,8 +323,11 @@ const OrderDetail = () => {
               <svg className="w-4 h-4 mr-2 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Download Invoice
+              {order.invoiceNumber ? 'Download Invoice' : 'Download Order Summary'}
             </Button>
+          )}
+          {canDownloadInvoice && !order.invoiceNumber && (
+            <p className="text-xs text-gray-500 text-center -mt-2">Your tax invoice will be available here once your order is confirmed.</p>
           )}
 
           {/* Actions */}
