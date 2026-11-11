@@ -2143,6 +2143,10 @@ async function createVendorManualOrder(req, res, next) {
       guestEmail: customerEmail || undefined,
     });
 
+    // Paid at creation: give the GST invoice number now
+    const manualInvoiceNumber = await require('../services/invoiceNumberService').assignInvoiceNumberSafe(order._id);
+    if (manualInvoiceNumber) order.invoiceNumber = manualInvoiceNumber;
+
     // Auto-activate warranties
     const { activateWarrantiesForOrder } = require('./adminController');
     await activateWarrantiesForOrder(order);

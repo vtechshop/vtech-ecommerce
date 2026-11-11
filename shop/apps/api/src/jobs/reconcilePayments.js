@@ -92,6 +92,10 @@ const reconcilePayments = async () => {
           // CRM order event (payment was just confirmed against Razorpay; never throws)
           await crmEventService.recordOrderEvent('order.confirmed', order);
           
+          // GST invoice number, given in payment order (before the email so its PDF carries it)
+          const invoiceNumber = await require('../services/invoiceNumberService').assignInvoiceNumberSafe(order._id);
+          if (invoiceNumber) order.invoiceNumber = invoiceNumber;
+
           // 5. Send Order Confirmation Email
           try {
             await sendConfirmationEmail(order);

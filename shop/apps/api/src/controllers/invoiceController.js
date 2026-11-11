@@ -1,11 +1,9 @@
 // FILE: apps/api/src/controllers/invoiceController.js
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
-const Counter = require('../models/Counter');
+const { assignInvoiceNumber, isInvoiceable, isBeforeSeriesStart } = require('../services/invoiceNumberService');
 const Vendor = require('../models/Vendor');
 const { generateInvoicePDF, buildSellerFromVendor } = require('../services/invoiceService');
-
-const INVOICE_STATUSES = ['paid', 'packed', 'shipped', 'out_for_delivery', 'delivered'];
 
 /**
  * Resolve seller details for an order.
@@ -26,25 +24,18 @@ async function resolveSellerForOrder(order) {
 }
 
 /**
- * Assign invoice number to an order if it doesn't have one.
- * Website orders: W-00001, Manual orders: M-00001
- * Only assigns for paid/fulfilled orders to keep GST sequence clean.
+ * Make sure a paid order carries its invoice number (normally given at payment time; this covers
+ * orders paid before that change). Unpaid orders get a 400.
  */
 async function ensureInvoiceNumber(order) {
   if (order.invoiceNumber) return order.invoiceNumber;
-
-  if (!INVOICE_STATUSES.includes(order.status)) {
-    throw Object.assign(new Error('Invoice number can only be assigned to paid orders'), { statusCode: 400 });
+  // Paid orders from already-filed periods: PDF without a new number (shows the order ID)
+  if (isInvoiceable(order) && isBeforeSeriesStart(order)) return null;
+  const invoiceNumber = isInvoiceable(order) ? await assignInvoiceNumber(order._id) : null;
+  if (!invoiceNumber) {
+    throw Object.assign(new Error('Invoice is only available for paid orders'), { statusCode: 400 });
   }
-
-  const isManual = order.source === 'in-store' || order.source === 'phone';
-  const prefix = isManual ? 'M' : 'W';
-  const seq = await Counter.getNextSequence(`invoice_${prefix}`);
-  const invoiceNumber = `${prefix}-${String(seq).padStart(5, '0')}`;
-
-  await Order.findByIdAndUpdate(order._id, { invoiceNumber });
   order.invoiceNumber = invoiceNumber;
-
   return invoiceNumber;
 }
 
@@ -79,7 +70,7 @@ exports.downloadInvoice = async (req, res, next) => {
       });
     }
 
-    if (!INVOICE_STATUSES.includes(order.status)) {
+    if (!isInvoiceable(order)) {
       return res.status(400).json({
         success: false,
         error: { code: 'INVOICE_NOT_AVAILABLE', message: 'Invoice is only available for paid orders' },
@@ -92,7 +83,7 @@ exports.downloadInvoice = async (req, res, next) => {
     // Resolve seller: vendor details for vendor orders, platform details for own orders
     const seller = await resolveSellerForOrder(order);
 
-    const filename = `Invoice-${order.invoiceNumber}.pdf`;
+    const filename = `Invoice-${order.invoiceNumber || order.orderId}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
@@ -128,7 +119,7 @@ exports.downloadInvoiceAdmin = async (req, res, next) => {
     // Resolve seller: vendor details for vendor orders, platform details for own orders
     const seller = await resolveSellerForOrder(order);
 
-    const filename = `Invoice-${order.invoiceNumber}.pdf`;
+    const filename = `Invoice-${order.invoiceNumber || order.orderId}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
@@ -160,10 +151,14 @@ exports.downloadInvoiceVendor = async (req, res, next) => {
       return res.status(404).json({ success: false, error: { code: 'NOT_FOUND', message: 'Order not found' } });
     }
 
-    await ensureInvoiceNumber(order);
+    try {
+      await ensureInvoiceNumber(order);
+    } catch (e) {
+      return res.status(400).json({ success: false, error: { code: 'INVOICE_NOT_AVAILABLE', message: e.message } });
+    }
     const seller = await resolveSellerForOrder(order);
 
-    const filename = `Invoice-${order.invoiceNumber}.pdf`;
+    const filename = `Invoice-${order.invoiceNumber || order.orderId}.pdf`;
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 

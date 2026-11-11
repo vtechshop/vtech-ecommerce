@@ -1051,6 +1051,13 @@ exports.updateOrderStatus = async (req, res, next) => {
       await activateWarrantiesForOrder(order);
     }
 
+    // GST invoice number once the order counts as paid (no-op if it already has one)
+    const { assignInvoiceNumberSafe, isInvoiceable } = require('../services/invoiceNumberService');
+    if (!order.invoiceNumber && isInvoiceable(order)) {
+      const invoiceNumber = await assignInvoiceNumberSafe(order._id);
+      if (invoiceNumber) order.invoiceNumber = invoiceNumber;
+    }
+
     // Auto-approve commissions when order is delivered
     if (status === 'delivered') {
       await payoutService.autoApproveCommissions(order._id);
@@ -4173,6 +4180,10 @@ exports.createManualOrder = async (req, res, next) => {
       internalNotes: `Manual order by admin: ${req.user._id}`,
       guestEmail: customerEmail || undefined,
     });
+
+    // Paid at creation: give the GST invoice number now
+    const manualInvoiceNumber = await require('../services/invoiceNumberService').assignInvoiceNumberSafe(order._id);
+    if (manualInvoiceNumber) order.invoiceNumber = manualInvoiceNumber;
 
     // Auto-activate warranties (sets isActivated=true on order items)
     await activateWarrantiesForOrder(order);
