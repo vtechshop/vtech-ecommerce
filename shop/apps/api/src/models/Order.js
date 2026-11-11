@@ -185,12 +185,16 @@ orderSchema.index({ 'items.externalSource': 1, createdAt: -1 }); // Admin storef
 
 // RECONCILIATION: Helper to find orders where payment might be stuck
 // Usage: const stuckOrders = await Order.findStuckRazorpayOrders(15);
-orderSchema.statics.findStuckRazorpayOrders = function(olderThanMinutes = 15) {
+// Only orders from the last `maxAgeHours` (default 3 days): a customer pays within minutes and
+// Razorpay retries webhooks for 24h, so older pending orders were abandoned. Without this limit
+// every abandoned order was re-checked against Razorpay every 5 minutes, forever.
+orderSchema.statics.findStuckRazorpayOrders = function(olderThanMinutes = 15, maxAgeHours = 72) {
   const cutoffDate = new Date(Date.now() - olderThanMinutes * 60 * 1000);
+  const oldestDate = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
   return this.find({
     'payment.razorpayOrderId': { $exists: true, $ne: null }, // Order initiated with Razorpay
     'payment.status': 'pending',                             // But status is still pending
-    createdAt: { $lte: cutoffDate }                          // And it's been a while
+    createdAt: { $lte: cutoffDate, $gte: oldestDate }        // A while ago, but not abandoned long ago
   });
 };
 
