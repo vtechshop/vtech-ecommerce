@@ -5,6 +5,7 @@ import { useState } from 'react';
 import api from '@/utils/api';
 import { blobErrorMessage } from '@/utils/blobError';
 import { isOrderPaid } from '@/utils/orderPayment';
+import { RETURN_WINDOW_DAYS, returnWindowEndsAt } from '@/utils/returnWindow';
 import Button from '@/components/common/Button';
 import Spinner from '@/components/common/Spinner';
 import { formatCurrency, formatDate } from '@/utils/format';
@@ -139,6 +140,9 @@ const OrderDetail = () => {
 
   // Allow cancellation for pending_payment, placed, and paid orders (before shipping)
   const canCancel = ['pending_payment', 'placed', 'paid'].includes(order.status);
+  // Returns within 7 days of delivery (unknown delivery date: allowed, the admin reviews it)
+  const returnEndsAt = returnWindowEndsAt(order);
+  const canReturn = order.status === 'delivered' && (!returnEndsAt || Date.now() <= returnEndsAt.getTime());
   // Tax invoice once the admin generates it; before that a paid order downloads as an order summary
   const canDownloadInvoice = Boolean(order.invoiceNumber) || isOrderPaid(order);
 
@@ -342,10 +346,15 @@ const OrderDetail = () => {
             </Button>
           )}
 
-          {order.status === 'delivered' && (
+          {canReturn && (
             <Button variant="outline" fullWidth onClick={() => setShowReturnModal(true)}>
               Request Return
             </Button>
+          )}
+          {order.status === 'delivered' && !canReturn && returnEndsAt && (
+            <p className="text-xs text-gray-500 text-center">
+              The {RETURN_WINDOW_DAYS}-day return window closed on {returnEndsAt.toLocaleDateString('en-IN')}.
+            </p>
           )}
 
           {/* Return Status */}

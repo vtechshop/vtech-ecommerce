@@ -1108,6 +1108,19 @@ exports.requestReturn = async (req, res, next) => {
       });
     }
 
+    // 7-day return window from delivery (unknown delivery date: allow, the admin reviews it)
+    const { RETURN_WINDOW_DAYS, returnWindowEndsAt } = require('../utils/returnWindow');
+    const windowEnds = returnWindowEndsAt(order);
+    if (windowEnds && Date.now() > windowEnds.getTime()) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'RETURN_WINDOW_CLOSED',
+          message: `Returns can be requested within ${RETURN_WINDOW_DAYS} days of delivery. The return window for this order closed on ${windowEnds.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}.`,
+        },
+      });
+    }
+
     const Return = require('../models/Return');
     const returnDoc = await Return.create({
       orderId: order._id,

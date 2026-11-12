@@ -15,7 +15,7 @@ class RuleBasedProvider extends ChatbotProvider {
       },
       {
         patterns: ['return', 'refund', 'exchange'],
-        response: 'We accept returns within 30 days of delivery. Items must be unused and in original packaging. You can request a return from your Orders page.',
+        response: 'We accept returns within 7 days of delivery. Items must be unused and in original packaging. You can request a return from your Orders page.',
       },
       {
         patterns: ['payment', 'pay', 'card'],

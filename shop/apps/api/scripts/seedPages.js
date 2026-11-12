@@ -90,8 +90,8 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/shop';
       content: `
         <h1>Return & Refund Policy</h1>
 
-        <h2>30-Day Return Policy</h2>
-        <p>We offer a 30-day return policy for most items. If you're not satisfied with your purchase, you can return it within 30 days of delivery for a full refund.</p>
+        <h2>7-Day Return Policy</h2>
+        <p>We offer a 7-day return policy for most items. If you're not satisfied with your purchase, you can return it within 7 days of delivery for a full refund.</p>
 
         <h2>Return Conditions</h2>
         <p>To be eligible for a return:</p>
