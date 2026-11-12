@@ -231,14 +231,19 @@ function setupCronJobs() {
       logger.error('Category cleanup failed:', cleanupErr.message);
     }
 
-    // One-time admin password reset/create if ADMIN_EMAIL and ADMIN_PASSWORD are set
+    // Create the admin from ADMIN_EMAIL / ADMIN_PASSWORD if it does not exist yet. An existing
+    // admin's password is reset only when ADMIN_PASSWORD_RESET=true (set it for one deploy, then
+    // remove it): resetting on every start undid password changes and cleared login lockouts.
     if (process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD) {
       try {
         const User = require('./models/User');
         const { hashPassword } = require('./utils/hash');
 
         let admin = await User.findOne({ email: process.env.ADMIN_EMAIL });
-        if (admin) {
+        if (admin && process.env.ADMIN_PASSWORD_RESET !== 'true') {
+          logger.info(`Admin account exists (${process.env.ADMIN_EMAIL}); password not changed`);
+        } else if (admin) {
+          logger.warn('ADMIN_PASSWORD_RESET=true: resetting the admin password. Remove ADMIN_PASSWORD_RESET after this deploy.');
           admin.password = await hashPassword(process.env.ADMIN_PASSWORD);
           admin.failedLoginAttempts = 0;
           admin.lockUntil = null;
