@@ -11,6 +11,7 @@ describe('Authentication Integration Tests', () => {
         .send({
           name: 'Test User',
           email: 'test@example.com',
+          phone: '9876543210',
           password: 'Password123!', // Strong password with uppercase, lowercase, number, special char
         });
 

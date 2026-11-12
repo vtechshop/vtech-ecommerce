@@ -444,7 +444,8 @@ exports.applyCoupon = async (req, res, next) => {
         $and: [
           { $or: [{ startDate: { $lte: now } }, { startDate: null }] },
           { $or: [{ endDate: { $gte: now } }, { endDate: null }] },
-          { $or: [{ usageLimit: null }, { $expr: { $lt: ['$usageCount', '$usageLimit'] } }] }
+          // usageLimit 0 (the default) or missing means unlimited
+          { $or: [{ usageLimit: null }, { usageLimit: { $lte: 0 } }, { $expr: { $lt: ['$usageCount', '$usageLimit'] } }] }
         ],
       },
       { $inc: { usageCount: 1 } },

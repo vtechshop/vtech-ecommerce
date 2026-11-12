@@ -60,6 +60,7 @@ describe('Cart Integration Tests', () => {
     // Create coupon
     const coupon = await Coupon.create({
       code: 'TEST10',
+      description: '10% off test coupon',
       type: 'percentage',
       value: 10,
       minOrderValue: 50,
