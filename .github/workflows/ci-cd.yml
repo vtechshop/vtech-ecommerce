@@ -124,9 +124,18 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     timeout-minutes: 10
     environment: production
+    # Production runs on Render (API) and Vercel (web), which deploy on push by themselves.
+    # This SSH deploy only runs if a VPS is configured with the PRODUCTION_HOST secret.
+    env:
+      PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
 
     steps:
+    - name: Skip (no VPS configured)
+      if: env.PRODUCTION_HOST == ''
+      run: echo "PRODUCTION_HOST is not set - Render and Vercel deploy this commit on their own."
+
     - name: Deploy to production
+      if: env.PRODUCTION_HOST != ''
       uses: appleboy/ssh-action@v1
       with:
         host: ${{ secrets.PRODUCTION_HOST }}
