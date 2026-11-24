@@ -632,6 +632,10 @@ async function generateInvoicePDF(order, outputStream, seller) {
       if (order.totals?.discount > 0) {
         drawTotalRow('Discount', '-' + formatINR(order.totals.discount), { valueColor: '#059669' });
       }
+      const roundOff = order.totals?.roundOff || 0;
+      if (Math.abs(roundOff) >= 0.01) {
+        drawTotalRow('Round off', (roundOff < 0 ? '-' : '+') + formatINR(Math.abs(roundOff)));
+      }
 
       // Grand total separator
       ty += 3;

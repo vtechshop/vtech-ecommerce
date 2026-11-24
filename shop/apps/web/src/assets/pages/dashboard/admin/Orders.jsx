@@ -442,6 +442,12 @@ const Orders = () => {
                               <span>-{formatCurrency(order?.totals?.discount || 0)}</span>
                             </div>
                           )}
+                          {Math.abs(order?.totals?.roundOff || 0) >= 0.01 && (
+                            <div className="flex justify-between">
+                              <span>Round off</span>
+                              <span>{order?.totals?.roundOff > 0 ? '+' : '-'}{formatCurrency(Math.abs(order?.totals?.roundOff))}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between pt-2 border-t border-gray-200">
                             <span className="font-semibold">Total</span>
                             <span className="font-bold text-lg">{formatCurrency(order?.totals?.total || 0)}</span>

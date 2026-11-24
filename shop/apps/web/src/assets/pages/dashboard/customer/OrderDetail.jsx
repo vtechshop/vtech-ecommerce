@@ -262,6 +262,12 @@ const OrderDetail = () => {
                   <span>-{formatCurrency(order.totals.discount)}</span>
                 </div>
               )}
+              {Math.abs(order.totals?.roundOff || 0) >= 0.01 && (
+                <div className="flex justify-between">
+                  <span>Round off:</span>
+                  <span>{order.totals?.roundOff > 0 ? '+' : '-'}{formatCurrency(Math.abs(order.totals?.roundOff))}</span>
+                </div>
+              )}
               <div className="flex justify-between text-gray-700">
                 <span>Packaging & Freight:</span>
                 <span>{formatCurrency(order.totals?.shipping || 0)}</span>

@@ -68,6 +68,15 @@ const Checkout = () => {
     country: DEFAULT_COUNTRY, // 'IN' for India
   });
   const [shippingMethod, setShippingMethod] = useState({ id: 'standard', name: 'Standard Shipping', cost: 0 }); // Default shipping
+
+  // Preview of the amount to pay, rounded to the nearest rupee like the server's order total
+  const payable = (() => {
+    const shippingCost = step >= 2 ? (shippingMethod.cost || 0) : 0;
+    const shippingTax = shippingCost > 0 ? Math.round(shippingCost * (_principalTaxRate / 100) * 100) / 100 : 0;
+    const exact = Math.round(((totals?.total || 0) + shippingCost + shippingTax) * 100) / 100;
+    const total = Math.max(0, Math.round(exact));
+    return { total, roundOff: Math.round((total - exact) * 100) / 100 };
+  })();
   const [paymentMethod, setPaymentMethod] = useState('razorpay'); // Default to Razorpay
   const [saveAddress, setSaveAddress] = useState(true); // Save address to account by default
   const [orderPlaced, setOrderPlaced] = useState(false); // Flag to prevent redirect after order success
@@ -850,17 +859,15 @@ const Checkout = () => {
                   </div>
                 )}
               </div>
+              {payable.roundOff !== 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700">Round off:</span>
+                  <span>{payable.roundOff > 0 ? '+' : '-'}{formatCurrency(Math.abs(payable.roundOff))}</span>
+                </div>
+              )}
               <div className="border-t pt-2 flex justify-between font-bold text-lg">
                 <span>Total:</span>
-                <span className="price-highlight">
-                  {(() => {
-                    const shippingCost = step >= 2 ? (shippingMethod.cost || 0) : 0;
-                    const shippingTax = shippingCost > 0
-                      ? Math.round(shippingCost * (_principalTaxRate / 100) * 100) / 100
-                      : 0;
-                    return formatCurrency(totals.total + shippingCost + shippingTax);
-                  })()}
-                </span>
+                <span className="price-highlight">{formatCurrency(payable.total)}</span>
               </div>
             </div>
           </div>

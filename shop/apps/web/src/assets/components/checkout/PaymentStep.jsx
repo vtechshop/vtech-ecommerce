@@ -106,6 +106,12 @@ const PaymentStep = ({ order, totals, onBack }) => {
               <span className="font-medium">-{formatCurrency(totals.discount)}</span>
             </div>
           )}
+          {Math.abs(totals?.roundOff || 0) >= 0.01 && (
+            <div className="flex justify-between">
+              <span>Round off</span>
+              <span>{totals?.roundOff > 0 ? '+' : '-'}{formatCurrency(Math.abs(totals?.roundOff))}</span>
+            </div>
+          )}
           <div className="flex justify-between text-lg font-bold pt-2 border-t">
             <span>Total</span>
             <span>{formatCurrency(totals.total)}</span>

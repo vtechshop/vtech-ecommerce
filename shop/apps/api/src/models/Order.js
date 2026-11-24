@@ -41,7 +41,8 @@ const orderSchema = new mongoose.Schema({
       warrantyCode: String, // Unique warranty registration code
     },
   }],
-  totals: { subtotal: Number, tax: Number, shipping: Number, discount: Number, total: Number },
+  // roundOff: paise adjustment so total is a whole rupee (total = subtotal + tax + shipping - discount + roundOff)
+  totals: { subtotal: Number, tax: Number, shipping: Number, discount: Number, roundOff: Number, total: Number },
   shipTo: {
     fullName: String, phone: String, addressLine1: String, addressLine2: String,
     city: String, district: String, area: String, state: String, zipCode: String, country: String,

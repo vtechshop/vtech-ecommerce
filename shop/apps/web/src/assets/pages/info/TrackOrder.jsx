@@ -448,6 +448,12 @@ const TrackOrder = () => {
                       <span>-&#8377;{tracking.totals.discount?.toFixed(2)}</span>
                     </div>
                   )}
+                  {Math.abs(tracking.totals?.roundOff || 0) >= 0.01 && (
+                    <div className="flex justify-between">
+                      <span>Round off</span>
+                      <span>{tracking.totals?.roundOff > 0 ? '+' : '-'}&#8377;{Math.abs(tracking.totals?.roundOff).toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between border-t pt-2 font-bold">
                     <span className="text-gray-900">Total</span>
                     <span className="text-gray-900">&#8377;{tracking.totals.total?.toFixed(2)}</span>

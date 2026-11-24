@@ -7,6 +7,7 @@ const Commission = require('../models/Commission');
 const AdEvent = require('../models/AdEvent');
 const { generateOrderId } = require('../utils/helpers');
 const { getPaginationMeta } = require('../utils/helpers');
+const { roundOffTotal } = require('../utils/roundOff');
 const logger = require('../config/logger');
 const crmEventService = require('../services/crmEventService');
 const { attributeOrderItems } = require('../services/orderSourceAttribution');
@@ -451,7 +452,9 @@ exports.createOrder = async (req, res, next) => {
       // Shipping GST at principal supply rate (reuses principalTaxRate from full order items above)
       const vendorShippingTax = Math.round(vendorShipping * (principalTaxRate / 100) * 100) / 100;
       const vendorTaxTotal = Math.round((vendorTax + vendorShippingTax) * 100) / 100;
-      const vendorTotal = vendorSubtotal + vendorTaxTotal + vendorShipping - vendorDiscount;
+      // Final amount is rounded to the nearest rupee; the paise difference is kept as roundOff
+      const { total: vendorTotal, roundOff: vendorRoundOff } =
+        roundOffTotal(vendorSubtotal + vendorTaxTotal + vendorShipping - vendorDiscount);
 
         // All orders require payment verification (COD removed)
         // Orders start as pending_payment and change to 'placed' after payment verification
@@ -470,6 +473,7 @@ exports.createOrder = async (req, res, next) => {
             tax: vendorTaxTotal,
             shipping: vendorShipping,
             discount: vendorDiscount,
+            roundOff: vendorRoundOff,
             total: vendorTotal,
           },
           shipTo,
@@ -849,6 +853,7 @@ exports.trackOrder = async (req, res, next) => {
         shipping: order.totals.shipping,
         tax: order.totals.tax,
         discount: order.totals.discount,
+        roundOff: order.totals.roundOff || 0,
         total: order.totals.total,
       },
       itemCount: order.items?.length || 0,
@@ -902,6 +907,7 @@ exports.trackOrderByAwb = async (req, res, next) => {
         shipping: order.totals.shipping,
         tax: order.totals.tax,
         discount: order.totals.discount,
+        roundOff: order.totals.roundOff || 0,
         total: order.totals.total,
       },
       itemCount: order.items?.length || 0,

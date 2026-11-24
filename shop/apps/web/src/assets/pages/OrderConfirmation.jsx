@@ -268,6 +268,12 @@ const OrderConfirmation = () => {
                 <span>-{formatCurrency(order.totals.discount)}</span>
               </div>
             )}
+            {Math.abs(order.totals?.roundOff || 0) >= 0.01 && (
+              <div className="flex justify-between text-sm">
+                <span>Round off:</span>
+                <span>{order.totals?.roundOff > 0 ? '+' : '-'}{formatCurrency(Math.abs(order.totals?.roundOff))}</span>
+              </div>
+            )}
             <div className="flex justify-between font-bold text-lg border-t pt-2">
               <span>Total:</span>
               <span>{formatCurrency(order.totals.total)}</span>
