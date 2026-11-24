@@ -12,12 +12,13 @@ import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
 import { NoIndex } from '@/components/common/SEO';
 import { trackRemoveFromCart } from '@/utils/analytics';
 import { storefrontName } from '@/utils/storefronts';
-import LogisticsPickupNotice, { needsLogisticsPickup } from '@/components/common/LogisticsPickupNotice';
+import LogisticsPickupNotice, { needsLogisticsPickup, orderLogisticsPickup } from '@/components/common/LogisticsPickupNotice';
 
 const Cart = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { items, totals, loading } = useSelector((state) => state.cart);
+  const pickup = orderLogisticsPickup(items);
 
   useEffect(() => {
     dispatch(loadCart());
@@ -122,6 +123,7 @@ const Cart = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-3">
+            {pickup.mixed && <LogisticsPickupNotice title={pickup.title} text={pickup.text} />}
             {items.map((item, index) => (
               <div
                 key={item._id}
@@ -163,7 +165,9 @@ const Cart = () => {
                     {item.externalSource && (
                       <p className="text-xs text-gray-500 mt-1">From {storefrontName(item.externalSource)}</p>
                     )}
-                    {needsLogisticsPickup(item) && <LogisticsPickupNotice compact className="mt-2" />}
+                    {needsLogisticsPickup(item) ? <LogisticsPickupNotice compact className="mt-2" /> : pickup.mixed && (
+                      <p className="mt-2 text-xs font-semibold text-amber-700">Ships with your order to the logistics office (LR)</p>
+                    )}
 
                     <div className="mt-3 flex items-center justify-between">
                       {/* Quantity Controls */}

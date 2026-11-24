@@ -21,7 +21,7 @@ import { getAffiliateCode, clearAffiliateCode } from '@/utils/affiliateTracking'
 import { NoIndex } from '@/components/common/SEO';
 import ScrollReveal from '@/components/common/ScrollReveal';
 import { storefrontName } from '@/utils/storefronts';
-import LogisticsPickupNotice, { needsLogisticsPickup } from '@/components/common/LogisticsPickupNotice';
+import LogisticsPickupNotice, { orderLogisticsPickup } from '@/components/common/LogisticsPickupNotice';
 
 const PREFILL_ADDRESS_FIELDS = ['fullName', 'phone', 'addressLine1', 'addressLine2', 'city', 'state', 'zipCode', 'country'];
 
@@ -30,6 +30,7 @@ const Checkout = () => {
   const dispatch = useDispatch();
   const toast = useToast();
   const { items, totals } = useSelector((state) => state.cart);
+  const pickup = orderLogisticsPickup(items);
 
   // Derive shipping GST for display using the same principal-supply-rate formula as the backend.
   // This is a preview only — the authoritative tax/total comes from order.totals written by the server.
@@ -630,11 +631,8 @@ const Checkout = () => {
                 <p className="text-sm text-gray-500 mb-5">
                   Delivering to: <span className="font-medium text-gray-700">{selectedAddress?.city}, {selectedAddress?.state} — {selectedAddress?.zipCode}</span>
                 </p>
-                {items.some(needsLogisticsPickup) && (
-                  <LogisticsPickupNotice
-                    className="mb-5"
-                    title={items.length > 1 ? `Important – Delivery Notice (${items.filter(needsLogisticsPickup).map(i => i.name).join(', ')}):` : undefined}
-                  />
+                {pickup.required && (
+                  <LogisticsPickupNotice className="mb-5" title={pickup.title} text={pickup.text} />
                 )}
 
                 {loadingQuotes ? (
@@ -802,7 +800,7 @@ const Checkout = () => {
                     {item.externalSource && (
                       <p className="text-xs text-gray-500">From {storefrontName(item.externalSource)}</p>
                     )}
-                    {needsLogisticsPickup(item) && (
+                    {pickup.required && (
                       <p className="text-xs font-semibold text-amber-700">Collect at logistics office (LR)</p>
                     )}
                     <p className="text-xs text-gray-700">Qty: {item.qty}</p>
