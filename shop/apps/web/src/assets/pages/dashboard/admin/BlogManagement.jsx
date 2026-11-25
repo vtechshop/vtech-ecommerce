@@ -8,8 +8,10 @@ import Pagination from '@/components/common/Pagination';
 import CustomSelect from '@/components/common/CustomSelect';
 import {
   Plus, Edit, Trash2, Eye, Video, FileText, Calendar,
-  Search, Filter, BarChart3, X, RefreshCw, Download, Upload
+  Search, Filter, BarChart3, X, RefreshCw, Download, Upload, Copy, Wrench, Clock
 } from 'lucide-react';
+import RichEditor from './RichEditor';
+import { GalleryField, ProductPicker, FaqField } from './MachineFields';
 import GuideFields, { EMPTY_GUIDE, guideFromPost, cleanGuide, uploadToServer } from './GuideFields';
 import { BLOG_LANGUAGES, languageLabel } from '@/utils/blogLanguages';
 
@@ -30,7 +32,54 @@ const EMPTY_FORM = {
   metaTitle: '',
   metaDescription: '',
   guide: EMPTY_GUIDE,
+  images: [],
+  videoUrl: '',
+  relatedProducts: [],
+  faqs: [],
+  publishedAt: '',
 };
+
+// What admin picks first when creating a post
+const TEMPLATES = [
+  { type: 'post', category: 'Tips & Tricks', title: 'Article', icon: FileText, color: 'bg-blue-100 text-blue-700', desc: 'Normal blog: text with images and YouTube videos anywhere in it.' },
+  { type: 'machine', category: 'Product Reviews', title: 'Machine Article', icon: Wrench, color: 'bg-green-100 text-green-700', desc: 'About a machine: article + photo gallery + demo video + "Buy this machine" cards + FAQ.' },
+  { type: 'video', category: 'How-To Guides', title: 'Video Post', icon: Video, color: 'bg-red-100 text-red-700', desc: 'A YouTube video with a short description and product links.' },
+  { type: 'guide', category: 'Free Guides', title: 'Free Guide', icon: Download, color: 'bg-amber-100 text-amber-800', desc: 'Landing page for a PDF people download (e.g. the MSME export guide).' },
+];
+const TYPE_LABEL = Object.fromEntries(TEMPLATES.map(t => [t.type, t.title]));
+
+const videoProvider = (url = '') => (/youtu\.?be/i.test(url) ? 'youtube' : /vimeo\.com/i.test(url) ? 'vimeo' : 'direct');
+
+// <input type="datetime-local"> works in local time
+const toLocalInput = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+};
+
+const formFromPost = (post) => ({
+  ...EMPTY_FORM,
+  title: post.title || '',
+  slug: post.slug || '',
+  content: post.content || '',
+  excerpt: post.excerpt || '',
+  category: post.category || '',
+  status: post.status || 'draft',
+  featuredImage: post.featuredImage || '',
+  type: post.type || 'post',
+  language: post.language || 'en',
+  translationKey: post.translationKey || '',
+  metaTitle: post.metaTitle || '',
+  metaDescription: post.metaDescription || '',
+  guide: guideFromPost(post.guide),
+  images: post.images || [],
+  videoUrl: post.videoUrl || '',
+  relatedProducts: (post.relatedProducts || []).filter(p => p && typeof p === 'object'),
+  faqs: post.faqs || [],
+  publishedAt: toLocalInput(post.publishedAt),
+});
+
+const isScheduled = (blog) => blog.status === 'published' && blog.publishedAt && new Date(blog.publishedAt) > new Date();
 
 const slugify = (text) => text
   .toLowerCase()
@@ -53,6 +102,8 @@ const BlogManagement = () => {
   const [editingBlog, setEditingBlog] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { blog: {...}, show: true }
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [choosingTemplate, setChoosingTemplate] = useState(false);
+  const [editorKey, setEditorKey] = useState(0);
   const [uploadingCover, setUploadingCover] = useState(false);
 
   const queryClient = useQueryClient();
@@ -135,7 +186,14 @@ const BlogManagement = () => {
 
   const handleCreate = () => {
     resetForm();
+    setChoosingTemplate(true);
+    setEditorKey(k => k + 1);
     setShowCreateModal(true);
+  };
+
+  const chooseTemplate = (t) => {
+    setFormData({ ...EMPTY_FORM, type: t.type, category: t.category });
+    setChoosingTemplate(false);
   };
 
   const handleEdit = async (blog) => {
@@ -145,24 +203,33 @@ const BlogManagement = () => {
       const fullBlog = response.data.data;
 
       setEditingBlog(fullBlog);
-      setFormData({
-        title: fullBlog.title || '',
-        slug: fullBlog.slug || '',
-        content: fullBlog.content || '',
-        excerpt: fullBlog.excerpt || '',
-        category: fullBlog.category || '',
-        status: fullBlog.status || 'draft',
-        featuredImage: fullBlog.featuredImage || '',
-        type: fullBlog.type || 'post',
-        language: fullBlog.language || 'en',
-        translationKey: fullBlog.translationKey || '',
-        metaTitle: fullBlog.metaTitle || '',
-        metaDescription: fullBlog.metaDescription || '',
-        guide: guideFromPost(fullBlog.guide),
-      });
+      setFormData(formFromPost(fullBlog));
+      setChoosingTemplate(false);
+      setEditorKey(k => k + 1);
       setShowCreateModal(true);
     } catch (error) {
       toast.error('Failed to load blog details');
+    }
+  };
+
+  // Copy a post into a new draft (e.g. to start another language version)
+  const handleDuplicate = async (blog) => {
+    try {
+      const fullBlog = (await api.get(`/blog/admin/${blog._id}`)).data.data;
+      setEditingBlog(null);
+      setFormData({
+        ...formFromPost(fullBlog),
+        title: `${fullBlog.title} (copy)`,
+        slug: `${fullBlog.slug}-copy`,
+        status: 'draft',
+        publishedAt: '',
+      });
+      setChoosingTemplate(false);
+      setEditorKey(k => k + 1);
+      setShowCreateModal(true);
+      toast.success('Copied - change the language/text and save');
+    } catch (error) {
+      toast.error('Failed to copy the post');
     }
   };
 
@@ -183,12 +250,26 @@ const BlogManagement = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const { guide, ...rest } = formData;
-    const payload = { ...rest };
+    const { guide, relatedProducts, faqs, publishedAt, ...rest } = formData;
+    const payload = {
+      ...rest,
+      relatedProducts: relatedProducts.map(p => p._id),
+      faqs: faqs.filter(f => f.q.trim() && f.a.trim()),
+    };
+    if (publishedAt) payload.publishedAt = new Date(publishedAt).toISOString();
     if (formData.type === 'guide') {
       payload.guide = cleanGuide(guide);
       if (!payload.content) delete payload.content;
     }
+    if ((formData.type === 'post' || formData.type === 'machine') && !formData.content.trim()) {
+      toast.error('Please write the article');
+      return;
+    }
+    if (formData.type === 'video' && !formData.videoUrl.trim()) {
+      toast.error('Please add the video link');
+      return;
+    }
+    if (payload.videoUrl) payload.videoProvider = videoProvider(payload.videoUrl);
     saveMutation.mutate(payload);
   };
 
@@ -323,6 +404,7 @@ const BlogManagement = () => {
               options={[
                 { value: '', label: 'All Types' },
                 { value: 'post', label: 'Article' },
+                { value: 'machine', label: 'Machine Article' },
                 { value: 'video', label: 'Video' },
                 { value: 'guide', label: 'Free Guide' }
               ]}
@@ -401,6 +483,11 @@ const BlogManagement = () => {
                           <Download className="w-3 h-3" />
                           Free Guide
                         </span>
+                      ) : blog.type === 'machine' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                          <Wrench className="w-3 h-3" />
+                          Machine
+                        </span>
                       ) : blog.type === 'video' ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs">
                           <Video className="w-3 h-3" />
@@ -423,7 +510,7 @@ const BlogManagement = () => {
                             : 'bg-blue-100 text-gray-700'
                         }`}
                       >
-                        {blog.status}
+                        {isScheduled(blog) ? 'scheduled' : blog.status}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -440,12 +527,20 @@ const BlogManagement = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">
                         <Link
-                          to={`/blog/${blog.slug}`}
+                          to={blog.status === 'published' && !isScheduled(blog) ? `/blog/${blog.slug}` : `/blog/preview/${blog._id}`}
+                          target="_blank"
                           className="text-gray-700 hover:text-gray-900"
-                          title="View"
+                          title={blog.status === 'published' && !isScheduled(blog) ? 'View' : 'Preview'}
                         >
                           <Eye className="w-5 h-5" />
                         </Link>
+                        <button
+                          onClick={() => handleDuplicate(blog)}
+                          className="text-gray-600 hover:text-gray-900"
+                          title="Duplicate (e.g. for another language)"
+                        >
+                          <Copy className="w-5 h-5" />
+                        </button>
                         <button
                           onClick={() => handleEdit(blog)}
                           className="text-blue-600 hover:text-blue-900"
@@ -504,7 +599,7 @@ const BlogManagement = () => {
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">
-                  {editingBlog ? 'Edit' : 'Create'} Blog Post
+                  {choosingTemplate ? 'Choose a template' : `${editingBlog ? 'Edit' : 'Create'} ${TYPE_LABEL[formData.type] || 'Blog Post'}`}
                 </h2>
                 <button
                   onClick={() => {
@@ -518,6 +613,26 @@ const BlogManagement = () => {
               </div>
             </div>
 
+            {choosingTemplate ? (
+              <div className="grid gap-4 p-6 sm:grid-cols-2">
+                {TEMPLATES.map(t => (
+                  <button
+                    key={t.type}
+                    type="button"
+                    onClick={() => chooseTemplate(t)}
+                    className="flex items-start gap-4 rounded-xl border-2 border-gray-200 p-5 text-left transition hover:border-primary-500 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                  >
+                    <span className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg ${t.color}`}>
+                      <t.icon className="h-6 w-6" />
+                    </span>
+                    <span>
+                      <span className="block text-lg font-bold text-gray-900">{t.title}</span>
+                      <span className="mt-1 block text-sm text-gray-600">{t.desc}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
@@ -546,11 +661,7 @@ const BlogManagement = () => {
                 <CustomSelect
                   value={formData.type}
                   onChange={(value) => setFormData({ ...formData, type: value })}
-                  options={[
-                    { value: 'post', label: 'Article' },
-                    { value: 'video', label: 'Video' },
-                    { value: 'guide', label: 'Free Guide (PDF landing page)' }
-                  ]}
+                  options={TEMPLATES.map(t => ({ value: t.type, label: t.title }))}
                   placeholder="Select type"
                   className="w-full"
                 />
@@ -627,18 +738,45 @@ const BlogManagement = () => {
                 <GuideFields guide={formData.guide} onChange={(guide) => setFormData(f => ({ ...f, guide }))} />
               )}
 
+              {(formData.type === 'video' || formData.type === 'machine') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    YouTube video link {formData.type === 'video' ? '*' : '(demo video, optional)'}
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    placeholder="https://youtu.be/…"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+              )}
+
               {formData.type !== 'guide' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Content *</label>
-                <textarea
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  rows={12}
-                  required
-                  placeholder="Write your content here..."
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {formData.type === 'video' ? 'Description' : 'Article *'}
+                  </label>
+                  <p className="mb-2 text-xs text-gray-500">Use the Image button, or paste / drag photos straight into the text. Click a photo to add a caption.</p>
+                  <RichEditor
+                    key={editorKey}
+                    value={formData.content}
+                    onChange={(content) => setFormData(f => ({ ...f, content }))}
+                  />
+                </div>
+              )}
+
+              {formData.type === 'machine' && (
+                <GalleryField images={formData.images} onChange={(images) => setFormData(f => ({ ...f, images }))} />
+              )}
+
+              {formData.type !== 'guide' && (
+                <ProductPicker products={formData.relatedProducts} onChange={(relatedProducts) => setFormData(f => ({ ...f, relatedProducts }))} />
+              )}
+
+              {formData.type === 'machine' && (
+                <FaqField faqs={formData.faqs} onChange={(faqs) => setFormData(f => ({ ...f, faqs }))} />
               )}
 
               <details className="rounded-lg border border-gray-200 p-4">
@@ -675,7 +813,33 @@ const BlogManagement = () => {
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              {formData.status === 'published' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <Clock className="mr-1 inline h-4 w-4" /> Publish on (optional)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.publishedAt}
+                    onChange={(e) => setFormData({ ...formData, publishedAt: e.target.value })}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Pick a future date and time to schedule it. Empty = publish now.</p>
+                </div>
+              )}
+
+              <div className="flex flex-wrap justify-end gap-3 pt-4">
+                {editingBlog && (
+                  <a
+                    href={`/blog/preview/${editingBlog._id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mr-auto inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    title="Shows the last saved version"
+                  >
+                    <Eye className="h-4 w-4" /> Preview (saved version)
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -688,13 +852,14 @@ const BlogManagement = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={saveMutation.isLoading}
+                  disabled={saveMutation.isPending}
                   className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
                 >
-                  {saveMutation.isLoading ? 'Saving...' : editingBlog ? 'Update' : 'Create'}
+                  {saveMutation.isPending ? 'Saving...' : editingBlog ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

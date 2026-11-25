@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
 import Loading from './assets/components/common/Loading';
 import { ToastProvider } from './assets/components/common/ToastContainer';
+import { Toaster } from 'react-hot-toast';
 import { loadConsent } from './assets/store/slices/consentSlice';
 import { initializeAuth, forceInitialized, clearCredentials } from './assets/store/slices/authSlice';
 import { loadCart } from './assets/store/slices/cartSlice';
@@ -247,6 +248,8 @@ function App() {
 
   return (
     <ToastProvider>
+      {/* Many admin pages use react-hot-toast; without this their messages never showed */}
+      <Toaster position="top-center" toastOptions={{ duration: 5000 }} />
       <Suspense fallback={<Loading message="Loading page..." />}>
         <Routes>
           {/* Public routes */}
@@ -259,6 +262,7 @@ function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/vendor/:slug" element={<VendorStore />} />
             <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/preview/:previewId" element={<BlogPostDetail />} />
             <Route path="/blog/:slug" element={<BlogPostDetail />} />
             <Route path="/page/:slug" element={<Page />} />
 

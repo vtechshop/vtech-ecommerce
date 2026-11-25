@@ -114,15 +114,17 @@ function ListEditor({ label, hint, rows, onChange, columns, addLabel }) {
 
 export default function GuideFields({ guide, onChange }) {
   const [uploading, setUploading] = useState(false);
+  const [pdfError, setPdfError] = useState('');
   const set = (key) => (value) => onChange({ ...guide, [key]: value });
 
   const uploadPdf = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
+    setPdfError('');
     if (!file) return;
-    if (file.type !== 'application/pdf') { toast.error('Please choose a PDF file'); return; }
+    if (file.type !== 'application/pdf') { setPdfError('Please choose a PDF file.'); return; }
     if (file.size > 10 * 1024 * 1024) {
-      toast.error(`This PDF is ${(file.size / 1048576).toFixed(1)} MB. The limit is 10 MB - please compress it first.`);
+      setPdfError(`This PDF is ${(file.size / 1048576).toFixed(1)} MB - the upload limit is 10 MB. Compress it (e.g. ilovepdf.com → Compress PDF) and upload again, or paste a Google Drive link below.`);
       return;
     }
     setUploading(true);
@@ -131,7 +133,7 @@ export default function GuideFields({ guide, onChange }) {
       onChange({ ...guide, pdfUrl: media.url, pdfName: guide.pdfName || file.name.replace(/\.pdf$/i, '') });
       toast.success('PDF uploaded');
     } catch (err) {
-      toast.error(err.response?.data?.error?.message || 'PDF upload failed');
+      setPdfError(err.response?.data?.error?.message || 'PDF upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -154,6 +156,18 @@ export default function GuideFields({ guide, onChange }) {
           ) : (
             <span className="text-sm text-gray-600">Max 10 MB. Customers download this file.</span>
           )}
+        </div>
+        {pdfError && (
+          <p role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">{pdfError}</p>
+        )}
+        <div className="mt-3">
+          <Text
+            label="…or paste a PDF link (for big files: Google Drive / Dropbox share link)"
+            value={guide.pdfUrl}
+            onChange={(v) => { setPdfError(''); set('pdfUrl')(v.trim()); }}
+            placeholder="https://drive.google.com/file/d/…"
+            hint="Google Drive: Share → General access: Anyone with the link → Copy link. Must start with https://"
+          />
         </div>
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_8rem]">
           <Text label="PDF name (shown as the file name)" value={guide.pdfName} onChange={set('pdfName')} placeholder="MSME Export Guide - Tamil" />

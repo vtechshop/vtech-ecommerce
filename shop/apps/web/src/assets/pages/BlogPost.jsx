@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ReactPlayer from 'react-player';
-import DOMPurify from 'dompurify';
 import api from '@/utils/api';
 import Spinner from '@/components/common/Spinner';
 import AdBanner from '@/components/common/AdBanner';
@@ -18,9 +17,11 @@ import toast from 'react-hot-toast';
 import { PLACEHOLDER_IMAGE_MD, handleImageError } from '@/utils/placeholders';
 import ScrollReveal from '@/components/common/ScrollReveal';
 import GuideLanding from '@/components/blog/GuideLanding';
+import BlogContent from '@/components/blog/BlogContent';
 
 const BlogPost = () => {
-  const { slug } = useParams();
+  // /blog/preview/:previewId lets admin see a draft or scheduled post (admin-only API)
+  const { slug: routeSlug, previewId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -33,12 +34,14 @@ const BlogPost = () => {
 
   // Fetch blog post
   const { data, isLoading } = useQuery({
-    queryKey: ['blog', slug],
+    queryKey: previewId ? ['blog-preview', previewId] : ['blog', routeSlug],
     queryFn: async () => {
-      const response = await api.get(`/blog/${slug}`);
+      const response = await api.get(previewId ? `/blog/admin/${previewId}` : `/blog/${routeSlug}`);
       return response.data.data;
     },
+    retry: previewId ? false : 3,
   });
+  const slug = data?.slug || routeSlug;
 
   // Sponsor ads are now handled by AdBanner component
   // No need for separate query here
@@ -50,7 +53,7 @@ const BlogPost = () => {
       const response = await api.get(`/blog/${slug}/comments`);
       return response.data.data || [];
     },
-    enabled: !!data,
+    enabled: !!data && !previewId,
     onSuccess: (data) => {
       // Initialize comment likes state from backend data
       const likes = {};
@@ -296,20 +299,37 @@ const BlogPost = () => {
     );
   }
 
+  const previewBanner = previewId && (
+    <div className="sticky top-0 z-50 bg-amber-400 px-4 py-2 text-center text-sm font-semibold text-gray-900">
+      Preview - {data.status === 'published' ? 'scheduled / published' : data.status}. Customers cannot see this page until it is published.
+    </div>
+  );
+
   if (data.type === 'guide') {
-    return <GuideLanding post={data} />;
+    return <>{previewBanner}<GuideLanding post={data} /></>;
   }
 
   const isVideo = data.type === 'video';
+  const isMachine = data.type === 'machine';
+  const gallery = (data.images || []).filter(Boolean);
+  const products = (data.relatedProducts || []).filter(p => p && typeof p === 'object');
+  const faqs = (data.faqs || []).filter(f => f.q && f.a);
 
   return (
     <div className="min-h-screen bg-white">
+      {previewBanner}
       <SEO
-        title={`${data.title} - VTech Kitchen Blog`}
-        description={data.excerpt || data.title}
+        title={data.metaTitle || `${data.title} - VTech Kitchen Blog`}
+        description={data.metaDescription || data.excerpt || data.title}
         image={data.featuredImage}
         type="article"
         url={`https://www.vtechkitchen.com/blog/${data.slug}`}
+        noindex={Boolean(previewId)}
+        structuredData={faqs.length > 0 ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map(f => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+        } : undefined}
       />
       {/* Hero Section */}
       <div className="bg-white border-b">
@@ -402,11 +422,76 @@ const BlogPost = () => {
                 </div>
 
                 {/* Main Content */}
-                {!isVideo && (
-                  <div
-                    className="prose prose-lg max-w-none"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.content || '') }}
-                  />
+                {data.content && <BlogContent html={data.content} />}
+
+                {/* Machine Article: demo video */}
+                {isMachine && data.videoUrl && (
+                  <section className="mt-10">
+                    <h2 className="mb-4 text-2xl font-bold text-gray-900">Watch the demo</h2>
+                    <div className="aspect-video overflow-hidden rounded-xl bg-black">
+                      <ReactPlayer url={data.videoUrl} width="100%" height="100%" controls light={gallery[0] || data.featuredImage} />
+                    </div>
+                  </section>
+                )}
+
+                {/* Photo gallery: swipe on mobile, scroll on desktop */}
+                {gallery.length > 0 && (
+                  <section className="mt-10" aria-label="Photos">
+                    <h2 className="mb-4 text-2xl font-bold text-gray-900">Photos</h2>
+                    <div className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-3">
+                      {gallery.map((src, i) => (
+                        <a key={src + i} href={src} target="_blank" rel="noopener noreferrer" className="w-[85%] flex-shrink-0 snap-center sm:w-[60%]">
+                          <img src={src} alt={`${data.title} - photo ${i + 1}`} loading="lazy" className="aspect-[4/3] w-full rounded-xl bg-gray-100 object-contain" />
+                        </a>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* Buy this machine */}
+                {isMachine && products.length > 0 && (
+                  <section className="mt-10 rounded-2xl bg-primary-50 p-5 sm:p-6">
+                    <h2 className="mb-4 text-2xl font-bold text-primary-900">Buy this machine</h2>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {products.map((product) => (
+                        <Link key={product._id} to={`/product/${product.slug}`} className="flex gap-4 rounded-xl bg-white p-3 shadow-sm transition hover:shadow-md">
+                          <img
+                            src={(typeof product.images?.[0] === 'string' ? product.images[0] : product.images?.[0]?.url) || PLACEHOLDER_IMAGE_MD}
+                            alt={product.title}
+                            className="h-24 w-24 flex-shrink-0 rounded-lg object-contain bg-gray-50"
+                            onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_MD)}
+                          />
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <h3 className="line-clamp-2 font-semibold text-gray-900">{product.title}</h3>
+                            <p className="mt-1 font-bold text-green-700">
+                              ₹{Number(product.price || 0).toLocaleString('en-IN')}
+                              {product.taxable && !product.taxIncluded && product.taxRate > 0 && <span className="ml-1 text-xs font-medium text-gray-500">+ {product.taxRate}% GST</span>}
+                            </p>
+                            <span className="mt-auto inline-block self-start rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white">View & Buy</span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {/* FAQ */}
+                {faqs.length > 0 && (
+                  <section className="mt-10">
+                    <h2 className="mb-4 text-2xl font-bold text-gray-900">Questions & answers</h2>
+                    <div className="divide-y divide-gray-200 rounded-xl border border-gray-200">
+                      {faqs.map((f, i) => (
+                        <details key={i} className="group p-4" open={i === 0}>
+                          <summary className="cursor-pointer list-none font-semibold text-gray-900 marker:hidden">
+                            <span className="mr-2 text-primary-600 group-open:hidden">+</span>
+                            <span className="mr-2 hidden text-primary-600 group-open:inline">−</span>
+                            {f.q}
+                          </summary>
+                          <p className="mt-2 whitespace-pre-line leading-relaxed text-gray-700">{f.a}</p>
+                        </details>
+                      ))}
+                    </div>
+                  </section>
                 )}
 
                 {/* Tags */}
@@ -789,18 +874,18 @@ const BlogPost = () => {
               </form>
 
               {/* Related Products */}
-              {data.relatedProducts && data.relatedProducts.length > 0 && (
+              {!isMachine && products.length > 0 && (
                 <div className="bg-white rounded-lg shadow-sm p-6">
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Related Products</h3>
                   <div className="space-y-4">
-                    {data.relatedProducts.map((product) => (
+                    {products.map((product) => (
                       <Link
                         key={product._id}
                         to={`/product/${product.slug}`}
                         className="flex gap-3 hover:bg-blue-100 p-2 rounded-lg transition-colors"
                       >
                         <img
-                          src={product.images?.[0] || PLACEHOLDER_IMAGE_MD}
+                          src={(typeof product.images?.[0] === 'string' ? product.images[0] : product.images?.[0]?.url) || PLACEHOLDER_IMAGE_MD}
                           alt={product.title}
                           className="w-20 h-20 object-cover rounded"
                           onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_MD)}

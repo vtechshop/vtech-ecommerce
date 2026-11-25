@@ -7,6 +7,9 @@ const { getPaginationMeta, escapeRegex } = require('../utils/helpers');
 const logger = require('../config/logger');
 const AppError = require('../utils/AppError');
 
+// A post is live once published and its publish time has come (a future time = scheduled)
+const live = () => ({ status: 'published', publishedAt: { $not: { $gt: new Date() } } });
+
 // Get all blogs (public)
 exports.getBlogs = async (req, res, next) => {
   try {
@@ -22,7 +25,7 @@ exports.getBlogs = async (req, res, next) => {
       sort = '-publishedAt',
     } = req.query;
 
-    const query = { status: 'published' };
+    const query = live();
 
     if (category) query.category = category;
     if (tag) query.tags = tag;
@@ -68,9 +71,9 @@ exports.getBlog = async (req, res, next) => {
     const { slug } = req.params;
     const userId = req.user?._id; // Optional - user might not be logged in
 
-    const blog = await Blog.findOne({ slug, status: 'published' })
+    const blog = await Blog.findOne({ slug, ...live() })
       .populate('author', 'name email')
-      .populate('relatedProducts', 'title slug price images')
+      .populate('relatedProducts', 'title slug price images taxRate taxable taxIncluded')
       .lean();
 
     if (!blog) {
@@ -114,7 +117,7 @@ exports.getBlog = async (req, res, next) => {
     // Other languages of the same post (linked by translationKey)
     let translations = [];
     if (blog.translationKey) {
-      translations = await Blog.find({ translationKey: blog.translationKey, status: 'published' })
+      translations = await Blog.find({ translationKey: blog.translationKey, ...live() })
         .select('slug language title')
         .lean();
     }
@@ -132,7 +135,7 @@ exports.getBlog = async (req, res, next) => {
 exports.downloadGuide = async (req, res, next) => {
   try {
     const blog = await Blog.findOneAndUpdate(
-      { slug: String(req.params.slug), status: 'published', type: 'guide', 'guide.pdfUrl': { $nin: [null, ''] } },
+      { slug: String(req.params.slug), ...live(), type: 'guide', 'guide.pdfUrl': { $nin: [null, ''] } },
       { $inc: { downloads: 1 } },
       { new: true, projection: { 'guide.pdfUrl': 1, 'guide.pdfName': 1, downloads: 1 } }
     ).lean();
@@ -156,7 +159,7 @@ function checkGuide(body) {
 exports.getCategories = async (req, res, next) => {
   try {
     const categories = await Blog.aggregate([
-      { $match: { status: 'published' } },
+      { $match: live() },
       { $group: { _id: '$category', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]);
@@ -174,7 +177,7 @@ exports.getCategories = async (req, res, next) => {
 exports.getTags = async (req, res, next) => {
   try {
     const tags = await Blog.aggregate([
-      { $match: { status: 'published' } },
+      { $match: live() },
       { $unwind: '$tags' },
       { $group: { _id: '$tags', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -196,7 +199,7 @@ exports.addComment = async (req, res, next) => {
     const { slug } = req.params;
     const { content, comment, parentId } = req.body;
 
-    const blog = await Blog.findOne({ slug, status: 'published' });
+    const blog = await Blog.findOne({ slug, ...live() });
 
     if (!blog) {
       throw new AppError('Blog post not found', 404, 'BLOG_NOT_FOUND');
@@ -246,7 +249,7 @@ exports.getComments = async (req, res, next) => {
     const { slug } = req.params;
     const userId = req.user?._id; // Optional - user might not be logged in
 
-    const blog = await Blog.findOne({ slug, status: 'published' });
+    const blog = await Blog.findOne({ slug, ...live() });
 
     if (!blog) {
       return res.status(404).json({
@@ -319,7 +322,7 @@ exports.likeBlog = async (req, res, next) => {
     const { slug } = req.params;
     const userId = req.user._id;
 
-    const blog = await Blog.findOne({ slug, status: 'published' });
+    const blog = await Blog.findOne({ slug, ...live() });
 
     if (!blog) {
       throw new AppError('Blog post not found', 404, 'BLOG_NOT_FOUND');
@@ -371,7 +374,7 @@ exports.shareBlog = async (req, res, next) => {
   try {
     const { slug } = req.params;
 
-    const blog = await Blog.findOne({ slug, status: 'published' });
+    const blog = await Blog.findOne({ slug, ...live() });
 
     if (!blog) {
       throw new AppError('Blog post not found', 404, 'BLOG_NOT_FOUND');

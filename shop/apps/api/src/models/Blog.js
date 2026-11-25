@@ -64,12 +64,12 @@ const blogSchema = new mongoose.Schema(
     content: {
       type: String,
       required: function() {
-        return this.type === 'post';
+        return this.type === 'post' || this.type === 'machine';
       },
     },
     type: {
       type: String,
-      enum: ['post', 'video', 'guide'],
+      enum: ['post', 'video', 'guide', 'machine'],
       default: 'post',
       required: true,
     },
@@ -169,6 +169,12 @@ const blogSchema = new mongoose.Schema(
     // Free Guide (type 'guide'): a landing page for a downloadable PDF
     guide: { type: guideSchema, default: undefined },
     downloads: { type: Number, default: 0 },
+    // Machine Article: questions and answers shown at the end
+    faqs: [{
+      _id: false,
+      q: { type: String, trim: true, maxlength: 300 },
+      a: { type: String, trim: true, maxlength: 2000 },
+    }],
     // Reading time (auto-calculated for posts)
     readingTime: Number, // in minutes
   },
@@ -212,8 +218,8 @@ blogSchema.pre('save', function(next) {
   }
 
   // Calculate reading time for posts (avg 200 words per minute)
-  if (this.type === 'post' && this.content) {
-    const wordCount = this.content.split(/\s+/).length;
+  if ((this.type === 'post' || this.type === 'machine') && this.content) {
+    const wordCount = this.content.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length;
     this.readingTime = Math.ceil(wordCount / 200);
   }
 
