@@ -21,6 +21,14 @@ module.exports = (err, req, res, next) => {
     return res.status(err.statusCode).json(errorResponse);
   }
 
+  // Upload too large (multer) or rejected by the storage provider (Cloudinary free plan: 10 MB)
+  if (err.code === 'LIMIT_FILE_SIZE' || (err.http_code === 400 && /file size too large/i.test(err.message || ''))) {
+    return res.status(400).json({
+      success: false,
+      error: { code: 'FILE_TOO_LARGE', message: 'File is too large. The limit is 10 MB - please compress the file and try again.' },
+    });
+  }
+
   // Mongoose validation error — extract field-specific messages
   if (err.name === 'ValidationError') {
     const fieldErrors = {};

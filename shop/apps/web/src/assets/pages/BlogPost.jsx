@@ -17,6 +17,7 @@ import SEO from '@/components/common/SEO';
 import toast from 'react-hot-toast';
 import { PLACEHOLDER_IMAGE_MD, handleImageError } from '@/utils/placeholders';
 import ScrollReveal from '@/components/common/ScrollReveal';
+import GuideLanding from '@/components/blog/GuideLanding';
 
 const BlogPost = () => {
   const { slug } = useParams();
@@ -293,6 +294,10 @@ const BlogPost = () => {
         </div>
       </div>
     );
+  }
+
+  if (data.type === 'guide') {
+    return <GuideLanding post={data} />;
   }
 
   const isVideo = data.type === 'video';

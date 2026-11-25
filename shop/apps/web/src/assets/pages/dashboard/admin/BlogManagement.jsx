@@ -8,8 +8,35 @@ import Pagination from '@/components/common/Pagination';
 import CustomSelect from '@/components/common/CustomSelect';
 import {
   Plus, Edit, Trash2, Eye, Video, FileText, Calendar,
-  Search, Filter, BarChart3, X, RefreshCw
+  Search, Filter, BarChart3, X, RefreshCw, Download, Upload
 } from 'lucide-react';
+import GuideFields, { EMPTY_GUIDE, guideFromPost, cleanGuide, uploadToServer } from './GuideFields';
+import { BLOG_LANGUAGES, languageLabel } from '@/utils/blogLanguages';
+
+const CATEGORY_OPTIONS = ['Tech News', 'Product Reviews', 'How-To Guides', 'Industry Trends', 'Company News', 'Tips & Tricks', 'Free Guides', 'Business & Export']
+  .map(c => ({ value: c, label: c }));
+
+const EMPTY_FORM = {
+  title: '',
+  slug: '',
+  content: '',
+  excerpt: '',
+  category: '',
+  status: 'draft',
+  featuredImage: '',
+  type: 'post',
+  language: 'en',
+  translationKey: '',
+  metaTitle: '',
+  metaDescription: '',
+  guide: EMPTY_GUIDE,
+};
+
+const slugify = (text) => text
+  .toLowerCase()
+  .replace(/[^\w\s-]/g, '')
+  .replace(/[\s_-]+/g, '-')
+  .replace(/^-+|-+$/g, '');
 import { formatDate } from '@/utils/format';
 import toast from 'react-hot-toast';
 import { PLACEHOLDER_IMAGE_SM, handleImageError } from '@/utils/placeholders';
@@ -25,16 +52,8 @@ const BlogManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingBlog, setEditingBlog] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null); // { blog: {...}, show: true }
-  const [formData, setFormData] = useState({
-    title: '',
-    slug: '',
-    content: '',
-    excerpt: '',
-    category: '',
-    status: 'draft',
-    featuredImage: '',
-    type: 'post',
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -84,7 +103,9 @@ const BlogManagement = () => {
       resetForm();
     },
     onError: (error) => {
-      toast.error(error.response?.data?.message || `Failed to save blog post`);
+      const err = error.response?.data?.error;
+      const fields = err?.fields ? Object.values(err.fields).join(', ') : '';
+      toast.error(fields || err?.message || error.response?.data?.message || 'Failed to save blog post');
     },
   });
 
@@ -108,16 +129,7 @@ const BlogManagement = () => {
   const meta = data?.meta || {};
 
   const resetForm = () => {
-    setFormData({
-      title: '',
-      slug: '',
-      content: '',
-      excerpt: '',
-      category: '',
-      status: 'draft',
-      featuredImage: '',
-      type: 'post',
-    });
+    setFormData(EMPTY_FORM);
     setEditingBlog(null);
   };
 
@@ -142,6 +154,11 @@ const BlogManagement = () => {
         status: fullBlog.status || 'draft',
         featuredImage: fullBlog.featuredImage || '',
         type: fullBlog.type || 'post',
+        language: fullBlog.language || 'en',
+        translationKey: fullBlog.translationKey || '',
+        metaTitle: fullBlog.metaTitle || '',
+        metaDescription: fullBlog.metaDescription || '',
+        guide: guideFromPost(fullBlog.guide),
       });
       setShowCreateModal(true);
     } catch (error) {
@@ -166,21 +183,47 @@ const BlogManagement = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    saveMutation.mutate(formData);
+    const { guide, ...rest } = formData;
+    const payload = { ...rest };
+    if (formData.type === 'guide') {
+      payload.guide = cleanGuide(guide);
+      if (!payload.content) delete payload.content;
+    }
+    saveMutation.mutate(payload);
   };
 
   const handleTitleChange = (e) => {
     const title = e.target.value;
-    const autoSlug = title
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/[\s_-]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    const autoSlug = slugify(title);
     setFormData({
       ...formData,
       title,
-      slug: !editingBlog ? autoSlug : formData.slug
+      // Tamil/Malayalam/Kannada titles give an empty slug: keep the key-language slug then
+      slug: !editingBlog && autoSlug ? autoSlug : formData.slug
     });
+  };
+
+  // Translations share a key; a new post gets the slug "<key>-<language>"
+  const setTranslation = (changes) => {
+    const next = { ...formData, ...changes };
+    if (!editingBlog && next.translationKey) next.slug = `${slugify(next.translationKey)}-${next.language}`;
+    setFormData(next);
+  };
+
+  const uploadCover = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploadingCover(true);
+    try {
+      const media = await uploadToServer(file, 'blog');
+      setFormData(f => ({ ...f, featuredImage: media.url }));
+      toast.success('Image uploaded');
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Image upload failed');
+    } finally {
+      setUploadingCover(false);
+    }
   };
 
   return (
@@ -280,7 +323,8 @@ const BlogManagement = () => {
               options={[
                 { value: '', label: 'All Types' },
                 { value: 'post', label: 'Article' },
-                { value: 'video', label: 'Video' }
+                { value: 'video', label: 'Video' },
+                { value: 'guide', label: 'Free Guide' }
               ]}
               placeholder="All Types"
             />
@@ -292,14 +336,7 @@ const BlogManagement = () => {
                 setFilters({ ...filters, category: value });
                 setPage(1);
               }}
-              options={[
-                { value: '', label: 'All Categories' },
-                { value: 'Tech News', label: 'Tech News' },
-                { value: 'Product Reviews', label: 'Product Reviews' },
-                { value: 'How-To Guides', label: 'How-To Guides' },
-                { value: 'Industry Insights', label: 'Industry Insights' },
-                { value: 'Company Updates', label: 'Company Updates' }
-              ]}
+              options={[{ value: '', label: 'All Categories' }, ...CATEGORY_OPTIONS]}
               placeholder="All Categories"
             />
           </div>
@@ -352,12 +389,19 @@ const BlogManagement = () => {
                           <div className="font-medium text-gray-900 line-clamp-1">
                             {blog.title}
                           </div>
-                          <div className="text-sm text-gray-500">{blog.category}</div>
+                          <div className="text-sm text-gray-500">
+                            {blog.category}{blog.language && blog.language !== 'en' ? ` · ${languageLabel(blog.language)}` : ''}
+                          </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {blog.type === 'video' ? (
+                      {blog.type === 'guide' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 rounded-full text-xs">
+                          <Download className="w-3 h-3" />
+                          Free Guide
+                        </span>
+                      ) : blog.type === 'video' ? (
                         <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs">
                           <Video className="w-3 h-3" />
                           Video
@@ -387,6 +431,7 @@ const BlogManagement = () => {
                         <span>{blog.views || 0} views</span>
                         <span>{blog.likes || 0} likes</span>
                         <span>{blog.commentsCount || 0} comments</span>
+                        {blog.type === 'guide' && <span className="font-medium text-amber-700">{blog.downloads || 0} downloads</span>}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -503,11 +548,35 @@ const BlogManagement = () => {
                   onChange={(value) => setFormData({ ...formData, type: value })}
                   options={[
                     { value: 'post', label: 'Article' },
-                    { value: 'video', label: 'Video' }
+                    { value: 'video', label: 'Video' },
+                    { value: 'guide', label: 'Free Guide (PDF landing page)' }
                   ]}
                   placeholder="Select type"
                   className="w-full"
                 />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                  <CustomSelect
+                    value={formData.language}
+                    onChange={(value) => setTranslation({ language: value })}
+                    options={BLOG_LANGUAGES.map(l => ({ value: l.code, label: l.english }))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Translation key</label>
+                  <input
+                    type="text"
+                    value={formData.translationKey}
+                    onChange={(e) => setTranslation({ translationKey: e.target.value })}
+                    placeholder="e.g. msme-export-guide"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Use the same key for the Tamil, Malayalam, Kannada and English versions - the page then shows a language switch.</p>
+                </div>
               </div>
 
               <div>
@@ -515,14 +584,7 @@ const BlogManagement = () => {
                 <CustomSelect
                   value={formData.category}
                   onChange={(value) => setFormData({ ...formData, category: value })}
-                  options={[
-                    { value: 'Tech News', label: 'Tech News' },
-                    { value: 'Product Reviews', label: 'Product Reviews' },
-                    { value: 'How-To Guides', label: 'How-To Guides' },
-                    { value: 'Industry Trends', label: 'Industry Trends' },
-                    { value: 'Company News', label: 'Company News' },
-                    { value: 'Tips & Tricks', label: 'Tips & Tricks' }
-                  ]}
+                  options={CATEGORY_OPTIONS}
                   placeholder="Select category"
                   className="w-full"
                 />
@@ -540,16 +602,32 @@ const BlogManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Featured Image URL</label>
-                <input
-                  type="text"
-                  value={formData.featuredImage}
-                  onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  placeholder="https://example.com/image.jpg"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {formData.type === 'guide' ? 'Cover image (e.g. the PDF front page) *' : 'Featured Image'}
+                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  {formData.featuredImage && (
+                    <img src={formData.featuredImage} alt="" className="h-16 w-16 rounded object-cover border" onError={(e) => handleImageError(e, PLACEHOLDER_IMAGE_SM)} />
+                  )}
+                  <label className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm hover:bg-gray-50 ${uploadingCover ? 'pointer-events-none opacity-60' : ''}`}>
+                    <Upload className="h-4 w-4" /> {uploadingCover ? 'Uploading…' : 'Upload image'}
+                    <input type="file" accept="image/*" className="sr-only" onChange={uploadCover} disabled={uploadingCover} />
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.featuredImage}
+                    onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
+                    className="min-w-0 flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="or paste an image link"
+                  />
+                </div>
               </div>
 
+              {formData.type === 'guide' && (
+                <GuideFields guide={formData.guide} onChange={(guide) => setFormData(f => ({ ...f, guide }))} />
+              )}
+
+              {formData.type !== 'guide' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Content *</label>
                 <textarea
@@ -561,6 +639,27 @@ const BlogManagement = () => {
                   placeholder="Write your content here..."
                 />
               </div>
+              )}
+
+              <details className="rounded-lg border border-gray-200 p-4">
+                <summary className="cursor-pointer text-sm font-semibold text-gray-800">Google / WhatsApp preview (SEO)</summary>
+                <div className="mt-3 space-y-3">
+                  <input
+                    type="text"
+                    value={formData.metaTitle}
+                    onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
+                    placeholder="Title shown on Google (empty = post title)"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                  <textarea
+                    value={formData.metaDescription}
+                    onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
+                    rows={2}
+                    placeholder="Description shown on Google (empty = excerpt)"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+              </details>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Status *</label>

@@ -7,7 +7,8 @@ import Spinner from '@/components/common/Spinner';
 import Pagination from '@/components/common/Pagination';
 import CustomSelect from '@/components/common/CustomSelect';
 import AdBanner from '@/components/common/AdBanner';
-import { Clock, Eye, Heart, Calendar, Video, FileText, Search } from 'lucide-react';
+import { Clock, Eye, Heart, Calendar, Video, FileText, Search, Download } from 'lucide-react';
+import { BLOG_LANGUAGES, languageLabel } from '@/utils/blogLanguages';
 import { formatDate } from '@/utils/format';
 import { PLACEHOLDER_BLOG, handleImageError } from '@/utils/placeholders';
 import ScrollReveal from '@/components/common/ScrollReveal';
@@ -18,6 +19,7 @@ const Blog = () => {
   const [filters, setFilters] = useState({
     category: '',
     type: '',
+    language: '',
     search: '',
   });
 
@@ -30,6 +32,7 @@ const Blog = () => {
       params.append('limit', '12');
       if (filters.category) params.append('category', filters.category);
       if (filters.type) params.append('type', filters.type);
+      if (filters.language) params.append('language', filters.language);
       if (filters.search) params.append('search', filters.search);
 
       const response = await api.get(`/blog?${params}`);
@@ -127,10 +130,28 @@ const Blog = () => {
               options={[
                 { value: '', label: 'All Types' },
                 { value: 'post', label: 'Articles' },
-                { value: 'video', label: 'Videos' }
+                { value: 'video', label: 'Videos' },
+                { value: 'guide', label: 'Free Guides' }
               ]}
               placeholder="All Types"
             />
+          </div>
+
+          {/* Language */}
+          <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Language">
+            {[{ code: '', english: 'All languages' }, ...BLOG_LANGUAGES].map(l => (
+              <button
+                key={l.code || 'all'}
+                type="button"
+                aria-pressed={filters.language === l.code}
+                onClick={() => { setFilters({ ...filters, language: l.code }); setPage(1); }}
+                className={`rounded-full px-3 py-1 text-sm font-semibold transition ${
+                  filters.language === l.code ? 'bg-primary-700 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {l.english}
+              </button>
+            ))}
           </div>
 
           {/* Active Filters Display */}
@@ -161,7 +182,7 @@ const Blog = () => {
               )}
               {filters.type && (
                 <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">
-                  {filters.type === 'post' ? 'Articles' : 'Videos'}
+                  {{ post: 'Articles', video: 'Videos', guide: 'Free Guides' }[filters.type] || filters.type}
                   <button
                     onClick={() => setFilters({ ...filters, type: '' })}
                     className="ml-1 hover:text-purple-900"
@@ -172,7 +193,7 @@ const Blog = () => {
               )}
               <button
                 onClick={() => {
-                  setFilters({ category: '', type: '', search: '' });
+                  setFilters({ category: '', type: '', language: '', search: '' });
                   setPage(1);
                 }}
                 className="text-sm text-red-600 hover:text-red-700 font-medium ml-2"
@@ -257,7 +278,7 @@ const Blog = () => {
             {(filters.search || filters.category || filters.type) && (
               <button
                 onClick={() => {
-                  setFilters({ category: '', type: '', search: '' });
+                  setFilters({ category: '', type: '', language: '', search: '' });
                   setPage(1);
                 }}
                 className="px-4 py-2 sm:px-6 sm:py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors text-sm sm:text-base"
@@ -295,7 +316,12 @@ const BlogCard = ({ blog }) => {
 
         {/* Type Badge */}
         <div className="absolute top-4 right-4 z-10">
-          {isVideo ? (
+          {blog.type === 'guide' ? (
+            <span className="flex items-center gap-1.5 bg-amber-400 text-gray-900 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+              <Download className="w-3.5 h-3.5" />
+              Free Guide
+            </span>
+          ) : isVideo ? (
             <span className="flex items-center gap-1.5 bg-gradient-to-r from-red-600 to-red-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
               <Video className="w-3.5 h-3.5" />
               Video
@@ -308,11 +334,16 @@ const BlogCard = ({ blog }) => {
           )}
         </div>
 
-        {/* Category Badge */}
-        <div className="absolute bottom-4 left-4 z-10">
+        {/* Category + language badges */}
+        <div className="absolute bottom-4 left-4 z-10 flex flex-wrap gap-2">
           <span className="bg-white/95 backdrop-blur-md text-gray-900 px-4 py-1.5 rounded-full text-xs font-semibold shadow-lg">
             {blog.category}
           </span>
+          {blog.language && blog.language !== 'en' && (
+            <span className="bg-primary-700 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg">
+              {languageLabel(blog.language)}
+            </span>
+          )}
         </div>
       </div>
 

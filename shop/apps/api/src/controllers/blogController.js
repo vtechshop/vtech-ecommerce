@@ -16,6 +16,7 @@ exports.getBlogs = async (req, res, next) => {
       category,
       tag,
       type,
+      language,
       featured,
       search,
       sort = '-publishedAt',
@@ -25,7 +26,8 @@ exports.getBlogs = async (req, res, next) => {
 
     if (category) query.category = category;
     if (tag) query.tags = tag;
-    if (type) query.type = type;
+    if (type) query.type = String(type);
+    if (language) query.language = String(language);
     if (featured === 'true') query.featured = true;
     if (search) {
       // SECURITY: Escape regex to prevent ReDoS attacks
@@ -41,7 +43,7 @@ exports.getBlogs = async (req, res, next) => {
 
     const [blogs, total] = await Promise.all([
       Blog.find(query)
-        .select('-content') // Don't send full content in list
+        .select('-content -guide') // Don't send full content in list
         .populate('author', 'name email')
         .sort(sort)
         .skip(skip)
@@ -109,14 +111,46 @@ exports.getBlog = async (req, res, next) => {
         .lean();
     }
 
+    // Other languages of the same post (linked by translationKey)
+    let translations = [];
+    if (blog.translationKey) {
+      translations = await Blog.find({ translationKey: blog.translationKey, status: 'published' })
+        .select('slug language title')
+        .lean();
+    }
+
     res.json({
       success: true,
-      data: { ...blog, comments, hasLiked },
+      data: { ...blog, comments, hasLiked, translations },
     });
   } catch (error) {
     next(error);
   }
 };
+
+// Free Guide download: count it and return the PDF link (public)
+exports.downloadGuide = async (req, res, next) => {
+  try {
+    const blog = await Blog.findOneAndUpdate(
+      { slug: String(req.params.slug), status: 'published', type: 'guide', 'guide.pdfUrl': { $nin: [null, ''] } },
+      { $inc: { downloads: 1 } },
+      { new: true, projection: { 'guide.pdfUrl': 1, 'guide.pdfName': 1, downloads: 1 } }
+    ).lean();
+    if (!blog) throw new AppError('Guide not found', 404, 'GUIDE_NOT_FOUND');
+    res.json({ success: true, data: { pdfUrl: blog.guide.pdfUrl, pdfName: blog.guide.pdfName || '', downloads: blog.downloads } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// A guide's PDF link must be a web link (never javascript: or data:)
+const SAFE_URL = /^(https:\/\/|\/uploads\/)/i;
+function checkGuide(body) {
+  const pdfUrl = body?.guide?.pdfUrl;
+  if (pdfUrl && !SAFE_URL.test(String(pdfUrl).trim())) {
+    throw new AppError('The PDF link must start with https://', 400, 'INVALID_PDF_URL');
+  }
+}
 
 // Get blog categories with counts
 exports.getCategories = async (req, res, next) => {
@@ -440,6 +474,8 @@ exports.createBlog = async (req, res, next) => {
       }
     });
 
+    checkGuide(req.body);
+
     const blogData = {
       ...req.body,
       author: req.user._id,
@@ -503,6 +539,7 @@ exports.updateBlog = async (req, res, next) => {
       }
     });
 
+    checkGuide(req.body);
     Object.assign(blog, req.body);
     await blog.save({ validateModifiedOnly: true });
 

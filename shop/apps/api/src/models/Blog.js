@@ -1,6 +1,46 @@
 // FILE: apps/api/src/models/Blog.js
 const mongoose = require('mongoose');
 
+const guideSchema = new mongoose.Schema({
+  kicker: { type: String, trim: true, maxlength: 120 },
+  headline: { type: String, trim: true, maxlength: 250 },
+  subheadline: { type: String, trim: true, maxlength: 600 },
+  hook: { type: String, trim: true, maxlength: 250 },
+  chips: [{ type: String, trim: true, maxlength: 60 }],
+  pdfUrl: { type: String, trim: true },
+  pdfName: { type: String, trim: true, maxlength: 150 },
+  pdfPages: { type: Number, min: 0 },
+  ctaText: { type: String, trim: true, maxlength: 80 },
+  ctaNote: { type: String, trim: true, maxlength: 150 },
+  questionsTitle: { type: String, trim: true, maxlength: 200 },
+  questionsIntro: { type: String, trim: true, maxlength: 400 },
+  questions: [{
+    _id: false,
+    icon: { type: String, trim: true, maxlength: 8 },
+    title: { type: String, trim: true, maxlength: 150 },
+    desc: { type: String, trim: true, maxlength: 400 },
+    page: { type: String, trim: true, maxlength: 20 },
+  }],
+  stepsTitle: { type: String, trim: true, maxlength: 200 },
+  steps: [{
+    _id: false,
+    title: { type: String, trim: true, maxlength: 120 },
+    desc: { type: String, trim: true, maxlength: 300 },
+  }],
+  stats: [{
+    _id: false,
+    value: { type: String, trim: true, maxlength: 30 },
+    label: { type: String, trim: true, maxlength: 150 },
+  }],
+  audienceTitle: { type: String, trim: true, maxlength: 200 },
+  audience: [{ type: String, trim: true, maxlength: 200 }],
+  finalTitle: { type: String, trim: true, maxlength: 200 },
+  finalText: { type: String, trim: true, maxlength: 500 },
+  finalCtaText: { type: String, trim: true, maxlength: 80 },
+  whatsappText: { type: String, trim: true, maxlength: 300 },
+  sourceNote: { type: String, trim: true, maxlength: 600 },
+}, { _id: false });
+
 const blogSchema = new mongoose.Schema(
   {
     title: {
@@ -29,7 +69,7 @@ const blogSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['post', 'video'],
+      enum: ['post', 'video', 'guide'],
       default: 'post',
       required: true,
     },
@@ -68,7 +108,7 @@ const blogSchema = new mongoose.Schema(
     // Categories and tags
     category: {
       type: String,
-      enum: ['Tech News', 'Product Reviews', 'How-To Guides', 'Industry Trends', 'Company News', 'Tips & Tricks'],
+      enum: ['Tech News', 'Product Reviews', 'How-To Guides', 'Industry Trends', 'Company News', 'Tips & Tricks', 'Free Guides', 'Business & Export'],
       required: function() {
         return this.isNew; // Only required for new documents
       },
@@ -119,6 +159,16 @@ const blogSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
     }],
+    // Language of this post, and a shared key that links its translations together
+    language: {
+      type: String,
+      enum: ['en', 'ta', 'ml', 'kn', 'te', 'hi'],
+      default: 'en',
+    },
+    translationKey: { type: String, trim: true, lowercase: true, maxlength: 100 },
+    // Free Guide (type 'guide'): a landing page for a downloadable PDF
+    guide: { type: guideSchema, default: undefined },
+    downloads: { type: Number, default: 0 },
     // Reading time (auto-calculated for posts)
     readingTime: Number, // in minutes
   },
@@ -137,6 +187,7 @@ blogSchema.index({ tags: 1 });
 blogSchema.index({ featured: 1, featuredOrder: 1 });
 blogSchema.index({ author: 1 });
 blogSchema.index({ createdAt: -1 });
+blogSchema.index({ translationKey: 1, language: 1 });
 
 // Virtual for comments
 blogSchema.virtual('comments', {
